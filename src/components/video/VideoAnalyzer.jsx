@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import {
   Video, Link2, ChevronRight, BookOpen,
   Lightbulb, Layers, Clock, Eye, Copy, Check,
@@ -13,8 +13,8 @@ const LS_KEY = 'cio-anthropic-key'
 
 const TABS = [
   { id: 'estrutura', label: 'Estrutura', icon: Layers },
-  { id: 'tom', label: 'Tom & Padrões', icon: Mic },
-  { id: 'retencao', label: 'Retenção', icon: Eye },
+  { id: 'tom', label: 'Tom & PadrÃµes', icon: Mic },
+  { id: 'retencao', label: 'RetenÃ§Ã£o', icon: Eye },
   { id: 'template', label: 'Template', icon: BookOpen },
   { id: 'ideias', label: 'Ideias', icon: Lightbulb },
 ]
@@ -23,7 +23,7 @@ const TYPE_OPTIONS = [
   { value: 'auto', label: 'Detectar automaticamente' },
   { value: 'educational', label: 'Educacional / Tutorial' },
   { value: 'storytelling', label: 'Storytelling / Pessoal' },
-  { value: 'contrarian', label: 'Contrário / Opinião' },
+  { value: 'contrarian', label: 'ContrÃ¡rio / OpiniÃ£o' },
   { value: 'listicle', label: 'Lista / Breakdown' },
 ]
 
@@ -35,10 +35,10 @@ const ARCHETYPE_COLORS = {
 }
 const ARCHETYPE_LABELS = {
   educational: 'Educacional', storytelling: 'Storytelling',
-  contrarian: 'Contrário', listicle: 'Lista',
+  contrarian: 'ContrÃ¡rio', listicle: 'Lista',
 }
 
-// ── Fetches YouTube oEmbed metadata (no API key needed) ──────────────────────
+// â”€â”€ Fetches YouTube oEmbed metadata (no API key needed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function fetchYouTubeMeta(url) {
   try {
     const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`)
@@ -50,7 +50,7 @@ async function fetchYouTubeMeta(url) {
   }
 }
 
-// ── Calls Claude API directly from browser ───────────────────────────────────
+// â”€â”€ Calls Claude API directly from browser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function callClaudeAPI(apiKey, prompt) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -63,7 +63,7 @@ async function callClaudeAPI(apiKey, prompt) {
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 4000,
-      system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown, no apologies, no refusals. You cannot watch videos but you analyze them based on titles, channel names, and your training knowledge. You NEVER say you cannot do something — you always produce the analysis JSON. Your entire response must start with { and end with } and be parseable by JSON.parse().',
+      system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only â€” no text before, no text after, no markdown, no apologies, no refusals. You cannot watch videos but you analyze them based on titles, channel names, and your training knowledge. You NEVER say you cannot do something â€” you always produce the analysis JSON. Your entire response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -75,7 +75,7 @@ async function callClaudeAPI(apiKey, prompt) {
   return data.content[0].text
 }
 
-// ── Builds the Claude analysis prompt ────────────────────────────────────────
+// â”€â”€ Builds the Claude analysis prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function buildPrompt({ url, title, channel, topic, videoType }) {
   return `You are a professional video content analyst helping content creators deconstruct videos to learn from them.
 
@@ -90,8 +90,8 @@ IMPORTANT INSTRUCTIONS:
 - You cannot access or watch the video URL. That is fine and expected.
 - Use the title, channel name, and your training knowledge about this creator/video to build the analysis.
 - If you recognize this creator or video from your training data, describe their real style, tone, and typical structure.
-- If you don't recognize the video, build a realistic and specific analysis based on the title, channel name, and topic — make it feel like it was written specifically for this content, not a generic template.
-- You MUST always return an analysis — never refuse, never apologize, never say you cannot access the URL.
+- If you don't recognize the video, build a realistic and specific analysis based on the title, channel name, and topic â€” make it feel like it was written specifically for this content, not a generic template.
+- You MUST always return an analysis â€” never refuse, never apologize, never say you cannot access the URL.
 - The analysis should feel tailored: reference the title, the creator's name, the topic.
 - Respond with ONLY the JSON object below. No text before it, no text after it, no markdown fences.
 
@@ -102,7 +102,7 @@ IMPORTANT INSTRUCTIONS:
       "type": "Hook type name specific to this video",
       "description": "How this specific video opens and hooks the viewer in the first seconds",
       "example": "Faithful reconstruction of what this creator likely says/does in the hook",
-      "duration": "0:00–0:XX",
+      "duration": "0:00â€“0:XX",
       "effectiveness": "Why this specific hook works for this content and audience"
     },
     "context": {
@@ -110,10 +110,10 @@ IMPORTANT INSTRUCTIONS:
       "example": "Reconstruction of how the creator positions themselves in this video"
     },
     "main_points": [
-      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" },
-      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" },
-      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" },
-      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" }
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XXâ€“X:XX" },
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XXâ€“X:XX" },
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XXâ€“X:XX" },
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XXâ€“X:XX" }
     ],
     "closing": {
       "description": "How this video specifically wraps up",
@@ -164,10 +164,10 @@ IMPORTANT INSTRUCTIONS:
     "hook_example": "Example of applying this template to a different topic",
     "opening_formula": "Opening formula based on this video",
     "sections": [
-      { "name": "Section 1", "duration": "X–X min", "goal": "What this section achieves in this video" },
-      { "name": "Section 2", "duration": "X–X min", "goal": "What this section achieves in this video" },
-      { "name": "Section 3", "duration": "X–X min", "goal": "What this section achieves in this video" },
-      { "name": "Section 4", "duration": "X–X min", "goal": "What this section achieves in this video" }
+      { "name": "Section 1", "duration": "Xâ€“X min", "goal": "What this section achieves in this video" },
+      { "name": "Section 2", "duration": "Xâ€“X min", "goal": "What this section achieves in this video" },
+      { "name": "Section 3", "duration": "Xâ€“X min", "goal": "What this section achieves in this video" },
+      { "name": "Section 4", "duration": "Xâ€“X min", "goal": "What this section achieves in this video" }
     ],
     "closing_formula": "Closing formula based on this video",
     "tips": ["Tip derived from this video", "Tip derived from this video", "Tip derived from this video", "Tip derived from this video"]
@@ -182,106 +182,7 @@ IMPORTANT INSTRUCTIONS:
   ]
 }`
 }
-
-Retorne EXATAMENTE este JSON (com todos os campos preenchidos especificamente para este vídeo):
-{
-  "archetype": "educational|storytelling|contrarian|listicle",
-  "structure": {
-    "hook": {
-      "type": "Tipo específico do gancho deste vídeo",
-      "description": "Como o gancho funciona neste vídeo específico — o que o criador faz nos primeiros segundos",
-      "example": "Reconstituição do texto/fala real do gancho deste vídeo",
-      "duration": "0:00–0:XX",
-      "effectiveness": "Por que este gancho específico funciona para este conteúdo"
-    },
-    "context": {
-      "description": "Como este vídeo específico estabelece credencial ou contexto antes do conteúdo principal",
-      "example": "Reconstituição de como o criador se posiciona neste vídeo"
-    },
-    "main_points": [
-      { "point": "Nome do ponto", "description": "O que este vídeo aborda neste ponto — específico", "duration": "X:XX–X:XX" },
-      { "point": "Nome do ponto", "description": "O que este vídeo aborda neste ponto — específico", "duration": "X:XX–X:XX" },
-      { "point": "Nome do ponto", "description": "O que este vídeo aborda neste ponto — específico", "duration": "X:XX–X:XX" }
-    ],
-    "closing": {
-      "description": "Como este vídeo específico fecha — o que o criador diz/faz no final",
-      "example": "Reconstituição do fechamento deste vídeo",
-      "duration": "Últimos X min"
-    },
-    "cta": {
-      "description": "Qual é o call-to-action específico deste vídeo",
-      "example": "Reconstituição do CTA deste vídeo",
-      "type": "Tipo de CTA (inscrição/próximo vídeo/produto/comentário)"
-    }
-  },
-  "tone": {
-    "primary": "Tom primário deste vídeo",
-    "secondary": "Tom secundário deste vídeo",
-    "description": "Descrição específica do tom e estilo de comunicação deste criador neste vídeo",
-    "markers": [
-      "Marcador de tom específico deste vídeo",
-      "Marcador de tom específico deste vídeo",
-      "Marcador de tom específico deste vídeo",
-      "Marcador de tom específico deste vídeo"
-    ],
-    "voice_characteristics": "Características específicas da voz/persona deste criador neste vídeo"
-  },
-  "patterns": [
-    { "name": "Padrão 1 deste vídeo", "description": "Como aparece especificamente neste vídeo", "why_effective": "Por que funciona neste contexto" },
-    { "name": "Padrão 2 deste vídeo", "description": "Como aparece especificamente neste vídeo", "why_effective": "Por que funciona neste contexto" },
-    { "name": "Padrão 3 deste vídeo", "description": "Como aparece especificamente neste vídeo", "why_effective": "Por que funciona neste contexto" },
-    { "name": "Padrão 4 deste vídeo", "description": "Como aparece especificamente neste vídeo", "why_effective": "Por que funciona neste contexto" }
-  ],
-  "retention": [
-    { "technique": "Técnica 1", "description": "Como é usada especificamente neste vídeo", "example": "Momento ou trecho específico deste vídeo" },
-    { "technique": "Técnica 2", "description": "Como é usada especificamente neste vídeo", "example": "Momento ou trecho específico deste vídeo" },
-    { "technique": "Técnica 3", "description": "Como é usada especificamente neste vídeo", "example": "Momento ou trecho específico deste vídeo" },
-    { "technique": "Técnica 4", "description": "Como é usada especificamente neste vídeo", "example": "Momento ou trecho específico deste vídeo" },
-    { "technique": "Técnica 5", "description": "Como é usada especificamente neste vídeo", "example": "Momento ou trecho específico deste vídeo" }
-  ],
-  "visual": {
-    "text_style": "Estilo de texto na tela específico deste vídeo/criador",
-    "editing_style": "Estilo de edição específico deste vídeo",
-    "pacing": "Ritmo específico deste vídeo",
-    "key_techniques": ["técnica visual 1", "técnica visual 2", "técnica visual 3", "técnica visual 4"]
-  },
-  "why_it_works": [
-    { "reason": "Razão 1 específica para este vídeo", "impact": "Impacto desta razão no desempenho deste vídeo" },
-    { "reason": "Razão 2 específica para este vídeo", "impact": "Impacto desta razão no desempenho deste vídeo" },
-    { "reason": "Razão 3 específica para este vídeo", "impact": "Impacto desta razão no desempenho deste vídeo" },
-    { "reason": "Razão 4 específica para este vídeo", "impact": "Impacto desta razão no desempenho deste vídeo" }
-  ],
-  "template": {
-    "name": "Nome do template derivado especificamente deste vídeo",
-    "hook_formula": "Fórmula do gancho baseada no gancho real deste vídeo",
-    "hook_example": "Exemplo de aplicação deste template em outro tópico",
-    "opening_formula": "Fórmula de abertura baseada neste vídeo específico",
-    "sections": [
-      { "name": "Seção 1", "duration": "X–X min", "goal": "Objetivo desta seção neste vídeo" },
-      { "name": "Seção 2", "duration": "X–X min", "goal": "Objetivo desta seção neste vídeo" },
-      { "name": "Seção 3", "duration": "X–X min", "goal": "Objetivo desta seção neste vídeo" },
-      { "name": "Seção 4", "duration": "X–X min", "goal": "Objetivo desta seção neste vídeo" }
-    ],
-    "closing_formula": "Fórmula de fechamento baseada neste vídeo",
-    "tips": [
-      "Dica específica derivada deste vídeo",
-      "Dica específica derivada deste vídeo",
-      "Dica específica derivada deste vídeo",
-      "Dica específica derivada deste vídeo"
-    ]
-  },
-  "content_ideas": [
-    { "title": "Ideia inspirada neste vídeo específico", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "tipo de gancho", "angle": "Ângulo específico inspirado neste vídeo" },
-    { "title": "Ideia inspirada neste vídeo específico", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "tipo de gancho", "angle": "Ângulo específico inspirado neste vídeo" },
-    { "title": "Ideia inspirada neste vídeo específico", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "tipo de gancho", "angle": "Ângulo específico inspirado neste vídeo" },
-    { "title": "Ideia inspirada neste vídeo específico", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "tipo de gancho", "angle": "Ângulo específico inspirado neste vídeo" },
-    { "title": "Ideia inspirada neste vídeo específico", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "tipo de gancho", "angle": "Ângulo específico inspirado neste vídeo" },
-    { "title": "Ideia inspirada neste vídeo específico", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "tipo de gancho", "angle": "Ângulo específico inspirado neste vídeo" }
-  ]
-}`
-}
-
-// ── API Key Modal ─────────────────────────────────────────────────────────────
+// â”€â”€ API Key Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ApiKeyModal({ onClose, onSave }) {
   const [val, setVal] = useState('')
   const [show, setShow] = useState(false)
@@ -299,7 +200,7 @@ function ApiKeyModal({ onClose, onSave }) {
         <div className="p-3 rounded-xl bg-violet-50 border border-violet-100 flex items-start gap-2">
           <ShieldCheck size={14} className="text-violet-500 mt-0.5 shrink-0" />
           <p className="text-xs text-gray-600">
-            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage). Ela nunca é enviada para nenhum servidor além da API da Anthropic.
+            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage). Ela nunca Ã© enviada para nenhum servidor alÃ©m da API da Anthropic.
           </p>
         </div>
 
@@ -344,7 +245,7 @@ function ApiKeyModal({ onClose, onSave }) {
   )
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function VideoAnalyzer() {
   const addVideoAnalysis = useStore((s) => s.addVideoAnalysis)
   const deleteVideoAnalysis = useStore((s) => s.deleteVideoAnalysis)
@@ -384,10 +285,10 @@ export default function VideoAnalyzer() {
   }
 
   const STEPS = [
-    'Buscando metadados do vídeo...',
-    'Enviando para análise com IA...',
+    'Buscando metadados do vÃ­deo...',
+    'Enviando para anÃ¡lise com IA...',
     'Identificando estrutura narrativa...',
-    'Detectando tom, padrões e retenção...',
+    'Detectando tom, padrÃµes e retenÃ§Ã£o...',
     'Gerando template e ideias...',
   ]
 
@@ -401,7 +302,7 @@ export default function VideoAnalyzer() {
     setLoadingStep(0)
 
     try {
-      // Step 1 — fetch YouTube metadata
+      // Step 1 â€” fetch YouTube metadata
       setLoadingStep(0)
       let metaTitle = title
       let channel = ''
@@ -414,15 +315,15 @@ export default function VideoAnalyzer() {
       }
 
       if (apiKey) {
-        // ── REAL AI ANALYSIS ──
+        // â”€â”€ REAL AI ANALYSIS â”€â”€
         setLoadingStep(1)
         const prompt = buildPrompt({ url, title: metaTitle, channel, topic, videoType })
         setLoadingStep(2)
         const raw = await callClaudeAPI(apiKey, prompt)
         setLoadingStep(3)
-        // Extract JSON — find the first { ... } block even if Claude adds text around it
+        // Extract JSON â€” find the first { ... } block even if Claude adds text around it
         const jsonMatch = raw.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
+        if (!jsonMatch) throw new Error('A IA nÃ£o retornou uma anÃ¡lise estruturada. Tente novamente.')
         const result = JSON.parse(jsonMatch[0])
         setLoadingStep(4)
         await new Promise((r) => setTimeout(r, 400))
@@ -430,7 +331,7 @@ export default function VideoAnalyzer() {
         setAnalysisSource('ai')
         if (metaTitle && !title) setTitle(metaTitle)
       } else {
-        // ── SIMULATION FALLBACK ──
+        // â”€â”€ SIMULATION FALLBACK â”€â”€
         setLoadingStep(2)
         await new Promise((r) => setTimeout(r, 800))
         setLoadingStep(3)
@@ -464,7 +365,7 @@ export default function VideoAnalyzer() {
   const handleSaveIdea = (idea) => {
     addIdea({
       title: idea.title,
-      description: `Inspirado em análise de vídeo de referência${topic ? ` sobre "${topic}"` : ''}.`,
+      description: `Inspirado em anÃ¡lise de vÃ­deo de referÃªncia${topic ? ` sobre "${topic}"` : ''}.`,
       format: idea.format, platform: idea.platform,
       hook_type: idea.hook_type, topic: topic || '',
       priority: 'medium', status: 'idea',
@@ -478,12 +379,12 @@ export default function VideoAnalyzer() {
     const t = analysis.template
     const text = [
       `# ${t.name}`, '',
-      `## Fórmula do Gancho`, t.hook_formula, `Exemplo: ${t.hook_example}`, '',
+      `## FÃ³rmula do Gancho`, t.hook_formula, `Exemplo: ${t.hook_example}`, '',
       `## Abertura`, t.opening_formula, '',
-      `## Estrutura de Seções`,
+      `## Estrutura de SeÃ§Ãµes`,
       ...t.sections.map((s) => `- **${s.name}** (${s.duration}): ${s.goal}`), '',
       `## Fechamento`, t.closing_formula, '',
-      `## Dicas`, ...t.tips.map((tip) => `• ${tip}`),
+      `## Dicas`, ...t.tips.map((tip) => `â€¢ ${tip}`),
     ].join('\n')
     navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
   }
@@ -506,8 +407,8 @@ export default function VideoAnalyzer() {
             <Video size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-gray-900">Analisador de Vídeos de Referência</h1>
-            <p className="text-xs text-gray-400">Desconstrua qualquer vídeo com IA real — estrutura, tom, padrões, template e ideias</p>
+            <h1 className="text-base font-bold text-gray-900">Analisador de VÃ­deos de ReferÃªncia</h1>
+            <p className="text-xs text-gray-400">Desconstrua qualquer vÃ­deo com IA real â€” estrutura, tom, padrÃµes, template e ideias</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -527,12 +428,12 @@ export default function VideoAnalyzer() {
           )}
           {videoAnalyses.length > 0 && (
             <button onClick={() => setShowHistory((x) => !x)} className="btn-secondary text-xs">
-              <Clock size={13} /> Histórico ({videoAnalyses.length})
+              <Clock size={13} /> HistÃ³rico ({videoAnalyses.length})
             </button>
           )}
           {analysis && (
             <button onClick={handleReset} className="btn-secondary text-xs">
-              <RotateCcw size={13} /> Nova Análise
+              <RotateCcw size={13} /> Nova AnÃ¡lise
             </button>
           )}
         </div>
@@ -543,13 +444,13 @@ export default function VideoAnalyzer() {
         <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
           <AlertCircle size={15} className="text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo simulação ativo</p>
+            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo simulaÃ§Ã£o ativo</p>
             <p className="text-xs text-gray-500">
-              Sem API Key, a análise é gerada por templates — não lê o vídeo de verdade.{' '}
+              Sem API Key, a anÃ¡lise Ã© gerada por templates â€” nÃ£o lÃª o vÃ­deo de verdade.{' '}
               <button onClick={() => setShowKeyModal(true)} className="text-violet-600 hover:underline font-medium">
                 Adicione sua chave da Anthropic
               </button>{' '}
-              para análise real com IA (grátis com créditos do plano).
+              para anÃ¡lise real com IA (grÃ¡tis com crÃ©ditos do plano).
             </p>
           </div>
         </div>
@@ -558,18 +459,18 @@ export default function VideoAnalyzer() {
       {/* History panel */}
       {showHistory && videoAnalyses.length > 0 && (
         <div className="card p-4 space-y-2 animate-slide-up border border-violet-100">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Análises Salvas</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">AnÃ¡lises Salvas</h3>
           {videoAnalyses.map((saved) => (
             <div key={saved.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-violet-50 transition-colors group">
               <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
                 <Video size={14} className="text-violet-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-800 truncate">{saved.title || saved.url || 'Análise sem título'}</p>
+                <p className="text-xs font-medium text-gray-800 truncate">{saved.title || saved.url || 'AnÃ¡lise sem tÃ­tulo'}</p>
                 <div className="flex items-center gap-2">
                   <p className="text-[10px] text-gray-400">{new Date(saved.analyzed_at).toLocaleDateString('pt-BR')}</p>
                   <span className={`text-[10px] font-medium ${saved.source === 'ai' ? 'text-emerald-600' : 'text-amber-500'}`}>
-                    {saved.source === 'ai' ? '✦ IA real' : '◌ Simulação'}
+                    {saved.source === 'ai' ? 'âœ¦ IA real' : 'â—Œ SimulaÃ§Ã£o'}
                   </span>
                 </div>
               </div>
@@ -590,7 +491,7 @@ export default function VideoAnalyzer() {
             <div className="space-y-4">
               <div>
                 <label className="label flex items-center gap-1.5">
-                  <Link2 size={12} className="text-gray-400" /> URL do Vídeo
+                  <Link2 size={12} className="text-gray-400" /> URL do VÃ­deo
                 </label>
                 <input
                   className="input"
@@ -624,23 +525,23 @@ export default function VideoAnalyzer() {
               >
                 <input id="video-file-input" type="file" accept="video/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setTitle(f.name.replace(/\.[^/.]+$/, '')) }} />
                 <FileVideo size={22} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-xs text-gray-400 font-medium">Arraste um vídeo ou clique para selecionar</p>
-                <p className="text-[10px] text-gray-300 mt-0.5">O nome do arquivo será usado como título</p>
+                <p className="text-xs text-gray-400 font-medium">Arraste um vÃ­deo ou clique para selecionar</p>
+                <p className="text-[10px] text-gray-300 mt-0.5">O nome do arquivo serÃ¡ usado como tÃ­tulo</p>
               </div>
             </div>
 
             {/* Right: context fields */}
             <div className="space-y-4">
               <div>
-                <label className="label">Título do Vídeo <span className="text-gray-400 font-normal">(preenchido automaticamente para YouTube)</span></label>
-                <input className="input" placeholder="Ex: Como Construir uma Audiência do Zero" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <label className="label">TÃ­tulo do VÃ­deo <span className="text-gray-400 font-normal">(preenchido automaticamente para YouTube)</span></label>
+                <input className="input" placeholder="Ex: Como Construir uma AudiÃªncia do Zero" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
               <div>
-                <label className="label">Tópico Principal</label>
+                <label className="label">TÃ³pico Principal</label>
                 <input className="input" placeholder="Ex: marca pessoal, produtividade, vendas..." value={topic} onChange={(e) => setTopic(e.target.value)} />
               </div>
               <div>
-                <label className="label">Tipo de Vídeo</label>
+                <label className="label">Tipo de VÃ­deo</label>
                 <select className="select" value={videoType} onChange={(e) => setVideoType(e.target.value)}>
                   {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -659,7 +560,7 @@ export default function VideoAnalyzer() {
                 className="btn-primary w-full"
                 style={{ background: (!url.trim() && !title.trim()) ? undefined : apiKey ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
               >
-                {apiKey ? <><Sparkles size={14} /> Analisar com IA</> : <><Video size={14} /> Analisar (simulação)</>}
+                {apiKey ? <><Sparkles size={14} /> Analisar com IA</> : <><Video size={14} /> Analisar (simulaÃ§Ã£o)</>}
               </button>
             </div>
           </div>
@@ -676,7 +577,7 @@ export default function VideoAnalyzer() {
           <div className="text-center space-y-1.5">
             {STEPS.map((step, i) => (
               <p key={i} className={`text-sm transition-all duration-300 ${i === loadingStep ? 'font-semibold text-gray-800' : i < loadingStep ? 'text-gray-300 line-through' : 'text-gray-300'}`}>
-                {i < loadingStep ? '✓ ' : i === loadingStep ? '⟳ ' : ''}{step}
+                {i < loadingStep ? 'âœ“ ' : i === loadingStep ? 'âŸ³ ' : ''}{step}
               </p>
             ))}
           </div>
@@ -700,12 +601,12 @@ export default function VideoAnalyzer() {
                   </span>
                 ) : (
                   <span className="chip bg-amber-100 text-amber-600 border border-amber-200 text-[10px]">
-                    ◌ Simulação — adicione API Key para análise real
+                    â—Œ SimulaÃ§Ã£o â€” adicione API Key para anÃ¡lise real
                   </span>
                 )}
               </div>
-              <p className="text-sm font-semibold text-gray-900 truncate">{title || url || 'Vídeo analisado'}</p>
-              {topic && <p className="text-xs text-gray-400">Tópico: {topic}</p>}
+              <p className="text-sm font-semibold text-gray-900 truncate">{title || url || 'VÃ­deo analisado'}</p>
+              {topic && <p className="text-xs text-gray-400">TÃ³pico: {topic}</p>}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {!savedAnalysis ? (
@@ -727,21 +628,21 @@ export default function VideoAnalyzer() {
             ))}
           </div>
 
-          {/* ── ESTRUTURA ────────────────────────── */}
+          {/* â”€â”€ ESTRUTURA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'estrutura' && (
             <div className="space-y-4">
               <div className="card p-5 border border-orange-200 bg-orange-50/40 space-y-3">
                 <div className="flex items-center gap-2">
                   <Zap size={15} className="text-orange-500" />
-                  <h3 className="text-sm font-semibold text-gray-900">Gancho — {analysis.structure.hook.type}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Gancho â€” {analysis.structure.hook.type}</h3>
                   <span className="chip bg-orange-100 text-orange-700 border border-orange-200 text-[10px] ml-auto">{analysis.structure.hook.duration}</span>
                 </div>
                 <p className="text-xs text-gray-600 leading-relaxed">{analysis.structure.hook.description}</p>
                 <div className="bg-white rounded-lg p-3 border border-orange-100">
-                  <p className="text-[10px] text-orange-500 font-medium mb-1">EXEMPLO / RECONSTITUIÇÃO:</p>
+                  <p className="text-[10px] text-orange-500 font-medium mb-1">EXEMPLO / RECONSTITUIÃ‡ÃƒO:</p>
                   <p className="text-xs text-gray-700 italic">"{analysis.structure.hook.example}"</p>
                 </div>
-                <p className="text-[11px] text-emerald-600 font-medium">✓ {analysis.structure.hook.effectiveness}</p>
+                <p className="text-[11px] text-emerald-600 font-medium">âœ“ {analysis.structure.hook.effectiveness}</p>
               </div>
 
               <div className="card p-4 space-y-2 border border-blue-100 bg-blue-50/30">
@@ -792,27 +693,27 @@ export default function VideoAnalyzer() {
             </div>
           )}
 
-          {/* ── TOM & PADRÕES ────────────────────── */}
+          {/* â”€â”€ TOM & PADRÃ•ES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'tom' && (
             <div className="space-y-5">
               <div className="card p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Mic size={15} className="text-purple-500" />
-                  <h3 className="text-sm font-semibold text-gray-900">Análise de Tom de Voz</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">AnÃ¡lise de Tom de Voz</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
-                    <p className="text-[10px] text-purple-400 font-medium mb-1 uppercase tracking-wide">Tom Primário</p>
+                    <p className="text-[10px] text-purple-400 font-medium mb-1 uppercase tracking-wide">Tom PrimÃ¡rio</p>
                     <p className="text-sm font-bold text-purple-700">{analysis.tone.primary}</p>
                   </div>
                   <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
-                    <p className="text-[10px] text-indigo-400 font-medium mb-1 uppercase tracking-wide">Tom Secundário</p>
+                    <p className="text-[10px] text-indigo-400 font-medium mb-1 uppercase tracking-wide">Tom SecundÃ¡rio</p>
                     <p className="text-sm font-bold text-indigo-700">{analysis.tone.secondary}</p>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed">{analysis.tone.description}</p>
                 <div>
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Características da Voz</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">CaracterÃ­sticas da Voz</p>
                   <p className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100 italic">{analysis.tone.voice_characteristics}</p>
                 </div>
                 <div>
@@ -820,7 +721,7 @@ export default function VideoAnalyzer() {
                   <div className="space-y-1.5">
                     {analysis.tone.markers.map((m, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                        <span className="text-purple-400 mt-0.5 shrink-0">•</span>{m}
+                        <span className="text-purple-400 mt-0.5 shrink-0">â€¢</span>{m}
                       </div>
                     ))}
                   </div>
@@ -829,7 +730,7 @@ export default function VideoAnalyzer() {
 
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <TrendingUp size={15} className="text-amber-500" /> Padrões de Conteúdo Identificados
+                  <TrendingUp size={15} className="text-amber-500" /> PadrÃµes de ConteÃºdo Identificados
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {analysis.patterns.map((p, i) => (
@@ -847,7 +748,7 @@ export default function VideoAnalyzer() {
 
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <Star size={15} className="text-orange-500" /> Por Que Esse Vídeo Funciona
+                  <Star size={15} className="text-orange-500" /> Por Que Esse VÃ­deo Funciona
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {analysis.why_it_works.map((w, i) => (
@@ -864,12 +765,12 @@ export default function VideoAnalyzer() {
             </div>
           )}
 
-          {/* ── RETENÇÃO ──────────────────────────── */}
+          {/* â”€â”€ RETENÃ‡ÃƒO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'retencao' && (
             <div className="space-y-5">
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <Eye size={15} className="text-sky-500" /> Técnicas de Retenção de Audiência
+                  <Eye size={15} className="text-sky-500" /> TÃ©cnicas de RetenÃ§Ã£o de AudiÃªncia
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {analysis.retention.map((r, i) => (
@@ -890,12 +791,12 @@ export default function VideoAnalyzer() {
               <div className="card p-5 space-y-4 border border-gray-200">
                 <div className="flex items-center gap-2">
                   <Film size={15} className="text-gray-500" />
-                  <h3 className="text-sm font-semibold text-gray-900">Elementos Visuais e Estilo de Edição</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Elementos Visuais e Estilo de EdiÃ§Ã£o</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
                     { label: 'Texto na Tela', val: analysis.visual.text_style },
-                    { label: 'Estilo de Edição', val: analysis.visual.editing_style },
+                    { label: 'Estilo de EdiÃ§Ã£o', val: analysis.visual.editing_style },
                     { label: 'Ritmo (Pacing)', val: analysis.visual.pacing },
                   ].map((v) => (
                     <div key={v.label} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -905,7 +806,7 @@ export default function VideoAnalyzer() {
                   ))}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Técnicas Visuais</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">TÃ©cnicas Visuais</p>
                   <div className="flex flex-wrap gap-2">
                     {analysis.visual.key_techniques.map((t, i) => (
                       <span key={i} className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">{t}</span>
@@ -916,7 +817,7 @@ export default function VideoAnalyzer() {
             </div>
           )}
 
-          {/* ── TEMPLATE ──────────────────────────── */}
+          {/* â”€â”€ TEMPLATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'template' && analysis.template && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -926,7 +827,7 @@ export default function VideoAnalyzer() {
                 </button>
               </div>
               <div className="card p-4 space-y-3 border border-orange-200 bg-orange-50/30">
-                <p className="text-[11px] text-orange-500 font-semibold uppercase tracking-wide">Fórmula do Gancho</p>
+                <p className="text-[11px] text-orange-500 font-semibold uppercase tracking-wide">FÃ³rmula do Gancho</p>
                 <p className="text-sm font-medium text-gray-800">{analysis.template.hook_formula}</p>
                 <div className="bg-white/70 rounded-lg p-3 border border-orange-100">
                   <p className="text-[10px] text-gray-400 mb-1">EXEMPLO:</p>
@@ -938,7 +839,7 @@ export default function VideoAnalyzer() {
                 <p className="text-xs text-gray-700">{analysis.template.opening_formula}</p>
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Seções do Vídeo</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">SeÃ§Ãµes do VÃ­deo</p>
                 {analysis.template.sections.map((s, i) => (
                   <div key={i} className="card p-4 flex gap-3">
                     <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-600 shrink-0 mt-0.5">{i + 1}</div>
@@ -953,7 +854,7 @@ export default function VideoAnalyzer() {
                 ))}
               </div>
               <div className="card p-4 space-y-2 border border-emerald-100 bg-emerald-50/30">
-                <p className="text-[11px] text-emerald-500 font-semibold uppercase tracking-wide">Fórmula de Fechamento</p>
+                <p className="text-[11px] text-emerald-500 font-semibold uppercase tracking-wide">FÃ³rmula de Fechamento</p>
                 <p className="text-xs text-gray-700">{analysis.template.closing_formula}</p>
               </div>
               <div className="card p-4 space-y-3">
@@ -968,10 +869,10 @@ export default function VideoAnalyzer() {
             </div>
           )}
 
-          {/* ── IDEIAS ────────────────────────────── */}
+          {/* â”€â”€ IDEIAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'ideias' && (
             <div className="space-y-4">
-              <p className="text-xs text-gray-400">6 ideias de conteúdo inspiradas neste vídeo — salve direto no Hub de Ideias.</p>
+              <p className="text-xs text-gray-400">6 ideias de conteÃºdo inspiradas neste vÃ­deo â€” salve direto no Hub de Ideias.</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {analysis.content_ideas.map((idea, i) => (
                   <div key={i} className="card p-4 space-y-3 hover:border-orange-300 transition-colors relative overflow-hidden">
