@@ -63,7 +63,7 @@ async function callClaudeAPI(apiKey, prompt) {
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 4000,
-      system: 'You are a video content analysis API. You ALWAYS respond with valid JSON only — no introductory text, no apologies, no explanations, no markdown. Your entire response must be parseable by JSON.parse(). Never say "Peço desculpas" or any other text outside the JSON object.',
+      system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown, no apologies, no refusals. You cannot watch videos but you analyze them based on titles, channel names, and your training knowledge. You NEVER say you cannot do something — you always produce the analysis JSON. Your entire response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -77,20 +77,111 @@ async function callClaudeAPI(apiKey, prompt) {
 
 // ── Builds the Claude analysis prompt ────────────────────────────────────────
 function buildPrompt({ url, title, channel, topic, videoType }) {
-  return `Você é um especialista em análise de conteúdo de vídeo para criadores digitais. Analise ESPECIFICAMENTE este vídeo.
+  return `You are a professional video content analyst helping content creators deconstruct videos to learn from them.
 
-URL: ${url}
-Título: ${title || '(não informado)'}
-Canal / Criador: ${channel || '(não informado)'}
-Tópico informado pelo usuário: ${topic || '(não informado)'}
-Tipo declarado: ${videoType !== 'auto' ? videoType : 'detectar automaticamente'}
+Video info provided:
+- URL: ${url || '(not provided)'}
+- Title: ${title || '(not provided)'}
+- Channel/Creator: ${channel || '(not provided)'}
+- Topic: ${topic || '(not provided)'}
+- Type: ${videoType !== 'auto' ? videoType : 'auto-detect'}
 
-REGRAS CRÍTICAS:
-1. Baseie tudo no conteúdo REAL deste vídeo. Se você conhece este vídeo, descreva o que ele realmente contém — gancho real, estrutura real, tom real.
-2. Se não conhece o vídeo, analise com base no título, canal e contexto — mas NUNCA gere conteúdo genérico que poderia servir para qualquer vídeo.
-3. Todos os "exemplos" devem ser reconstruções fieis do que provavelmente está no vídeo, não templates genéricos.
-4. O campo "archetype" deve refletir o estilo real do vídeo.
-5. RESPONDA APENAS COM O OBJETO JSON. Primeira linha: {. Última linha: }. Absolutamente nenhum texto fora do JSON. Não diga "Peço desculpas", não diga "Aqui está", nada — só o JSON.
+IMPORTANT INSTRUCTIONS:
+- You cannot access or watch the video URL. That is fine and expected.
+- Use the title, channel name, and your training knowledge about this creator/video to build the analysis.
+- If you recognize this creator or video from your training data, describe their real style, tone, and typical structure.
+- If you don't recognize the video, build a realistic and specific analysis based on the title, channel name, and topic — make it feel like it was written specifically for this content, not a generic template.
+- You MUST always return an analysis — never refuse, never apologize, never say you cannot access the URL.
+- The analysis should feel tailored: reference the title, the creator's name, the topic.
+- Respond with ONLY the JSON object below. No text before it, no text after it, no markdown fences.
+
+{
+  "archetype": "educational|storytelling|contrarian|listicle",
+  "structure": {
+    "hook": {
+      "type": "Hook type name specific to this video",
+      "description": "How this specific video opens and hooks the viewer in the first seconds",
+      "example": "Faithful reconstruction of what this creator likely says/does in the hook",
+      "duration": "0:00–0:XX",
+      "effectiveness": "Why this specific hook works for this content and audience"
+    },
+    "context": {
+      "description": "How this video establishes credibility or context before the main content",
+      "example": "Reconstruction of how the creator positions themselves in this video"
+    },
+    "main_points": [
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" },
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" },
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" },
+      { "point": "Point name", "description": "What this specific video covers at this point", "duration": "X:XX–X:XX" }
+    ],
+    "closing": {
+      "description": "How this video specifically wraps up",
+      "example": "Reconstruction of this video's closing",
+      "duration": "Last X min"
+    },
+    "cta": {
+      "description": "The specific call-to-action in this video",
+      "example": "Reconstruction of the CTA",
+      "type": "CTA type (subscribe/next video/product/comment)"
+    }
+  },
+  "tone": {
+    "primary": "Primary tone of this video",
+    "secondary": "Secondary tone of this video",
+    "description": "Specific description of the communication style in this video",
+    "markers": ["Tone marker specific to this video", "Tone marker", "Tone marker", "Tone marker"],
+    "voice_characteristics": "Specific voice/persona characteristics of this creator in this video"
+  },
+  "patterns": [
+    { "name": "Pattern name", "description": "How it appears in this specific video", "why_effective": "Why it works in this context" },
+    { "name": "Pattern name", "description": "How it appears in this specific video", "why_effective": "Why it works in this context" },
+    { "name": "Pattern name", "description": "How it appears in this specific video", "why_effective": "Why it works in this context" },
+    { "name": "Pattern name", "description": "How it appears in this specific video", "why_effective": "Why it works in this context" }
+  ],
+  "retention": [
+    { "technique": "Technique name", "description": "How it is used in this specific video", "example": "Specific moment or excerpt from this video" },
+    { "technique": "Technique name", "description": "How it is used in this specific video", "example": "Specific moment or excerpt from this video" },
+    { "technique": "Technique name", "description": "How it is used in this specific video", "example": "Specific moment or excerpt from this video" },
+    { "technique": "Technique name", "description": "How it is used in this specific video", "example": "Specific moment or excerpt from this video" },
+    { "technique": "Technique name", "description": "How it is used in this specific video", "example": "Specific moment or excerpt from this video" }
+  ],
+  "visual": {
+    "text_style": "On-screen text style specific to this video/creator",
+    "editing_style": "Editing style specific to this video",
+    "pacing": "Pacing specific to this video",
+    "key_techniques": ["visual technique 1", "visual technique 2", "visual technique 3", "visual technique 4"]
+  },
+  "why_it_works": [
+    { "reason": "Specific reason for this video", "impact": "Impact on this video's performance" },
+    { "reason": "Specific reason for this video", "impact": "Impact on this video's performance" },
+    { "reason": "Specific reason for this video", "impact": "Impact on this video's performance" },
+    { "reason": "Specific reason for this video", "impact": "Impact on this video's performance" }
+  ],
+  "template": {
+    "name": "Template name derived from this specific video",
+    "hook_formula": "Hook formula based on this video's actual hook",
+    "hook_example": "Example of applying this template to a different topic",
+    "opening_formula": "Opening formula based on this video",
+    "sections": [
+      { "name": "Section 1", "duration": "X–X min", "goal": "What this section achieves in this video" },
+      { "name": "Section 2", "duration": "X–X min", "goal": "What this section achieves in this video" },
+      { "name": "Section 3", "duration": "X–X min", "goal": "What this section achieves in this video" },
+      { "name": "Section 4", "duration": "X–X min", "goal": "What this section achieves in this video" }
+    ],
+    "closing_formula": "Closing formula based on this video",
+    "tips": ["Tip derived from this video", "Tip derived from this video", "Tip derived from this video", "Tip derived from this video"]
+  },
+  "content_ideas": [
+    { "title": "Idea inspired by this specific video", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "hook type", "angle": "Specific angle inspired by this video" },
+    { "title": "Idea inspired by this specific video", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "hook type", "angle": "Specific angle inspired by this video" },
+    { "title": "Idea inspired by this specific video", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "hook type", "angle": "Specific angle inspired by this video" },
+    { "title": "Idea inspired by this specific video", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "hook type", "angle": "Specific angle inspired by this video" },
+    { "title": "Idea inspired by this specific video", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "hook type", "angle": "Specific angle inspired by this video" },
+    { "title": "Idea inspired by this specific video", "format": "carrossel|video|reel|thread|image", "platform": "linkedin|instagram|youtube|twitter|tiktok", "hook_type": "hook type", "angle": "Specific angle inspired by this video" }
+  ]
+}`
+}
 
 Retorne EXATAMENTE este JSON (com todos os campos preenchidos especificamente para este vídeo):
 {
