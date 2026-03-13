@@ -63,6 +63,7 @@ async function callClaudeAPI(apiKey, prompt) {
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 4000,
+      system: 'You are a video content analysis API. You ALWAYS respond with valid JSON only — no introductory text, no apologies, no explanations, no markdown. Your entire response must be parseable by JSON.parse(). Never say "Peço desculpas" or any other text outside the JSON object.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -89,7 +90,7 @@ REGRAS CRÍTICAS:
 2. Se não conhece o vídeo, analise com base no título, canal e contexto — mas NUNCA gere conteúdo genérico que poderia servir para qualquer vídeo.
 3. Todos os "exemplos" devem ser reconstruções fieis do que provavelmente está no vídeo, não templates genéricos.
 4. O campo "archetype" deve refletir o estilo real do vídeo.
-5. Retorne APENAS o JSON — sem texto antes, sem texto depois, sem markdown.
+5. RESPONDA APENAS COM O OBJETO JSON. Primeira linha: {. Última linha: }. Absolutamente nenhum texto fora do JSON. Não diga "Peço desculpas", não diga "Aqui está", nada — só o JSON.
 
 Retorne EXATAMENTE este JSON (com todos os campos preenchidos especificamente para este vídeo):
 {
@@ -328,9 +329,10 @@ export default function VideoAnalyzer() {
         setLoadingStep(2)
         const raw = await callClaudeAPI(apiKey, prompt)
         setLoadingStep(3)
-        // Parse JSON — Claude should return pure JSON but strip any accidental markdown
-        const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        const result = JSON.parse(jsonStr)
+        // Extract JSON — find the first { ... } block even if Claude adds text around it
+        const jsonMatch = raw.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
+        const result = JSON.parse(jsonMatch[0])
         setLoadingStep(4)
         await new Promise((r) => setTimeout(r, 400))
         setAnalysis(result)
