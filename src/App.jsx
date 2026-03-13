@@ -3,7 +3,6 @@ import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
 import Dashboard from './components/dashboard/Dashboard'
 import IdeasHub from './components/ideas/IdeasHub'
-import KanbanBoard from './components/kanban/KanbanBoard'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
 
@@ -28,7 +27,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/ideas" element={<IdeasHub />} />
-          <Route path="/kanban" element={<KanbanBoard />} />
           <Route path="/trends" element={<TrendRadar />} />
           <Route path="/analytics" element={<Analytics />} />
         </Routes>

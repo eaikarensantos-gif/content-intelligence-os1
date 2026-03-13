@@ -1,7 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 
 export default function Modal({ open, onClose, title, children, maxWidth = 'max-w-2xl' }) {
+  // Track where mousedown started — só fecha o backdrop se o clique
+  // começou E terminou no backdrop (evita fechar ao arrastar texto)
+  const mouseDownOnBackdrop = useRef(false)
+
   useEffect(() => {
     if (!open) return
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -18,7 +22,8 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget }}
+      onClick={(e) => { if (e.target === e.currentTarget && mouseDownOnBackdrop.current) onClose() }}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" />

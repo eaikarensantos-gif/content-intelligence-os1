@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts'
-import { Plus, TrendingUp, Eye, Heart, Share2, Bookmark, MousePointer, Trophy, Trash2, Download, Users, Globe, AlertTriangle } from 'lucide-react'
+import { Plus, TrendingUp, Eye, Heart, Share2, Bookmark, MousePointer, Trophy, Trash2, Download, AlertTriangle, ExternalLink, Film, Image, Play, Layers, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
@@ -47,10 +47,30 @@ function MiniStat({ icon: Icon, label, value, color = 'orange' }) {
   )
 }
 
+const POST_TYPE_STYLES = {
+  story:    'bg-purple-100 text-purple-700 border-purple-200',
+  reel:     'bg-pink-100 text-pink-700 border-pink-200',
+  carousel: 'bg-orange-100 text-orange-700 border-orange-200',
+  image:    'bg-sky-100 text-sky-700 border-sky-200',
+  video:    'bg-blue-100 text-blue-700 border-blue-200',
+}
+const POST_TYPE_ICONS = { story: Film, reel: Play, carousel: Layers, image: Image, video: Play }
+function PostTypeBadge({ type }) {
+  if (!type) return null
+  const style = POST_TYPE_STYLES[type] || 'bg-gray-100 text-gray-500 border-gray-200'
+  const Icon = POST_TYPE_ICONS[type]
+  const labels = { story: 'Story', reel: 'Reel', carousel: 'Carrossel', image: 'Imagem', video: 'Vídeo' }
+  return (
+    <span className={`chip border text-[10px] inline-flex items-center gap-1 capitalize ${style}`}>
+      {Icon && <Icon size={9} />}
+      {labels[type] || type}
+    </span>
+  )
+}
+
 const TABS = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
-  { id: 'demograficos', label: 'Demográficos' },
   { id: 'insights', label: 'Insights' },
   { id: 'exportar', label: 'Exportar' },
 ]
@@ -62,14 +82,17 @@ export default function Analytics() {
   const deletePost = useStore((s) => s.deletePost)
   const clearMetrics = useStore((s) => s.clearMetrics)
   const [confirmClear, setConfirmClear] = useState(false)
-  const demographics = useStore((s) => s.demographics)
-  const setDemographics = useStore((s) => s.setDemographics)
   const [formOpen, setFormOpen] = useState(false)
   const [tab, setTab] = useState('visao-geral')
+  const [filterPostType, setFilterPostType] = useState('') // '' = todos, 'story' = stories, 'feed' = feed
+  const [sortBy, setSortBy] = useState('date')
+  const [sortDir, setSortDir] = useState('desc')
   const [exportDateFrom, setExportDateFrom] = useState('')
   const [exportDateTo, setExportDateTo] = useState('')
   const [exportPlatform, setExportPlatform] = useState('')
-  const [demoClientId, setDemoClientId] = useState('global')
+  const [postTabSearch, setPostTabSearch] = useState('')
+  const [postTabPlatform, setPostTabPlatform] = useState('')
+  const [postTabType, setPostTabType] = useState('')
 
   const enriched = metrics.map(enrichMetric)
   const timeline = timelineData(metrics)
@@ -122,14 +145,6 @@ export default function Analytics() {
 
   const handleExportPDF = () => {
     window.print()
-  }
-
-  // Demo demographics state
-  const demoCurrent = demographics[demoClientId] || {
-    age: [{ range: '18-24', pct: 22 }, { range: '25-34', pct: 38 }, { range: '35-44', pct: 25 }, { range: '45-54', pct: 10 }, { range: '55+', pct: 5 }],
-    gender: { female: 52, male: 44, other: 4 },
-    countries: [{ name: 'Brasil', pct: 68 }, { name: 'Portugal', pct: 12 }, { name: 'EUA', pct: 8 }, { name: 'Argentina', pct: 6 }, { name: 'Outros', pct: 6 }],
-    platforms: [{ name: 'LinkedIn', pct: 42 }, { name: 'Instagram', pct: 31 }, { name: 'YouTube', pct: 15 }, { name: 'Twitter', pct: 8 }, { name: 'TikTok', pct: 4 }],
   }
 
   return (
@@ -289,219 +304,363 @@ export default function Analytics() {
           )}
 
           {/* Log de métricas */}
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900">
-                Todos os Snapshots de Métricas
-                <span className="ml-2 text-xs text-gray-400 font-normal">{enriched.length} entradas</span>
-              </h3>
-              {enriched.length > 0 && (
-                confirmClear ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-red-500">Apagar tudo?</span>
-                    <button onClick={() => { clearMetrics(); setConfirmClear(false) }} className="text-xs px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600">Confirmar</button>
-                    <button onClick={() => setConfirmClear(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">Cancelar</button>
+          {(() => {
+            const SORT_COLS = [
+              { key: 'date', label: 'Data', sortable: true },
+              { key: 'post_type', label: 'Tipo', sortable: false },
+              { key: 'platform', label: 'Plataforma', sortable: false },
+              { key: 'description', label: 'Descrição', sortable: false },
+              { key: 'impressions', label: 'Impressões', sortable: true },
+              { key: 'reach', label: 'Alcance', sortable: true },
+              { key: 'likes', label: 'Curtidas', sortable: true },
+              { key: 'comments', label: 'Coment.', sortable: true },
+              { key: 'shares', label: 'Compart.', sortable: true },
+              { key: 'saves', label: 'Salvam.', sortable: true },
+              { key: 'engagement', label: 'Eng.', sortable: true },
+              { key: 'engagement_rate', label: 'Taxa Eng.', sortable: true },
+              { key: '_del', label: '', sortable: false },
+            ]
+
+            const handleSort = (col) => {
+              if (sortBy === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+              else { setSortBy(col); setSortDir('desc') }
+            }
+
+            // "2026-02-12" → "12/02"
+            const fmtDate = (d) => {
+              if (!d) return '—'
+              const parts = d.split('-')
+              return parts.length === 3 ? `${parts[2]}/${parts[1]}` : d
+            }
+
+            const SortIcon = ({ col }) => {
+              if (!col.sortable) return null
+              if (sortBy !== col.key) return <ChevronsUpDown size={10} className="text-gray-300 ml-0.5" />
+              return sortDir === 'asc'
+                ? <ChevronUp size={10} className="text-orange-500 ml-0.5" />
+                : <ChevronDown size={10} className="text-orange-500 ml-0.5" />
+            }
+
+            const sorted = [...enriched]
+              .filter((m) => {
+                if (!filterPostType) return true
+                if (filterPostType === 'story') return m.post_type === 'story'
+                if (filterPostType === 'feed') return m.post_type !== 'story'
+                return true
+              })
+              .sort((a, b) => {
+                let va = a[sortBy], vb = b[sortBy]
+                if (sortBy === 'date') { va = new Date(va); vb = new Date(vb) }
+                else { va = Number(va) || 0; vb = Number(vb) || 0 }
+                if (va < vb) return sortDir === 'asc' ? -1 : 1
+                if (va > vb) return sortDir === 'asc' ? 1 : -1
+                return 0
+              })
+
+            return (
+              <div className="card p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Todos os Snapshots de Métricas
+                    <span className="ml-2 text-xs text-gray-400 font-normal">{enriched.length} entradas</span>
+                  </h3>
+                  {enriched.length > 0 && (
+                    confirmClear ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-red-500">Apagar tudo?</span>
+                        <button onClick={() => { clearMetrics(); setConfirmClear(false) }} className="text-xs px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600">Confirmar</button>
+                        <button onClick={() => setConfirmClear(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">Cancelar</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmClear(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors">
+                        <AlertTriangle size={12} /> Limpar todos os dados
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Filtro por tipo */}
+                {enriched.some((m) => m.post_type) && (
+                  <div className="flex gap-1.5 mb-4">
+                    {[
+                      { id: '', label: 'Todos' },
+                      { id: 'story', label: 'Stories' },
+                      { id: 'feed', label: 'Feed' },
+                    ].map(({ id, label }) => (
+                      <button
+                        key={id}
+                        onClick={() => setFilterPostType(id)}
+                        className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                          filterPostType === id
+                            ? 'bg-orange-600 text-white border-orange-600'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {enriched.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <p className="text-gray-400 text-sm">Nenhuma métrica registrada ainda.</p>
                   </div>
                 ) : (
-                  <button onClick={() => setConfirmClear(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                    <AlertTriangle size={12} /> Limpar todos os dados
-                  </button>
-                )
-              )}
-            </div>
-            {enriched.length === 0 ? (
-              <div className="py-12 text-center">
-                <p className="text-gray-400 text-sm">Nenhuma métrica registrada ainda.</p>
-                <button onClick={() => setFormOpen(true)} className="btn-primary mt-3 mx-auto">
-                  <Plus size={14} /> Adicionar Primeiras Métricas
-                </button>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          {SORT_COLS.map((col) => (
+                            <th
+                              key={col.key}
+                              className={`text-left py-2 px-2.5 text-gray-400 font-medium whitespace-nowrap select-none ${col.sortable ? 'cursor-pointer hover:text-orange-600 transition-colors' : ''}`}
+                              onClick={() => col.sortable && handleSort(col.key)}
+                            >
+                              <span className="inline-flex items-center">
+                                {col.label}
+                                <SortIcon col={col} />
+                              </span>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sorted.map((m) => (
+                          <tr key={m.id} className="border-b border-gray-100 hover:bg-orange-50/50 group">
+                            <td className="py-2 px-2.5 text-gray-400 whitespace-nowrap">{fmtDate(m.date)}</td>
+                            <td className="py-2 px-2.5"><PostTypeBadge type={m.post_type} /></td>
+                            <td className="py-2 px-2.5"><PlatformBadge platform={m.platform} /></td>
+                            <td className="py-2 px-2.5 max-w-[200px]">
+                              <div className="flex items-center gap-1.5">
+                                {m.description ? (
+                                  <span className="text-gray-500 truncate block" title={m.description}>
+                                    {m.description.slice(0, 50)}{m.description.length > 50 ? '…' : ''}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300">—</span>
+                                )}
+                                {m.link && (
+                                  <a
+                                    href={m.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400 hover:text-blue-600"
+                                    title="Abrir post"
+                                  >
+                                    <ExternalLink size={11} />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2.5 text-gray-700">{m.impressions.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{m.reach.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{m.likes.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{m.comments.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{m.shares.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{m.saves.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-700 font-medium">{m.engagement.toLocaleString()}</td>
+                            <td className="py-2 px-2.5">
+                              <span className={`font-semibold ${m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
+                                {(m.engagement_rate * 100).toFixed(2)}%
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <button
+                                onClick={() => deleteMetric(m.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all"
+                                title="Excluir"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      {['Data', 'Plataforma', 'Impressões', 'Alcance', 'Curtidas', 'Coment.', 'Compart.', 'Salvam.', 'Eng.', 'Taxa Eng.', ''].map((h) => (
-                        <th key={h} className="text-left py-2 px-2.5 text-gray-400 font-medium whitespace-nowrap">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...enriched].sort((a, b) => new Date(b.date) - new Date(a.date)).map((m) => (
-                      <tr key={m.id} className="border-b border-gray-100 hover:bg-orange-50/50 group">
-                        <td className="py-2 px-2.5 text-gray-400 whitespace-nowrap">{m.date}</td>
-                        <td className="py-2 px-2.5"><PlatformBadge platform={m.platform} /></td>
-                        <td className="py-2 px-2.5 text-gray-700">{m.impressions.toLocaleString()}</td>
-                        <td className="py-2 px-2.5 text-gray-500">{m.reach.toLocaleString()}</td>
-                        <td className="py-2 px-2.5 text-gray-500">{m.likes.toLocaleString()}</td>
-                        <td className="py-2 px-2.5 text-gray-500">{m.comments.toLocaleString()}</td>
-                        <td className="py-2 px-2.5 text-gray-500">{m.shares.toLocaleString()}</td>
-                        <td className="py-2 px-2.5 text-gray-500">{m.saves.toLocaleString()}</td>
-                        <td className="py-2 px-2.5 text-gray-700 font-medium">{m.engagement.toLocaleString()}</td>
-                        <td className="py-2 px-2.5">
-                          <span className={`font-semibold ${m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
-                            {(m.engagement_rate * 100).toFixed(2)}%
-                          </span>
-                        </td>
-                        <td className="py-2 px-2.5">
-                          <button
-                            onClick={() => deleteMetric(m.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all"
-                            title="Excluir"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+            )
+          })()}
         </>
       )}
 
       {/* ===== POSTS ===== */}
-      {tab === 'posts' && (
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">
-            Posts Cadastrados
-            <span className="ml-2 text-xs text-gray-400 font-normal">{posts.length} posts</span>
-          </h3>
-          {posts.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">
-              Nenhum post ainda. Adicione métricas vinculadas a posts para começar.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    {['Título', 'Plataforma', 'Formato', 'Métricas', 'Status', ''].map((h) => (
-                      <th key={h} className="text-left py-2 px-3 text-gray-400 font-medium">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {posts.map((p) => {
-                    const postMetrics = metrics.filter((m) => m.post_id === p.id)
-                    return (
-                      <tr key={p.id} className="border-b border-gray-100 hover:bg-orange-50/50 group">
-                        <td className="py-2.5 px-3 text-gray-800 font-medium truncate max-w-[200px]">{p.title}</td>
-                        <td className="py-2.5 px-3"><PlatformBadge platform={p.platform} /></td>
-                        <td className="py-2.5 px-3"><FormatBadge format={p.format} /></td>
-                        <td className="py-2.5 px-3 text-gray-500">{postMetrics.length} snapshot{postMetrics.length !== 1 ? 's' : ''}</td>
-                        <td className="py-2.5 px-3">
-                          <span className={`chip border text-[10px] ${p.status === 'published' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                            {p.status === 'published' ? 'Publicado' : p.status}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <button
-                            onClick={() => deletePost(p.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all"
-                            title="Excluir post e métricas"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+      {tab === 'posts' && (() => {
+        const filteredPostsView = enriched
+          .filter((m) => {
+            if (postTabType && m.post_type !== postTabType) return false
+            if (postTabPlatform && m.platform !== postTabPlatform) return false
+            if (postTabSearch && !m.description?.toLowerCase().includes(postTabSearch.toLowerCase())) return false
+            return true
+          })
+          .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
 
-      {/* ===== DEMOGRÁFICOS ===== */}
-      {tab === 'demograficos' && (
-        <div className="space-y-5">
-          <div className="card p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <Users size={16} className="text-blue-500" />
-              <h3 className="text-sm font-semibold text-gray-900">Análise Demográfica da Audiência</h3>
-            </div>
-            <p className="text-xs text-gray-400 mb-4">
-              Dados demográficos da sua audiência. Atualize manualmente com base nos insights das plataformas.
-            </p>
+        const bestImpressions = enriched.length ? Math.max(...enriched.map((m) => m.impressions)) : 0
+        const fmtDate = (d) => {
+          if (!d) return '—'
+          try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) }
+          catch { return d }
+        }
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {/* Faixa etária */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Faixa Etária</h4>
-                <div className="space-y-2">
-                  {demoCurrent.age.map((a) => (
-                    <div key={a.range} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-12 shrink-0">{a.range}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
-                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${a.pct}%` }} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-700 w-8 text-right">{a.pct}%</span>
-                    </div>
-                  ))}
-                </div>
+        return (
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="card p-4 text-center border border-orange-100">
+                <p className="text-2xl font-bold text-gray-900">{enriched.length}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Entradas de Métricas</p>
               </div>
-
-              {/* Gênero */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Gênero</h4>
-                <div className="space-y-2">
-                  {[['Feminino', demoCurrent.gender.female, 'bg-pink-400'], ['Masculino', demoCurrent.gender.male, 'bg-blue-400'], ['Outro', demoCurrent.gender.other, 'bg-gray-400']].map(([label, pct, color]) => (
-                    <div key={label} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-16 shrink-0">{label}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
-                        <div className={`${color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-700 w-8 text-right">{pct}%</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="card p-4 text-center border border-emerald-100">
+                <p className="text-2xl font-bold text-emerald-600">{avgER}%</p>
+                <p className="text-xs text-gray-400 mt-0.5">Eng. Médio</p>
               </div>
-
-              {/* Países */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                  <Globe size={12} /> Países
-                </h4>
-                <div className="space-y-2">
-                  {demoCurrent.countries.map((c) => (
-                    <div key={c.name} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-20 shrink-0">{c.name}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
-                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${c.pct}%` }} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-700 w-8 text-right">{c.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Plataformas */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Plataformas</h4>
-                <div className="space-y-2">
-                  {demoCurrent.platforms.map((p) => (
-                    <div key={p.name} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-20 shrink-0">{p.name}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${p.pct}%` }} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-700 w-8 text-right">{p.pct}%</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="card p-4 text-center border border-blue-100">
+                <p className="text-2xl font-bold text-blue-600">{bestImpressions.toLocaleString()}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Melhor Alcance</p>
               </div>
             </div>
 
-            <p className="text-[11px] text-gray-400 mt-4 pt-4 border-t border-gray-100">
-              Dica: Exporte seus dados demográficos do LinkedIn Insights, Instagram Insights ou YouTube Studio e atualize os valores acima manualmente para refletir sua audiência real.
-            </p>
+            {/* Filters */}
+            <div className="flex gap-2 items-center flex-wrap">
+              <input
+                className="input text-xs py-1.5 flex-1 min-w-[180px]"
+                placeholder="Buscar por descrição…"
+                value={postTabSearch}
+                onChange={(e) => setPostTabSearch(e.target.value)}
+              />
+              <select
+                className="select text-xs py-1.5 w-40"
+                value={postTabPlatform}
+                onChange={(e) => setPostTabPlatform(e.target.value)}
+              >
+                <option value="">Todas plataformas</option>
+                {['instagram', 'linkedin', 'twitter', 'youtube', 'tiktok'].map((p) => (
+                  <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                ))}
+              </select>
+              <select
+                className="select text-xs py-1.5 w-36"
+                value={postTabType}
+                onChange={(e) => setPostTabType(e.target.value)}
+              >
+                <option value="">Todos os tipos</option>
+                {['story', 'reel', 'carousel', 'image', 'video'].map((t) => (
+                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                ))}
+              </select>
+              {(postTabSearch || postTabPlatform || postTabType) && (
+                <button
+                  onClick={() => { setPostTabSearch(''); setPostTabPlatform(''); setPostTabType('') }}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Limpar
+                </button>
+              )}
+              <span className="text-xs text-gray-400 ml-auto">{filteredPostsView.length} resultado{filteredPostsView.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            {/* Cards */}
+            {filteredPostsView.length === 0 ? (
+              <div className="card p-14 text-center">
+                <BarChart2 size={36} className="text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400 mb-1">
+                  {enriched.length === 0 ? 'Nenhuma métrica registrada ainda.' : 'Nenhum resultado para os filtros aplicados.'}
+                </p>
+                {enriched.length === 0 && (
+                  <>
+                    <p className="text-xs text-gray-300 mb-4">Importe um CSV ou adicione métricas manualmente para ver seus posts aqui.</p>
+                    <button onClick={() => setFormOpen(true)} className="btn-primary mx-auto">
+                      <Plus size={14} /> Adicionar Métricas
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredPostsView.map((m) => {
+                  const erColor = m.engagement_rate > 0.04 ? 'bg-emerald-500' : m.engagement_rate > 0.02 ? 'bg-amber-400' : 'bg-gray-300'
+                  const erTextColor = m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'
+                  const erBg = m.engagement_rate > 0.04 ? 'bg-emerald-50' : m.engagement_rate > 0.02 ? 'bg-amber-50' : 'bg-gray-50'
+                  return (
+                    <div key={m.id} className="card p-4 group relative hover:shadow-md transition-all duration-150 overflow-hidden">
+                      {/* Left engagement bar */}
+                      <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${erColor}`} />
+                      <div className="pl-3">
+                        {/* Header row */}
+                        <div className="flex items-start justify-between gap-1 mb-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <PostTypeBadge type={m.post_type} />
+                            <PlatformBadge platform={m.platform} />
+                          </div>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {m.link && (
+                              <a
+                                href={m.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-600 p-1 rounded transition-colors"
+                                title="Abrir post"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink size={12} />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => deleteMetric(m.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all"
+                              title="Excluir"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Date */}
+                        <p className="text-[11px] text-gray-400 mb-2">{fmtDate(m.date)}</p>
+
+                        {/* Description */}
+                        <p className="text-xs text-gray-700 line-clamp-2 mb-3 min-h-[2rem]">
+                          {m.description || <span className="text-gray-300 italic">Sem descrição</span>}
+                        </p>
+
+                        {/* Main stats */}
+                        <div className="grid grid-cols-3 gap-1.5 mb-2">
+                          <div className="bg-orange-50 rounded-lg p-2 text-center">
+                            <p className="text-xs font-bold text-orange-600 leading-none">{m.impressions.toLocaleString()}</p>
+                            <p className="text-[9px] text-gray-400 mt-0.5">Impressões</p>
+                          </div>
+                          <div className="bg-pink-50 rounded-lg p-2 text-center">
+                            <p className="text-xs font-bold text-pink-600 leading-none">{(m.likes || 0).toLocaleString()}</p>
+                            <p className="text-[9px] text-gray-400 mt-0.5">Curtidas</p>
+                          </div>
+                          <div className={`${erBg} rounded-lg p-2 text-center`}>
+                            <p className={`text-xs font-bold leading-none ${erTextColor}`}>{(m.engagement_rate * 100).toFixed(1)}%</p>
+                            <p className="text-[9px] text-gray-400 mt-0.5">Eng. Rate</p>
+                          </div>
+                        </div>
+
+                        {/* Secondary stats */}
+                        {(m.shares > 0 || m.saves > 0 || m.comments > 0 || m.reach > 0) && (
+                          <div className="flex items-center gap-2.5 text-[10px] text-gray-400 flex-wrap">
+                            {m.reach > 0 && <span className="flex items-center gap-0.5"><Eye size={9} />{m.reach.toLocaleString()}</span>}
+                            {m.comments > 0 && <span className="flex items-center gap-0.5"><MousePointer size={9} />{m.comments}</span>}
+                            {m.shares > 0 && <span className="flex items-center gap-0.5"><Share2 size={9} />{m.shares}</span>}
+                            {m.saves > 0 && <span className="flex items-center gap-0.5"><Bookmark size={9} />{m.saves}</span>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )
+      })()}
+
 
       {/* ===== INSIGHTS ===== */}
       {tab === 'insights' && (

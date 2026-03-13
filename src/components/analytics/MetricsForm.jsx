@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Upload, Plus, FileText } from 'lucide-react'
+import { Upload, Plus, FileText, ExternalLink } from 'lucide-react'
 import Papa from 'papaparse'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
@@ -33,21 +33,29 @@ export default function MetricsForm({ open, onClose }) {
     onClose()
   }
 
-  // ── mapeamento de colunas PT → EN ──────────────────────────────────────────
+  // ── mapeamento de colunas PT → EN (+ exportação bruta do Instagram) ────────
   const COL_MAP = {
-    // datas
-    'data': 'date', 'date': 'date',
+    // identificador
+    'post_id': 'post_id', 'post id': 'post_id',
+    // datas — "Publish time" do export bruto; "Data" do export PT
+    // Nota: NÃO mapeamos 'date' pois no export bruto a coluna "Date" sempre contém "Lifetime"
+    'data': 'date', 'publish time': 'date',
     // plataforma
     'plataforma': 'platform', 'platform': 'platform',
-    // números
-    'impressões': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions',
+    // tipo de post (export bruto: "IG story", "IG Reel", "IG carousel post"…)
+    'post type': 'post_type',
+    // descrição / legenda do post
+    'description': 'description', 'descrição': 'description', 'descricao': 'description',
+    // permalink
+    'permalink': 'link',
+    // números — export bruto usa "Views" para impressões e "Replies" para comentários
+    'impressões': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions', 'views': 'impressions',
     'alcance': 'reach', 'reach': 'reach',
     'curtidas': 'likes', 'likes': 'likes',
-    'coment.': 'comments', 'comentários': 'comments', 'comentarios': 'comments', 'comments': 'comments',
+    'coment.': 'comments', 'comentários': 'comments', 'comentarios': 'comments', 'comments': 'comments', 'replies': 'comments',
     'compart.': 'shares', 'compartilhamentos': 'shares', 'shares': 'shares',
-    'salvam.': 'saves', 'salvamentos': 'saves', 'saves': 'saves',
-    'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks',
-    'post_id': 'post_id',
+    'salvam.': 'saves', 'salvamentos': 'saves', 'saves': 'saves', 'sticker taps': 'saves',
+    'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks', 'link clicks': 'link_clicks',
   }
 
   const normalizePlatform = (raw = '') => {
@@ -59,6 +67,17 @@ export default function MetricsForm({ open, onClose }) {
     if (v.includes('tk') || v.includes('tiktok')) return 'tiktok'
     if (v.includes('li') || v.includes('linkedin')) return 'linkedin'
     return v || 'instagram'
+  }
+
+  // "IG story" → "story" · "IG Reel" → "reel" · "IG carousel post" → "carousel" …
+  const normalizePostType = (raw = '') => {
+    const v = raw.toLowerCase().trim()
+    if (v.includes('story') || v.includes('storie')) return 'story'
+    if (v.includes('reel')) return 'reel'
+    if (v.includes('carousel')) return 'carousel'
+    if (v.includes('video')) return 'video'
+    if (v.includes('image') || v.includes('photo') || v.includes('foto')) return 'image'
+    return v || ''
   }
 
   // MM/DD/YYYY HH:MM  →  YYYY-MM-DD
@@ -80,9 +99,13 @@ export default function MetricsForm({ open, onClose }) {
       const mapped = COL_MAP[key.toLowerCase().trim()]
       if (mapped) row[mapped] = val
     }
+    // Se não veio platform mas veio post_type, deduz instagram
+    const platform = row.platform
+      ? normalizePlatform(row.platform)
+      : (row.post_type ? 'instagram' : 'instagram')
     return {
       post_id:     row.post_id || '',
-      platform:    normalizePlatform(row.platform),
+      platform,
       date:        normalizeDate(row.date),
       impressions: toNumber(row.impressions),
       reach:       toNumber(row.reach),
@@ -91,6 +114,10 @@ export default function MetricsForm({ open, onClose }) {
       shares:      toNumber(row.shares),
       saves:       toNumber(row.saves),
       link_clicks: toNumber(row.link_clicks),
+      // Campos novos do export bruto
+      description: (row.description || '').trim(),
+      link:        (row.link || '').trim(),
+      post_type:   normalizePostType(row.post_type),
     }
   }
 
@@ -210,7 +237,7 @@ export default function MetricsForm({ open, onClose }) {
             <Upload size={24} className="text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-700 mb-1">Faça upload de um arquivo CSV</p>
             <p className="text-xs text-gray-400 mb-3">
-              Aceita exportações do Instagram/Meta: <span className="text-gray-500">Data, Plataforma, Impressões, Alcance, Curtidas, Coment., Compart., Salvam.</span>
+              Aceita exportações brutas do Instagram: <span className="text-gray-500">Post ID, Description, Publish time, Permalink, Post type, Views, Reach, Likes, Shares, Replies, Sticker taps, Link clicks</span>
             </p>
             <label className="btn-primary cursor-pointer inline-flex">
               <FileText size={14} /> Escolher CSV
@@ -225,8 +252,19 @@ export default function MetricsForm({ open, onClose }) {
               </p>
               <div className="max-h-40 overflow-y-auto rounded-lg bg-gray-50 border border-gray-200">
                 {csvResult.slice(0, 5).map((row, i) => (
-                  <div key={i} className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 last:border-0">
-                    {row.platform} · {row.date} · {(row.impressions || 0).toLocaleString()} imp. · {row.likes} curtidas
+                  <div key={i} className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 last:border-0 flex items-center gap-2 flex-wrap">
+                    {row.post_type && (
+                      <span className="chip border text-[10px] bg-purple-50 text-purple-600 border-purple-200 capitalize">{row.post_type}</span>
+                    )}
+                    <span>{row.platform} · {row.date} · {(row.impressions || 0).toLocaleString()} imp. · {row.likes} curtidas</span>
+                    {row.description && (
+                      <span className="text-gray-400 truncate max-w-[200px]">{row.description.slice(0, 60)}{row.description.length > 60 ? '…' : ''}</span>
+                    )}
+                    {row.link && (
+                      <a href={row.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-400 hover:text-blue-600">
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
                   </div>
                 ))}
                 {csvResult.length > 5 && (

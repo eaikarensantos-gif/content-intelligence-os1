@@ -88,7 +88,8 @@ export default function Dashboard() {
           <p className="text-xs text-orange-500 font-medium mb-1">Bom dia, Criador</p>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Seu sistema de conteúdo está ativo</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Você tem <span className="text-orange-600 font-medium">{statusCounts.ready} ideias</span> prontas para publicar
+            Você tem <span className="text-orange-600 font-medium">{ideas.length} ideia{ideas.length !== 1 ? 's' : ''}</span> no banco de ideias
+            — <span className="text-emerald-600 font-medium">{statusCounts.ready} pronta{statusCounts.ready !== 1 ? 's' : ''}</span> para publicar
             e <span className="text-blue-600 font-medium">{statusCounts.draft} em rascunho</span>.
           </p>
           <div className="flex gap-2 flex-wrap">

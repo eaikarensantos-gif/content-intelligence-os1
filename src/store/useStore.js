@@ -14,7 +14,6 @@ const useStore = create(
       generatedIdeas: [],
       trendResults: null,
       clients: [],
-      demographics: {},
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -145,19 +144,6 @@ const useStore = create(
       deleteClient: (id) =>
         set((s) => ({ clients: s.clients.filter((c) => c.id !== id) })),
 
-      // ── Dados Demográficos ─────────────────────────────────
-      setDemographics: (clientId, data) =>
-        set((s) => ({
-          demographics: { ...s.demographics, [clientId]: data },
-        })),
-
-      deleteDemographics: (clientId) =>
-        set((s) => {
-          const d = { ...s.demographics }
-          delete d[clientId]
-          return { demographics: d }
-        }),
-
       // ── Reset ──────────────────────────────────────────────
       reset: () =>
         set({
@@ -168,7 +154,6 @@ const useStore = create(
           generatedIdeas: [],
           trendResults: null,
           clients: [],
-          demographics: {},
         }),
     }),
     {
@@ -181,7 +166,6 @@ const useStore = create(
         generatedIdeas: s.generatedIdeas,
         trendResults: s.trendResults,
         clients: s.clients,
-        demographics: s.demographics,
       }),
     }
   )
