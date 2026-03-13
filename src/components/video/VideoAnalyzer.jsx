@@ -20,12 +20,14 @@ const INPUT_MODES = [
 ]
 
 const TABS = [
+  { id: 'resumo', label: 'Resumo', icon: AlignLeft },
   { id: 'estrutura', label: 'Estrutura', icon: Layers },
   { id: 'tom', label: 'Tom & Padrões', icon: Mic },
   { id: 'retencao', label: 'Retenção', icon: Eye },
   { id: 'porque', label: 'Por Que Funciona', icon: Star },
   { id: 'template', label: 'Template', icon: BookOpen },
   { id: 'ideias', label: 'Ideias', icon: Lightbulb },
+  { id: 'transcricao', label: 'Transcrição', icon: FileText },
 ]
 
 const TYPE_OPTIONS = [
@@ -122,7 +124,7 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
     },
     body: JSON.stringify({
       model: 'claude-opus-4-5',
-      max_tokens: 5000,
+      max_tokens: 6000,
       system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown, no apologies, no refusals. When given a real transcript you analyze it directly and quote from it. When given video frames as images you describe what you see visually. You NEVER refuse or say you cannot do something. Your response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content }],
     }),
@@ -242,6 +244,14 @@ ${dataSection}RULES:
     "framing": "How the creator is framed / camera setup",
     "key_techniques": ["technique 1", "technique 2", "technique 3", "technique 4"]
   },
+  "summary": {
+    "overview": "${hasTranscript ? 'Concise 2-3 sentence summary based on the real transcript' : 'Concise 2-3 sentence summary of what this video covers and why it was made'}",
+    "key_topics": ["Main topic 1 covered", "Main topic 2 covered", "Main topic 3 covered"],
+    "content_type": "Brief label like: Educational short-form, Motivational reel, Tutorial breakdown…",
+    "main_message": "${hasTranscript ? 'The single core message of the video, based on the transcript' : 'The single core message this video communicates'}",
+    "creator_positioning": "How the creator positions themselves in this video"
+  },
+  "transcript_reconstruction": "${hasTranscript ? 'Reproduce the full transcript provided above, verbatim' : 'Write a full realistic transcript reconstruction of this video in natural spoken Portuguese. Include the hook, all main points, transitions, and CTA as the creator would say them. 300–500 words of natural spoken language.'}",
   "why_it_works": [
     { "reason": "Specific reason", "impact": "Impact on performance" },
     { "reason": "Specific reason", "impact": "Impact on performance" },
@@ -629,7 +639,7 @@ export default function VideoAnalyzer() {
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
     } finally {
-      setActiveTab('estrutura')
+      setActiveTab('resumo')
       setLoading(false)
     }
   }
@@ -1140,6 +1150,101 @@ Quanto mais completa a transcrição, mais precisa será a análise — a IA ir�
             ))}
           </div>
 
+          {/* ── RESUMO ──────────────────────────────────────────────────────── */}
+          {activeTab === 'resumo' && (
+            <div className="space-y-4">
+              {/* Overview card */}
+              {analysis.summary && (
+                <div className="card p-5 space-y-4 border border-violet-100 bg-violet-50/20">
+                  <div className="flex items-center gap-2">
+                    <AlignLeft size={15} className="text-violet-500" />
+                    <h3 className="text-sm font-semibold text-gray-900">Resumo do Vídeo</h3>
+                    {analysis.summary.content_type && (
+                      <span className="ml-auto text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full border border-violet-200">
+                        {analysis.summary.content_type}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{analysis.summary.overview}</p>
+
+                  {analysis.summary.main_message && (
+                    <div className="p-3 rounded-xl bg-white border border-violet-100 flex items-start gap-2">
+                      <Zap size={13} className="text-violet-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-[10px] text-violet-500 font-semibold uppercase tracking-wide mb-1">Mensagem central</p>
+                        <p className="text-xs text-gray-700 font-medium italic">"{analysis.summary.main_message}"</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {analysis.summary.key_topics?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-2">Tópicos abordados</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {analysis.summary.key_topics.map((t, i) => (
+                            <span key={i} className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {analysis.summary.creator_positioning && (
+                      <div>
+                        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-2">Posicionamento do criador</p>
+                        <p className="text-xs text-gray-600">{analysis.summary.creator_positioning}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick stats from overview */}
+              {analysis.overview && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Arquétipo', val: ARCHETYPE_LABELS[analysis.archetype] || analysis.archetype, icon: Film },
+                    { label: 'Duração est.', val: analysis.overview.estimated_duration || '—', icon: Clock },
+                    { label: 'Plataforma ideal', val: analysis.overview.platform_fit || '—', icon: Globe },
+                    { label: 'Ponto forte', val: analysis.overview.key_strength || '—', icon: Star },
+                  ].map(({ label, val, icon: Icon }) => (
+                    <div key={label} className="card p-3 space-y-1">
+                      <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium uppercase tracking-wide">
+                        <Icon size={10} /> {label}
+                      </div>
+                      <p className="text-xs font-semibold text-gray-800 leading-snug">{val}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Why it works — teaser */}
+              {analysis.why_it_works?.length > 0 && (
+                <div className="card p-4 space-y-3">
+                  <p className="text-xs font-semibold text-gray-700 flex items-center gap-2">
+                    <Star size={13} className="text-orange-500" /> Por que funciona
+                  </p>
+                  <div className="space-y-2">
+                    {analysis.why_it_works.slice(0, 3).map((w, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="w-4 h-4 rounded-full bg-orange-100 text-orange-600 text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                        <div>
+                          <p className="text-xs font-medium text-gray-800">{w.reason}</p>
+                          <p className="text-[11px] text-gray-400">{w.impact}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('porque')}
+                    className="text-[11px] text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1 mt-1"
+                  >
+                    Ver análise completa <ChevronRight size={11} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── ESTRUTURA ───────────────────────────────────────────────────── */}
           {activeTab === 'estrutura' && (
             <div className="space-y-4">
@@ -1510,6 +1615,69 @@ Quanto mais completa a transcrição, mais precisa será a análise — a IA ir�
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── TRANSCRIÇÃO ───────────────────────────────────────────────────── */}
+          {activeTab === 'transcricao' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText size={15} className="text-emerald-500" />
+                  <h3 className="text-sm font-semibold text-gray-900">Transcrição Completa</h3>
+                  {analysis.data_source === 'transcript' ? (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">Transcrição real fornecida</span>
+                  ) : (
+                    <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full border border-amber-200">Reconstituição por IA</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(analysis.transcript_reconstruction || transcript || '')}
+                  className="btn-secondary text-xs"
+                >
+                  <Copy size={12} /> Copiar
+                </button>
+              </div>
+
+              {/* Show real transcript if provided, else show AI reconstruction */}
+              {(transcript && transcript.trim().length > 30) ? (
+                <div className="space-y-3">
+                  <div className="card p-4 bg-emerald-50/30 border border-emerald-100">
+                    <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide mb-3">Transcrição fornecida por você</p>
+                    <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{transcript}</p>
+                  </div>
+                  {analysis.transcript_reconstruction && analysis.transcript_reconstruction !== transcript && (
+                    <div className="card p-4 border border-gray-200">
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-3">Versão formatada pela IA</p>
+                      <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{analysis.transcript_reconstruction}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {analysis.transcript_reconstruction ? (
+                    <div className="card p-5 border border-gray-200 space-y-3">
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <AlertCircle size={13} className="text-amber-500 mt-0.5 shrink-0" />
+                        <p className="text-[11px] text-amber-700">
+                          Esta é uma reconstituição gerada pela IA baseada no título, canal e padrões conhecidos do criador — não é a transcrição real do vídeo.
+                          Para análise com o conteúdo exato, adicione a transcrição real e refaça a análise.
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{analysis.transcript_reconstruction}</p>
+                    </div>
+                  ) : (
+                    <div className="card p-10 text-center space-y-3">
+                      <FileText size={28} className="mx-auto text-gray-200" />
+                      <p className="text-sm text-gray-500 font-medium">Nenhuma transcrição disponível</p>
+                      <p className="text-xs text-gray-400">Cole a transcrição do vídeo e refaça a análise para ver o conteúdo real aqui.</p>
+                      <button onClick={handleReset} className="btn-secondary text-xs mx-auto">
+                        <RotateCcw size={12} /> Nova análise com transcrição
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
