@@ -14,6 +14,7 @@ const useStore = create(
       generatedIdeas: [],
       trendResults: null,
       clients: [],
+      videoAnalyses: [],
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -107,6 +108,21 @@ const useStore = create(
 
       clearInsights: () => set({ insights: [] }),
 
+      deleteInsight: (id) =>
+        set((s) => ({ insights: s.insights.filter((i) => i.id !== id) })),
+
+      // ── Análises de Vídeo ──────────────────────────────────
+      addVideoAnalysis: (analysis) =>
+        set((s) => ({
+          videoAnalyses: [
+            ...s.videoAnalyses,
+            { id: uuidv4(), ...analysis },
+          ],
+        })),
+
+      deleteVideoAnalysis: (id) =>
+        set((s) => ({ videoAnalyses: s.videoAnalyses.filter((v) => v.id !== id) })),
+
       // ── Ideias Geradas ─────────────────────────────────────
       setGeneratedIdeas: (ideas) => set({ generatedIdeas: ideas }),
 
@@ -154,6 +170,7 @@ const useStore = create(
           generatedIdeas: [],
           trendResults: null,
           clients: [],
+          videoAnalyses: [],
         }),
     }),
     {
@@ -166,6 +183,7 @@ const useStore = create(
         generatedIdeas: s.generatedIdeas,
         trendResults: s.trendResults,
         clients: s.clients,
+        videoAnalyses: s.videoAnalyses,
       }),
     }
   )

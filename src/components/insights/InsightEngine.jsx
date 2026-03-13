@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Sparkles, RefreshCw, TrendingUp, Award, BarChart2,
   Layers, MessageSquare, Loader2, Clock, Filter,
-  ChevronRight, ArrowUpRight, ArrowDownRight, Minus,
+  ChevronRight, ArrowUpRight, ArrowDownRight, Minus, Trash2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { InsightTypeBadge } from '../common/Badge'
@@ -51,16 +51,25 @@ function TrendIcon({ title }) {
   return null
 }
 
-function InsightCard({ insight, index }) {
+function InsightCard({ insight, index, onDelete }) {
   const Icon = ICONS[insight.type] || BarChart2
   const cardColor = CARD_COLORS[insight.type] || CARD_COLORS.summary
   const iconColor = ICON_COLORS[insight.type] || ICON_COLORS.summary
 
   return (
     <div
-      className={`card border ${cardColor} p-5 space-y-3 animate-slide-up`}
+      className={`card border ${cardColor} p-5 space-y-3 animate-slide-up relative group`}
       style={{ animationDelay: `${index * 60}ms` }}
     >
+      {onDelete && (
+        <button
+          onClick={() => onDelete(insight.id)}
+          className="absolute top-3 right-3 p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"
+          title="Remover insight"
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
       <div className="flex items-start gap-3">
         <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${iconColor}`}>
           <Icon size={15} />
@@ -121,6 +130,7 @@ export default function InsightEngine({ embedded = false }) {
   const insights = useStore((s) => s.insights)
   const generateInsightsAction = useStore((s) => s.generateInsights)
   const clearInsights = useStore((s) => s.clearInsights)
+  const deleteInsight = useStore((s) => s.deleteInsight)
   const [loading, setLoading] = useState(false)
   const [activeFilter, setActiveFilter] = useState('all')
 
@@ -251,7 +261,7 @@ export default function InsightEngine({ embedded = false }) {
           {/* Cards grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filtered.map((ins, idx) => (
-              <InsightCard key={ins.id} insight={ins} index={idx} />
+              <InsightCard key={ins.id} insight={ins} index={idx} onDelete={deleteInsight} />
             ))}
           </div>
 
