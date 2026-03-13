@@ -5,7 +5,8 @@ import {
   Sparkles, Trash2, RotateCcw, ExternalLink,
   Mic, Film, Zap, Target, TrendingUp, Star,
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
-  FileText, Globe, ArrowRight, RefreshCw,
+  FileText, Globe, ArrowRight, RefreshCw, Wand2,
+  Upload, Type, AlignLeft,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { analyzeVideo, extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
@@ -323,6 +324,44 @@ Return ONLY this JSON:
   return JSON.parse(match[0])
 }
 
+// ── Draft transcript generator ────────────────────────────────────────────────
+async function generateTranscriptAPI(apiKey, { title, channel, topic, url }) {
+  const prompt = `You are helping a content creator study a video. Generate a likely transcript draft for this video so they can edit and correct it.
+
+Video:
+- Title: ${title || '(not provided)'}
+- Channel/Creator: ${channel || '(not provided)'}
+- URL: ${url || '(not provided)'}
+- Topic: ${topic || '(not provided)'}
+
+INSTRUCTIONS:
+- If you recognize this creator from your training data, reconstruct a realistic transcript that matches their real speaking style.
+- If you don't recognize them, write a realistic transcript based on the title and topic.
+- Use natural spoken language — contractions, pauses, conversational tone.
+- Include the hook, main points, and CTA.
+- Length: 300–600 words, as a realistic spoken transcript.
+- Respond with ONLY the plain transcript text. No JSON, no markdown, no labels like "Hook:" or "CTA:". Just natural spoken words as the creator would say them.`
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 1500,
+      system: 'You are a transcript reconstruction assistant. Return only the spoken transcript text — no labels, no formatting, no JSON.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+  if (!res.ok) throw new Error(`Erro ${res.status}`)
+  const data = await res.json()
+  return data.content[0].text.trim()
+}
+
 // ── API Key Modal ─────────────────────────────────────────────────────────────
 function ApiKeyModal({ onClose, onSave }) {
   const [val, setVal] = useState('')
@@ -495,6 +534,9 @@ export default function VideoAnalyzer() {
   const [generatingScript, setGeneratingScript] = useState(false)
   const [generatedScript, setGeneratedScript] = useState(null)
 
+  // Transcript draft
+  const [generatingTranscript, setGeneratingTranscript] = useState(false)
+
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
 
@@ -630,6 +672,19 @@ export default function VideoAnalyzer() {
     }
   }
 
+  const handleGenerateTranscript = async () => {
+    if (!apiKey) return
+    setGeneratingTranscript(true)
+    try {
+      const draft = await generateTranscriptAPI(apiKey, { title, channel: '', topic, url })
+      setTranscript(draft)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setGeneratingTranscript(false)
+    }
+  }
+
   const handleCopyTemplate = () => {
     if (!analysis?.template) return
     const t = analysis.template
@@ -743,185 +798,258 @@ export default function VideoAnalyzer() {
         </div>
       )}
 
-      {/* Input panel */}
+      {/* ── LANDING / INPUT VIEW ─────────────────────────────────────────── */}
       {!analysis && !loading && (
-        <div className="card p-6 space-y-5">
-          {/* Input mode selector */}
-          <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl w-fit">
-            {INPUT_MODES.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setInputMode(m.id)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
-                  inputMode === m.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <m.icon size={12} /> {m.label}
-              </button>
-            ))}
+        <div className="space-y-4">
+
+          {/* What this tool analyzes — visual overview */}
+          <div className="card overflow-hidden">
+            <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">O que será analisado</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-y divide-gray-100">
+              {[
+                { icon: Zap,        color: 'text-orange-500 bg-orange-50', label: 'Gancho & Estrutura',    desc: 'Hook, promessa, seções, CTA' },
+                { icon: Mic,        color: 'text-purple-500 bg-purple-50', label: 'Tom de Voz',            desc: 'Formalidade, estilo, persona' },
+                { icon: TrendingUp, color: 'text-amber-500  bg-amber-50',  label: 'Padrões de Conteúdo',  desc: 'Lista, storytelling, contrário…' },
+                { icon: Eye,        color: 'text-sky-500    bg-sky-50',    label: 'Retenção',              desc: 'Técnicas de engajamento' },
+                { icon: Film,       color: 'text-gray-500   bg-gray-100',  label: 'Estilo Visual',         desc: 'Edição, pacing, texto na tela' },
+                { icon: Star,       color: 'text-orange-500 bg-orange-50', label: 'Por Que Funciona',      desc: 'Fatores de sucesso do vídeo' },
+                { icon: BookOpen,   color: 'text-violet-500 bg-violet-50', label: 'Template Reutilizável', desc: 'Fórmulas prontas para copiar' },
+                { icon: Lightbulb,  color: 'text-emerald-500 bg-emerald-50', label: 'Ideias de Conteúdo', desc: '5 ideias com gancho e ângulo' },
+              ].map(({ icon: Icon, color, label, desc }) => (
+                <div key={label} className="flex items-start gap-2.5 p-3.5 hover:bg-gray-50/70 transition-colors">
+                  <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${color}`}>
+                    <Icon size={13} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800 leading-tight">{label}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Left: primary input */}
-            <div className="space-y-4">
-              {inputMode === 'url' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="label flex items-center gap-1.5">
-                      <Link2 size={12} className="text-gray-400" /> URL do Vídeo
-                    </label>
-                    <input
-                      className="input"
-                      placeholder="https://youtube.com/watch?v=... ou TikTok, Instagram..."
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-                    />
-                  </div>
-                  {thumbnail && (
-                    <div className="relative rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-100">
-                      <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                          <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-white ml-1" />
-                        </div>
-                      </div>
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70">
-                        <ExternalLink size={12} />
-                      </a>
+          {/* Main input area: Video source + Transcript side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* LEFT — Video source */}
+            <div className="card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-violet-50 text-violet-500"><Video size={13} /></div>
+                <p className="text-sm font-semibold text-gray-900">Fonte do Vídeo</p>
+              </div>
+
+              {/* URL input */}
+              <div>
+                <label className="label flex items-center gap-1.5">
+                  <Link2 size={11} className="text-gray-400" /> URL do vídeo
+                </label>
+                <input
+                  className="input"
+                  placeholder="YouTube, TikTok, Instagram, LinkedIn..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                />
+              </div>
+
+              {/* YouTube thumbnail preview */}
+              {thumbnail && (
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-100">
+                  <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+                      <div className="w-0 h-0 border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent border-l-[12px] border-l-white ml-0.5" />
                     </div>
-                  )}
-                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-                    <p className="text-[11px] text-blue-700">
-                      💡 <strong>Para análise mais precisa:</strong> cole também a transcrição na aba "Colar Transcrição" — assim a IA analisa o conteúdo real, não apenas infere.
+                  </div>
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70">
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+              )}
+
+              {/* OR divider */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-px bg-gray-100" />
+                <span className="text-[10px] text-gray-400 font-medium">ou envie um arquivo</span>
+                <div className="flex-1 h-px bg-gray-100" />
+              </div>
+
+              {/* File upload */}
+              <div
+                className={`border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer ${
+                  videoFile ? 'border-violet-300 bg-violet-50/30' : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/20'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*,audio/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                />
+                {videoFile ? (
+                  <div className="space-y-1">
+                    <FileVideo size={20} className="mx-auto text-violet-500" />
+                    <p className="text-xs font-medium text-gray-800">{videoFile.name}</p>
+                    <p className="text-[10px] text-gray-400">{(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>
+                    {extractingFrames && <p className="text-[10px] text-violet-500 animate-pulse">⟳ Extraindo frames...</p>}
+                    {frames.length > 0 && <p className="text-[10px] text-emerald-600">✓ {frames.length} frames extraídos</p>}
+                  </div>
+                ) : (
+                  <>
+                    <Upload size={18} className="mx-auto text-gray-300 mb-1.5" />
+                    <p className="text-xs text-gray-500 font-medium">Arraste ou clique para selecionar</p>
+                    <p className="text-[10px] text-gray-300 mt-0.5">MP4, MOV, AVI, MP3, M4A</p>
+                  </>
+                )}
+              </div>
+
+              {/* Frame preview strip */}
+              {frames.length > 0 && (
+                <div className="grid grid-cols-3 gap-1">
+                  {frames.map((f, i) => (
+                    <div key={i} className="relative rounded-lg overflow-hidden aspect-video bg-gray-100 border border-gray-200">
+                      <img src={f.dataUrl} alt={`Frame ${i + 1}`} className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0.5 left-0.5 text-[8px] bg-black/60 text-white px-0.5 rounded">{f.time}s</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Context fields */}
+              <div className="space-y-3 pt-1 border-t border-gray-100">
+                <div>
+                  <label className="label">Título <span className="text-gray-400 font-normal">(autopreenchido para YouTube)</span></label>
+                  <input className="input" placeholder="Título do vídeo" value={title} onChange={(e) => setTitle(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Tópico</label>
+                    <input className="input" placeholder="Ex: produtividade..." value={topic} onChange={(e) => setTopic(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">Tipo</label>
+                    <select className="select" value={videoType} onChange={(e) => setVideoType(e.target.value)}>
+                      {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT — Transcript */}
+            <div className="card p-5 space-y-4 flex flex-col">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600"><AlignLeft size={13} /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Transcrição do Vídeo</p>
+                    <p className="text-[10px] text-emerald-600 font-medium">Análise mais precisa — IA lê o conteúdo real</p>
+                  </div>
+                </div>
+                {transcript.trim().length > 30 && (
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">✓ Pronta</span>
+                )}
+              </div>
+
+              {/* Transcription options */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className={`flex items-start gap-2 p-3 rounded-xl border cursor-pointer transition-all ${
+                  transcript.trim().length > 0 ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-200 hover:border-emerald-200 hover:bg-emerald-50/30'
+                }`}>
+                  <Type size={13} className="text-emerald-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-700">Colar manualmente</p>
+                    <p className="text-[10px] text-gray-400">Cole a transcrição do vídeo abaixo</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleGenerateTranscript}
+                  disabled={!apiKey || generatingTranscript || (!url.trim() && !title.trim())}
+                  className={`flex items-start gap-2 p-3 rounded-xl border transition-all text-left ${
+                    !apiKey || (!url.trim() && !title.trim())
+                      ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                      : 'border-violet-200 hover:bg-violet-50/50 cursor-pointer'
+                  }`}
+                >
+                  <Wand2 size={13} className={`mt-0.5 shrink-0 ${generatingTranscript ? 'text-violet-500 animate-pulse' : 'text-violet-500'}`} />
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-700">
+                      {generatingTranscript ? 'Gerando rascunho...' : 'Gerar rascunho com IA'}
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {!apiKey ? 'Requer API Key' : (!url.trim() && !title.trim()) ? 'Informe a URL ou título' : 'Claude reconstrói um rascunho editável'}
                     </p>
                   </div>
-                </div>
-              )}
+                </button>
+              </div>
 
-              {inputMode === 'file' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="label flex items-center gap-1.5">
-                      <FileVideo size={12} className="text-gray-400" /> Arquivo de Vídeo ou Áudio
-                    </label>
-                    <div
-                      className="border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer border-gray-200 hover:border-violet-300 hover:bg-violet-50/30"
-                      onClick={() => fileInputRef.current?.click()}
+              {/* Transcript textarea */}
+              <div className="flex-1 flex flex-col">
+                <textarea
+                  className="input flex-1 min-h-[240px] resize-none text-xs leading-relaxed"
+                  placeholder={`Cole a transcrição aqui ou use "Gerar rascunho com IA" para criar um ponto de partida editável...
+
+Quanto mais completa a transcrição, mais precisa será a análise — a IA irá citar trechos reais no gancho, promessa, CTA e padrões.`}
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[10px] text-gray-400">{transcript.length} caracteres</p>
+                  {transcript.trim().length > 0 && (
+                    <button
+                      onClick={() => setTranscript('')}
+                      className="text-[10px] text-gray-400 hover:text-red-400 transition-colors"
                     >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="video/*,audio/*"
-                        className="hidden"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0])}
-                      />
-                      {videoFile ? (
-                        <div className="space-y-1">
-                          <FileVideo size={24} className="mx-auto text-violet-500" />
-                          <p className="text-xs font-medium text-gray-800">{videoFile.name}</p>
-                          <p className="text-[10px] text-gray-400">{(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>
-                          {extractingFrames && <p className="text-[10px] text-violet-500 animate-pulse">Extraindo frames do vídeo...</p>}
-                          {frames.length > 0 && <p className="text-[10px] text-emerald-600">✓ {frames.length} frames extraídos para análise visual</p>}
-                        </div>
-                      ) : (
-                        <>
-                          <FileVideo size={24} className="mx-auto text-gray-300 mb-2" />
-                          <p className="text-xs text-gray-500 font-medium">Clique ou arraste um arquivo de vídeo/áudio</p>
-                          <p className="text-[10px] text-gray-300 mt-0.5">MP4, MOV, AVI, MP3, M4A...</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  {frames.length > 0 && (
-                    <div>
-                      <p className="text-[11px] text-gray-500 font-medium mb-2">Frames extraídos para análise visual:</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {frames.map((f, i) => (
-                          <div key={i} className="relative rounded-lg overflow-hidden aspect-video bg-gray-100 border border-gray-200">
-                            <img src={f.dataUrl} alt={`Frame ${i + 1}`} className="w-full h-full object-cover" />
-                            <span className="absolute bottom-1 left-1 text-[9px] bg-black/60 text-white px-1 rounded">{f.time}s</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                      Limpar
+                    </button>
                   )}
                 </div>
-              )}
+              </div>
 
-              {inputMode === 'transcript' && (
-                <div>
-                  <label className="label flex items-center gap-1.5">
-                    <FileText size={12} className="text-gray-400" /> Transcrição do Vídeo
-                    <span className="text-emerald-600 font-normal text-[10px]">— análise mais precisa</span>
-                  </label>
-                  <textarea
-                    className="input min-h-[220px] resize-none text-xs leading-relaxed"
-                    placeholder="Cole aqui a transcrição completa do vídeo. A IA irá analisar o conteúdo real e citar trechos exatos no relatório..."
-                    value={transcript}
-                    onChange={(e) => setTranscript(e.target.value)}
-                  />
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-[10px] text-gray-400">{transcript.length} caracteres</p>
-                    {transcript.length > 30 && <p className="text-[10px] text-emerald-600">✓ Pronto para análise</p>}
+              {/* Precision indicator */}
+              <div className="pt-3 border-t border-gray-100 space-y-1.5">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nível de precisão da análise</p>
+                {[
+                  { label: 'Transcrição real',    active: transcript.trim().length > 30, color: 'bg-emerald-500', desc: 'Analisa o conteúdo exato' },
+                  { label: 'Frames visuais',      active: frames.length > 0,             color: 'bg-violet-500',  desc: 'Analisa edição e visual' },
+                  { label: 'URL/Título/Canal',    active: !!(url.trim() || title.trim()), color: 'bg-blue-400',   desc: 'Infere pelo contexto' },
+                ].map(({ label, active, color, desc }) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${active ? color : 'bg-gray-200'}`} />
+                    <p className={`text-[10px] ${active ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{label}</p>
+                    <p className="text-[10px] text-gray-300 hidden sm:block">— {desc}</p>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right: context */}
-            <div className="space-y-4">
-              <div>
-                <label className="label">Título do Vídeo <span className="text-gray-400 font-normal">(autopreenchido para YouTube)</span></label>
-                <input className="input" placeholder="Ex: Como Construir uma Audiência do Zero" value={title} onChange={(e) => setTitle(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Tópico Principal</label>
-                <input className="input" placeholder="Ex: marca pessoal, produtividade, vendas..." value={topic} onChange={(e) => setTopic(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Tipo de Vídeo</label>
-                <select className="select" value={videoType} onChange={(e) => setVideoType(e.target.value)}>
-                  {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-
-              {error && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2">
-                  <AlertCircle size={13} className="text-red-400 mt-0.5 shrink-0" />
-                  <p className="text-xs text-red-600">{error}</p>
-                </div>
-              )}
-
-              <button
-                onClick={handleAnalyze}
-                disabled={!canAnalyze}
-                className="btn-primary w-full"
-                style={{ background: canAnalyze ? (apiKey ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined) : undefined }}
-              >
-                {extractingFrames
-                  ? <><RefreshCw size={14} className="animate-spin" /> Extraindo frames...</>
-                  : apiKey
-                  ? <><Sparkles size={14} /> Analisar com IA</>
-                  : <><Video size={14} /> Analisar (simulação)</>
-                }
-              </button>
-
-              {/* Input source info */}
-              <div className="text-[11px] text-gray-400 space-y-1">
-                <p className="font-medium text-gray-500">Nível de precisão:</p>
-                <p className={transcript.trim().length > 30 ? 'text-emerald-600' : ''}>
-                  {transcript.trim().length > 30 ? '✓' : '○'} Transcrição — analisa o conteúdo real
-                </p>
-                <p className={frames.length > 0 ? 'text-emerald-600' : ''}>
-                  {frames.length > 0 ? '✓' : '○'} Frames visuais — analisa edição e visual
-                </p>
-                <p className={url.trim() ? 'text-blue-500' : ''}>
-                  {url.trim() ? '✓' : '○'} URL — busca título e canal automaticamente
-                </p>
+                ))}
               </div>
             </div>
           </div>
+
+          {/* Error + Analyze button */}
+          {error && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2">
+              <AlertCircle size={13} className="text-red-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-600">{error}</p>
+            </div>
+          )}
+
+          <button
+            onClick={handleAnalyze}
+            disabled={!canAnalyze}
+            className="btn-primary w-full py-3 text-sm"
+            style={{ background: canAnalyze ? (apiKey ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined) : undefined }}
+          >
+            {extractingFrames
+              ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
+              : apiKey
+              ? <><Sparkles size={15} /> Analisar Vídeo com IA</>
+              : <><Video size={15} /> Analisar (modo simulação)</>
+            }
+          </button>
         </div>
       )}
 
