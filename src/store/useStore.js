@@ -96,6 +96,8 @@ const useStore = create(
       deleteMetric: (id) =>
         set((s) => ({ metrics: s.metrics.filter((m) => m.id !== id) })),
 
+      clearMetrics: () => set({ metrics: [], posts: [], insights: [] }),
+
       // ── Insights ───────────────────────────────────────────
       generateInsights: () => {
         const { posts, metrics } = get()

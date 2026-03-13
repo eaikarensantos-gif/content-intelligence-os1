@@ -42,7 +42,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={initial ? 'Editar Ideia' : 'Nova Ideia de Conteúdo'}>
+    <Modal open={open} onClose={onClose} title={initial?.id ? 'Editar Ideia' : 'Nova Ideia de Conteúdo'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Título */}
         <div>
@@ -124,7 +124,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn-primary">
-            {initial ? 'Salvar Alterações' : 'Criar Ideia'}
+            {initial?.id ? 'Salvar Alterações' : 'Criar Ideia'}
           </button>
         </div>
       </form>

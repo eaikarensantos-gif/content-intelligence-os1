@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts'
-import { Plus, TrendingUp, Eye, Heart, Share2, Bookmark, MousePointer, Trophy, Trash2, Download, Users, Globe } from 'lucide-react'
+import { Plus, TrendingUp, Eye, Heart, Share2, Bookmark, MousePointer, Trophy, Trash2, Download, Users, Globe, AlertTriangle } from 'lucide-react'
 import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
@@ -60,6 +60,8 @@ export default function Analytics() {
   const metrics = useStore((s) => s.metrics)
   const deleteMetric = useStore((s) => s.deleteMetric)
   const deletePost = useStore((s) => s.deletePost)
+  const clearMetrics = useStore((s) => s.clearMetrics)
+  const [confirmClear, setConfirmClear] = useState(false)
   const demographics = useStore((s) => s.demographics)
   const setDemographics = useStore((s) => s.setDemographics)
   const [formOpen, setFormOpen] = useState(false)
@@ -288,10 +290,25 @@ export default function Analytics() {
 
           {/* Log de métricas */}
           <div className="card p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">
-              Todos os Snapshots de Métricas
-              <span className="ml-2 text-xs text-gray-400 font-normal">{enriched.length} entradas</span>
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900">
+                Todos os Snapshots de Métricas
+                <span className="ml-2 text-xs text-gray-400 font-normal">{enriched.length} entradas</span>
+              </h3>
+              {enriched.length > 0 && (
+                confirmClear ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-red-500">Apagar tudo?</span>
+                    <button onClick={() => { clearMetrics(); setConfirmClear(false) }} className="text-xs px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600">Confirmar</button>
+                    <button onClick={() => setConfirmClear(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">Cancelar</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmClear(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors">
+                    <AlertTriangle size={12} /> Limpar todos os dados
+                  </button>
+                )
+              )}
+            </div>
             {enriched.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="text-gray-400 text-sm">Nenhuma métrica registrada ainda.</p>

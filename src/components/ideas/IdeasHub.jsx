@@ -1,97 +1,135 @@
 import { useState } from 'react'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
-  Plus, Search, Lightbulb, Edit2, Trash2, ArrowRight, Calendar,
-  Zap, RefreshCw, Sparkles, Radar, Loader2,
-  Check, ChevronLeft, ChevronRight, LayoutGrid,
+  Plus, Search, Calendar,
+  GripVertical, Kanban, Zap, RefreshCw, Sparkles, Radar, Loader2,
+  Check, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
-import { PlatformBadge, StatusBadge, PriorityBadge, FormatBadge } from '../common/Badge'
+import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import { generateIdeasFromInsights, generateIdeasFromTrends } from '../../utils/ideaGenerator'
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab']
+const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+
+const KANBAN_COLUMNS = [
+  { id: 'idea',      label: 'Ideias',     color: 'border-orange-200 bg-orange-50/60',  dot: 'bg-orange-400',  count_bg: 'bg-orange-100 text-orange-700' },
+  { id: 'draft',     label: 'Rascunhos',  color: 'border-blue-200 bg-blue-50/60',      dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
+  { id: 'ready',     label: 'Pronto',     color: 'border-emerald-200 bg-emerald-50/60',dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
+  { id: 'published', label: 'Publicado',  color: 'border-green-200 bg-green-50/60',    dot: 'bg-green-400',   count_bg: 'bg-green-100 text-green-700' },
+]
 
 const SOURCE_COLORS = {
   insight: 'bg-purple-100 text-purple-700 border-purple-200',
-  trend: 'bg-blue-100 text-blue-700 border-blue-200',
-  ai: 'bg-amber-100 text-amber-700 border-amber-200',
+  trend:   'bg-blue-100 text-blue-700 border-blue-200',
+  ai:      'bg-amber-100 text-amber-700 border-amber-200',
 }
 const SOURCE_ICONS = { insight: Sparkles, trend: Radar, ai: Zap }
 
-const NEXT_STATUS_LABELS = { idea: 'Rascunho', draft: 'Pronto', ready: 'Publicado' }
-
-// ─── Card de ideia (grid) ─────────────────────────────────────────────────────
-function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
-  const NEXT_STATUS = { idea: 'draft', draft: 'ready', ready: 'published', published: null }
-  const nextStatus = NEXT_STATUS[idea.status]
-
+// ─── Card compartilhado (Kanban + Calendário) ─────────────────────────────────
+function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging }) {
   return (
     <div
-      className="card-hover p-4 flex flex-col gap-3 group cursor-pointer"
-      onClick={onEdit}
+      className={`bg-white border rounded-xl p-3 space-y-2 transition-all cursor-pointer ${
+        isDragging
+          ? 'border-orange-400 shadow-lg shadow-orange-200/50 rotate-1 scale-105'
+          : 'border-gray-200 hover:border-orange-300'
+      }`}
+      onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{idea.title}</h3>
-          {idea.topic && <p className="text-[11px] text-gray-400 mt-0.5">{idea.topic}</p>}
-        </div>
-        <PriorityBadge priority={idea.priority} />
+      <div className="flex items-start gap-2">
+        {dragHandleProps && (
+          <span
+            {...dragHandleProps}
+            className="mt-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={13} />
+          </span>
+        )}
+        <p className="text-xs font-medium text-gray-800 leading-snug flex-1 line-clamp-2">{idea.title}</p>
       </div>
-
-      {idea.description && (
-        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{idea.description}</p>
-      )}
-
-      <div className="flex flex-wrap gap-1.5">
+      <div className={`flex flex-wrap gap-1 ${dragHandleProps ? 'ml-5' : ''}`}>
         <PlatformBadge platform={idea.platform} />
         <FormatBadge format={idea.format} />
-        <StatusBadge status={idea.status} />
       </div>
-
-      {idea.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {idea.tags.map((tag) => (
-            <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{tag}</span>
-          ))}
-        </div>
-      )}
-
-      {idea.scheduled_date && (
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-          <Calendar size={11} />
-          <span>Agendado: {idea.scheduled_date}</span>
-        </div>
-      )}
-
-      <div
-        className="flex items-center gap-1.5 pt-1 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onEdit} className="btn-ghost text-xs py-1 px-2">
-          <Edit2 size={12} /> Editar
-        </button>
-        {nextStatus && (
-          <button onClick={(e) => { e.stopPropagation(); onStatusChange(nextStatus) }} className="btn-ghost text-xs py-1 px-2 text-orange-600 hover:text-orange-700">
-            <ArrowRight size={12} /> {NEXT_STATUS_LABELS[idea.status]}
-          </button>
+      <div className={`flex items-center justify-between ${dragHandleProps ? 'ml-5' : ''}`}>
+        <PriorityBadge priority={idea.priority} />
+        {idea.scheduled_date && (
+          <span className="flex items-center gap-1 text-[10px] text-gray-400">
+            <Calendar size={10} />
+            {idea.scheduled_date}
+          </span>
         )}
-        {idea.status !== 'published' && (
-          <button onClick={(e) => { e.stopPropagation(); onConvert() }} className="btn-ghost text-xs py-1 px-2 text-blue-600 hover:text-blue-700 ml-auto">
-            → Post
-          </button>
-        )}
-        <button onClick={(e) => { e.stopPropagation(); onDelete() }} className="btn-ghost text-xs py-1 px-2 text-red-500 hover:text-red-600 ml-auto">
-          <Trash2 size={12} />
-        </button>
       </div>
     </div>
   )
 }
 
+// ─── Visualização Kanban ──────────────────────────────────────────────────────
+function KanbanView({ ideas, updateIdea, onCardClick }) {
+  const onDragEnd = ({ destination, draggableId }) => {
+    if (!destination) return
+    updateIdea(draggableId, { status: destination.droppableId })
+  }
+  const columnIdeas = (colId) => ideas.filter((i) => i.status === colId)
+
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="grid grid-cols-4 gap-4 min-h-[60vh]">
+        {KANBAN_COLUMNS.map((col) => {
+          const colIdeas = columnIdeas(col.id)
+          return (
+            <div key={col.id} className={`flex flex-col rounded-xl border ${col.color} overflow-hidden`}>
+              <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                  <span className="text-xs font-semibold text-gray-700">{col.label}</span>
+                </div>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.count_bg}`}>{colIdeas.length}</span>
+              </div>
+              <Droppable droppableId={col.id}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`flex-1 p-2 space-y-2 min-h-[200px] transition-colors ${snapshot.isDraggingOver ? 'bg-orange-50/60' : ''}`}
+                  >
+                    {colIdeas.map((idea, index) => (
+                      <Draggable key={idea.id} draggableId={idea.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div ref={provided.innerRef} {...provided.draggableProps}>
+                            <KanbanMiniCard
+                              idea={idea}
+                              onClick={() => onCardClick(idea)}
+                              dragHandleProps={provided.dragHandleProps}
+                              isDragging={snapshot.isDragging}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                    {colIdeas.length === 0 && (
+                      <div className="flex items-center justify-center h-20">
+                        <p className="text-[11px] text-gray-400">Solte cards aqui</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+          )
+        })}
+      </div>
+    </DragDropContext>
+  )
+}
+
 // ─── Visualização Calendário ──────────────────────────────────────────────────
-function CalendarView({ ideas, onCardClick }) {
+function CalendarView({ ideas, onCardClick, onNewIdea }) {
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const year = current.getFullYear()
@@ -106,6 +144,9 @@ function CalendarView({ ideas, onCardClick }) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
     return ideas.filter((i) => i.scheduled_date === dateStr)
   }
+
+  const makeDateStr = (day) =>
+    `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
 
   const unscheduled = ideas.filter((i) => !i.scheduled_date)
   const scheduled = ideas.filter((i) => i.scheduled_date)
@@ -137,31 +178,39 @@ function CalendarView({ ideas, onCardClick }) {
         </div>
         <div className="grid grid-cols-7">
           {cells.map((day, i) => {
-            const dayStr = day ? `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` : null
+            const dayStr = day ? makeDateStr(day) : null
             const isToday = dayStr === todayStr
             const dayIdeas = day ? ideasForDay(day) : []
             return (
               <div
                 key={i}
-                className={`min-h-[90px] border-b border-r border-gray-100 p-1.5 ${!day ? 'bg-gray-50/40' : ''} ${i % 7 === 6 ? 'border-r-0' : ''}`}
+                className={`border-b border-r border-gray-100 p-1.5 ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
+                onClick={() => day && onNewIdea(dayStr)}
               >
                 {day && (
                   <>
-                    <span className={`text-xs font-medium block mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
+                    <span
+                      className={`text-xs font-medium block mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
+                        isToday ? 'bg-orange-500 text-white' : 'text-gray-400'
+                      }`}
+                    >
                       {day}
                     </span>
-                    <div className="space-y-0.5">
-                      {dayIdeas.slice(0, 3).map((idea) => (
-                        <button
+                    <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                      {dayIdeas.slice(0, 2).map((idea) => (
+                        <KanbanMiniCard
                           key={idea.id}
+                          idea={idea}
                           onClick={() => onCardClick(idea)}
-                          className="w-full text-left p-1 rounded text-[10px] bg-orange-100 text-orange-700 border border-orange-200 truncate hover:bg-orange-200 transition-colors leading-tight"
-                        >
-                          {idea.title}
-                        </button>
+                        />
                       ))}
-                      {dayIdeas.length > 3 && (
-                        <span className="text-[10px] text-gray-400 pl-1">+{dayIdeas.length - 3} mais</span>
+                      {dayIdeas.length > 2 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onCardClick(dayIdeas[2]) }}
+                          className="text-[10px] text-gray-400 pl-1 hover:text-orange-500"
+                        >
+                          +{dayIdeas.length - 2} mais
+                        </button>
                       )}
                     </div>
                   </>
@@ -176,6 +225,7 @@ function CalendarView({ ideas, onCardClick }) {
       <div className="flex items-center gap-4 text-xs text-gray-400">
         <span><span className="font-medium text-gray-700">{scheduled.length}</span> agendadas</span>
         <span><span className="font-medium text-gray-700">{unscheduled.length}</span> sem data</span>
+        <span className="ml-auto text-[10px] text-gray-300">Clique em uma data para criar</span>
       </div>
 
       {/* Sem data */}
@@ -184,17 +234,11 @@ function CalendarView({ ideas, onCardClick }) {
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Ideias Sem Data</p>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {unscheduled.map((idea) => (
-              <button
+              <KanbanMiniCard
                 key={idea.id}
+                idea={idea}
                 onClick={() => onCardClick(idea)}
-                className="card p-3 text-left hover:border-orange-300 transition-colors group"
-              >
-                <p className="text-xs font-medium text-gray-800 truncate">{idea.title}</p>
-                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                  <PlatformBadge platform={idea.platform} />
-                  <StatusBadge status={idea.status} />
-                </div>
-              </button>
+              />
             ))}
           </div>
         </div>
@@ -204,19 +248,19 @@ function CalendarView({ ideas, onCardClick }) {
 }
 
 // ─── Visualização Gerar ───────────────────────────────────────────────────────
-function GenerateView({ onSaveIdea }) {
-  const insights = useStore((s) => s.insights)
-  const trendResults = useStore((s) => s.trendResults)
-  const generatedIdeas = useStore((s) => s.generatedIdeas)
+function GenerateView() {
+  const insights        = useStore((s) => s.insights)
+  const trendResults    = useStore((s) => s.trendResults)
+  const generatedIdeas  = useStore((s) => s.generatedIdeas)
   const setGeneratedIdeas = useStore((s) => s.setGeneratedIdeas)
   const saveGeneratedIdea = useStore((s) => s.saveGeneratedIdea)
 
-  const [loading, setLoading] = useState(false)
-  const [source, setSource] = useState('all')
+  const [loading, setLoading]   = useState(false)
+  const [source, setSource]     = useState('all')
   const [savedIds, setSavedIds] = useState(new Set())
 
   const hasInsights = insights.length > 0
-  const hasTrends = !!trendResults
+  const hasTrends   = !!trendResults
 
   const handleGenerate = async () => {
     setLoading(true)
@@ -236,8 +280,8 @@ function GenerateView({ onSaveIdea }) {
   }
 
   const fromInsights = generatedIdeas.filter((i) => i.source_type === 'insight')
-  const fromTrends = generatedIdeas.filter((i) => i.source_type === 'trend')
-  const fromAI = generatedIdeas.filter((i) => i.source_type === 'ai')
+  const fromTrends   = generatedIdeas.filter((i) => i.source_type === 'trend')
+  const fromAI       = generatedIdeas.filter((i) => i.source_type === 'ai')
 
   return (
     <div className="space-y-5">
@@ -247,10 +291,10 @@ function GenerateView({ onSaveIdea }) {
           <p className="text-xs text-gray-500 mb-2 font-medium">Gerar a partir de:</p>
           <div className="flex gap-2 flex-wrap">
             {[
-              { id: 'all', label: 'Tudo', icon: RefreshCw },
+              { id: 'all',      label: 'Tudo',       icon: RefreshCw },
               { id: 'insights', label: `Insights ${hasInsights ? `(${insights.length})` : '(0)'}`, icon: Sparkles, disabled: !hasInsights },
-              { id: 'trends', label: `Tendências ${hasTrends ? `(${trendResults?.topic})` : '(nenhuma)'}`, icon: Radar, disabled: !hasTrends },
-              { id: 'ai', label: 'IA Pura', icon: Zap },
+              { id: 'trends',   label: `Tendências ${hasTrends ? `(${trendResults?.topic})` : '(nenhuma)'}`, icon: Radar, disabled: !hasTrends },
+              { id: 'ai',       label: 'IA Pura',    icon: Zap },
             ].map(({ id, label, icon: Icon, disabled }) => (
               <button
                 key={id}
@@ -291,7 +335,7 @@ function GenerateView({ onSaveIdea }) {
               {insights.length > 3 && <p className="text-[11px] text-gray-400">+ {insights.length - 3} mais</p>}
             </div>
           ) : (
-            <p className="text-xs text-gray-400">Nenhum insight ainda. Gere-os no Motor de Insights.</p>
+            <p className="text-xs text-gray-400">Nenhum insight ainda. Gere-os na aba Analytics.</p>
           )}
         </div>
         <div className={`card p-4 border ${hasTrends ? 'border-blue-200' : 'border-gray-200'}`}>
@@ -339,8 +383,8 @@ function GenerateView({ onSaveIdea }) {
 
           {[
             { items: fromInsights, icon: Sparkles, color: 'text-purple-500', label: 'De Insights Analytics' },
-            { items: fromTrends, icon: Radar, color: 'text-blue-500', label: 'Do Radar de Tendências' },
-            { items: fromAI, icon: Zap, color: 'text-amber-500', label: 'Gerado por IA' },
+            { items: fromTrends,   icon: Radar,    color: 'text-blue-500',   label: 'Do Radar de Tendências' },
+            { items: fromAI,       icon: Zap,      color: 'text-amber-500',  label: 'Gerado por IA' },
           ].filter(({ items }) => items.length > 0).map(({ items, icon: Icon, color, label }) => (
             <div key={label}>
               <div className="flex items-center gap-2 mb-3">
@@ -359,7 +403,7 @@ function GenerateView({ onSaveIdea }) {
             <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center gap-3">
               <Check size={16} className="text-emerald-500 shrink-0" />
               <p className="text-sm text-emerald-700">
-                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visível nas visualizações Grid e Calendário.
+                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visíveis no Quadro e Calendário.
               </p>
             </div>
           )}
@@ -426,54 +470,64 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
   )
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'grid', label: 'Grid', icon: LayoutGrid },
+  { id: 'kanban',   label: 'Quadro',    icon: Kanban },
   { id: 'calendar', label: 'Calendário', icon: Calendar },
-  { id: 'generate', label: 'Gerar', icon: Zap },
+  { id: 'generate', label: 'Gerar',     icon: Zap },
 ]
 
-const STATUS_LABELS_FILTER = { all: 'Todos Status', idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
-const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta', medium: 'Média', low: 'Baixa' }
+const STATUS_LABELS_FILTER   = { all: 'Todos Status',      idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
+const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium: 'Média',   low: 'Baixa' }
 
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeasHub() {
-  const ideas = useStore((s) => s.ideas)
-  const addIdea = useStore((s) => s.addIdea)
-  const updateIdea = useStore((s) => s.updateIdea)
-  const deleteIdea = useStore((s) => s.deleteIdea)
+  const ideas            = useStore((s) => s.ideas)
+  const addIdea          = useStore((s) => s.addIdea)
+  const updateIdea       = useStore((s) => s.updateIdea)
+  const deleteIdea       = useStore((s) => s.deleteIdea)
   const convertIdeaToPost = useStore((s) => s.convertIdeaToPost)
 
-  const [tab, setTab] = useState('grid')
-  const [formOpen, setFormOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState(null)
-  const [search, setSearch] = useState('')
+  const [tab, setTab]                   = useState('kanban')
+  const [formOpen, setFormOpen]         = useState(false)
+  const [editTarget, setEditTarget]     = useState(null)
+  const [search, setSearch]             = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterStatus, setFilterStatus]     = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
 
-  const platforms = ['all', ...new Set(ideas.map((i) => i.platform))]
-  const statuses = ['all', 'idea', 'draft', 'ready', 'published']
-  const priorities = ['all', 'high', 'medium', 'low']
+  const platforms = ['all', ...new Set(ideas.map((i) => i.platform).filter(Boolean))]
 
   const filtered = ideas
     .filter((i) => {
       if (filterPlatform !== 'all' && i.platform !== filterPlatform) return false
       if (filterStatus !== 'all' && i.status !== filterStatus) return false
       if (filterPriority !== 'all' && i.priority !== filterPriority) return false
-      if (search && !i.title.toLowerCase().includes(search.toLowerCase()) &&
+      if (search && !i.title?.toLowerCase().includes(search.toLowerCase()) &&
         !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
 
+  // editTarget with an id → edit existing; editTarget without id (just defaults) → new with pre-fill
   const handleSave = (data) => {
-    if (editTarget) updateIdea(editTarget.id, data)
+    if (editTarget?.id) updateIdea(editTarget.id, data)
     else addIdea(data)
     setEditTarget(null)
   }
 
   const openEdit = (idea) => { setEditTarget(idea); setFormOpen(true) }
-  const openNew = () => { setEditTarget(null); setFormOpen(true) }
+
+  // openNew: optionally pass default values (e.g. { scheduled_date })
+  const openNew = (defaults = null) => {
+    setEditTarget(defaults)
+    setFormOpen(true)
+  }
+
+  // Called from CalendarView when clicking a date
+  const handleCalendarDateClick = (dateStr) => {
+    openNew({ scheduled_date: dateStr })
+  }
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
@@ -489,7 +543,7 @@ export default function IdeasHub() {
               }`}
             >
               <Icon size={13} /> {label}
-              {id === 'grid' && ideas.length > 0 && (
+              {id === 'kanban' && ideas.length > 0 && (
                 <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md ml-0.5">
                   {ideas.length}
                 </span>
@@ -497,13 +551,13 @@ export default function IdeasHub() {
             </button>
           ))}
         </div>
-        <button onClick={openNew} className="btn-primary shrink-0">
+        <button onClick={() => openNew()} className="btn-primary shrink-0">
           <Plus size={15} /> Nova Ideia
         </button>
       </div>
 
-      {/* Filtros (grid e calendário) */}
-      {(tab === 'grid' || tab === 'calendar') && (
+      {/* Filtros (kanban e calendário) */}
+      {(tab === 'kanban' || tab === 'calendar') && (
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 max-w-xs">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -513,60 +567,50 @@ export default function IdeasHub() {
             {platforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Todas Plataformas' : p}</option>)}
           </select>
           <select className="select w-auto" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            {statuses.map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
+            {['all','idea','draft','ready','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
           </select>
           <select className="select w-auto" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-            {priorities.map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
+            {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
           </select>
-          <p className="text-xs text-gray-400 ml-auto">
-            {filtered.length} de {ideas.length} ideias
-          </p>
+          <p className="text-xs text-gray-400 ml-auto">{filtered.length} de {ideas.length} ideias</p>
         </div>
       )}
 
-      {/* Visualização Grid */}
-      {tab === 'grid' && (
-        filtered.length === 0 ? (
+      {/* Visualização Kanban */}
+      {tab === 'kanban' && (
+        filtered.length === 0 && ideas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <Lightbulb size={40} className="text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">Nenhuma ideia encontrada</p>
-            <p className="text-gray-300 text-sm mt-1">Ajuste os filtros ou crie uma nova ideia</p>
-            <button onClick={openNew} className="btn-primary mt-4"><Plus size={14} /> Criar Primeira Ideia</button>
+            <div className="w-16 h-16 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-4">
+              <Kanban size={28} className="text-orange-400" />
+            </div>
+            <p className="text-gray-500 font-medium">Nenhuma ideia ainda</p>
+            <p className="text-gray-300 text-sm mt-1">Crie sua primeira ideia para começar</p>
+            <button onClick={() => openNew()} className="btn-primary mt-4"><Plus size={14} /> Criar Primeira Ideia</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onEdit={() => openEdit(idea)}
-                onDelete={() => deleteIdea(idea.id)}
-                onConvert={() => convertIdeaToPost(idea.id)}
-                onStatusChange={(status) => updateIdea(idea.id, { status })}
-              />
-            ))}
-          </div>
+          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} />
         )
       )}
 
       {/* Visualização Calendário */}
       {tab === 'calendar' && (
-        <CalendarView ideas={filtered} onCardClick={openEdit} />
+        <CalendarView
+          ideas={filtered}
+          onCardClick={openEdit}
+          onNewIdea={handleCalendarDateClick}
+        />
       )}
 
       {/* Visualização Gerar */}
-      {tab === 'generate' && (
-        <GenerateView onSaveIdea={addIdea} />
-      )}
+      {tab === 'generate' && <GenerateView />}
 
-      {/* Modais */}
+      {/* Modal */}
       <IdeaForm
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditTarget(null) }}
         onSave={handleSave}
         initial={editTarget}
       />
-
     </div>
   )
 }
