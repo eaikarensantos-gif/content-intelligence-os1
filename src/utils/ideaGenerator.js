@@ -1,44 +1,44 @@
 const TEMPLATES = [
   {
-    hook_type: 'list',
-    title: (topic, n) => `${n} ${topic} Strategies That Actually Work in 2025`,
-    description: (topic) => `A curated breakdown of the top ${topic} strategies, ranked by impact. Includes real examples, data points, and actionable next steps for each.`,
-    formats: ['carousel', 'thread'],
+    hook_type: 'lista',
+    title: (topic, n) => `${n} Estratégias de ${topic} Que Realmente Funcionam em 2025`,
+    description: (topic) => `Um detalhamento das melhores estratégias de ${topic}, classificadas por impacto. Inclui exemplos reais, dados e próximos passos acionáveis para cada uma.`,
+    formats: ['carrossel', 'thread'],
     platforms: ['linkedin', 'twitter'],
   },
   {
-    hook_type: 'contrarian',
-    title: (topic) => `Why Most ${topic} Advice Is Wrong (And What to Do Instead)`,
-    description: (topic) => `A contrarian take challenging conventional wisdom about ${topic}. Backed by data and personal experience, this post turns common assumptions upside down.`,
+    hook_type: 'contrario',
+    title: (topic) => `Por Que a Maioria dos Conselhos Sobre ${topic} Está Errada`,
+    description: (topic) => `Uma perspectiva contrária que desafia o senso comum sobre ${topic}. Baseada em dados e experiência prática, este post vira suposições de cabeça para baixo.`,
     formats: ['thread', 'video'],
     platforms: ['twitter', 'youtube'],
   },
   {
-    hook_type: 'story',
-    title: (topic) => `I Spent 6 Months Mastering ${topic} — Here's Everything I Learned`,
-    description: (topic) => `A personal journey documenting the lessons, failures, and wins from deep-diving into ${topic}. Authentic, relatable, and packed with takeaways.`,
-    formats: ['video', 'article'],
+    hook_type: 'historia',
+    title: (topic) => `Passei 6 Meses Dominando ${topic} — Aqui Está Tudo Que Aprendi`,
+    description: (topic) => `Uma jornada pessoal documentando lições, fracassos e vitórias de mergulhar fundo em ${topic}. Autêntico, relacionável e cheio de aprendizados.`,
+    formats: ['video', 'artigo'],
     platforms: ['youtube', 'linkedin'],
   },
   {
-    hook_type: 'data',
-    title: (topic) => `The ${topic} Data Nobody Is Talking About`,
-    description: (topic) => `An analysis of underreported statistics and trends in ${topic}. Data-driven insights that challenge assumptions and provide a competitive edge.`,
-    formats: ['carousel', 'thread'],
+    hook_type: 'dados',
+    title: (topic) => `Os Dados Sobre ${topic} Que Ninguém Está Mostrando`,
+    description: (topic) => `Uma análise de estatísticas subreportadas e tendências em ${topic}. Insights baseados em dados que desafiam suposições e oferecem vantagem competitiva.`,
+    formats: ['carrossel', 'thread'],
     platforms: ['linkedin', 'twitter'],
   },
   {
-    hook_type: 'problem',
-    title: (topic) => `The #1 Mistake People Make With ${topic} (And How to Fix It)`,
-    description: (topic) => `A deep dive into the most common and costly mistake in ${topic}, why it happens, and a clear, step-by-step path to fix it.`,
-    formats: ['reel', 'carousel'],
+    hook_type: 'problema',
+    title: (topic) => `O Erro #1 Que as Pessoas Cometem Com ${topic} (E Como Corrigir)`,
+    description: (topic) => `Um mergulho profundo no equívoco mais comum e custoso em ${topic}, por que ele acontece e um caminho claro passo a passo para corrigi-lo.`,
+    formats: ['reel', 'carrossel'],
     platforms: ['instagram', 'tiktok'],
   },
   {
-    hook_type: 'question',
-    title: (topic) => `Is ${topic} Actually Worth It? An Honest Answer`,
-    description: (topic) => `An unbiased, evidence-based answer to the question everyone is thinking but few are asking about ${topic}. Cuts through hype to deliver real perspective.`,
-    formats: ['video', 'article'],
+    hook_type: 'pergunta',
+    title: (topic) => `Vale a Pena Investir em ${topic}? Uma Resposta Honesta`,
+    description: (topic) => `Uma resposta imparcial e baseada em evidências para a pergunta que todos pensam mas poucos fazem sobre ${topic}. Corta o hype para entregar perspectiva real.`,
+    formats: ['video', 'artigo'],
     platforms: ['youtube', 'linkedin'],
   },
 ]
@@ -51,16 +51,15 @@ export function generateIdeasFromInsights(insights, count = 6) {
   if (!insights || insights.length === 0) return []
 
   const generated = []
-  const usedTemplates = new Set()
 
   insights.forEach((insight, i) => {
     if (generated.length >= count) return
 
     const topic = extractTopicFromInsight(insight)
     const template = TEMPLATES.find((t) => {
-      if (insight.type === 'format') return t.hook_type === 'data'
-      if (insight.type === 'hook') return t.hook_type === insight.recommendation?.split(' ')[2] || 'story'
-      if (insight.type === 'platform') return t.hook_type === 'list'
+      if (insight.type === 'format') return t.hook_type === 'dados'
+      if (insight.type === 'hook') return t.hook_type === 'historia'
+      if (insight.type === 'platform') return t.hook_type === 'lista'
       return true
     }) || pickRandom(TEMPLATES)
 
@@ -80,10 +79,9 @@ export function generateIdeasFromInsights(insights, count = 6) {
     })
   })
 
-  // Fill remaining slots with diverse ideas
   while (generated.length < count) {
     const template = pickRandom(TEMPLATES)
-    const topics = ['Content Strategy', 'Creator Economy', 'AI Tools', 'Audience Building', 'Monetization']
+    const topics = ['Estratégia de Conteúdo', 'Economia Criativa', 'Ferramentas de IA', 'Construção de Audiência', 'Monetização Digital']
     const topic = pickRandom(topics)
     const n = Math.floor(Math.random() * 4) + 4
     generated.push({
@@ -112,7 +110,7 @@ export function generateIdeasFromTrends(trendResults, count = 4) {
     title: opp.title,
     description: opp.description,
     topic,
-    hook: opp.hook?.toLowerCase().replace(' hook', '') || 'list',
+    hook: opp.hook?.toLowerCase().replace('gancho de ', '').replace('gancho ', '') || 'lista',
     format: opp.format,
     platform: opp.platform,
     source_insight: null,
@@ -124,14 +122,13 @@ export function generateIdeasFromTrends(trendResults, count = 4) {
 
 function extractTopicFromInsight(insight) {
   const words = insight.title?.split(' ') || []
-  // Look for content topics mentioned
-  const contentTopics = ['carousel', 'thread', 'video', 'reel', 'article', 'linkedin', 'instagram', 'twitter', 'youtube', 'tiktok']
+  const contentTopics = ['carrossel', 'thread', 'video', 'reel', 'artigo', 'linkedin', 'instagram', 'twitter', 'youtube', 'tiktok']
   const found = words.find((w) => contentTopics.includes(w.toLowerCase()))
   if (found) {
     if (['linkedin', 'instagram', 'twitter', 'youtube', 'tiktok'].includes(found.toLowerCase())) {
-      return 'Platform Strategy'
+      return 'Estratégia de Plataforma'
     }
-    return `${found.charAt(0).toUpperCase() + found.slice(1)} Content`
+    return `Conteúdo em ${found.charAt(0).toUpperCase() + found.slice(1)}`
   }
-  return 'Content Strategy'
+  return 'Estratégia de Conteúdo'
 }

@@ -10,8 +10,8 @@ const EMPTY = {
 }
 
 const NUMERIC_FIELDS = [
-  ['impressions', 'Impressions'], ['reach', 'Reach'], ['likes', 'Likes'],
-  ['comments', 'Comments'], ['shares', 'Shares'], ['saves', 'Saves'], ['link_clicks', 'Link Clicks'],
+  ['impressions', 'Impressões'], ['reach', 'Alcance'], ['likes', 'Curtidas'],
+  ['comments', 'Comentários'], ['shares', 'Compartilhamentos'], ['saves', 'Salvamentos'], ['link_clicks', 'Cliques no Link'],
 ]
 
 export default function MetricsForm({ open, onClose }) {
@@ -66,10 +66,10 @@ export default function MetricsForm({ open, onClose }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Performance Metrics">
-      {/* Tabs */}
+    <Modal open={open} onClose={onClose} title="Adicionar Métricas de Desempenho">
+      {/* Abas */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5">
-        {[['manual', 'Manual Entry'], ['csv', 'CSV Upload']].map(([id, label]) => (
+        {[['manual', 'Entrada Manual'], ['csv', 'Upload CSV']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -84,21 +84,21 @@ export default function MetricsForm({ open, onClose }) {
 
       {tab === 'manual' && (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Post selector */}
+          {/* Seletor de post */}
           <div>
-            <label className="label">Linked Post</label>
+            <label className="label">Post Vinculado</label>
             <select className="select" value={form.post_id} onChange={(e) => set('post_id', e.target.value)} required>
-              <option value="">Select a post...</option>
+              <option value="">Selecione um post...</option>
               {posts.map((p) => (
                 <option key={p.id} value={p.id}>{p.title.slice(0, 50)} — {p.platform}</option>
               ))}
             </select>
           </div>
 
-          {/* Platform + Date */}
+          {/* Plataforma + Data */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Platform</label>
+              <label className="label">Plataforma</label>
               <select className="select" value={form.platform} onChange={(e) => set('platform', e.target.value)}>
                 {['linkedin', 'instagram', 'twitter', 'youtube', 'tiktok'].map((p) => (
                   <option key={p} value={p}>{p}</option>
@@ -106,12 +106,12 @@ export default function MetricsForm({ open, onClose }) {
               </select>
             </div>
             <div>
-              <label className="label">Date</label>
+              <label className="label">Data</label>
               <input type="date" className="input" value={form.date} onChange={(e) => set('date', e.target.value)} required />
             </div>
           </div>
 
-          {/* Metrics grid */}
+          {/* Grid de métricas */}
           <div className="grid grid-cols-2 gap-3">
             {NUMERIC_FIELDS.map(([key, label]) => (
               <div key={key}>
@@ -128,15 +128,15 @@ export default function MetricsForm({ open, onClose }) {
             ))}
           </div>
 
-          {/* Calculated preview */}
+          {/* Preview calculado */}
           {(form.likes || form.comments || form.shares || form.saves) && (
             <div className="p-3 rounded-xl bg-orange-50 border border-orange-100">
-              <p className="text-xs font-medium text-gray-500 mb-2">Calculated Metrics Preview</p>
+              <p className="text-xs font-medium text-gray-500 mb-2">Prévia das Métricas Calculadas</p>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 {[
-                  ['Engagement', (Number(form.likes || 0) + Number(form.comments || 0) + Number(form.shares || 0) + Number(form.saves || 0)).toLocaleString()],
-                  ['Eng. Rate', form.impressions ? `${((Number(form.likes || 0) + Number(form.comments || 0) + Number(form.shares || 0) + Number(form.saves || 0)) / Number(form.impressions) * 100).toFixed(2)}%` : '—'],
-                  ['Authority', (Number(form.shares || 0) + Number(form.saves || 0)).toLocaleString()],
+                  ['Engajamento', (Number(form.likes || 0) + Number(form.comments || 0) + Number(form.shares || 0) + Number(form.saves || 0)).toLocaleString()],
+                  ['Taxa Eng.', form.impressions ? `${((Number(form.likes || 0) + Number(form.comments || 0) + Number(form.shares || 0) + Number(form.saves || 0)) / Number(form.impressions) * 100).toFixed(2)}%` : '—'],
+                  ['Autoridade', (Number(form.shares || 0) + Number(form.saves || 0)).toLocaleString()],
                 ].map(([label, value]) => (
                   <div key={label} className="text-center">
                     <p className="text-gray-400">{label}</p>
@@ -148,9 +148,9 @@ export default function MetricsForm({ open, onClose }) {
           )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn-primary">
-              <Plus size={14} /> Add Metrics
+              <Plus size={14} /> Adicionar Métricas
             </button>
           </div>
         </form>
@@ -160,12 +160,12 @@ export default function MetricsForm({ open, onClose }) {
         <div className="space-y-4">
           <div className="p-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 text-center">
             <Upload size={24} className="text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-700 mb-1">Upload a CSV file</p>
+            <p className="text-sm text-gray-700 mb-1">Faça upload de um arquivo CSV</p>
             <p className="text-xs text-gray-400 mb-3">
-              Columns: post_id, platform, date, impressions, reach, likes, comments, shares, saves, link_clicks
+              Colunas: post_id, platform, date, impressions, reach, likes, comments, shares, saves, link_clicks
             </p>
             <label className="btn-primary cursor-pointer inline-flex">
-              <FileText size={14} /> Choose CSV
+              <FileText size={14} /> Escolher CSV
               <input type="file" accept=".csv" className="hidden" onChange={handleCSV} />
             </label>
           </div>
@@ -173,22 +173,22 @@ export default function MetricsForm({ open, onClose }) {
           {csvResult && (
             <div className="space-y-3">
               <p className="text-xs text-gray-500">
-                Found <span className="text-emerald-600 font-semibold">{csvResult.length} rows</span> ready to import
+                Encontradas <span className="text-emerald-600 font-semibold">{csvResult.length} linhas</span> prontas para importar
               </p>
               <div className="max-h-40 overflow-y-auto rounded-lg bg-gray-50 border border-gray-200">
                 {csvResult.slice(0, 5).map((row, i) => (
                   <div key={i} className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 last:border-0">
-                    {row.post_id || 'No post_id'} · {row.platform} · {row.date} · {parseInt(row.impressions || 0).toLocaleString()} imp.
+                    {row.post_id || 'Sem post_id'} · {row.platform} · {row.date} · {parseInt(row.impressions || 0).toLocaleString()} imp.
                   </div>
                 ))}
                 {csvResult.length > 5 && (
-                  <div className="px-3 py-2 text-xs text-gray-400">+ {csvResult.length - 5} more rows</div>
+                  <div className="px-3 py-2 text-xs text-gray-400">+ {csvResult.length - 5} linhas mais</div>
                 )}
               </div>
               <div className="flex justify-end gap-2">
-                <button className="btn-secondary" onClick={() => setCsvResult(null)}>Clear</button>
+                <button className="btn-secondary" onClick={() => setCsvResult(null)}>Limpar</button>
                 <button className="btn-primary" onClick={importCSV}>
-                  Import {csvResult.length} rows
+                  Importar {csvResult.length} linhas
                 </button>
               </div>
             </div>

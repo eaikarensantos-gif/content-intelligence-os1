@@ -2,13 +2,13 @@ import { useLocation } from 'react-router-dom'
 import { Bell, Search } from 'lucide-react'
 
 const TITLES = {
-  '/': { title: 'Dashboard', sub: 'Your content intelligence overview' },
-  '/ideas': { title: 'Ideas Hub', sub: 'Capture and organize content ideas' },
-  '/kanban': { title: 'Content Board', sub: 'Plan and manage your content pipeline' },
-  '/trends': { title: 'Trend Radar', sub: 'Discover what\'s working in your niche' },
-  '/analytics': { title: 'Analytics', sub: 'Track and analyze post performance' },
-  '/insights': { title: 'Insight Engine', sub: 'AI-generated insights from your data' },
-  '/loop': { title: 'Idea Loop', sub: 'Generate new ideas powered by your analytics' },
+  '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
+  '/ideas': { title: 'Hub de Ideias', sub: 'Capture e organize suas ideias de conteúdo' },
+  '/kanban': { title: 'Quadro de Conteúdo', sub: 'Planeje e gerencie seu pipeline de conteúdo' },
+  '/trends': { title: 'Radar de Tendências', sub: 'Descubra o que está funcionando no seu nicho' },
+  '/analytics': { title: 'Analytics', sub: 'Acompanhe e analise o desempenho dos posts' },
+  '/insights': { title: 'Motor de Insights', sub: 'Insights gerados a partir dos seus dados' },
+  '/loop': { title: 'Loop de Ideias', sub: 'Gere novas ideias com base nos seus analytics' },
 }
 
 export default function Header() {

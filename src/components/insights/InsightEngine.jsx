@@ -74,21 +74,21 @@ export default function InsightEngine() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={18} className="text-orange-500" />
-              <h2 className="text-base font-bold text-gray-900">AI Insight Engine</h2>
+              <h2 className="text-base font-bold text-gray-900">Motor de Insights com IA</h2>
             </div>
             <p className="text-sm text-gray-500 max-w-lg">
-              Automatically generates insights from your post performance data — revealing which formats, hooks, and platforms are driving your best results.
+              Gera insights automaticamente a partir dos seus dados de desempenho — revelando quais formatos, ganchos e plataformas estão gerando seus melhores resultados.
             </p>
             {!canGenerate && (
               <p className="text-xs text-amber-600 mt-2">
-                ⚠ You need at least 2 metric entries to generate insights. Add more in Analytics.
+                ⚠ Você precisa de pelo menos 2 registros de métricas para gerar insights. Adicione mais em Analytics.
               </p>
             )}
           </div>
           <div className="flex gap-2 shrink-0 flex-wrap">
             {insights.length > 0 && (
               <button onClick={clearInsights} className="btn-secondary text-xs">
-                Clear
+                Limpar
               </button>
             )}
             <button
@@ -97,21 +97,21 @@ export default function InsightEngine() {
               className="btn-primary"
             >
               {loading ? (
-                <><Loader2 size={14} className="animate-spin" /> Analyzing...</>
+                <><Loader2 size={14} className="animate-spin" /> Analisando...</>
               ) : (
-                <><RefreshCw size={14} /> {insights.length > 0 ? 'Regenerate' : 'Generate Insights'}</>
+                <><RefreshCw size={14} /> {insights.length > 0 ? 'Regenerar' : 'Gerar Insights'}</>
               )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Stats bar */}
+      {/* Barra de stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Posts Tracked', value: posts.length },
-          { label: 'Metric Snapshots', value: metrics.length },
-          { label: 'Insights Generated', value: insights.length },
+          { label: 'Posts Rastreados', value: posts.length },
+          { label: 'Snapshots de Métricas', value: metrics.length },
+          { label: 'Insights Gerados', value: insights.length },
         ].map(({ label, value }) => (
           <div key={label} className="card p-4 text-center">
             <p className="text-xl font-bold text-gray-900">{value}</p>
@@ -128,8 +128,8 @@ export default function InsightEngine() {
             <Sparkles size={18} className="absolute inset-0 m-auto text-orange-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-800">Processing your data...</p>
-            <p className="text-xs text-gray-400 mt-1">Analyzing formats, hooks, platforms, and patterns</p>
+            <p className="text-sm font-medium text-gray-800">Processando seus dados...</p>
+            <p className="text-xs text-gray-400 mt-1">Analisando formatos, ganchos, plataformas e padrões</p>
           </div>
         </div>
       )}
@@ -138,9 +138,9 @@ export default function InsightEngine() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-800">
-              {insights.length} Insights Found
+              {insights.length} Insights Encontrados
             </h3>
-            <span className="text-xs text-gray-400">Based on {metrics.length} metric snapshots</span>
+            <span className="text-xs text-gray-400">Baseado em {metrics.length} snapshots de métricas</span>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {insights.map((ins) => <InsightCard key={ins.id} insight={ins} />)}
@@ -153,12 +153,12 @@ export default function InsightEngine() {
           <div className="w-16 h-16 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-4">
             <Sparkles size={28} className="text-orange-500" />
           </div>
-          <h3 className="text-gray-700 font-semibold mb-2">Ready to generate insights</h3>
+          <h3 className="text-gray-700 font-semibold mb-2">Pronto para gerar insights</h3>
           <p className="text-gray-400 text-sm max-w-sm mb-4">
-            Click "Generate Insights" to analyze your {metrics.length} metric snapshots and discover what's working.
+            Clique em "Gerar Insights" para analisar seus {metrics.length} snapshots de métricas e descobrir o que está funcionando.
           </p>
           <button onClick={handleGenerate} className="btn-primary">
-            <Sparkles size={14} /> Generate Insights
+            <Sparkles size={14} /> Gerar Insights
           </button>
         </div>
       )}
@@ -168,9 +168,9 @@ export default function InsightEngine() {
           <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-4">
             <BarChart2 size={28} className="text-amber-500" />
           </div>
-          <h3 className="text-gray-700 font-semibold mb-2">Not enough data yet</h3>
+          <h3 className="text-gray-700 font-semibold mb-2">Dados insuficientes ainda</h3>
           <p className="text-gray-400 text-sm max-w-sm">
-            Add at least 2 performance snapshots in the Analytics module to enable insight generation.
+            Adicione pelo menos 2 snapshots de desempenho no módulo Analytics para ativar a geração de insights.
           </p>
         </div>
       )}

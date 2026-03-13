@@ -11,14 +11,14 @@ import { PlatformBadge, StatusBadge, PriorityBadge, FormatBadge } from '../commo
 import { generateIdeasFromInsights, generateIdeasFromTrends } from '../../utils/ideaGenerator'
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
-const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab']
 
 const KANBAN_COLUMNS = [
-  { id: 'idea', label: 'Ideas', color: 'border-orange-200 bg-orange-50/60', dot: 'bg-orange-400', count_bg: 'bg-orange-100 text-orange-700' },
-  { id: 'draft', label: 'Drafts', color: 'border-blue-200 bg-blue-50/60', dot: 'bg-blue-400', count_bg: 'bg-blue-100 text-blue-700' },
-  { id: 'ready', label: 'Ready', color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
-  { id: 'published', label: 'Published', color: 'border-green-200 bg-green-50/60', dot: 'bg-green-400', count_bg: 'bg-green-100 text-green-700' },
+  { id: 'idea', label: 'Ideias', color: 'border-orange-200 bg-orange-50/60', dot: 'bg-orange-400', count_bg: 'bg-orange-100 text-orange-700' },
+  { id: 'draft', label: 'Rascunhos', color: 'border-blue-200 bg-blue-50/60', dot: 'bg-blue-400', count_bg: 'bg-blue-100 text-blue-700' },
+  { id: 'ready', label: 'Pronto', color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
+  { id: 'published', label: 'Publicado', color: 'border-green-200 bg-green-50/60', dot: 'bg-green-400', count_bg: 'bg-green-100 text-green-700' },
 ]
 
 const SOURCE_COLORS = {
@@ -28,7 +28,9 @@ const SOURCE_COLORS = {
 }
 const SOURCE_ICONS = { insight: Sparkles, trend: Radar, ai: Zap }
 
-// ─── Metrics modal (used in Kanban) ───────────────────────────────────────────
+const NEXT_STATUS_LABELS = { idea: 'Rascunho', draft: 'Pronto', ready: 'Publicado' }
+
+// ─── Modal de métricas (usado no Kanban) ─────────────────────────────────────
 function MetricsModal({ open, ideaId, onClose }) {
   const addPost = useStore((s) => s.addPost)
   const addMetric = useStore((s) => s.addMetric)
@@ -54,14 +56,14 @@ function MetricsModal({ open, ideaId, onClose }) {
     onClose()
   }
   const fields = [
-    ['impressions', 'Impressions'], ['reach', 'Reach'], ['likes', 'Likes'],
-    ['comments', 'Comments'], ['shares', 'Shares'], ['saves', 'Saves'], ['link_clicks', 'Link Clicks'],
+    ['impressions', 'Impressões'], ['reach', 'Alcance'], ['likes', 'Curtidas'],
+    ['comments', 'Comentários'], ['shares', 'Compartilhamentos'], ['saves', 'Salvamentos'], ['link_clicks', 'Cliques no Link'],
   ]
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="relative bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-md animate-slide-up shadow-xl">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Register Metrics — {idea.title.slice(0, 40)}</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Registrar Métricas — {idea.title.slice(0, 40)}</h3>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             {fields.map(([key, label]) => (
@@ -72,8 +74,8 @@ function MetricsModal({ open, ideaId, onClose }) {
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button type="button" className="btn-secondary text-xs" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary text-xs">Save Metrics</button>
+            <button type="button" className="btn-secondary text-xs" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn-primary text-xs">Salvar Métricas</button>
           </div>
         </form>
       </div>
@@ -81,7 +83,7 @@ function MetricsModal({ open, ideaId, onClose }) {
   )
 }
 
-// ─── Grid card ───────────────────────────────────────────────────────────────
+// ─── Card de ideia (grid) ─────────────────────────────────────────────────────
 function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
   const NEXT_STATUS = { idea: 'draft', draft: 'ready', ready: 'published', published: null }
   const nextStatus = NEXT_STATUS[idea.status]
@@ -120,7 +122,7 @@ function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
       {idea.scheduled_date && (
         <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
           <Calendar size={11} />
-          <span>Scheduled: {idea.scheduled_date}</span>
+          <span>Agendado: {idea.scheduled_date}</span>
         </div>
       )}
 
@@ -129,11 +131,11 @@ function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={onEdit} className="btn-ghost text-xs py-1 px-2">
-          <Edit2 size={12} /> Edit
+          <Edit2 size={12} /> Editar
         </button>
         {nextStatus && (
           <button onClick={(e) => { e.stopPropagation(); onStatusChange(nextStatus) }} className="btn-ghost text-xs py-1 px-2 text-orange-600 hover:text-orange-700">
-            <ArrowRight size={12} /> {nextStatus}
+            <ArrowRight size={12} /> {NEXT_STATUS_LABELS[idea.status]}
           </button>
         )}
         {idea.status !== 'published' && (
@@ -149,7 +151,7 @@ function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
   )
 }
 
-// ─── Kanban view ─────────────────────────────────────────────────────────────
+// ─── Visualização Kanban ──────────────────────────────────────────────────────
 function KanbanView({ ideas, updateIdea, onCardClick, onMetrics }) {
   const onDragEnd = ({ destination, draggableId }) => {
     if (!destination) return
@@ -219,7 +221,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onMetrics }) {
                                 onClick={() => onMetrics(idea.id)}
                                 className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors px-1.5 py-1 rounded hover:bg-orange-50"
                               >
-                                <BarChart2 size={10} /> Metrics
+                                <BarChart2 size={10} /> Métricas
                               </button>
                             </div>
                           </div>
@@ -229,7 +231,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onMetrics }) {
                     {provided.placeholder}
                     {colIdeas.length === 0 && (
                       <div className="flex items-center justify-center h-20">
-                        <p className="text-[11px] text-gray-400">Drop cards here</p>
+                        <p className="text-[11px] text-gray-400">Solte cards aqui</p>
                       </div>
                     )}
                   </div>
@@ -243,7 +245,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onMetrics }) {
   )
 }
 
-// ─── Calendar view ───────────────────────────────────────────────────────────
+// ─── Visualização Calendário ──────────────────────────────────────────────────
 function CalendarView({ ideas, onCardClick }) {
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
@@ -265,7 +267,7 @@ function CalendarView({ ideas, onCardClick }) {
 
   return (
     <div className="space-y-5">
-      {/* Month nav */}
+      {/* Navegação do mês */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-800">{MONTHS[month]} {year}</h3>
         <div className="flex items-center gap-1">
@@ -273,7 +275,7 @@ function CalendarView({ ideas, onCardClick }) {
             <ChevronLeft size={15} />
           </button>
           <button onClick={() => setCurrent(new Date(today.getFullYear(), today.getMonth(), 1))} className="text-xs px-2 py-1 rounded-lg hover:bg-gray-100 text-gray-500">
-            Today
+            Hoje
           </button>
           <button onClick={() => setCurrent(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
             <ChevronRight size={15} />
@@ -281,7 +283,7 @@ function CalendarView({ ideas, onCardClick }) {
         </div>
       </div>
 
-      {/* Calendar grid */}
+      {/* Grade do calendário */}
       <div className="border border-gray-200 rounded-xl overflow-hidden">
         <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
           {WEEKDAYS.map((d) => (
@@ -314,7 +316,7 @@ function CalendarView({ ideas, onCardClick }) {
                         </button>
                       ))}
                       {dayIdeas.length > 3 && (
-                        <span className="text-[10px] text-gray-400 pl-1">+{dayIdeas.length - 3} more</span>
+                        <span className="text-[10px] text-gray-400 pl-1">+{dayIdeas.length - 3} mais</span>
                       )}
                     </div>
                   </>
@@ -325,16 +327,16 @@ function CalendarView({ ideas, onCardClick }) {
         </div>
       </div>
 
-      {/* Stats row */}
+      {/* Estatísticas */}
       <div className="flex items-center gap-4 text-xs text-gray-400">
-        <span><span className="font-medium text-gray-700">{scheduled.length}</span> scheduled</span>
-        <span><span className="font-medium text-gray-700">{unscheduled.length}</span> unscheduled</span>
+        <span><span className="font-medium text-gray-700">{scheduled.length}</span> agendadas</span>
+        <span><span className="font-medium text-gray-700">{unscheduled.length}</span> sem data</span>
       </div>
 
-      {/* Unscheduled */}
+      {/* Sem data */}
       {unscheduled.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Unscheduled Ideas</p>
+          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Ideias Sem Data</p>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {unscheduled.map((idea) => (
               <button
@@ -356,7 +358,7 @@ function CalendarView({ ideas, onCardClick }) {
   )
 }
 
-// ─── Generate view ────────────────────────────────────────────────────────────
+// ─── Visualização Gerar ───────────────────────────────────────────────────────
 function GenerateView({ onSaveIdea }) {
   const insights = useStore((s) => s.insights)
   const trendResults = useStore((s) => s.trendResults)
@@ -394,16 +396,16 @@ function GenerateView({ onSaveIdea }) {
 
   return (
     <div className="space-y-5">
-      {/* Source + generate */}
+      {/* Fonte + gerar */}
       <div className="card p-4 flex items-center gap-4 flex-wrap">
         <div className="flex-1">
-          <p className="text-xs text-gray-500 mb-2 font-medium">Generate from:</p>
+          <p className="text-xs text-gray-500 mb-2 font-medium">Gerar a partir de:</p>
           <div className="flex gap-2 flex-wrap">
             {[
-              { id: 'all', label: 'Everything', icon: RefreshCw },
+              { id: 'all', label: 'Tudo', icon: RefreshCw },
               { id: 'insights', label: `Insights ${hasInsights ? `(${insights.length})` : '(0)'}`, icon: Sparkles, disabled: !hasInsights },
-              { id: 'trends', label: `Trends ${hasTrends ? `(${trendResults?.topic})` : '(none)'}`, icon: Radar, disabled: !hasTrends },
-              { id: 'ai', label: 'Pure AI', icon: Zap },
+              { id: 'trends', label: `Tendências ${hasTrends ? `(${trendResults?.topic})` : '(nenhuma)'}`, icon: Radar, disabled: !hasTrends },
+              { id: 'ai', label: 'IA Pura', icon: Zap },
             ].map(({ id, label, icon: Icon, disabled }) => (
               <button
                 key={id}
@@ -423,16 +425,16 @@ function GenerateView({ onSaveIdea }) {
           </div>
         </div>
         <button onClick={handleGenerate} disabled={loading} className="btn-primary shrink-0">
-          {loading ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Zap size={14} /> Generate Ideas</>}
+          {loading ? <><Loader2 size={14} className="animate-spin" /> Gerando...</> : <><Zap size={14} /> Gerar Ideias</>}
         </button>
       </div>
 
-      {/* Context cards */}
+      {/* Cards de contexto */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className={`card p-4 border ${hasInsights ? 'border-purple-200' : 'border-gray-200'}`}>
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={14} className={hasInsights ? 'text-purple-500' : 'text-gray-300'} />
-            <span className="text-xs font-semibold text-gray-700">Insights Available</span>
+            <span className="text-xs font-semibold text-gray-700">Insights Disponíveis</span>
           </div>
           {hasInsights ? (
             <div className="space-y-1">
@@ -441,29 +443,29 @@ function GenerateView({ onSaveIdea }) {
                   <span className="text-purple-500 mt-0.5 shrink-0">•</span> {ins.title}
                 </p>
               ))}
-              {insights.length > 3 && <p className="text-[11px] text-gray-400">+ {insights.length - 3} more</p>}
+              {insights.length > 3 && <p className="text-[11px] text-gray-400">+ {insights.length - 3} mais</p>}
             </div>
           ) : (
-            <p className="text-xs text-gray-400">No insights yet. Generate them in the Insight Engine.</p>
+            <p className="text-xs text-gray-400">Nenhum insight ainda. Gere-os no Motor de Insights.</p>
           )}
         </div>
         <div className={`card p-4 border ${hasTrends ? 'border-blue-200' : 'border-gray-200'}`}>
           <div className="flex items-center gap-2 mb-2">
             <Radar size={14} className={hasTrends ? 'text-blue-500' : 'text-gray-300'} />
-            <span className="text-xs font-semibold text-gray-700">Trend Radar Data</span>
+            <span className="text-xs font-semibold text-gray-700">Dados do Radar de Tendências</span>
           </div>
           {hasTrends ? (
             <div className="space-y-1">
-              <p className="text-[11px] text-gray-700 font-medium">Topic: "{trendResults.topic}"</p>
-              <p className="text-[11px] text-gray-500">{trendResults.opportunities?.length} opportunities found</p>
+              <p className="text-[11px] text-gray-700 font-medium">Tópico: "{trendResults.topic}"</p>
+              <p className="text-[11px] text-gray-500">{trendResults.opportunities?.length} oportunidades encontradas</p>
             </div>
           ) : (
-            <p className="text-xs text-gray-400">No trend data yet. Use Trend Radar to analyze a niche.</p>
+            <p className="text-xs text-gray-400">Sem dados de tendências ainda. Use o Radar de Tendências para analisar um nicho.</p>
           )}
         </div>
       </div>
 
-      {/* Loading */}
+      {/* Carregando */}
       {loading && (
         <div className="card p-12 flex flex-col items-center gap-4">
           <div className="relative">
@@ -471,29 +473,29 @@ function GenerateView({ onSaveIdea }) {
             <Zap size={18} className="absolute inset-0 m-auto text-amber-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-800">Generating ideas...</p>
-            <p className="text-xs text-gray-400 mt-1">Combining insights, trends, and AI creativity</p>
+            <p className="text-sm font-medium text-gray-800">Gerando ideias...</p>
+            <p className="text-xs text-gray-400 mt-1">Combinando insights, tendências e criatividade da IA</p>
           </div>
         </div>
       )}
 
-      {/* Results */}
+      {/* Resultados */}
       {!loading && generatedIdeas.length > 0 && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-800">
-              {generatedIdeas.length} Ideas Generated
-              {savedIds.size > 0 && <span className="ml-2 text-xs text-emerald-600 font-normal">({savedIds.size} saved)</span>}
+              {generatedIdeas.length} Ideias Geradas
+              {savedIds.size > 0 && <span className="ml-2 text-xs text-emerald-600 font-normal">({savedIds.size} salvas)</span>}
             </h3>
             <button onClick={handleGenerate} className="btn-ghost text-xs">
-              <RefreshCw size={12} /> Regenerate
+              <RefreshCw size={12} /> Regenerar
             </button>
           </div>
 
           {[
-            { items: fromInsights, icon: Sparkles, color: 'text-purple-500', label: 'From Analytics Insights' },
-            { items: fromTrends, icon: Radar, color: 'text-blue-500', label: 'From Trend Radar' },
-            { items: fromAI, icon: Zap, color: 'text-amber-500', label: 'AI Generated' },
+            { items: fromInsights, icon: Sparkles, color: 'text-purple-500', label: 'De Insights Analytics' },
+            { items: fromTrends, icon: Radar, color: 'text-blue-500', label: 'Do Radar de Tendências' },
+            { items: fromAI, icon: Zap, color: 'text-amber-500', label: 'Gerado por IA' },
           ].filter(({ items }) => items.length > 0).map(({ items, icon: Icon, color, label }) => (
             <div key={label}>
               <div className="flex items-center gap-2 mb-3">
@@ -512,7 +514,7 @@ function GenerateView({ onSaveIdea }) {
             <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center gap-3">
               <Check size={16} className="text-emerald-500 shrink-0" />
               <p className="text-sm text-emerald-700">
-                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'idea' : 'ideas'}</span> saved — visible in Grid, Kanban and Calendar views.
+                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visível nas visualizações Grid, Kanban e Calendário.
               </p>
             </div>
           )}
@@ -524,12 +526,12 @@ function GenerateView({ onSaveIdea }) {
           <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-4">
             <Zap size={28} className="text-amber-500" />
           </div>
-          <h3 className="text-gray-700 font-semibold mb-2">Ready to generate ideas</h3>
+          <h3 className="text-gray-700 font-semibold mb-2">Pronto para gerar ideias</h3>
           <p className="text-gray-400 text-sm max-w-sm mb-4">
-            Choose your source and click "Generate Ideas" to get AI-powered content suggestions.
+            Escolha sua fonte e clique em "Gerar Ideias" para receber sugestões de conteúdo com IA.
           </p>
           <button onClick={handleGenerate} className="btn-primary">
-            <Zap size={14} /> Generate Ideas Now
+            <Zap size={14} /> Gerar Ideias Agora
           </button>
         </div>
       )}
@@ -539,6 +541,7 @@ function GenerateView({ onSaveIdea }) {
 
 function GeneratedIdeaCard({ idea, onSave, saved }) {
   const Icon = SOURCE_ICONS[idea.source_type] || Zap
+  const sourceLabel = idea.source_type === 'insight' ? 'De Insights' : idea.source_type === 'trend' ? 'De Tendências' : 'Gerado por IA'
   return (
     <div className={`card-hover p-4 space-y-3 relative transition-all ${saved ? 'opacity-60' : ''}`}>
       {saved && (
@@ -549,7 +552,7 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
       <div className="flex items-center gap-1.5">
         <span className={`chip border text-[10px] ${SOURCE_COLORS[idea.source_type] || SOURCE_COLORS.ai}`}>
           <Icon size={10} />
-          {idea.source_type === 'insight' ? 'From Insights' : idea.source_type === 'trend' ? 'From Trends' : 'AI Generated'}
+          {sourceLabel}
         </span>
       </div>
       <h3 className="text-sm font-semibold text-gray-800 leading-snug">{idea.title}</h3>
@@ -561,7 +564,7 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
       </div>
       {idea.hook && (
         <div className="text-[11px] text-gray-500 flex items-center gap-1.5">
-          <span className="text-orange-500 font-medium">Hook:</span>
+          <span className="text-orange-500 font-medium">Gancho:</span>
           <span className="capitalize">{idea.hook}</span>
         </div>
       )}
@@ -571,20 +574,23 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
           disabled={saved}
           className={saved ? 'flex items-center gap-1.5 text-xs text-emerald-600 font-medium' : 'btn-primary text-xs w-full justify-center py-2'}
         >
-          {saved ? <><Check size={12} /> Saved to Ideas</> : <><Plus size={12} /> Save to Ideas</>}
+          {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub</>}
         </button>
       </div>
     </div>
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Componente principal ─────────────────────────────────────────────────────
 const TABS = [
   { id: 'grid', label: 'Grid', icon: LayoutGrid },
   { id: 'kanban', label: 'Kanban', icon: Kanban },
-  { id: 'calendar', label: 'Calendar', icon: Calendar },
-  { id: 'generate', label: 'Generate', icon: Zap },
+  { id: 'calendar', label: 'Calendário', icon: Calendar },
+  { id: 'generate', label: 'Gerar', icon: Zap },
 ]
+
+const STATUS_LABELS_FILTER = { all: 'Todos Status', idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
+const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta', medium: 'Média', low: 'Baixa' }
 
 export default function IdeasHub() {
   const ideas = useStore((s) => s.ideas)
@@ -628,7 +634,7 @@ export default function IdeasHub() {
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
-      {/* Tab bar + New button */}
+      {/* Barra de abas + botão Nova Ideia */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
           {TABS.map(({ id, label, icon: Icon }) => (
@@ -649,40 +655,40 @@ export default function IdeasHub() {
           ))}
         </div>
         <button onClick={openNew} className="btn-primary shrink-0">
-          <Plus size={15} /> New Idea
+          <Plus size={15} /> Nova Ideia
         </button>
       </div>
 
-      {/* Filters (grid only) */}
+      {/* Filtros (grid e calendário) */}
       {(tab === 'grid' || tab === 'calendar') && (
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 max-w-xs">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input className="input pl-8" placeholder="Search ideas..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input className="input pl-8" placeholder="Buscar ideias..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <select className="select w-auto" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
-            {platforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'All Platforms' : p}</option>)}
+            {platforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Todas Plataformas' : p}</option>)}
           </select>
           <select className="select w-auto" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            {statuses.map((s) => <option key={s} value={s}>{s === 'all' ? 'All Status' : s}</option>)}
+            {statuses.map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
           </select>
           <select className="select w-auto" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-            {priorities.map((p) => <option key={p} value={p}>{p === 'all' ? 'All Priority' : p}</option>)}
+            {priorities.map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
           </select>
           <p className="text-xs text-gray-400 ml-auto">
-            {filtered.length} of {ideas.length} ideas
+            {filtered.length} de {ideas.length} ideias
           </p>
         </div>
       )}
 
-      {/* Grid view */}
+      {/* Visualização Grid */}
       {tab === 'grid' && (
         filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Lightbulb size={40} className="text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">No ideas found</p>
-            <p className="text-gray-300 text-sm mt-1">Try adjusting your filters or create a new idea</p>
-            <button onClick={openNew} className="btn-primary mt-4"><Plus size={14} /> Create First Idea</button>
+            <p className="text-gray-500 font-medium">Nenhuma ideia encontrada</p>
+            <p className="text-gray-300 text-sm mt-1">Ajuste os filtros ou crie uma nova ideia</p>
+            <button onClick={openNew} className="btn-primary mt-4"><Plus size={14} /> Criar Primeira Ideia</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -700,7 +706,7 @@ export default function IdeasHub() {
         )
       )}
 
-      {/* Kanban view */}
+      {/* Visualização Kanban */}
       {tab === 'kanban' && (
         <KanbanView
           ideas={ideas}
@@ -710,17 +716,17 @@ export default function IdeasHub() {
         />
       )}
 
-      {/* Calendar view */}
+      {/* Visualização Calendário */}
       {tab === 'calendar' && (
         <CalendarView ideas={filtered} onCardClick={openEdit} />
       )}
 
-      {/* Generate view */}
+      {/* Visualização Gerar */}
       {tab === 'generate' && (
         <GenerateView onSaveIdea={addIdea} />
       )}
 
-      {/* Modals */}
+      {/* Modais */}
       <IdeaForm
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditTarget(null) }}
