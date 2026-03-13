@@ -221,9 +221,9 @@ export default function Dashboard() {
       {/* Ações rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: Sparkles, label: 'Gerar Insights', sub: 'Analise suas métricas', to: '/insights', color: 'from-orange-50 to-orange-100/50 border-orange-200', iconColor: 'text-orange-500' },
+          { icon: Sparkles, label: 'Gerar Insights', sub: 'Analise suas métricas', to: '/analytics', color: 'from-orange-50 to-orange-100/50 border-orange-200', iconColor: 'text-orange-500' },
           { icon: Radar, label: 'Explorar Tendências', sub: 'Descubra o que está funcionando', to: '/trends', color: 'from-blue-50 to-blue-100/50 border-blue-200', iconColor: 'text-blue-500' },
-          { icon: Zap, label: 'Loop de Ideias', sub: 'Ideação com IA', to: '/loop', color: 'from-amber-50 to-amber-100/50 border-amber-200', iconColor: 'text-amber-500' },
+          { icon: Zap, label: 'Gerar Ideias com IA', sub: 'Ideação assistida por IA', to: '/ideas', color: 'from-amber-50 to-amber-100/50 border-amber-200', iconColor: 'text-amber-500' },
         ].map(({ icon: Icon, label, sub, to, color, iconColor }) => (
           <button
             key={to}

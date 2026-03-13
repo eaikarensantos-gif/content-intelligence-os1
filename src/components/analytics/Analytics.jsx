@@ -9,6 +9,7 @@ import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
+import InsightEngine from '../insights/InsightEngine'
 
 const COLORS = ['#f97316', '#fb923c', '#2563eb', '#0891b2', '#059669', '#d97706']
 
@@ -50,6 +51,7 @@ const TABS = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
   { id: 'demograficos', label: 'Demográficos' },
+  { id: 'insights', label: 'Insights' },
   { id: 'exportar', label: 'Exportar' },
 ]
 
@@ -482,6 +484,11 @@ export default function Analytics() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* ===== INSIGHTS ===== */}
+      {tab === 'insights' && (
+        <InsightEngine embedded />
       )}
 
       {/* ===== EXPORTAR ===== */}

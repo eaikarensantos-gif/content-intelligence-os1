@@ -6,8 +6,6 @@ import IdeasHub from './components/ideas/IdeasHub'
 import KanbanBoard from './components/kanban/KanbanBoard'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
-import InsightEngine from './components/insights/InsightEngine'
-import IdeaLoop from './components/idealoop/IdeaLoop'
 
 function Layout({ children }) {
   return (
@@ -33,8 +31,6 @@ export default function App() {
           <Route path="/kanban" element={<KanbanBoard />} />
           <Route path="/trends" element={<TrendRadar />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/insights" element={<InsightEngine />} />
-          <Route path="/loop" element={<IdeaLoop />} />
         </Routes>
       </Layout>
     </BrowserRouter>

@@ -49,7 +49,7 @@ function InsightCard({ insight }) {
   )
 }
 
-export default function InsightEngine() {
+export default function InsightEngine({ embedded = false }) {
   const metrics = useStore((s) => s.metrics)
   const posts = useStore((s) => s.posts)
   const insights = useStore((s) => s.insights)
@@ -67,7 +67,7 @@ export default function InsightEngine() {
   const canGenerate = metrics.length >= 2
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className={`${embedded ? '' : 'p-6'} space-y-6 animate-fade-in`}>
       {/* Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-white to-white border border-orange-200 p-6">
         <div className="relative z-10 flex items-start justify-between gap-4 flex-wrap">

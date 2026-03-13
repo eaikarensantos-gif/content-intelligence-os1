@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Kanban, Radar, BarChart2,
-  Sparkles, Zap, ChevronRight,
+  Zap, ChevronRight,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -12,8 +12,6 @@ const NAV = [
   { to: '/kanban', icon: Kanban, label: 'Quadro de Conteúdo' },
   { to: '/trends', icon: Radar, label: 'Radar de Tendências' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
-  { to: '/insights', icon: Sparkles, label: 'Motor de Insights' },
-  { to: '/loop', icon: Zap, label: 'Loop de Ideias' },
 ]
 
 export default function Sidebar() {

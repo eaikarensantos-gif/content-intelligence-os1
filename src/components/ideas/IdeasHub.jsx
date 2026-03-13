@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
   Plus, Search, Lightbulb, Edit2, Trash2, ArrowRight, Calendar,
-  GripVertical, BarChart2, Zap, RefreshCw, Sparkles, Radar, Loader2,
-  Check, ChevronLeft, ChevronRight, LayoutGrid, Kanban,
+  Zap, RefreshCw, Sparkles, Radar, Loader2,
+  Check, ChevronLeft, ChevronRight, LayoutGrid,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
@@ -14,13 +13,6 @@ const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab']
 
-const KANBAN_COLUMNS = [
-  { id: 'idea', label: 'Ideias', color: 'border-orange-200 bg-orange-50/60', dot: 'bg-orange-400', count_bg: 'bg-orange-100 text-orange-700' },
-  { id: 'draft', label: 'Rascunhos', color: 'border-blue-200 bg-blue-50/60', dot: 'bg-blue-400', count_bg: 'bg-blue-100 text-blue-700' },
-  { id: 'ready', label: 'Pronto', color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
-  { id: 'published', label: 'Publicado', color: 'border-green-200 bg-green-50/60', dot: 'bg-green-400', count_bg: 'bg-green-100 text-green-700' },
-]
-
 const SOURCE_COLORS = {
   insight: 'bg-purple-100 text-purple-700 border-purple-200',
   trend: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -29,59 +21,6 @@ const SOURCE_COLORS = {
 const SOURCE_ICONS = { insight: Sparkles, trend: Radar, ai: Zap }
 
 const NEXT_STATUS_LABELS = { idea: 'Rascunho', draft: 'Pronto', ready: 'Publicado' }
-
-// ─── Modal de métricas (usado no Kanban) ─────────────────────────────────────
-function MetricsModal({ open, ideaId, onClose }) {
-  const addPost = useStore((s) => s.addPost)
-  const addMetric = useStore((s) => s.addMetric)
-  const ideas = useStore((s) => s.ideas)
-  const idea = ideas.find((i) => i.id === ideaId)
-  const [form, setForm] = useState({
-    impressions: '', reach: '', likes: '', comments: '', shares: '', saves: '', link_clicks: '',
-  })
-  if (!open || !idea) return null
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    let postId = idea.post_id
-    if (!postId) {
-      postId = `post-${Date.now()}`
-      addPost({ id: postId, idea_id: ideaId, title: idea.title, platform: idea.platform, format: idea.format, status: 'published' })
-    }
-    addMetric({
-      post_id: postId,
-      platform: idea.platform,
-      date: new Date().toISOString().split('T')[0],
-      ...Object.fromEntries(Object.entries(form).map(([k, v]) => [k, Number(v) || 0])),
-    })
-    onClose()
-  }
-  const fields = [
-    ['impressions', 'Impressões'], ['reach', 'Alcance'], ['likes', 'Curtidas'],
-    ['comments', 'Comentários'], ['shares', 'Compartilhamentos'], ['saves', 'Salvamentos'], ['link_clicks', 'Cliques no Link'],
-  ]
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      <div className="relative bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-md animate-slide-up shadow-xl">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Registrar Métricas — {idea.title.slice(0, 40)}</h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            {fields.map(([key, label]) => (
-              <div key={key}>
-                <label className="label">{label}</label>
-                <input type="number" className="input" placeholder="0" value={form[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button type="button" className="btn-secondary text-xs" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn-primary text-xs">Salvar Métricas</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
 
 // ─── Card de ideia (grid) ─────────────────────────────────────────────────────
 function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
@@ -148,100 +87,6 @@ function IdeaCard({ idea, onEdit, onDelete, onConvert, onStatusChange }) {
         </button>
       </div>
     </div>
-  )
-}
-
-// ─── Visualização Kanban ──────────────────────────────────────────────────────
-function KanbanView({ ideas, updateIdea, onCardClick, onMetrics }) {
-  const onDragEnd = ({ destination, draggableId }) => {
-    if (!destination) return
-    updateIdea(draggableId, { status: destination.droppableId })
-  }
-  const columnIdeas = (colId) => ideas.filter((i) => i.status === colId)
-
-  return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-4 gap-4 min-h-[60vh]">
-        {KANBAN_COLUMNS.map((col) => {
-          const colIdeas = columnIdeas(col.id)
-          return (
-            <div key={col.id} className={`flex flex-col rounded-xl border ${col.color} overflow-hidden`}>
-              <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
-                  <span className="text-xs font-semibold text-gray-700">{col.label}</span>
-                </div>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.count_bg}`}>{colIdeas.length}</span>
-              </div>
-              <Droppable droppableId={col.id}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`flex-1 p-2 space-y-2 min-h-[200px] transition-colors ${snapshot.isDraggingOver ? 'bg-orange-50/60' : ''}`}
-                  >
-                    {colIdeas.map((idea, index) => (
-                      <Draggable key={idea.id} draggableId={idea.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={`bg-white border rounded-xl p-3 space-y-2 transition-all cursor-pointer ${
-                              snapshot.isDragging
-                                ? 'border-orange-400 shadow-lg shadow-orange-200/50 rotate-1 scale-105'
-                                : 'border-gray-200 hover:border-orange-300'
-                            }`}
-                            onClick={() => onCardClick(idea)}
-                          >
-                            <div className="flex items-start gap-2">
-                              <span
-                                {...provided.dragHandleProps}
-                                className="mt-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <GripVertical size={13} />
-                              </span>
-                              <p className="text-xs font-medium text-gray-800 leading-snug flex-1 line-clamp-2">{idea.title}</p>
-                            </div>
-                            <div className="flex flex-wrap gap-1 ml-5">
-                              <PlatformBadge platform={idea.platform} />
-                              <FormatBadge format={idea.format} />
-                            </div>
-                            <div className="flex items-center justify-between ml-5">
-                              <PriorityBadge priority={idea.priority} />
-                              {idea.scheduled_date && (
-                                <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                                  <Calendar size={10} />
-                                  {idea.scheduled_date}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 ml-5 pt-1 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => onMetrics(idea.id)}
-                                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors px-1.5 py-1 rounded hover:bg-orange-50"
-                              >
-                                <BarChart2 size={10} /> Métricas
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                    {colIdeas.length === 0 && (
-                      <div className="flex items-center justify-center h-20">
-                        <p className="text-[11px] text-gray-400">Solte cards aqui</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-          )
-        })}
-      </div>
-    </DragDropContext>
   )
 }
 
@@ -514,7 +359,7 @@ function GenerateView({ onSaveIdea }) {
             <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center gap-3">
               <Check size={16} className="text-emerald-500 shrink-0" />
               <p className="text-sm text-emerald-700">
-                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visível nas visualizações Grid, Kanban e Calendário.
+                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visível nas visualizações Grid e Calendário.
               </p>
             </div>
           )}
@@ -584,7 +429,6 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 const TABS = [
   { id: 'grid', label: 'Grid', icon: LayoutGrid },
-  { id: 'kanban', label: 'Kanban', icon: Kanban },
   { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'generate', label: 'Gerar', icon: Zap },
 ]
@@ -602,7 +446,6 @@ export default function IdeasHub() {
   const [tab, setTab] = useState('grid')
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
-  const [metricsTarget, setMetricsTarget] = useState(null)
   const [search, setSearch] = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -706,16 +549,6 @@ export default function IdeasHub() {
         )
       )}
 
-      {/* Visualização Kanban */}
-      {tab === 'kanban' && (
-        <KanbanView
-          ideas={ideas}
-          updateIdea={updateIdea}
-          onCardClick={openEdit}
-          onMetrics={(id) => setMetricsTarget(id)}
-        />
-      )}
-
       {/* Visualização Calendário */}
       {tab === 'calendar' && (
         <CalendarView ideas={filtered} onCardClick={openEdit} />
@@ -734,11 +567,6 @@ export default function IdeasHub() {
         initial={editTarget}
       />
 
-      <MetricsModal
-        open={!!metricsTarget}
-        ideaId={metricsTarget}
-        onClose={() => setMetricsTarget(null)}
-      />
     </div>
   )
 }
