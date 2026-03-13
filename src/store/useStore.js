@@ -1,31 +1,27 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
-import { sampleIdeas, samplePosts, sampleMetrics } from '../data/sampleData'
 import { enrichMetric, generateInsights } from '../utils/analytics'
 
 const useStore = create(
   persist(
     (set, get) => ({
-      // ── State ──────────────────────────────────────────────
-      ideas: sampleIdeas,
-      posts: samplePosts,
-      metrics: sampleMetrics,
+      // ── Estado ─────────────────────────────────────────────
+      ideas: [],
+      posts: [],
+      metrics: [],
       insights: [],
       generatedIdeas: [],
       trendResults: null,
+      clients: [],
+      demographics: {},
 
-      // ── Ideas ──────────────────────────────────────────────
+      // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
         set((s) => ({
           ideas: [
             ...s.ideas,
-            {
-              id: uuidv4(),
-              created_at: new Date().toISOString(),
-              tags: [],
-              ...idea,
-            },
+            { id: uuidv4(), created_at: new Date().toISOString(), tags: [], ...idea },
           ],
         })),
 
@@ -53,6 +49,7 @@ const useStore = create(
               format: idea.format,
               hook_type: idea.hook_type,
               status: 'draft',
+              client_id: idea.client_id || null,
               published_at: null,
               created_at: new Date().toISOString(),
             },
@@ -67,7 +64,7 @@ const useStore = create(
       // ── Posts ──────────────────────────────────────────────
       addPost: (post) =>
         set((s) => ({
-          posts: [...s.posts, { id: uuidv4(), created_at: new Date().toISOString(), ...post }],
+          posts: [...s.posts, { id: uuidv4(), created_at: new Date().toISOString(), client_id: null, ...post }],
         })),
 
       updatePost: (id, updates) =>
@@ -76,13 +73,16 @@ const useStore = create(
         })),
 
       deletePost: (id) =>
-        set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),
+        set((s) => ({
+          posts: s.posts.filter((p) => p.id !== id),
+          metrics: s.metrics.filter((m) => m.post_id !== id),
+        })),
 
-      // ── Metrics ────────────────────────────────────────────
+      // ── Métricas ───────────────────────────────────────────
       addMetric: (metric) => {
         const enriched = enrichMetric(metric)
         set((s) => ({
-          metrics: [...s.metrics, { id: uuidv4(), ...enriched }],
+          metrics: [...s.metrics, { id: uuidv4(), created_at: new Date().toISOString(), ...enriched }],
         }))
       },
 
@@ -106,12 +106,11 @@ const useStore = create(
 
       clearInsights: () => set({ insights: [] }),
 
-      // ── Generated Ideas ────────────────────────────────────
+      // ── Ideias Geradas ─────────────────────────────────────
       setGeneratedIdeas: (ideas) => set({ generatedIdeas: ideas }),
 
       saveGeneratedIdea: (genIdea) => {
-        const { addIdea } = get()
-        addIdea({
+        get().addIdea({
           title: genIdea.title,
           description: genIdea.description,
           topic: genIdea.topic,
@@ -124,22 +123,54 @@ const useStore = create(
         })
       },
 
-      // ── Trend Results ──────────────────────────────────────
+      // ── Tendências ─────────────────────────────────────────
       setTrendResults: (results) => set({ trendResults: results }),
 
-      // ── Reset (dev helper) ─────────────────────────────────
+      // ── Clientes ───────────────────────────────────────────
+      addClient: (client) =>
+        set((s) => ({
+          clients: [
+            ...s.clients,
+            { id: uuidv4(), created_at: new Date().toISOString(), color: '#f97316', ...client },
+          ],
+        })),
+
+      updateClient: (id, updates) =>
+        set((s) => ({
+          clients: s.clients.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        })),
+
+      deleteClient: (id) =>
+        set((s) => ({ clients: s.clients.filter((c) => c.id !== id) })),
+
+      // ── Dados Demográficos ─────────────────────────────────
+      setDemographics: (clientId, data) =>
+        set((s) => ({
+          demographics: { ...s.demographics, [clientId]: data },
+        })),
+
+      deleteDemographics: (clientId) =>
+        set((s) => {
+          const d = { ...s.demographics }
+          delete d[clientId]
+          return { demographics: d }
+        }),
+
+      // ── Reset ──────────────────────────────────────────────
       reset: () =>
         set({
-          ideas: sampleIdeas,
-          posts: samplePosts,
-          metrics: sampleMetrics,
+          ideas: [],
+          posts: [],
+          metrics: [],
           insights: [],
           generatedIdeas: [],
           trendResults: null,
+          clients: [],
+          demographics: {},
         }),
     }),
     {
-      name: 'content-intelligence-os-v1',
+      name: 'content-intelligence-os-v3',
       partialize: (s) => ({
         ideas: s.ideas,
         posts: s.posts,
@@ -147,6 +178,8 @@ const useStore = create(
         insights: s.insights,
         generatedIdeas: s.generatedIdeas,
         trendResults: s.trendResults,
+        clients: s.clients,
+        demographics: s.demographics,
       }),
     }
   )

@@ -82,76 +82,71 @@ export function generateInsights(posts, metrics) {
   if (metrics.length < 2) return []
   const insights = []
 
-  // Format insights
   const byFormat = aggregateByFormat(posts, metrics)
   if (byFormat.length > 1) {
-    const best = byFormat.sort((a, b) => b.avg_engagement_rate - a.avg_engagement_rate)[0]
+    const best = [...byFormat].sort((a, b) => b.avg_engagement_rate - a.avg_engagement_rate)[0]
     insights.push({
       id: `ins-fmt-${Date.now()}`,
       type: 'format',
-      title: `${capitalize(best.format)} drives the highest engagement`,
-      description: `Your ${best.format} posts average a ${(best.avg_engagement_rate * 100).toFixed(1)}% engagement rate — the best format in your mix. Consider doubling down on this format.`,
+      title: `${capitalize(best.format)} gera o maior engajamento`,
+      description: `Seus posts em ${best.format} têm uma taxa de engajamento média de ${(best.avg_engagement_rate * 100).toFixed(1)}% — o melhor formato no seu mix. Considere investir mais neste formato.`,
       metric: 'avg_engagement_rate',
       value: best.avg_engagement_rate,
-      recommendation: `Create more ${best.format} content`,
+      recommendation: `Crie mais conteúdo no formato ${best.format}`,
       created_at: new Date().toISOString(),
     })
   }
 
-  // Hook type insights
   const hookMap = {}
   metrics.forEach((m) => {
     const post = posts.find((p) => p.id === m.post_id)
-    const idea = null // ideas not passed here but can be extended
     if (!post) return
     const e = enrichMetric(m)
-    const hook = post.hook_type || 'unknown'
+    const hook = post.hook_type || 'desconhecido'
     if (!hookMap[hook]) hookMap[hook] = { hook, authority: 0, count: 0 }
     hookMap[hook].authority += e.authority_score
     hookMap[hook].count += 1
   })
   const hookEntries = Object.values(hookMap)
   if (hookEntries.length > 1) {
-    const best = hookEntries.sort((a, b) => b.authority / b.count - a.authority / a.count)[0]
+    const best = [...hookEntries].sort((a, b) => b.authority / b.count - a.authority / a.count)[0]
     insights.push({
       id: `ins-hook-${Date.now() + 1}`,
       type: 'hook',
-      title: `"${capitalize(best.hook)}" hooks generate more shares & saves`,
-      description: `Posts with a ${best.hook} hook earn an average authority score of ${(best.authority / best.count).toFixed(0)}, indicating strong resonance and shareability.`,
+      title: `Ganchos "${capitalize(best.hook)}" geram mais compartilhamentos e salvamentos`,
+      description: `Posts com gancho ${best.hook} têm pontuação de autoridade média de ${(best.authority / best.count).toFixed(0)}, indicando forte ressonância e compartilhabilidade.`,
       metric: 'authority_score',
       value: best.authority / best.count,
-      recommendation: `Open more posts with a ${best.hook} angle`,
+      recommendation: `Abra mais posts com o ângulo ${best.hook}`,
       created_at: new Date().toISOString(),
     })
   }
 
-  // Platform insights
   const byPlatform = aggregateByPlatform(posts, metrics)
   if (byPlatform.length > 1) {
-    const best = byPlatform.sort((a, b) => b.impressions / b.count - a.impressions / a.count)[0]
+    const best = [...byPlatform].sort((a, b) => b.impressions / b.count - a.impressions / a.count)[0]
     insights.push({
       id: `ins-plt-${Date.now() + 2}`,
       type: 'platform',
-      title: `${capitalize(best.platform)} delivers the highest reach`,
-      description: `Your ${best.platform} posts average ${Math.round(best.impressions / best.count).toLocaleString()} impressions per post — your highest-reach platform. Prioritize it for awareness-focused content.`,
+      title: `${capitalize(best.platform)} entrega o maior alcance`,
+      description: `Seus posts no ${best.platform} têm média de ${Math.round(best.impressions / best.count).toLocaleString()} impressões por post — sua plataforma de maior alcance. Priorize-a para conteúdo de awareness.`,
       metric: 'avg_impressions',
       value: best.impressions / best.count,
-      recommendation: `Post high-value awareness content on ${best.platform}`,
+      recommendation: `Publique conteúdo de alto valor no ${best.platform}`,
       created_at: new Date().toISOString(),
     })
   }
 
-  // Volume insight
   const totalImpressions = metrics.reduce((s, m) => s + m.impressions, 0)
   const avgER = metrics.reduce((s, m) => s + calcEngagementRate(m), 0) / metrics.length
   insights.push({
     id: `ins-sum-${Date.now() + 3}`,
     type: 'summary',
-    title: `${metrics.length} posts tracked — ${(avgER * 100).toFixed(1)}% avg engagement rate`,
-    description: `Across ${metrics.length} posts you've generated ${totalImpressions.toLocaleString()} total impressions. Your average engagement rate of ${(avgER * 100).toFixed(1)}% ${avgER > 0.03 ? 'is above the 3% industry benchmark' : 'has room to grow toward the 3% benchmark'}.`,
+    title: `${metrics.length} posts rastreados — ${(avgER * 100).toFixed(1)}% taxa média de engajamento`,
+    description: `Em ${metrics.length} posts você gerou ${totalImpressions.toLocaleString()} impressões totais. Sua taxa média de engajamento de ${(avgER * 100).toFixed(1)}% ${avgER > 0.03 ? 'está acima do benchmark de 3% do setor' : 'tem espaço para crescer em direção ao benchmark de 3%'}.`,
     metric: 'total_impressions',
     value: totalImpressions,
-    recommendation: avgER < 0.03 ? 'Focus on stronger CTAs and more engaging hooks' : 'Maintain your content quality — you\'re outperforming benchmarks',
+    recommendation: avgER < 0.03 ? 'Foque em CTAs mais fortes e ganchos mais envolventes' : 'Mantenha a qualidade do conteúdo — você está superando os benchmarks',
     created_at: new Date().toISOString(),
   })
 

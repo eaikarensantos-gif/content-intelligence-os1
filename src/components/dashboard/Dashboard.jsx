@@ -1,14 +1,15 @@
 import { useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts'
 import { Lightbulb, BarChart2, Eye, TrendingUp, Plus, ArrowRight, Sparkles, Radar, Zap } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric, timelineData, aggregateByFormat } from '../../utils/analytics'
-import { PlatformBadge, StatusBadge, PriorityBadge } from '../common/Badge'
+import { PlatformBadge, StatusBadge } from '../common/Badge'
 
 const PIE_COLORS = ['#f97316', '#fb923c', '#fdba74', '#0891b2', '#059669']
+const STATUS_PT = { idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
 
 function StatCard({ icon: Icon, label, value, sub, color = 'orange' }) {
   const colors = {
@@ -73,51 +74,49 @@ export default function Dashboard() {
   const timeline = timelineData(metrics)
   const byFormat = aggregateByFormat(posts, metrics).map((d) => ({
     name: d.format,
-    impressions: d.impressions,
-    engagement: +(d.avg_engagement_rate * 100).toFixed(2),
+    engajamento: +(d.avg_engagement_rate * 100).toFixed(2),
   }))
 
-  const pieData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }))
+  const pieData = Object.entries(statusCounts).map(([name, value]) => ({ name: STATUS_PT[name] || name, value }))
   const recentIdeas = [...ideas].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5)
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
-      {/* Welcome banner */}
+      {/* Boas-vindas */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/80 to-white border border-orange-200 p-6">
         <div className="relative z-10">
-          <p className="text-xs text-orange-500 font-medium mb-1">Good morning, Creator</p>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Your content system is running</h2>
+          <p className="text-xs text-orange-500 font-medium mb-1">Bom dia, Criador</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Seu sistema de conteúdo está ativo</h2>
           <p className="text-sm text-gray-500 mb-4">
-            You have <span className="text-orange-600 font-medium">{statusCounts.ready} ideas</span> ready to publish
-            and <span className="text-blue-600 font-medium">{statusCounts.draft} in draft</span>.
+            Você tem <span className="text-orange-600 font-medium">{statusCounts.ready} ideias</span> prontas para publicar
+            e <span className="text-blue-600 font-medium">{statusCounts.draft} em rascunho</span>.
           </p>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => navigate('/ideas')} className="btn-primary text-xs py-1.5 px-3">
-              <Plus size={13} /> New Idea
+              <Plus size={13} /> Nova Ideia
             </button>
             <button onClick={() => navigate('/trends')} className="btn-secondary text-xs py-1.5 px-3">
-              <Radar size={13} /> Explore Trends
+              <Radar size={13} /> Explorar Tendências
             </button>
           </div>
         </div>
         <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-orange-100/30 to-transparent pointer-events-none" />
       </div>
 
-      {/* Stats */}
+      {/* Estatísticas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Lightbulb} label="Total Ideas" value={ideas.length} sub={`${statusCounts.idea} new`} color="orange" />
-        <StatCard icon={BarChart2} label="Posts Tracked" value={posts.length} sub={`${metrics.length} snapshots`} color="blue" />
-        <StatCard icon={Eye} label="Total Impressions" value={totalImpressions.toLocaleString()} sub="across all platforms" color="emerald" />
-        <StatCard icon={TrendingUp} label="Avg Engagement" value={`${avgER}%`} sub="engagement rate" color="amber" />
+        <StatCard icon={Lightbulb} label="Total de Ideias" value={ideas.length} sub={`${statusCounts.idea} novas`} color="orange" />
+        <StatCard icon={BarChart2} label="Posts Rastreados" value={posts.length} sub={`${metrics.length} snapshots`} color="blue" />
+        <StatCard icon={Eye} label="Impressões Totais" value={totalImpressions.toLocaleString()} sub="em todas as plataformas" color="emerald" />
+        <StatCard icon={TrendingUp} label="Eng. Médio" value={`${avgER}%`} sub="taxa de engajamento" color="amber" />
       </div>
 
-      {/* Charts row */}
+      {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Performance timeline */}
         <div className="card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900">Performance Over Time</h3>
-            <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-md">Impressions & Engagement</span>
+            <h3 className="text-sm font-semibold text-gray-900">Desempenho ao Longo do Tempo</h3>
+            <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-md">Impressões & Engajamento</span>
           </div>
           {timeline.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -137,18 +136,17 @@ export default function Dashboard() {
                 <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area yAxisId="left" type="monotone" dataKey="impressions" stroke="#f97316" fill="url(#impGrad)" strokeWidth={2} name="Impressions" dot={{ fill: '#f97316', r: 3 }} />
+                <Area yAxisId="left" type="monotone" dataKey="impressions" stroke="#f97316" fill="url(#impGrad)" strokeWidth={2} name="Impressões" dot={{ fill: '#f97316', r: 3 }} />
                 <Area yAxisId="right" type="monotone" dataKey="engagement_rate" stroke="#10b981" fill="url(#engGrad)" strokeWidth={2} name="Eng. Rate %" dot={{ fill: '#10b981', r: 3 }} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No metrics yet — add posts and track performance</div>
+            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">Sem métricas — adicione posts e acompanhe o desempenho</div>
           )}
         </div>
 
-        {/* Status breakdown */}
         <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Ideas by Status</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Ideias por Status</h3>
           {ideas.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={150}>
@@ -160,52 +158,52 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2 mt-2">
-                {Object.entries(statusCounts).map(([status, count], i) => (
-                  <div key={status} className="flex items-center justify-between text-xs">
+                {pieData.map(({ name, value }, i) => (
+                  <div key={name} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full" style={{ background: PIE_COLORS[i] }} />
-                      <span className="capitalize text-gray-500">{status}</span>
+                      <span className="text-gray-500">{name}</span>
                     </div>
-                    <span className="text-gray-800 font-medium">{count}</span>
+                    <span className="text-gray-800 font-medium">{value}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No ideas yet</div>
+            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">Sem ideias ainda</div>
           )}
         </div>
       </div>
 
-      {/* Bottom row */}
+      {/* Linha inferior */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Format performance */}
         {byFormat.length > 0 && (
           <div className="card p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Engagement by Format</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Engajamento por Formato</h3>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={byFormat} barSize={20}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="engagement" name="Eng. Rate %" fill="#f97316" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="engajamento" name="Eng. Rate %" fill="#f97316" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {/* Recent ideas */}
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900">Recent Ideas</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Ideias Recentes</h3>
             <button onClick={() => navigate('/ideas')} className="btn-ghost text-xs py-1 px-2">
-              View all <ArrowRight size={12} />
+              Ver todas <ArrowRight size={12} />
             </button>
           </div>
           <div className="space-y-2">
-            {recentIdeas.map((idea) => (
-              <div key={idea.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-orange-50 transition-colors group">
+            {recentIdeas.length === 0 ? (
+              <p className="text-xs text-gray-400 py-6 text-center">Nenhuma ideia ainda. Comece criando uma!</p>
+            ) : recentIdeas.map((idea) => (
+              <div key={idea.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-orange-50 transition-colors">
                 <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-800 truncate">{idea.title}</p>
@@ -220,12 +218,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick actions */}
+      {/* Ações rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: Sparkles, label: 'Generate Insights', sub: 'Analyze your metrics', to: '/insights', color: 'from-orange-50 to-orange-100/50 border-orange-200', iconColor: 'text-orange-500' },
-          { icon: Radar, label: 'Explore Trends', sub: 'Find what\'s working', to: '/trends', color: 'from-blue-50 to-blue-100/50 border-blue-200', iconColor: 'text-blue-500' },
-          { icon: Zap, label: 'Idea Loop', sub: 'AI-powered ideation', to: '/loop', color: 'from-amber-50 to-amber-100/50 border-amber-200', iconColor: 'text-amber-500' },
+          { icon: Sparkles, label: 'Gerar Insights', sub: 'Analise suas métricas', to: '/insights', color: 'from-orange-50 to-orange-100/50 border-orange-200', iconColor: 'text-orange-500' },
+          { icon: Radar, label: 'Explorar Tendências', sub: 'Descubra o que está funcionando', to: '/trends', color: 'from-blue-50 to-blue-100/50 border-blue-200', iconColor: 'text-blue-500' },
+          { icon: Zap, label: 'Loop de Ideias', sub: 'Ideação com IA', to: '/loop', color: 'from-amber-50 to-amber-100/50 border-amber-200', iconColor: 'text-amber-500' },
         ].map(({ icon: Icon, label, sub, to, color, iconColor }) => (
           <button
             key={to}

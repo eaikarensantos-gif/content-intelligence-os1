@@ -1,65 +1,64 @@
 const CREATORS_DB = {
   linkedin: [
-    { name: 'Justin Welsh', handle: '@justinwelsh', followers: '510K', avg_engagement: '4.8%', niche: 'Solopreneur & Creator Economy', recent_topics: ['building in public', 'audience monetization', 'content systems'] },
-    { name: 'Lara Acosta', handle: '@laraacosta', followers: '280K', avg_engagement: '6.2%', niche: 'Personal Branding', recent_topics: ['personal brand strategy', 'LinkedIn growth', 'storytelling'] },
-    { name: 'Matt Gray', handle: '@mattgray', followers: '340K', avg_engagement: '5.1%', niche: 'Business Systems', recent_topics: ['systems for creators', 'scaling content', 'operating systems'] },
-    { name: 'Sahil Bloom', handle: '@sahilbloom', followers: '490K', avg_engagement: '3.9%', niche: 'Mental Models & Growth', recent_topics: ['mental models', 'wealth creation', 'self-improvement'] },
+    { name: 'Ana Carvalho', handle: '@anacarvalho', followers: '87k', avg_engagement: '4.8%', niche: 'Estratégia de conteúdo e criação digital', recent_topics: ['sistemas de conteúdo', 'monetização', 'LinkedIn'], profile_url: 'https://linkedin.com/in/anacarvalho' },
+    { name: 'Bruno Mendes', handle: '@brunomendes', followers: '210k', avg_engagement: '5.2%', niche: 'Carreira e desenvolvimento profissional', recent_topics: ['liderança', 'mercado de trabalho', 'habilidades do futuro'], profile_url: 'https://linkedin.com/in/brunomendes' },
+    { name: 'Fernanda Lima', handle: '@fernandalima', followers: '145k', avg_engagement: '4.1%', niche: 'Empreendedorismo e negócios digitais', recent_topics: ['solopreneur', 'negócios', 'produtividade'], profile_url: 'https://linkedin.com/in/fernandalima' },
+    { name: 'Ricardo Souza', handle: '@ricardosouza', followers: '320k', avg_engagement: '3.9%', niche: 'Marketing digital e crescimento', recent_topics: ['estratégia digital', 'tráfego pago', 'funil de vendas'], profile_url: 'https://linkedin.com/in/ricardosouza' },
   ],
   twitter: [
-    { name: 'Dickie Bush', handle: '@dickiebush', followers: '215K', avg_engagement: '5.5%', niche: 'Writing & Creators', recent_topics: ['writing online', 'digital leverage', 'audience building'] },
-    { name: 'Nicolas Cole', handle: '@nicolascole77', followers: '175K', avg_engagement: '4.7%', niche: 'Digital Writing', recent_topics: ['ghostwriting', 'content strategy', 'writing frameworks'] },
-    { name: 'Kieran Drew', handle: '@kierandrew_', followers: '140K', avg_engagement: '6.0%', niche: 'Copywriting', recent_topics: ['copywriting', 'email marketing', 'hooks'] },
-    { name: 'Jay Clouse', handle: '@jayclouse', followers: '95K', avg_engagement: '5.8%', niche: 'Creator Business', recent_topics: ['creator business', 'community', 'monetization'] },
+    { name: 'Thiago Alves', handle: '@thiagoalves', followers: '95k', avg_engagement: '5.5%', niche: 'Escrita online e construção de audiência', recent_topics: ['escrita persuasiva', 'audiência', 'copywriting'], profile_url: 'https://twitter.com/thiagoalves' },
+    { name: 'Mariana Castro', handle: '@marianacastro', followers: '78k', avg_engagement: '6.1%', niche: 'Tecnologia e inovação', recent_topics: ['IA', 'startups', 'futuro do trabalho'], profile_url: 'https://twitter.com/marianacastro' },
+    { name: 'Lucas Ferreira', handle: '@lucasferreira', followers: '54k', avg_engagement: '4.7%', niche: 'Finanças pessoais e investimentos', recent_topics: ['independência financeira', 'renda passiva', 'investimentos'], profile_url: 'https://twitter.com/lucasferreira' },
   ],
   instagram: [
-    { name: 'Alex Hormozi', handle: '@hormozi', followers: '2.8M', avg_engagement: '3.2%', niche: 'Business & Scaling', recent_topics: ['sales', 'offers', 'scaling business'] },
-    { name: 'Vanessa Lau', handle: '@vanessalau.co', followers: '1.1M', avg_engagement: '4.0%', niche: 'Creator Economy', recent_topics: ['social media strategy', 'brand deals', 'creator income'] },
-    { name: 'Chris Do', handle: '@thefutur', followers: '960K', avg_engagement: '3.8%', niche: 'Design & Business', recent_topics: ['design business', 'pricing', 'creative career'] },
+    { name: 'Camila Ramos', handle: '@camilaramos', followers: '1.2M', avg_engagement: '3.8%', niche: 'Lifestyle e marca pessoal', recent_topics: ['rotina', 'disciplina', 'vida intencional'], profile_url: 'https://instagram.com/camilaramos' },
+    { name: 'Pedro Nunes', handle: '@pedronunes', followers: '680k', avg_engagement: '4.3%', niche: 'Marketing e vendas', recent_topics: ['vendas no Instagram', 'lançamentos', 'autoridade'], profile_url: 'https://instagram.com/pedronunes' },
+    { name: 'Juliana Farias', handle: '@julianafarias', followers: '430k', avg_engagement: '5.0%', niche: 'Criatividade e design', recent_topics: ['design', 'criatividade', 'carreira criativa'], profile_url: 'https://instagram.com/julianafarias' },
   ],
   youtube: [
-    { name: 'Ali Abdaal', handle: '@aliabdaal', followers: '5.2M', avg_engagement: '4.5%', niche: 'Productivity & Creator', recent_topics: ['productivity tools', 'feel-good productivity', 'passive income'] },
-    { name: 'Mark Manson', handle: '@markmanson', followers: '1.3M', avg_engagement: '3.7%', niche: 'Self-Development', recent_topics: ['mindset', 'life philosophy', 'modern challenges'] },
-    { name: 'Thomas Frank', handle: '@thomasfrank', followers: '3.1M', avg_engagement: '4.1%', niche: 'Productivity & Study', recent_topics: ['Notion systems', 'student productivity', 'task management'] },
+    { name: 'Eduardo Motta', handle: '@eduardomotta', followers: '2.1M', avg_engagement: '4.5%', niche: 'Produtividade e ferramentas digitais', recent_topics: ['Notion', 'produtividade', 'ferramentas de IA'], profile_url: 'https://youtube.com/@eduardomotta' },
+    { name: 'Gabriela Torres', handle: '@gabrielatorres', followers: '890k', avg_engagement: '3.7%', niche: 'Desenvolvimento pessoal', recent_topics: ['mentalidade', 'hábitos', 'autoconhecimento'], profile_url: 'https://youtube.com/@gabrielatorres' },
+    { name: 'Renato Silva', handle: '@renatosilva', followers: '1.5M', avg_engagement: '4.1%', niche: 'Negócios e empreendedorismo', recent_topics: ['negócios digitais', 'receita recorrente', 'escala'], profile_url: 'https://youtube.com/@renatosilva' },
   ],
   tiktok: [
-    { name: 'Elise Darma', handle: '@elisedarma', followers: '870K', avg_engagement: '7.2%', niche: 'Social Media Strategy', recent_topics: ['TikTok for business', 'content batching', 'viral hooks'] },
-    { name: 'Jasmin Alic', handle: '@jasmin.writes', followers: '620K', avg_engagement: '8.1%', niche: 'Copywriting', recent_topics: ['storytelling', 'persuasion', 'writing hooks'] },
+    { name: 'Beatriz Costa', handle: '@beatrizcosta', followers: '3.4M', avg_engagement: '7.2%', niche: 'Criadores de conteúdo e estratégia', recent_topics: ['viral', 'ganchos', 'crescimento no TikTok'], profile_url: 'https://tiktok.com/@beatrizcosta' },
+    { name: 'Igor Pimentel', handle: '@igorpimentel', followers: '1.8M', avg_engagement: '8.1%', niche: 'Educação e entretenimento', recent_topics: ['storytelling', 'persuasão', 'educação rápida'], profile_url: 'https://tiktok.com/@igorpimentel' },
   ],
 }
 
 const HOOK_PATTERNS = [
-  { hook: 'List Hook', example: '"X things nobody tells you about [TOPIC]"', frequency: '38%' },
-  { hook: 'Contrarian Hook', example: '"Everyone says [X] — they\'re wrong. Here\'s why..."', frequency: '24%' },
-  { hook: 'Story Hook', example: '"I [did something] and here\'s what happened..."', frequency: '21%' },
-  { hook: 'Data Hook', example: '"After analyzing 1,000 [X], I found..."', frequency: '17%' },
-  { hook: 'Problem Hook', example: '"The real reason [PAIN POINT] happens (and how to fix it)"', frequency: '29%' },
-  { hook: 'Question Hook', example: '"What if [conventional wisdom] is actually holding you back?"', frequency: '22%' },
+  { hook: 'Gancho de Lista', example: '"X coisas que ninguém te conta sobre [TOPICO]"', frequency: '38%' },
+  { hook: 'Gancho Contrário', example: '"Todos dizem [X] — estão errados. Aqui está o porquê..."', frequency: '24%' },
+  { hook: 'Gancho de História', example: '"Eu [fiz algo] e o que aconteceu mudou tudo..."', frequency: '21%' },
+  { hook: 'Gancho de Dados', example: '"Analisei 1.000 [X] e descobri isso:"', frequency: '17%' },
+  { hook: 'Gancho de Problema', example: '"O real motivo pelo qual [DOR] acontece (e como resolver)"', frequency: '29%' },
+  { hook: 'Gancho de Pergunta', example: '"E se [sabedoria convencional] estiver te limitando?"', frequency: '22%' },
 ]
 
 const FORMAT_TRENDS = {
   linkedin: [
-    { format: 'Carousel', trend: '+42%', dominance: '35%' },
-    { format: 'Text Post (Long-form)', trend: '+18%', dominance: '40%' },
-    { format: 'Short Video', trend: '+85%', dominance: '15%' },
+    { format: 'Carrossel', trend: '+42%', dominance: '35%' },
+    { format: 'Post de Texto Longo', trend: '+18%', dominance: '40%' },
+    { format: 'Vídeo Curto', trend: '+85%', dominance: '15%' },
   ],
   instagram: [
     { format: 'Reels', trend: '+120%', dominance: '55%' },
-    { format: 'Carousel', trend: '+30%', dominance: '30%' },
-    { format: 'Static Post', trend: '-15%', dominance: '15%' },
+    { format: 'Carrossel', trend: '+30%', dominance: '30%' },
+    { format: 'Post Estático', trend: '-15%', dominance: '15%' },
   ],
   tiktok: [
-    { format: 'Short Video (< 30s)', trend: '+55%', dominance: '40%' },
-    { format: 'Tutorial / How-To', trend: '+38%', dominance: '30%' },
-    { format: 'Trend Duet', trend: '+22%', dominance: '20%' },
+    { format: 'Vídeo Curto (< 30s)', trend: '+55%', dominance: '40%' },
+    { format: 'Tutorial / Como Fazer', trend: '+38%', dominance: '30%' },
+    { format: 'Dueto de Tendência', trend: '+22%', dominance: '20%' },
   ],
   youtube: [
-    { format: 'Long-form Video (10-20 min)', trend: '+12%', dominance: '45%' },
+    { format: 'Vídeo Longo (10-20 min)', trend: '+12%', dominance: '45%' },
     { format: 'YouTube Shorts', trend: '+200%', dominance: '30%' },
-    { format: 'Documentary-style', trend: '+65%', dominance: '15%' },
+    { format: 'Estilo Documentário', trend: '+65%', dominance: '15%' },
   ],
   twitter: [
     { format: 'Thread', trend: '+48%', dominance: '50%' },
-    { format: 'Single Tweet', trend: '-8%', dominance: '35%' },
+    { format: 'Tweet Único', trend: '-8%', dominance: '35%' },
     { format: 'Spaces', trend: '+15%', dominance: '10%' },
   ],
 }
@@ -70,65 +69,72 @@ function pickRandom(arr, n) {
 }
 
 function generateOpportunities(topic) {
-  const hooks = pickRandom(HOOK_PATTERNS, 3)
-  const platforms = pickRandom(['linkedin', 'instagram', 'twitter', 'youtube', 'tiktok'], 5)
-  const formats = ['carousel', 'thread', 'video', 'reel', 'article']
-
   return [
     {
       id: `opp-${Date.now()}-1`,
-      title: `The ${topic} Framework No One Is Sharing`,
-      description: `A step-by-step framework breaking down how ${topic} actually works, with practical examples most creators miss.`,
-      hook: hooks[0]?.hook || 'Contrarian Hook',
-      hook_example: hooks[0]?.example || '',
-      format: 'carousel',
+      title: `${topic}: O Guia Completo para Iniciantes em 2025`,
+      description: `Um guia abrangente e prático sobre ${topic}, cobrindo desde os conceitos básicos até estratégias avançadas. Ideal para quem quer começar sem cometer os erros mais comuns.`,
+      hook: 'Gancho de Lista',
+      hook_example: `"7 coisas que eu gostaria de saber antes de começar com ${topic}"`,
+      format: 'carrossel',
       platform: 'linkedin',
-      content_gap: 'Deep frameworks with visual breakdowns are underrepresented in this niche',
-      potential: 'High',
-    },
-    {
-      id: `opp-${Date.now()}-2`,
-      title: `${topic} Mistakes That Are Costing You Growth`,
-      description: `Common mistakes people make in ${topic} that silently limit their results, with quick fixes for each.`,
-      hook: hooks[1]?.hook || 'List Hook',
-      hook_example: hooks[1]?.example || '',
-      format: 'thread',
-      platform: 'twitter',
-      content_gap: 'Problem-solution content specific to beginners is missing',
+      content_gap: `Faltam guias práticos em português sobre ${topic} acessíveis para a audiência brasileira.`,
       potential: 'Very High',
     },
     {
+      id: `opp-${Date.now()}-2`,
+      title: `Por Que Todo Conselho Sobre ${topic} Está Errado`,
+      description: `Uma abordagem contrária que desafia o senso comum sobre ${topic}. Baseado em dados reais e experiências práticas.`,
+      hook: 'Gancho Contrário',
+      hook_example: `"Todo mundo fala pra você fazer X com ${topic}, mas os dados mostram o oposto..."`,
+      format: 'thread',
+      platform: 'twitter',
+      content_gap: `Poucas vozes trazem perspectivas contrárias embasadas sobre ${topic}.`,
+      potential: 'High',
+    },
+    {
       id: `opp-${Date.now()}-3`,
-      title: `I Tested Every ${topic} Strategy for 90 Days — Here\'s What Worked`,
-      description: `A personal case study documenting a real experiment with ${topic}, including data, failures, and the winning approach.`,
-      hook: hooks[2]?.hook || 'Story Hook',
-      hook_example: hooks[2]?.example || '',
+      title: `Passei 6 Meses Dominando ${topic} — Tudo Que Aprendi`,
+      description: `Uma jornada pessoal documentando os aprendizados, fracassos e vitórias de mergulhar fundo em ${topic}. Autêntico e cheio de lições práticas.`,
+      hook: 'Gancho de História',
+      hook_example: `"Eu errei feio com ${topic} por meses. Aqui está o que finalmente funcionou."`,
       format: 'video',
       platform: 'youtube',
-      content_gap: 'Data-driven case studies from practitioners are rare and highly shareable',
+      content_gap: `Conteúdos pessoais sobre a jornada real com ${topic} são raros e muito valorizados.`,
       potential: 'High',
     },
     {
       id: `opp-${Date.now()}-4`,
-      title: `How ${topic} Is Changing in 2025 (New Data)`,
-      description: `An analysis of emerging shifts in ${topic}, what trends are accelerating, and how to position yourself ahead of the curve.`,
-      hook: 'Data Hook',
-      hook_example: '"After analyzing 500 posts about [TOPIC], here\'s what\'s actually changing..."',
-      format: 'reel',
-      platform: 'instagram',
-      content_gap: 'Forward-looking, data-anchored content about this topic has low saturation',
-      potential: 'Medium',
+      title: `Os Dados Sobre ${topic} Que Ninguém Está Mostrando`,
+      description: `Uma análise de estatísticas subreportadas e tendências emergentes em ${topic}. Insights baseados em dados que oferecem vantagem competitiva.`,
+      hook: 'Gancho de Dados',
+      hook_example: `"Analisei 500 posts sobre ${topic} e os resultados me surpreenderam:"`,
+      format: 'carrossel',
+      platform: 'linkedin',
+      content_gap: `Conteúdos baseados em dados reais sobre ${topic} em português são escassos.`,
+      potential: 'Very High',
     },
     {
       id: `opp-${Date.now()}-5`,
-      title: `${topic} 101: The Beginner\'s Guide to Getting Started`,
-      description: `A foundational guide for people who are new to ${topic} — covering terminology, first steps, and common pitfalls.`,
-      hook: 'Problem Hook',
-      hook_example: '"Most people fail at [TOPIC] in the first 30 days because of this one thing..."',
-      format: 'carousel',
+      title: `O Erro Mais Caro Que Você Pode Cometer Com ${topic}`,
+      description: `Um mergulho profundo no equívoco mais comum em ${topic}, por que ele acontece e um caminho claro para corrigi-lo.`,
+      hook: 'Gancho de Problema',
+      hook_example: `"Esse erro simples em ${topic} me custou meses de progresso. Não cometa o mesmo."`,
+      format: 'reel',
       platform: 'instagram',
-      content_gap: 'Entry-level educational content is scarce — most creators target intermediates',
+      content_gap: `Conteúdos sobre erros práticos em ${topic} têm alta taxa de engajamento e baixa concorrência.`,
       potential: 'High',
+    },
+    {
+      id: `opp-${Date.now()}-6`,
+      title: `Vale a Pena Investir em ${topic} em 2025? A Resposta Honesta`,
+      description: `Uma análise imparcial sobre o real valor de ${topic} hoje. Corta o hype para entregar perspectiva real.`,
+      hook: 'Gancho de Pergunta',
+      hook_example: `"Antes de gastar tempo e dinheiro em ${topic}, assiste esse vídeo."`,
+      format: 'video',
+      platform: 'youtube',
+      content_gap: `Avaliações honestas e sem viés sobre ${topic} são raras — a maioria é patrocinada ou superficial.`,
+      potential: 'Medium',
     },
   ]
 }
@@ -143,11 +149,11 @@ export function simulateTrendSearch(topic) {
     })
   })
 
-  const creators = pickRandom(allCreators, Math.min(10, allCreators.length))
+  const creators = pickRandom(allCreators, Math.min(9, allCreators.length))
 
   const recurringHooks = pickRandom(HOOK_PATTERNS, 4).map((h) => ({
     ...h,
-    relevance: `Highly effective for ${topic} content`,
+    relevance: `Altamente eficaz para conteúdo sobre ${topic}`,
   }))
 
   const dominantFormats = []
@@ -159,12 +165,14 @@ export function simulateTrendSearch(topic) {
   })
 
   const emergingTopics = [
-    `${topic} automation tools`,
-    `${topic} for beginners`,
-    `${topic} case studies`,
-    `Future of ${topic}`,
-    `${topic} monetization`,
-    `${topic} psychology`,
+    `${topic} para iniciantes`,
+    `${topic} com inteligência artificial`,
+    `cases de sucesso em ${topic}`,
+    `futuro do ${topic}`,
+    `monetização com ${topic}`,
+    `${topic} na prática`,
+    `ferramentas de ${topic}`,
+    `erros comuns em ${topic}`,
   ]
 
   const opportunities = generateOpportunities(topic)
