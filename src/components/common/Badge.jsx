@@ -41,13 +41,14 @@ const FORMAT_COLORS = {
   podcast: 'bg-teal-100 text-teal-700 border-teal-200',
 }
 
-const INSIGHT_LABELS = { format: 'Formato', hook: 'Gancho', platform: 'Plataforma', summary: 'Resumo', topic: 'Tópico' }
+const INSIGHT_LABELS = { format: 'Formato', hook: 'Gancho', platform: 'Plataforma', summary: 'Resumo', topic: 'Tópico', time: 'Horário' }
 const INSIGHT_COLORS = {
   format: 'bg-indigo-100 text-indigo-700 border-indigo-200',
   hook: 'bg-amber-100 text-amber-700 border-amber-200',
   platform: 'bg-blue-100 text-blue-700 border-blue-200',
   summary: 'bg-orange-100 text-orange-700 border-orange-200',
   topic: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  time: 'bg-violet-100 text-violet-700 border-violet-200',
 }
 
 export function PlatformBadge({ platform }) {
