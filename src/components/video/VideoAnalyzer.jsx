@@ -4,12 +4,12 @@ import {
   Lightbulb, Layers, Clock, Eye, Copy, Check,
   Sparkles, Trash2, RotateCcw, ExternalLink,
   Mic, Film, Zap, Target, TrendingUp, Star,
-  Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
-  FileText, Globe, ArrowRight, RefreshCw, Wand2,
-  Upload, Type, AlignLeft,
+  FileVideo, AlertCircle, Key, X, ShieldCheck,
+  FileText, Globe, ArrowRight, RefreshCw,
+  Upload, Type, AlignLeft, Info,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
-import { analyzeVideo, extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
+import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -125,7 +125,7 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 6000,
-      system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown, no apologies, no refusals. When given a real transcript you analyze it directly and quote from it. When given video frames as images you describe what you see visually. You NEVER refuse or say you cannot do something. Your response must start with { and end with } and be parseable by JSON.parse().',
+      system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown. STRICT RULE: When given a real transcript, every quote in hook.text, promise.text, cta.text, patterns[].example, retention[].example must be an EXACT verbatim quote from that transcript — never paraphrase, never invent. When given video frames, describe only what you actually see in the images. NEVER fabricate quotes, invented sentences, or fictional examples. If a field requires a quote and you cannot find one in the data, use null. Your response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content }],
     }),
   })
@@ -140,16 +140,15 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
 // ── Analysis prompt builder ───────────────────────────────────────────────────
 function buildPrompt({ url, title, channel, topic, videoType, transcript, hasFrames, frameCount }) {
   const hasTranscript = transcript && transcript.trim().length > 30
+
   const dataSection = hasTranscript
-    ? `FULL TRANSCRIPT (analyze this directly — quote from it in hook/promise/CTA fields):
+    ? `REAL TRANSCRIPT — ANALYZE THIS DIRECTLY:
+CRITICAL: Every field that asks for a quote (hook.text, promise.text, cta.text, patterns[].example, retention[].example, context.example, proof.example, conclusion.example) MUST be a verbatim quote copied character-for-character from the transcript below. If you cannot find a matching sentence, set that field to null. NEVER write a sentence that is not in the transcript.
 ---
 ${transcript.trim().slice(0, 6000)}
 ---
 `
-    : hasFrames
-    ? `${frameCount} keyframes from the video are attached as images in this message. Describe what you see in each frame to populate the visual analysis section.
-`
-    : `No transcript or frames available. Analyze based on title, channel name, and training knowledge about this creator.
+    : `${frameCount} keyframes from the video are attached as images. Describe only what you visually observe in each frame. Do not invent quotes or narration. For all quote fields (hook.text, promise.text, cta.text, etc.) return null since no transcript is available.
 `
 
   return `You are a professional video content analyst helping creators reverse-engineer successful videos.
@@ -162,124 +161,124 @@ VIDEO:
 - Type: ${videoType !== 'auto' ? videoType : 'auto-detect'}
 ${hasFrames ? `- Frames: ${frameCount} keyframes attached as images` : ''}
 
-${dataSection}RULES:
-- ${hasTranscript ? 'Base the ENTIRE analysis on the real transcript. For hook.text, promise.text, cta.text: use EXACT quotes from the transcript.' : 'Make the analysis specific — reference the creator, title, and topic throughout. Never be generic.'}
+${dataSection}
+RULES:
+- ${hasTranscript ? 'EVERY quoted field must be an exact verbatim copy from the transcript above. Never paraphrase. If not found, use null.' : 'This is a visual-only analysis. All quote fields must be null. Only describe what is visible in the attached frames.'}
 - Classify tone as one of: educational, storytelling, provocative, contrarian, tutorial, motivational, humorous
-- Detect: formality (formal/informal), sentence style (short/long/mixed), approach (direct/narrative/both)
-- Generate 5 content_ideas specifically about the topic: "${topic || 'content creation'}"
-- You MUST always return a complete analysis — never refuse
+- All analysis text in Brazilian Portuguese
+- Generate 5 content_ideas based on the topic and what was actually found in the content
+- For transcript_reconstruction: ${hasTranscript ? 'reproduce the FULL transcript verbatim, exactly as provided, without any changes' : 'return null — no transcript available'}
 - Respond with ONLY the JSON below (no markdown fences, no extra text):
 
 {
   "archetype": "educational|storytelling|contrarian|listicle|tutorial|motivational|humorous",
-  "data_source": "${hasTranscript ? 'transcript' : hasFrames ? 'frames' : 'inference'}",
+  "data_source": "${hasTranscript ? 'transcript' : 'frames'}",
   "overview": {
-    "platform_fit": "Best platform(s) for this content style",
+    "platform_fit": "Melhor(es) plataforma(s) para este estilo de conteúdo",
     "estimated_duration": "X:XX",
-    "primary_audience": "Who this is designed for",
-    "key_strength": "Single most effective element of this video"
+    "primary_audience": "Para quem este vídeo foi criado",
+    "key_strength": "Elemento mais eficaz deste vídeo"
   },
   "structure": {
     "hook": {
-      "type": "Specific hook type name",
-      "text": "${hasTranscript ? 'Exact quote from transcript' : 'Faithful reconstruction of opening words'}",
-      "description": "How this hook works in this specific video",
+      "type": "Nome específico do tipo de gancho",
+      "text": ${hasTranscript ? '"Citação exata da transcrição — primeiras palavras do gancho"' : 'null'},
+      "description": "Como este gancho funciona neste vídeo específico",
       "duration": "0:00-0:XX",
-      "effectiveness": "Why this hook works for this audience"
+      "effectiveness": "Por que este gancho funciona para esta audiência"
     },
     "promise": {
-      "text": "${hasTranscript ? 'Exact quote of the value promise' : 'Likely promise statement'}",
-      "description": "What value the creator promises to deliver"
+      "text": ${hasTranscript ? '"Citação exata da promessa de valor da transcrição"' : 'null'},
+      "description": "Que valor o criador promete entregar"
     },
     "context": {
-      "description": "How this video establishes credibility or context",
-      "example": "${hasTranscript ? 'Quote from transcript' : 'Reconstruction'}"
+      "description": "Como o vídeo estabelece credibilidade ou contexto",
+      "example": ${hasTranscript ? '"Citação exata da transcrição"' : 'null'}
     },
     "main_sections": [
-      { "name": "Section name", "content": "What is covered — specific to this video", "duration": "X:XX-X:XX" },
-      { "name": "Section name", "content": "What is covered", "duration": "X:XX-X:XX" },
-      { "name": "Section name", "content": "What is covered", "duration": "X:XX-X:XX" },
-      { "name": "Section name", "content": "What is covered", "duration": "X:XX-X:XX" }
+      { "name": "Nome da seção", "content": "O que é coberto nesta seção", "duration": "X:XX-X:XX" },
+      { "name": "Nome da seção", "content": "O que é coberto", "duration": "X:XX-X:XX" },
+      { "name": "Nome da seção", "content": "O que é coberto", "duration": "X:XX-X:XX" },
+      { "name": "Nome da seção", "content": "O que é coberto", "duration": "X:XX-X:XX" }
     ],
     "proof": {
-      "description": "Example, case study, or proof element used",
-      "example": "${hasTranscript ? 'Quote from transcript' : 'Likely proof element'}"
+      "description": "Exemplo, caso ou elemento de prova usado",
+      "example": ${hasTranscript ? '"Citação exata da transcrição"' : 'null'}
     },
     "conclusion": {
-      "description": "How this video wraps up",
-      "example": "${hasTranscript ? 'Quote from transcript' : 'Reconstruction'}"
+      "description": "Como o vídeo encerra",
+      "example": ${hasTranscript ? '"Citação exata da transcrição"' : 'null'}
     },
     "cta": {
-      "text": "${hasTranscript ? 'Exact CTA quote' : 'Likely CTA'}",
+      "text": ${hasTranscript ? '"Citação exata do CTA da transcrição"' : 'null'},
       "type": "subscribe|next_video|product|comment|save|follow",
-      "description": "Why this CTA is effective"
+      "description": "Por que este CTA é eficaz"
     }
   },
   "tone": {
-    "primary": "Primary tone",
-    "secondary": "Secondary tone",
+    "primary": "Tom primário",
+    "secondary": "Tom secundário",
     "formality": "formal|informal",
     "sentence_style": "short|long|mixed",
     "approach": "direct|narrative|both",
-    "description": "Specific description of communication style in this video",
-    "markers": ["Specific tone marker", "Specific tone marker", "Specific tone marker", "Specific tone marker"],
-    "voice_characteristics": "How this creator's persona comes through in this specific video"
+    "description": "Descrição específica do estilo de comunicação neste vídeo",
+    "markers": ["Marcador de tom específico", "Marcador de tom específico", "Marcador de tom específico"],
+    "voice_characteristics": "Como a persona do criador aparece neste vídeo"
   },
   "patterns": [
-    { "name": "Pattern name", "description": "How it appears in this video", "example": "${hasTranscript ? 'Exact quote' : 'Specific moment'}", "why_effective": "Why this pattern works here" },
-    { "name": "Pattern name", "description": "How it appears in this video", "example": "${hasTranscript ? 'Exact quote' : 'Specific moment'}", "why_effective": "Why this pattern works here" },
-    { "name": "Pattern name", "description": "How it appears in this video", "example": "${hasTranscript ? 'Exact quote' : 'Specific moment'}", "why_effective": "Why this pattern works here" }
+    { "name": "Nome do padrão", "description": "Como aparece neste vídeo", "example": ${hasTranscript ? '"Citação exata da transcrição"' : 'null'}, "why_effective": "Por que este padrão funciona aqui" },
+    { "name": "Nome do padrão", "description": "Como aparece neste vídeo", "example": ${hasTranscript ? '"Citação exata da transcrição"' : 'null'}, "why_effective": "Por que este padrão funciona aqui" },
+    { "name": "Nome do padrão", "description": "Como aparece neste vídeo", "example": ${hasTranscript ? '"Citação exata da transcrição"' : 'null'}, "why_effective": "Por que este padrão funciona aqui" }
   ],
   "retention": [
-    { "technique": "Technique name", "description": "How it is used in this video", "example": "${hasTranscript ? 'Quote or moment' : 'Specific moment'}" },
-    { "technique": "Technique name", "description": "How it is used in this video", "example": "${hasTranscript ? 'Quote or moment' : 'Specific moment'}" },
-    { "technique": "Technique name", "description": "How it is used in this video", "example": "${hasTranscript ? 'Quote or moment' : 'Specific moment'}" },
-    { "technique": "Technique name", "description": "How it is used in this video", "example": "${hasTranscript ? 'Quote or moment' : 'Specific moment'}" },
-    { "technique": "Technique name", "description": "How it is used in this video", "example": "${hasTranscript ? 'Quote or moment' : 'Specific moment'}" }
+    { "technique": "Nome da técnica", "description": "Como é usada neste vídeo", "example": ${hasTranscript ? '"Citação ou momento da transcrição"' : 'null'} },
+    { "technique": "Nome da técnica", "description": "Como é usada neste vídeo", "example": ${hasTranscript ? '"Citação ou momento da transcrição"' : 'null'} },
+    { "technique": "Nome da técnica", "description": "Como é usada neste vídeo", "example": ${hasTranscript ? '"Citação ou momento da transcrição"' : 'null'} },
+    { "technique": "Nome da técnica", "description": "Como é usada neste vídeo", "example": ${hasTranscript ? '"Citação ou momento da transcrição"' : 'null'} }
   ],
   "visual": {
-    "editing_pace": "Description of editing pace",
-    "scene_changes": "Frequency and type of scene changes",
-    "text_overlays": "How text overlays are used",
-    "framing": "How the creator is framed / camera setup",
-    "key_techniques": ["technique 1", "technique 2", "technique 3", "technique 4"]
+    "editing_pace": ${hasFrames ? '"Descrição do ritmo de edição observado nos frames"' : 'null'},
+    "scene_changes": ${hasFrames ? '"Frequência e tipo de cortes observados"' : 'null'},
+    "text_overlays": ${hasFrames ? '"Como texto na tela é usado"' : 'null'},
+    "framing": ${hasFrames ? '"Como o criador é enquadrado / setup de câmera"' : 'null'},
+    "key_techniques": ${hasFrames ? '["técnica visual 1", "técnica visual 2", "técnica visual 3"]' : '[]'}
   },
   "summary": {
-    "overview": "${hasTranscript ? 'Concise 2-3 sentence summary based on the real transcript' : 'Concise 2-3 sentence summary of what this video covers and why it was made'}",
-    "key_topics": ["Main topic 1 covered", "Main topic 2 covered", "Main topic 3 covered"],
-    "content_type": "Brief label like: Educational short-form, Motivational reel, Tutorial breakdown…",
-    "main_message": "${hasTranscript ? 'The single core message of the video, based on the transcript' : 'The single core message this video communicates'}",
-    "creator_positioning": "How the creator positions themselves in this video"
+    "overview": "Resumo de 2-3 frases baseado ${hasTranscript ? 'na transcrição real' : 'nos frames visuais'}",
+    "key_topics": ["Tópico principal 1", "Tópico principal 2", "Tópico principal 3"],
+    "content_type": "Rótulo breve: ex. Tutorial educacional, Reel motivacional…",
+    "main_message": "A mensagem central do vídeo",
+    "creator_positioning": "Como o criador se posiciona neste vídeo"
   },
-  "transcript_reconstruction": "${hasTranscript ? 'Reproduce the full transcript provided above, verbatim' : 'Write a full realistic transcript reconstruction of this video in natural spoken Portuguese. Include the hook, all main points, transitions, and CTA as the creator would say them. 300–500 words of natural spoken language.'}",
+  "transcript_reconstruction": ${hasTranscript ? '"[reproduza a transcrição completa verbatim aqui]"' : 'null'},
   "why_it_works": [
-    { "reason": "Specific reason", "impact": "Impact on performance" },
-    { "reason": "Specific reason", "impact": "Impact on performance" },
-    { "reason": "Specific reason", "impact": "Impact on performance" },
-    { "reason": "Specific reason", "impact": "Impact on performance" },
-    { "reason": "Specific reason", "impact": "Impact on performance" }
+    { "reason": "Motivo específico", "impact": "Impacto na performance" },
+    { "reason": "Motivo específico", "impact": "Impacto na performance" },
+    { "reason": "Motivo específico", "impact": "Impacto na performance" },
+    { "reason": "Motivo específico", "impact": "Impacto na performance" },
+    { "reason": "Motivo específico", "impact": "Impacto na performance" }
   ],
   "template": {
-    "name": "Template name from this video",
-    "hook_formula": "Hook formula based on this video's actual hook",
-    "hook_example": "Example applying this template to a new topic",
-    "promise_formula": "Value promise formula",
+    "name": "Nome do template extraído deste vídeo",
+    "hook_formula": "Fórmula do gancho baseada no gancho real deste vídeo",
+    "hook_example": "Exemplo aplicando este template a outro tópico",
+    "promise_formula": "Fórmula da promessa de valor",
     "sections": [
-      { "name": "Section name", "duration": "X-X min", "goal": "What this section achieves", "formula": "Reusable formula" },
-      { "name": "Section name", "duration": "X-X min", "goal": "What this section achieves", "formula": "Reusable formula" },
-      { "name": "Section name", "duration": "X-X min", "goal": "What this section achieves", "formula": "Reusable formula" },
-      { "name": "Section name", "duration": "X-X min", "goal": "What this section achieves", "formula": "Reusable formula" }
+      { "name": "Nome da seção", "duration": "X-X min", "goal": "O que esta seção alcança", "formula": "Fórmula reutilizável" },
+      { "name": "Nome da seção", "duration": "X-X min", "goal": "O que esta seção alcança", "formula": "Fórmula reutilizável" },
+      { "name": "Nome da seção", "duration": "X-X min", "goal": "O que esta seção alcança", "formula": "Fórmula reutilizável" },
+      { "name": "Nome da seção", "duration": "X-X min", "goal": "O que esta seção alcança", "formula": "Fórmula reutilizável" }
     ],
-    "closing_formula": "Closing formula",
-    "cta_formula": "CTA formula",
-    "tips": ["Actionable tip", "Actionable tip", "Actionable tip", "Actionable tip"]
+    "closing_formula": "Fórmula de fechamento",
+    "cta_formula": "Fórmula de CTA",
+    "tips": ["Dica acionável", "Dica acionável", "Dica acionável", "Dica acionável"]
   },
   "content_ideas": [
-    { "title": "Specific idea title", "hook": "Hook suggestion for this idea", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Specific angle or twist", "why_now": "Why this idea is timely or relevant" },
-    { "title": "Specific idea title", "hook": "Hook suggestion", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Specific angle or twist", "why_now": "Why timely" },
-    { "title": "Specific idea title", "hook": "Hook suggestion", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Specific angle or twist", "why_now": "Why timely" },
-    { "title": "Specific idea title", "hook": "Hook suggestion", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Specific angle or twist", "why_now": "Why timely" },
-    { "title": "Specific idea title", "hook": "Hook suggestion", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Specific angle or twist", "why_now": "Why timely" }
+    { "title": "Título específico da ideia", "hook": "Sugestão de gancho para esta ideia", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo ou diferencial específico", "why_now": "Por que esta ideia é relevante agora" },
+    { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" },
+    { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" },
+    { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" },
+    { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" }
   ]
 }`
 }
@@ -332,44 +331,6 @@ Return ONLY this JSON:
   const match = data.content[0].text.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
   return JSON.parse(match[0])
-}
-
-// ── Draft transcript generator ────────────────────────────────────────────────
-async function generateTranscriptAPI(apiKey, { title, channel, topic, url }) {
-  const prompt = `You are helping a content creator study a video. Generate a likely transcript draft for this video so they can edit and correct it.
-
-Video:
-- Title: ${title || '(not provided)'}
-- Channel/Creator: ${channel || '(not provided)'}
-- URL: ${url || '(not provided)'}
-- Topic: ${topic || '(not provided)'}
-
-INSTRUCTIONS:
-- If you recognize this creator from your training data, reconstruct a realistic transcript that matches their real speaking style.
-- If you don't recognize them, write a realistic transcript based on the title and topic.
-- Use natural spoken language — contractions, pauses, conversational tone.
-- Include the hook, main points, and CTA.
-- Length: 300–600 words, as a realistic spoken transcript.
-- Respond with ONLY the plain transcript text. No JSON, no markdown, no labels like "Hook:" or "CTA:". Just natural spoken words as the creator would say them.`
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-opus-4-5',
-      max_tokens: 1500,
-      system: 'You are a transcript reconstruction assistant. Return only the spoken transcript text — no labels, no formatting, no JSON.',
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-  if (!res.ok) throw new Error(`Erro ${res.status}`)
-  const data = await res.json()
-  return data.content[0].text.trim()
 }
 
 // ── API Key Modal ─────────────────────────────────────────────────────────────
@@ -544,9 +505,6 @@ export default function VideoAnalyzer() {
   const [generatingScript, setGeneratingScript] = useState(false)
   const [generatedScript, setGeneratedScript] = useState(null)
 
-  // Transcript draft
-  const [generatingTranscript, setGeneratingTranscript] = useState(false)
-
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
 
@@ -559,10 +517,8 @@ export default function VideoAnalyzer() {
   ]
 
   const SOURCE_BADGE = {
-    transcript: { label: '✦ Análise por Transcrição Real', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    frames: { label: '✦ Análise Visual por Frames + IA', color: 'bg-violet-100 text-violet-700 border-violet-200' },
-    ai: { label: '✦ Análise por IA (inferência por título/canal)', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-    simulation: { label: '◌ Simulação — adicione API Key para análise real', color: 'bg-amber-100 text-amber-600 border-amber-200' },
+    transcript: { label: '✦ Análise baseada em transcrição real', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    frames: { label: '✦ Análise visual por frames reais', color: 'bg-violet-100 text-violet-700 border-violet-200' },
   }
 
   const handleFileSelect = async (file) => {
@@ -578,10 +534,19 @@ export default function VideoAnalyzer() {
   }
 
   const handleAnalyze = async () => {
-    const hasUrl = url.trim().length > 0
-    const hasFile = !!videoFile
     const hasTranscriptText = transcript.trim().length > 30
-    if (!hasUrl && !hasFile && !hasTranscriptText && !title.trim()) return
+    const hasFramesData = frames.length > 0
+
+    // Require real data — never run on title/URL alone
+    if (!hasTranscriptText && !hasFramesData) {
+      setError('Adicione uma transcrição real ou envie um arquivo de vídeo para análise. A análise por título/URL não é suportada — isso geraria conteúdo fictício.')
+      return
+    }
+
+    if (!apiKey) {
+      setError('Uma API Key da Anthropic é necessária para análise real. Clique em "Adicionar API Key" acima.')
+      return
+    }
 
     setLoading(true)
     setAnalysis(null)
@@ -595,7 +560,7 @@ export default function VideoAnalyzer() {
       let channel = ''
 
       setLoadingStep(0)
-      if (hasUrl) {
+      if (url.trim()) {
         const meta = await fetchYouTubeMeta(url)
         if (meta) {
           if (!title.trim()) metaTitle = meta.title
@@ -603,39 +568,23 @@ export default function VideoAnalyzer() {
         }
       }
 
-      setLoadingStep(1)
-      // frames already extracted on file select
-
-      if (apiKey) {
-        setLoadingStep(2)
-        const prompt = buildPrompt({
-          url, title: metaTitle, channel, topic, videoType,
-          transcript: hasTranscriptText ? transcript : '',
-          hasFrames: frames.length > 0,
-          frameCount: frames.length,
-        })
-        setLoadingStep(3)
-        const raw = await callClaudeAPI(apiKey, prompt, frames)
-        const jsonMatch = raw.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
-        const result = JSON.parse(jsonMatch[0])
-        setLoadingStep(4)
-        await new Promise((r) => setTimeout(r, 300))
-        setAnalysis(result)
-        setAnalysisSource(hasTranscriptText ? 'transcript' : frames.length > 0 ? 'frames' : 'ai')
-        if (metaTitle && !title) setTitle(metaTitle)
-      } else {
-        setLoadingStep(2)
-        await new Promise((r) => setTimeout(r, 700))
-        setLoadingStep(3)
-        await new Promise((r) => setTimeout(r, 500))
-        const result = analyzeVideo({ url, title: metaTitle || title, topic, videoType })
-        setLoadingStep(4)
-        await new Promise((r) => setTimeout(r, 300))
-        setAnalysis(result)
-        setAnalysisSource('simulation')
-        if (metaTitle && !title) setTitle(metaTitle)
-      }
+      setLoadingStep(2)
+      const prompt = buildPrompt({
+        url, title: metaTitle, channel, topic, videoType,
+        transcript: hasTranscriptText ? transcript : '',
+        hasFrames: hasFramesData,
+        frameCount: frames.length,
+      })
+      setLoadingStep(3)
+      const raw = await callClaudeAPI(apiKey, prompt, hasFramesData ? frames : [])
+      const jsonMatch = raw.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
+      const result = JSON.parse(jsonMatch[0])
+      setLoadingStep(4)
+      await new Promise((r) => setTimeout(r, 300))
+      setAnalysis(result)
+      setAnalysisSource(hasTranscriptText ? 'transcript' : 'frames')
+      if (metaTitle && !title) setTitle(metaTitle)
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
     } finally {
@@ -682,19 +631,6 @@ export default function VideoAnalyzer() {
     }
   }
 
-  const handleGenerateTranscript = async () => {
-    if (!apiKey) return
-    setGeneratingTranscript(true)
-    try {
-      const draft = await generateTranscriptAPI(apiKey, { title, channel: '', topic, url })
-      setTranscript(draft)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setGeneratingTranscript(false)
-    }
-  }
-
   const handleCopyTemplate = () => {
     if (!analysis?.template) return
     const t = analysis.template
@@ -722,7 +658,8 @@ export default function VideoAnalyzer() {
   const handleSaveKey = (key) => { localStorage.setItem(LS_KEY, key); setApiKey(key) }
   const handleRemoveKey = () => { localStorage.removeItem(LS_KEY); setApiKey('') }
 
-  const canAnalyze = !extractingFrames && (url.trim() || videoFile || transcript.trim().length > 30 || title.trim())
+  const hasRealData = transcript.trim().length > 30 || frames.length > 0
+  const canAnalyze = !extractingFrames && hasRealData && !!apiKey
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
@@ -737,7 +674,7 @@ export default function VideoAnalyzer() {
           </div>
           <div>
             <h1 className="text-base font-bold text-gray-900">Analisador de Vídeos de Referência</h1>
-            <p className="text-xs text-gray-400">Desconstrua qualquer vídeo — estrutura, tom, padrões, template e ideias de conteúdo</p>
+            <p className="text-xs text-gray-400">Análise 100% baseada em dados reais — transcrição real ou frames extraídos. Nunca gera conteúdo fictício.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -766,16 +703,16 @@ export default function VideoAnalyzer() {
 
       {/* No API key banner */}
       {!apiKey && !analysis && (
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-          <AlertCircle size={15} className="text-amber-500 mt-0.5 shrink-0" />
+        <div className="p-4 rounded-xl bg-violet-50 border border-violet-200 flex items-start gap-3">
+          <Key size={15} className="text-violet-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo simulação ativo</p>
+            <p className="text-xs font-semibold text-gray-800 mb-0.5">API Key necessária para análise real</p>
             <p className="text-xs text-gray-500">
-              Sem API Key, a análise é gerada por templates — não analisa o vídeo real.{' '}
+              Este analisador nunca gera conteúdo fictício. Ele lê sua transcrição real ou frames do vídeo e extrai insights diretos do conteúdo.{' '}
               <button onClick={() => setShowKeyModal(true)} className="text-violet-600 hover:underline font-medium">
-                Adicione sua chave da Anthropic
+                Adicione sua API Key da Anthropic
               </button>{' '}
-              para análise real com IA.
+              para começar.
             </p>
           </div>
         </div>
@@ -794,8 +731,8 @@ export default function VideoAnalyzer() {
                 <p className="text-xs font-medium text-gray-800 truncate">{saved.title || saved.url || 'Análise sem título'}</p>
                 <div className="flex items-center gap-2">
                   <p className="text-[10px] text-gray-400">{new Date(saved.analyzed_at).toLocaleDateString('pt-BR')}</p>
-                  <span className={`text-[10px] font-medium ${saved.source === 'simulation' ? 'text-amber-500' : 'text-emerald-600'}`}>
-                    {saved.source === 'simulation' ? '◌ Simulação' : '✦ IA real'}
+                  <span className={`text-[10px] font-medium ${saved.source === 'transcript' ? 'text-emerald-600' : saved.source === 'frames' ? 'text-violet-600' : 'text-gray-400'}`}>
+                    {saved.source === 'transcript' ? '✦ Transcrição real' : saved.source === 'frames' ? '✦ Frames visuais' : '✦ IA'}
                   </span>
                 </div>
               </div>
@@ -966,45 +903,37 @@ export default function VideoAnalyzer() {
                 )}
               </div>
 
-              {/* Transcription options */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className={`flex items-start gap-2 p-3 rounded-xl border cursor-pointer transition-all ${
-                  transcript.trim().length > 0 ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-200 hover:border-emerald-200 hover:bg-emerald-50/30'
-                }`}>
-                  <Type size={13} className="text-emerald-500 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-[11px] font-semibold text-gray-700">Colar manualmente</p>
-                    <p className="text-[10px] text-gray-400">Cole a transcrição do vídeo abaixo</p>
-                  </div>
+              {/* How to get a transcript */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                  <Info size={10} /> Como obter uma transcrição real
+                </p>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {[
+                    { icon: '▶', label: 'YouTube', desc: 'Clique em "…" → Transcrição → copiar o texto' },
+                    { icon: '◉', label: 'TikTok / Instagram', desc: 'Use otter.ai, Whisper ou Descript para transcrever' },
+                    { icon: '⬆', label: 'Arquivo de vídeo', desc: 'Envie o arquivo no painel ao lado — frames são extraídos automaticamente' },
+                  ].map(({ icon, label, desc }) => (
+                    <div key={label} className="flex items-start gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                      <span className="text-gray-400 text-[11px] shrink-0 mt-0.5">{icon}</span>
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-700">{label}</p>
+                        <p className="text-[10px] text-gray-400">{desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <button
-                  onClick={handleGenerateTranscript}
-                  disabled={!apiKey || generatingTranscript || (!url.trim() && !title.trim())}
-                  className={`flex items-start gap-2 p-3 rounded-xl border transition-all text-left ${
-                    !apiKey || (!url.trim() && !title.trim())
-                      ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                      : 'border-violet-200 hover:bg-violet-50/50 cursor-pointer'
-                  }`}
-                >
-                  <Wand2 size={13} className={`mt-0.5 shrink-0 ${generatingTranscript ? 'text-violet-500 animate-pulse' : 'text-violet-500'}`} />
-                  <div>
-                    <p className="text-[11px] font-semibold text-gray-700">
-                      {generatingTranscript ? 'Gerando rascunho...' : 'Gerar rascunho com IA'}
-                    </p>
-                    <p className="text-[10px] text-gray-400">
-                      {!apiKey ? 'Requer API Key' : (!url.trim() && !title.trim()) ? 'Informe a URL ou título' : 'Claude reconstrói um rascunho editável'}
-                    </p>
-                  </div>
-                </button>
               </div>
 
               {/* Transcript textarea */}
               <div className="flex-1 flex flex-col">
                 <textarea
                   className="input flex-1 min-h-[240px] resize-none text-xs leading-relaxed"
-                  placeholder={`Cole a transcrição aqui ou use "Gerar rascunho com IA" para criar um ponto de partida editável...
+                  placeholder={`Cole aqui a transcrição real do vídeo...
 
-Quanto mais completa a transcrição, mais precisa será a análise — a IA irá citar trechos reais no gancho, promessa, CTA e padrões.`}
+A IA irá citar trechos EXATOS da transcrição no gancho, promessa, CTA e padrões detectados. Nenhuma frase será inventada.
+
+Quanto mais completa a transcrição, mais precisa será a análise.`}
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                 />
@@ -1021,20 +950,43 @@ Quanto mais completa a transcrição, mais precisa será a análise — a IA ir�
                 </div>
               </div>
 
-              {/* Precision indicator */}
+              {/* Data availability indicator */}
               <div className="pt-3 border-t border-gray-100 space-y-1.5">
-                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nível de precisão da análise</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Dados disponíveis para análise</p>
                 {[
-                  { label: 'Transcrição real',    active: transcript.trim().length > 30, color: 'bg-emerald-500', desc: 'Analisa o conteúdo exato' },
-                  { label: 'Frames visuais',      active: frames.length > 0,             color: 'bg-violet-500',  desc: 'Analisa edição e visual' },
-                  { label: 'URL/Título/Canal',    active: !!(url.trim() || title.trim()), color: 'bg-blue-400',   desc: 'Infere pelo contexto' },
-                ].map(({ label, active, color, desc }) => (
+                  {
+                    label: 'Transcrição real',
+                    active: transcript.trim().length > 30,
+                    color: 'bg-emerald-500',
+                    desc: 'Citações exatas do conteúdo',
+                    required: true,
+                  },
+                  {
+                    label: 'Frames do vídeo',
+                    active: frames.length > 0,
+                    color: 'bg-violet-500',
+                    desc: 'Análise visual real',
+                    required: true,
+                  },
+                  {
+                    label: 'URL / Título',
+                    active: !!(url.trim() || title.trim()),
+                    color: 'bg-blue-300',
+                    desc: 'Contexto adicional (não suficiente sozinho)',
+                    required: false,
+                  },
+                ].map(({ label, active, color, desc, required }) => (
                   <div key={label} className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full shrink-0 ${active ? color : 'bg-gray-200'}`} />
-                    <p className={`text-[10px] ${active ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{label}</p>
+                    <p className={`text-[10px] ${active ? 'text-gray-700 font-medium' : required ? 'text-red-400' : 'text-gray-400'}`}>{label}</p>
                     <p className="text-[10px] text-gray-300 hidden sm:block">— {desc}</p>
                   </div>
                 ))}
+                {!transcript.trim() && frames.length === 0 && (
+                  <p className="text-[10px] text-red-400 font-medium mt-1">
+                    ⚠ Adicione uma transcrição ou envie um vídeo para habilitar a análise
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -1047,17 +999,45 @@ Quanto mais completa a transcrição, mais precisa será a análise — a IA ir�
             </div>
           )}
 
+          {/* Disabled state hints */}
+          {!canAnalyze && !extractingFrames && (
+            <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
+              <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                <Info size={12} className="text-gray-400" /> Para analisar, você precisa de:
+              </p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${transcript.trim().length > 30 || frames.length > 0 ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                  <p className={`text-xs ${transcript.trim().length > 30 || frames.length > 0 ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                    Transcrição real (cole abaixo) ou arquivo de vídeo/áudio com frames extraídos
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${apiKey ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                  <p className={`text-xs ${apiKey ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
+                    {apiKey ? 'API Key configurada ✓' : (
+                      <>
+                        API Key da Anthropic —{' '}
+                        <button onClick={() => setShowKeyModal(true)} className="text-violet-600 hover:underline font-medium">
+                          adicionar agora
+                        </button>
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleAnalyze}
             disabled={!canAnalyze}
             className="btn-primary w-full py-3 text-sm"
-            style={{ background: canAnalyze ? (apiKey ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined) : undefined }}
+            style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
           >
             {extractingFrames
               ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
-              : apiKey
-              ? <><Sparkles size={15} /> Analisar Vídeo com IA</>
-              : <><Video size={15} /> Analisar (modo simulação)</>
+              : <><Sparkles size={15} /> Analisar Vídeo com IA</>
             }
           </button>
         </div>
@@ -1621,61 +1601,75 @@ Quanto mais completa a transcrição, mais precisa será a análise — a IA ir�
           {/* ── TRANSCRIÇÃO ───────────────────────────────────────────────────── */}
           {activeTab === 'transcricao' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText size={15} className="text-emerald-500" />
-                  <h3 className="text-sm font-semibold text-gray-900">Transcrição Completa</h3>
-                  {analysis.data_source === 'transcript' ? (
-                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">Transcrição real fornecida</span>
-                  ) : (
-                    <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full border border-amber-200">Reconstituição por IA</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => navigator.clipboard.writeText(analysis.transcript_reconstruction || transcript || '')}
-                  className="btn-secondary text-xs"
-                >
-                  <Copy size={12} /> Copiar
-                </button>
-              </div>
-
-              {/* Show real transcript if provided, else show AI reconstruction */}
-              {(transcript && transcript.trim().length > 30) ? (
-                <div className="space-y-3">
-                  <div className="card p-4 bg-emerald-50/30 border border-emerald-100">
-                    <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide mb-3">Transcrição fornecida por você</p>
+              {transcript && transcript.trim().length > 30 ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText size={15} className="text-emerald-500" />
+                      <h3 className="text-sm font-semibold text-gray-900">Transcrição Real</h3>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">✦ Conteúdo original</span>
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(transcript)}
+                      className="btn-secondary text-xs"
+                    >
+                      <Copy size={12} /> Copiar
+                    </button>
+                  </div>
+                  <div className="card p-5 bg-emerald-50/20 border border-emerald-100 space-y-3">
+                    <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-semibold uppercase tracking-wide">
+                      <Check size={11} /> Transcrição fornecida — {transcript.trim().split(/\s+/).length} palavras
+                    </div>
                     <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{transcript}</p>
                   </div>
-                  {analysis.transcript_reconstruction && analysis.transcript_reconstruction !== transcript && (
-                    <div className="card p-4 border border-gray-200">
-                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide mb-3">Versão formatada pela IA</p>
-                      <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{analysis.transcript_reconstruction}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {analysis.transcript_reconstruction ? (
-                    <div className="card p-5 border border-gray-200 space-y-3">
-                      <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100">
-                        <AlertCircle size={13} className="text-amber-500 mt-0.5 shrink-0" />
-                        <p className="text-[11px] text-amber-700">
-                          Esta é uma reconstituição gerada pela IA baseada no título, canal e padrões conhecidos do criador — não é a transcrição real do vídeo.
-                          Para análise com o conteúdo exato, adicione a transcrição real e refaça a análise.
-                        </p>
+
+                  {/* Detected structure from transcript */}
+                  {analysis.structure && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
+                        <Zap size={12} className="text-orange-500" /> Estrutura detectada na transcrição
+                      </p>
+                      <div className="space-y-2">
+                        {analysis.structure.hook?.text && (
+                          <div className="card p-3 border border-orange-100 bg-orange-50/30">
+                            <p className="text-[10px] text-orange-500 font-semibold uppercase tracking-wide mb-1">Gancho detectado ({analysis.structure.hook.type})</p>
+                            <p className="text-xs text-gray-800 italic">"{analysis.structure.hook.text}"</p>
+                          </div>
+                        )}
+                        {analysis.structure.promise?.text && (
+                          <div className="card p-3 border border-blue-100 bg-blue-50/30">
+                            <p className="text-[10px] text-blue-500 font-semibold uppercase tracking-wide mb-1">Promessa detectada</p>
+                            <p className="text-xs text-gray-800 italic">"{analysis.structure.promise.text}"</p>
+                          </div>
+                        )}
+                        {analysis.structure.cta?.text && (
+                          <div className="card p-3 border border-violet-100 bg-violet-50/30">
+                            <p className="text-[10px] text-violet-500 font-semibold uppercase tracking-wide mb-1">CTA detectado</p>
+                            <p className="text-xs text-gray-800 italic">"{analysis.structure.cta.text}"</p>
+                          </div>
+                        )}
+                        {analysis.patterns?.filter(p => p.example).map((p, i) => (
+                          <div key={i} className="card p-3 border border-amber-100 bg-amber-50/30">
+                            <p className="text-[10px] text-amber-500 font-semibold uppercase tracking-wide mb-1">Padrão: {p.name}</p>
+                            <p className="text-xs text-gray-800 italic">"{p.example}"</p>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{analysis.transcript_reconstruction}</p>
-                    </div>
-                  ) : (
-                    <div className="card p-10 text-center space-y-3">
-                      <FileText size={28} className="mx-auto text-gray-200" />
-                      <p className="text-sm text-gray-500 font-medium">Nenhuma transcrição disponível</p>
-                      <p className="text-xs text-gray-400">Cole a transcrição do vídeo e refaça a análise para ver o conteúdo real aqui.</p>
-                      <button onClick={handleReset} className="btn-secondary text-xs mx-auto">
-                        <RotateCcw size={12} /> Nova análise com transcrição
-                      </button>
                     </div>
                   )}
+                </>
+              ) : (
+                <div className="card p-10 text-center space-y-4">
+                  <FileText size={32} className="mx-auto text-gray-200" />
+                  <div className="space-y-1.5">
+                    <p className="text-sm text-gray-600 font-semibold">Esta análise foi feita sem transcrição</p>
+                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                      A análise foi baseada nos frames visuais do vídeo. Para ver a transcrição e as citações exatas do conteúdo, refaça a análise colando a transcrição real.
+                    </p>
+                  </div>
+                  <button onClick={handleReset} className="btn-secondary text-xs">
+                    <RotateCcw size={12} /> Nova análise com transcrição
+                  </button>
                 </div>
               )}
             </div>
