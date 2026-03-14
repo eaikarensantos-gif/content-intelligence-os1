@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, Brain, Wand2, X,
+  Download, Upload, Check, AlertCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -17,15 +18,78 @@ const NAV = [
   { to: '/text', icon: Wand2, label: 'Text Studio' },
 ]
 
+const STORE_KEY = 'content-intelligence-os-v3'
+const API_KEYS = ['cio-anthropic-key', 'cio-groq-key']
+
 export default function Sidebar({ isOpen, onClose }) {
   const ideas = useStore((s) => s.ideas)
   const readyCount = ideas.filter((i) => i.status === 'ready').length
   const location = useLocation()
+  const importRef = useRef(null)
+  const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
     onClose?.()
   }, [location.pathname])
+
+  // ── Export all data as JSON ──────────────────────────────────────────────────
+  const handleExport = () => {
+    try {
+      const payload = {}
+      // Main store
+      const storeData = localStorage.getItem(STORE_KEY)
+      if (storeData) payload.store = JSON.parse(storeData)
+      // API keys
+      API_KEYS.forEach(k => {
+        const v = localStorage.getItem(k)
+        if (v) payload[k] = v
+      })
+      payload._exported_at = new Date().toISOString()
+      payload._version = 'cio-v3'
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `content-intelligence-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setSyncMsg({ type: 'success', text: 'Dados exportados!' })
+      setTimeout(() => setSyncMsg(null), 3000)
+    } catch (e) {
+      setSyncMsg({ type: 'error', text: 'Erro ao exportar' })
+      setTimeout(() => setSyncMsg(null), 3000)
+    }
+  }
+
+  // ── Import data from JSON ───────────────────────────────────────────────────
+  const handleImport = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result)
+        if (!data.store && !data._version) throw new Error('Arquivo inválido')
+        // Restore store
+        if (data.store) {
+          localStorage.setItem(STORE_KEY, JSON.stringify(data.store))
+        }
+        // Restore API keys
+        API_KEYS.forEach(k => {
+          if (data[k]) localStorage.setItem(k, data[k])
+        })
+        setSyncMsg({ type: 'success', text: 'Dados importados! Recarregando...' })
+        setTimeout(() => window.location.reload(), 1200)
+      } catch (err) {
+        setSyncMsg({ type: 'error', text: 'Arquivo inválido ou corrompido' })
+        setTimeout(() => setSyncMsg(null), 3000)
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = '' // reset input
+  }
 
   return (
     <aside
@@ -90,8 +154,46 @@ export default function Sidebar({ isOpen, onClose }) {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 pb-5 pt-3 border-t border-orange-100">
+      {/* Footer — Sync + User */}
+      <div className="px-4 pb-5 pt-3 border-t border-orange-100 space-y-3">
+        {/* Sync status */}
+        {syncMsg && (
+          <div className={`flex items-center gap-2 text-[11px] px-3 py-2 rounded-lg border ${
+            syncMsg.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-red-50 border-red-200 text-red-600'
+          }`}>
+            {syncMsg.type === 'success' ? <Check size={12} /> : <AlertCircle size={12} />}
+            {syncMsg.text}
+          </div>
+        )}
+
+        {/* Sync buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium text-gray-600 hover:text-orange-700 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-lg py-2 transition-all"
+            title="Baixar backup de todos os dados"
+          >
+            <Download size={12} /> Exportar
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium text-gray-600 hover:text-orange-700 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-lg py-2 transition-all"
+            title="Importar backup de outro dispositivo"
+          >
+            <Upload size={12} /> Importar
+          </button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleImport}
+          />
+        </div>
+
+        {/* User */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-xs font-bold text-white">
             CU
