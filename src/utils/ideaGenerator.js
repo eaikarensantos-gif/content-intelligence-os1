@@ -47,6 +47,110 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+// ─── Cultural signal–based idea generation ────────────────────────────────────
+export async function generateSignalBasedIdeas(apiKey, { niche, audience, insights, trendResults }) {
+  const insightsCtx = insights?.length
+    ? `\nCREATOR DATA:\n${insights.slice(0, 6).map((i) => `- ${i.title}`).join('\n')}`
+    : ''
+  const trendCtx = trendResults
+    ? `\nTREND CONTEXT: "${trendResults.topic}" — ${(trendResults.opportunities || []).slice(0, 3).map((o) => o.title).join(', ')}`
+    : ''
+
+  const prompt = `You are a cultural intelligence analyst for content creators in 2025–2026. Your job is to detect REAL cultural tensions in the "${niche || 'criação de conteúdo digital'}" space and transform them into content ideas that feel like genuine conversations happening RIGHT NOW.
+
+TARGET AUDIENCE: ${audience || 'criadores digitais e empreendedores brasileiros'}${insightsCtx}${trendCtx}
+
+STRICT RULES — FOLLOW EXACTLY:
+1. NO generic evergreen content (no "how to start", no "5 tips", no "beginner's guide")
+2. Every idea must be rooted in a specific cultural signal from 2025–2026
+3. Titles must sound like a thoughtful creator's take on a CHANGE happening now
+4. Ideas must feel timely — someone could publish this next week and it would be perfectly relevant
+5. ALL text in Brazilian Portuguese
+6. Detect 5-6 signals with tensions, generate 6-8 ideas ranked by novelty + relevance
+
+SIGNAL CATEGORIES: tecnologia | comportamento | plataforma | debate | formato | oportunidade
+TENSION TYPES: confusão | ceticismo | contradição | risco oculto | oportunidade ignorada | debate acirrado
+ANGLES: contrário | consequência inesperada | bastidores | padrão emergente | previsão | erro comum | oportunidade
+
+Respond ONLY with a valid JSON object (no markdown, no code blocks):
+{
+  "signals": [
+    {
+      "id": "s1",
+      "signal": "descrição do que está acontecendo agora no espaço",
+      "category": "tecnologia",
+      "tension": "a tensão subjacente que a maioria ignora",
+      "tension_type": "confusão"
+    }
+  ],
+  "ideas": [
+    {
+      "id": "i1",
+      "rank": 1,
+      "title": "título específico e conversacional — soa como algo que está acontecendo agora",
+      "core_argument": "o argumento central em 1-2 frases diretas",
+      "signal_id": "s1",
+      "signal_label": "rótulo curto do sinal (máx 5 palavras)",
+      "tension": "a tensão específica que esta ideia aborda",
+      "angle": "contrário",
+      "hook_type": "dados|história|problema|pergunta|contrário",
+      "hook_line": "frase exata de abertura irresistível em português",
+      "format": "reel|carrossel|thread|video|artigo",
+      "platform": "instagram|linkedin|tiktok|youtube|twitter",
+      "priority": "high|medium|low",
+      "novelty_score": 8,
+      "relevance_score": 9,
+      "narrative": {
+        "hook": "gancho de abertura — para o scroll",
+        "observation": "o que está realmente acontecendo no mercado",
+        "tension": "a contradição ou conflito que poucos percebem",
+        "interpretation": "seu ângulo único sobre o porquê disso importar",
+        "conclusion": "o que isso significa para sua audiência agora"
+      },
+      "hashtags": ["#tag1", "#tag2", "#tag3"]
+    }
+  ]
+}`
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 6000,
+      system: 'You are a cultural intelligence analyst for content creators. Respond ONLY with a valid JSON object. No markdown, no code blocks.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`API error ${response.status}: ${err}`)
+  }
+
+  const data = await response.json()
+  const raw = data.content?.[0]?.text || ''
+  const match = raw.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error('Resposta da IA não contém JSON válido')
+
+  const result = JSON.parse(match[0])
+  return {
+    signals: result.signals || [],
+    ideas: (result.ideas || []).map((idea, i) => ({
+      ...idea,
+      id: `sig-${Date.now()}-${i}`,
+      generated_at: new Date().toISOString(),
+      ai_powered: true,
+      source_type: 'ai',
+    })),
+  }
+}
+
 // ─── Claude-powered idea generation ──────────────────────────────────────────
 export async function generateIdeasWithClaude(apiKey, { niche, audience, insights, trendResults, count = 10 }) {
   const insightsSummary = insights?.length
