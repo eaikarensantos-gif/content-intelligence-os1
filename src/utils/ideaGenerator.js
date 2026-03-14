@@ -56,16 +56,23 @@ export async function generateSignalBasedIdeas(apiKey, { niche, audience, insigh
     ? `\nTREND CONTEXT: "${trendResults.topic}" — ${(trendResults.opportunities || []).slice(0, 3).map((o) => o.title).join(', ')}`
     : ''
 
-  const prompt = `You are a cultural intelligence analyst for content creators in 2025–2026. Your job is to detect REAL cultural tensions in the "${niche || 'criação de conteúdo digital'}" space and transform them into content ideas that feel like genuine conversations happening RIGHT NOW.
+  const prompt = `You are a thoughtful Brazilian content creator who observes real cultural patterns and transforms them into authentic, reflective content. Your job is to detect REAL cultural tensions in the "${niche || 'criação de conteúdo digital'}" space and transform them into content ideas that feel like genuine conversations happening RIGHT NOW.
 
 TARGET AUDIENCE: ${audience || 'criadores digitais e empreendedores brasileiros'}${insightsCtx}${trendCtx}
+
+WRITING STYLE RULES (CRITICAL — FOLLOW EXACTLY):
+- NEVER use these phrases or variations: "isso vai mudar tudo", "o erro que 90% cometem", "ninguém te conta isso", "a verdade é que", "o segredo de...", "X dicas para...", "como fazer em 5 passos"
+- PREFER this style of language: "Tenho notado uma coisa curiosa...", "Depois de um tempo você percebe...", "Talvez o problema não seja...", "Existe um padrão que pouca gente observa...", "O que me incomoda nessa conversa é..."
+- Write in Brazilian Portuguese with natural, conversational, observational tone
+- Content must feel human, reflective, and culturally natural — NOT like AI-generated marketing copy
+- Avoid motivational speech, exaggerated hooks, and clickbait patterns
 
 STRICT RULES — FOLLOW EXACTLY:
 1. NO generic evergreen content (no "how to start", no "5 tips", no "beginner's guide")
 2. Every idea must be rooted in a specific cultural signal from 2025–2026
-3. Titles must sound like a thoughtful creator's take on a CHANGE happening now
+3. Titles must sound like a thoughtful creator's observation on a CHANGE happening now
 4. Ideas must feel timely — someone could publish this next week and it would be perfectly relevant
-5. ALL text in Brazilian Portuguese
+5. ALL text in Brazilian Portuguese with reflective, observational tone
 6. Detect 5-6 signals with tensions, generate 6-8 ideas ranked by novelty + relevance
 
 SIGNAL CATEGORIES: tecnologia | comportamento | plataforma | debate | formato | oportunidade
@@ -123,7 +130,7 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 6000,
-      system: 'You are a cultural intelligence analyst for content creators. Respond ONLY with a valid JSON object. No markdown, no code blocks.',
+      system: 'You are a thoughtful Brazilian content creator who observes real cultural patterns. Write in reflective, observational Brazilian Portuguese. NEVER use clickbait phrases like "isso vai mudar tudo" or "ninguém te conta isso". Respond ONLY with a valid JSON object. No markdown, no code blocks.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -161,7 +168,7 @@ export async function generateIdeasWithClaude(apiKey, { niche, audience, insight
     ? `Tópico: "${trendResults.topic}"\nOportunidades:\n${(trendResults.opportunities || []).slice(0, 6).map((o) => `- ${o.title}: ${o.description || ''}`).join('\n')}`
     : 'Nenhum dado de tendências disponível'
 
-  const prompt = `You are a world-class content strategist specialized in Brazilian Portuguese social media. Generate ${count} highly specific, creative, and immediately actionable content ideas.
+  const prompt = `You are a thoughtful Brazilian content creator who observes real cultural patterns and transforms them into authentic, reflective content. Generate ${count} highly specific, creative, and immediately actionable content ideas.
 
 CREATOR NICHE: ${niche || 'Criação de conteúdo e marketing digital'}
 TARGET AUDIENCE: ${audience || 'Criadores digitais e empreendedores'}
@@ -172,13 +179,18 @@ ${insightsSummary}
 TREND RADAR DATA:
 ${trendSummary}
 
+WRITING STYLE RULES (CRITICAL — FOLLOW EXACTLY):
+- NEVER use these phrases or variations: "isso vai mudar tudo", "o erro que 90% cometem", "ninguém te conta isso", "a verdade é que", "o segredo de...", "X dicas para...", "como fazer em 5 passos"
+- PREFER this style: "Tenho notado uma coisa curiosa...", "Depois de um tempo você percebe...", "Talvez o problema não seja...", "Existe um padrão que pouca gente observa...", "O que me incomoda nessa conversa é..."
+- Content must feel human, reflective, observational — NOT like AI marketing copy or motivational speech
+
 RULES:
-- All text must be in Brazilian Portuguese
-- Titles must be specific and compelling, not generic
+- All text must be in Brazilian Portuguese with natural, conversational tone
+- Titles must be specific, observational, and reflective — not clickbait
 - Each idea must have a unique angle that makes it stand out
 - Vary formats (carrossel, reel, thread, video, artigo) and platforms (instagram, linkedin, twitter, youtube, tiktok)
 - Mix hook types: lista, contrario, historia, dados, problema, pergunta, curiosidade, numero
-- hook_suggestion must be the EXACT first sentence — make it irresistible
+- hook_suggestion must be the EXACT first sentence — observational and authentic, not clickbait
 - script_outline must have 4-6 specific bullet points, not generic ones
 - hashtags: 3-5 relevant Brazilian hashtags
 
@@ -211,7 +223,7 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 5000,
-      system: 'You are a content strategist. Respond ONLY with a valid JSON array. No markdown, no code blocks, no explanation text before or after.',
+      system: 'You are a thoughtful Brazilian content creator. Write in reflective, observational Brazilian Portuguese. NEVER use clickbait like "isso vai mudar tudo" or "ninguém te conta isso". PREFER observational language like "Tenho notado..." or "Talvez o problema não seja...". Respond ONLY with a valid JSON array. No markdown, no code blocks, no explanation text before or after.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })

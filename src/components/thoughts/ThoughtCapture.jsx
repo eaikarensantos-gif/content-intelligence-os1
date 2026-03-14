@@ -17,7 +17,7 @@ async function captureThought(apiKey, { thought, niche, tone }) {
     analítico:   'Tom racional e perspicaz, mas ainda humano e não acadêmico.',
   }[tone] || ''
 
-  const prompt = `Você é um ghostwriter especialista em conteúdo autêntico para criadores digitais brasileiros. Você conhece profundamente o que performa bem em cada plataforma.
+  const prompt = `Você é um ghostwriter especialista em conteúdo autêntico para criadores digitais brasileiros. Você conhece profundamente o que performa bem em cada plataforma. Seu estilo é observacional, reflexivo e humano — como alguém que realmente pensa antes de escrever.
 
 O criador teve este pensamento bruto:
 "${thought}"
@@ -27,11 +27,29 @@ ${toneInstruction}
 
 Transforme este pensamento em 7 formatos distintos de conteúdo, cada um adaptado para performar melhor na sua plataforma/contexto.
 
+REGRAS DE ESTILO (CRÍTICO — SIGA EXATAMENTE):
+PROIBIDO (nunca use estas frases ou variações delas):
+- "isso vai mudar tudo"
+- "o erro que 90% das pessoas cometem"
+- "ninguém te conta isso"
+- "a verdade é que"
+- "o segredo de..."
+- "X dicas para..."
+- "Como fazer em 5 passos"
+- Qualquer linguagem de palestra motivacional, clickbait ou marketing genérico
+
+PREFERIDO (use este estilo de linguagem):
+- "Tenho notado uma coisa curiosa..."
+- "Depois de um tempo você percebe..."
+- "Talvez o problema não seja..."
+- "Existe um padrão que pouca gente observa..."
+- "O que me incomoda nessa conversa é..."
+
 PRINCÍPIOS ABSOLUTOS:
 - Conteúdo humano, conversacional e reflexivo
-- PROIBIDO: listas genéricas, "X dicas para...", "Como fazer em 5 passos", linguagem corporativa
 - Cada formato deve girar em torno de UMA ideia central bem desenvolvida
 - Idioma: português brasileiro coloquial mas cuidadoso
+- Tom observacional — como alguém que está compartilhando uma reflexão genuína
 
 ─────────────────────────────────────────────────────
 FORMATO 1 — POST REFLEXIVO (LinkedIn / Instagram feed)

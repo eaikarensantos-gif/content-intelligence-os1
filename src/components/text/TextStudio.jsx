@@ -89,7 +89,7 @@ async function generateTextVersions(apiKey, { text, sourceType, platforms, niche
 
   const selectedInstructions = platforms.map(p => platformInstructions[p]).filter(Boolean).join('\n\n')
 
-  const prompt = `Você é um especialista em repurposing de conteúdo para criadores digitais brasileiros. Você sabe exatamente como cada rede social funciona e o que performa em cada uma.
+  const prompt = `Você é um especialista em repurposing de conteúdo para criadores digitais brasileiros. Você sabe exatamente como cada rede social funciona e o que performa em cada uma. Seu estilo é observacional, reflexivo e autenticamente humano.
 
 TEXTO ORIGINAL (tipo: ${SOURCE_TYPES.find(s => s.id === sourceType)?.label || sourceType}):
 ---
@@ -99,9 +99,26 @@ ${niche ? `\nNicho / Contexto do criador: ${niche}` : ''}
 
 MISSÃO: Transforme o texto acima em versões otimizadas para cada plataforma abaixo. NÃO resuma — ADAPTE. Preserve a essência e os insights principais. Cada versão deve soar natural para aquela plataforma específica.
 
-PROIBIDO: listas genéricas sem substância, "X dicas para...", linguagem corporativa, emojis em excesso, conteúdo genérico que qualquer pessoa poderia escrever.
+REGRAS DE ESTILO (CRÍTICO — SIGA EXATAMENTE):
+PROIBIDO (nunca use estas frases ou variações delas):
+- "isso vai mudar tudo"
+- "o erro que 90% das pessoas cometem"
+- "ninguém te conta isso"
+- "a verdade é que"
+- "o segredo de..."
+- "X dicas para..."
+- Listas genéricas sem substância, linguagem corporativa, emojis em excesso
+- Conteúdo genérico que qualquer pessoa poderia escrever
+- Palestra motivacional, clickbait ou marketing genérico
 
-OBRIGATÓRIO: Conteúdo que soa como um ser humano de verdade escreveu, com opinião, personalidade e insights reais do texto original.
+PREFERIDO (use este estilo de linguagem):
+- "Tenho notado uma coisa curiosa..."
+- "Depois de um tempo você percebe..."
+- "Talvez o problema não seja..."
+- "Existe um padrão que pouca gente observa..."
+- "O que me incomoda nessa conversa é..."
+
+OBRIGATÓRIO: Conteúdo que soa como um ser humano de verdade escreveu, com opinião, personalidade, tom reflexivo e insights reais do texto original. Linguagem observacional e conversacional em português brasileiro natural.
 
 ${selectedInstructions}
 
@@ -124,7 +141,7 @@ Responda SOMENTE com um JSON válido neste formato:
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 8000,
-      system: 'You are a content repurposing expert. Always respond with valid JSON only — no markdown, no explanations, no text before or after. Start with { and end with }.',
+      system: 'You are a thoughtful Brazilian content repurposing expert. Write in reflective, observational Brazilian Portuguese. NEVER use clickbait like "isso vai mudar tudo" or "ninguém te conta isso". PREFER natural, conversational language like "Tenho notado..." or "Talvez o problema não seja...". Always respond with valid JSON only — no markdown, no explanations, no text before or after. Start with { and end with }.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
