@@ -614,7 +614,7 @@ export default function VideoAnalyzer() {
 
   const STEPS = [
     'Buscando metadados do vídeo...',
-    'Extraindo frames para análise visual...',
+    'Transcrevendo o áudio com Whisper AI...',
     'Enviando para análise com IA...',
     'Identificando estrutura, tom e padrões...',
     'Gerando template e ideias de conteúdo...',
@@ -643,9 +643,10 @@ export default function VideoAnalyzer() {
     const hasFramesData = frames.length > 0
     const hasUrl = url.trim().length > 0
     const hasTitle = title.trim().length > 0
+    const canAutoTranscribe = videoFile && groqKey && !hasTranscriptText
 
-    if (!hasTranscriptText && !hasFramesData && !hasUrl && !hasTitle) {
-      setError('Informe pelo menos a URL ou o título do vídeo para analisar.')
+    if (!hasTranscriptText && !hasFramesData && !hasUrl && !hasTitle && !videoFile) {
+      setError('Informe pelo menos a URL, título do vídeo, ou envie um arquivo de vídeo para analisar.')
       return
     }
 
@@ -664,7 +665,9 @@ export default function VideoAnalyzer() {
     try {
       let metaTitle = title
       let channel = ''
+      let finalTranscript = transcript
 
+      // Step 0 — YouTube metadata
       setLoadingStep(0)
       if (hasUrl) {
         const meta = await fetchYouTubeMeta(url)
@@ -674,11 +677,28 @@ export default function VideoAnalyzer() {
         }
       }
 
+      // Step 1 — Auto-transcribe with Groq Whisper if file present and no transcript yet
+      if (canAutoTranscribe) {
+        setLoadingStep(1)
+        try {
+          const text = await transcribeWithGroq(groqKey, videoFile, transcriptLang)
+          if (text && text.trim().length > 20) {
+            finalTranscript = text.trim()
+            setTranscript(finalTranscript)
+          }
+        } catch (transcribeErr) {
+          // Transcription failed — fall back to frames/inference, show soft warning
+          console.warn('Auto-transcription failed:', transcribeErr.message)
+        }
+      }
+
+      // Step 2 — Build prompt and call Claude
       setLoadingStep(2)
-      const source = hasTranscriptText ? 'transcript' : hasFramesData ? 'frames' : 'inference'
+      const hasFinalTranscript = finalTranscript.trim().length > 30
+      const source = hasFinalTranscript ? 'transcript' : hasFramesData ? 'frames' : 'inference'
       const prompt = buildPrompt({
         url, title: metaTitle, channel, topic, videoType,
-        transcript: hasTranscriptText ? transcript : '',
+        transcript: hasFinalTranscript ? finalTranscript : '',
         hasFrames: hasFramesData,
         frameCount: frames.length,
         inferenceOnly: source === 'inference',
@@ -1036,12 +1056,21 @@ export default function VideoAnalyzer() {
                     <p className="text-[10px] text-gray-400">{(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>
                     {extractingFrames && <p className="text-[10px] text-violet-500 animate-pulse">⟳ Extraindo frames...</p>}
                     {frames.length > 0 && <p className="text-[10px] text-emerald-600">✓ {frames.length} frames extraídos</p>}
+                    {groqKey && transcript.trim().length < 30 && (
+                      <p className="text-[10px] text-emerald-600 font-semibold">🎙 Transcrição automática ativada</p>
+                    )}
+                    {transcript.trim().length > 30 && (
+                      <p className="text-[10px] text-emerald-600 font-semibold">✦ Transcrição pronta ({transcript.trim().split(/\s+/).length} palavras)</p>
+                    )}
                   </div>
                 ) : (
                   <>
                     <Upload size={18} className="mx-auto text-gray-300 mb-1.5" />
                     <p className="text-xs text-gray-500 font-medium">Arraste ou clique para selecionar</p>
-                    <p className="text-[10px] text-gray-300 mt-0.5">MP4, MOV, AVI, MP3, M4A</p>
+                    <p className="text-[10px] text-gray-300 mt-0.5">MP4, MOV, AVI, MP3, M4A — áudio e vídeo</p>
+                    {groqKey && (
+                      <p className="text-[10px] text-emerald-500 mt-1">🎙 Whisper transcreve automaticamente ao analisar</p>
+                    )}
                   </>
                 )}
               </div>
@@ -1283,6 +1312,10 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
           >
             {extractingFrames
               ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
+              : transcribing
+              ? <><RefreshCw size={15} className="animate-spin" /> Transcrevendo com Whisper...</>
+              : videoFile && groqKey && transcript.trim().length < 30
+              ? <><Mic size={15} /> Transcrever e Analisar com IA</>
               : <><Sparkles size={15} /> Analisar Vídeo com IA</>
             }
           </button>
@@ -1914,16 +1947,50 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                 </>
               ) : (
                 <div className="card p-10 text-center space-y-4">
-                  <FileText size={32} className="mx-auto text-gray-200" />
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto">
+                    <Mic size={22} className="text-amber-400" />
+                  </div>
                   <div className="space-y-1.5">
-                    <p className="text-sm text-gray-600 font-semibold">Esta análise foi feita sem transcrição</p>
-                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                      A análise foi baseada nos frames visuais do vídeo. Para ver a transcrição e as citações exatas do conteúdo, refaça a análise colando a transcrição real.
+                    <p className="text-sm text-gray-700 font-semibold">Análise feita sem transcrição</p>
+                    <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                      {analysisSource === 'frames'
+                        ? 'A análise usou os frames visuais do vídeo. Para citações reais e estrutura de falas, adicione a transcrição.'
+                        : 'A análise foi por inferência (título/URL). Para resultados reais, adicione a transcrição do áudio.'}
                     </p>
                   </div>
-                  <button onClick={handleReset} className="btn-secondary text-xs">
-                    <RotateCcw size={12} /> Nova análise com transcrição
-                  </button>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {videoFile && groqKey ? (
+                      <button
+                        onClick={async () => {
+                          setTranscribing(true)
+                          try {
+                            const text = await transcribeWithGroq(groqKey, videoFile, transcriptLang)
+                            if (text?.trim()) setTranscript(text.trim())
+                          } catch(e) { setError(e.message) }
+                          finally { setTranscribing(false) }
+                        }}
+                        disabled={transcribing}
+                        className="btn-primary text-xs py-2 px-4"
+                        style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}
+                      >
+                        {transcribing
+                          ? <><RefreshCw size={12} className="animate-spin" /> Transcrevendo...</>
+                          : <><Mic size={12} /> Transcrever e Reanalisar</>
+                        }
+                      </button>
+                    ) : !groqKey ? (
+                      <button
+                        onClick={() => setShowGroqModal(true)}
+                        className="btn-primary text-xs py-2 px-4"
+                        style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}
+                      >
+                        <Mic size={12} /> Ativar Whisper (gratuito)
+                      </button>
+                    ) : null}
+                    <button onClick={handleReset} className="btn-secondary text-xs">
+                      <RotateCcw size={12} /> Nova análise
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
