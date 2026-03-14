@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, Video, Brain, Wand2, X,
+  Zap, ChevronRight, Video, Brain, Wand2, X, Sparkles,
   Download, Upload, Check, AlertCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -15,6 +15,7 @@ const NAV = [
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
   { to: '/thoughts', icon: Brain, label: 'Thought Capture' },
+  { to: '/generate', icon: Sparkles, label: 'Gerador de Ideias' },
   { to: '/text', icon: Wand2, label: 'Text Studio' },
 ]
 

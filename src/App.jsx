@@ -9,6 +9,7 @@ import Analytics from './components/analytics/Analytics'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
 import ThoughtCapture from './components/thoughts/ThoughtCapture'
 import TextStudio from './components/text/TextStudio'
+import IdeaGenerator from './components/generate/IdeaGenerator'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/video" element={<VideoAnalyzer />} />
           <Route path="/thoughts" element={<ThoughtCapture />} />
           <Route path="/text" element={<TextStudio />} />
+          <Route path="/generate" element={<IdeaGenerator />} />
         </Routes>
       </Layout>
     </BrowserRouter>

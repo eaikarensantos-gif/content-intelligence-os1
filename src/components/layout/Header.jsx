@@ -9,6 +9,7 @@ const TITLES = {
   '/video': { title: 'Analisador de Vídeo', sub: 'Analise e aprenda com vídeos de referência' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA' },
+  '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo' },
 }
 
 export default function Header({ onMenuClick }) {

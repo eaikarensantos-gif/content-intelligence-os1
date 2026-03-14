@@ -1,0 +1,608 @@
+import { useState, useRef } from 'react'
+import {
+  Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
+  Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
+  Flame, Eye, MessageCircle, Layers, ArrowRight, Save, Star,
+  Lightbulb,
+} from 'lucide-react'
+import useStore from '../../store/useStore'
+
+const LS_KEY = 'cio-anthropic-key'
+
+// ── Controls config ───────────────────────────────────────────────────────────
+const TONES = [
+  { id: 'reflexivo', label: 'Reflexivo', desc: 'Introspectivo, pessoal, pausado', emoji: '🪞' },
+  { id: 'analitico', label: 'Analítico', desc: 'Racional, perspicaz, baseado em padrões', emoji: '🔬' },
+  { id: 'educativo', label: 'Educativo', desc: 'Didático, claro, que ensina sem ser chato', emoji: '📚' },
+  { id: 'curioso', label: 'Curioso', desc: 'Exploratório, questionador, mente aberta', emoji: '🔍' },
+  { id: 'inspirador', label: 'Inspirador', desc: 'Que acende algo, sem ser motivacional vazio', emoji: '✨' },
+  { id: 'provocativo', label: 'Provocativo', desc: 'Desconfortável no bom sentido, que cutuca', emoji: '🔥' },
+  { id: 'contrarian', label: 'Contrarian', desc: 'Vai contra o consenso, desafia o óbvio', emoji: '⚡' },
+]
+
+const NARRATIVE_STYLES = [
+  { id: 'observacao', label: 'Observação', desc: 'Algo que você notou que ninguém falou ainda' },
+  { id: 'insight', label: 'Insight', desc: 'Conexão inesperada entre duas coisas' },
+  { id: 'explicacao', label: 'Explicação', desc: 'Traduz algo complexo para qualquer pessoa' },
+  { id: 'historia', label: 'História', desc: 'Narrativa pessoal ou observada que carrega lição' },
+  { id: 'analise-tendencia', label: 'Análise de tendência', desc: 'Algo que está crescendo e poucas pessoas perceberam' },
+  { id: 'previsao', label: 'Previsão', desc: 'O que vai acontecer nos próximos meses/anos' },
+]
+
+const INTENSITIES = [
+  { id: 'suave', label: 'Suave', desc: 'Tom leve, acessível, não polêmico', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+  { id: 'equilibrado', label: 'Equilibrado', desc: 'Opinião presente mas respeitosa', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { id: 'forte', label: 'Forte', desc: 'Posição clara, sem medo de incomodar', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+]
+
+const FORMATS = ['Carrossel', 'Reels/TikTok', 'Thread', 'Vídeo longo', 'Post reflexivo', 'Stories', 'Artigo']
+const PLATFORMS = ['Instagram', 'LinkedIn', 'TikTok', 'Twitter/X', 'YouTube']
+
+// ── Claude prompt ─────────────────────────────────────────────────────────────
+function buildPrompt({ topic, audience, tone, narrativeStyle, intensity, previousTitles }) {
+  const toneMap = {
+    reflexivo: 'Reflexivo — introspectivo, pausado, pessoal. Como alguém pensando em voz alta.',
+    analitico: 'Analítico — racional, perspicaz, encontra padrões que outros não veem. Sem ser acadêmico.',
+    educativo: 'Educativo — ensina com profundidade mas sem ser pedante. Transforma complexidade em clareza.',
+    curioso: 'Curioso — faz perguntas genuínas, explora territórios novos, pensa junto com o leitor.',
+    inspirador: 'Inspirador — que acende uma chama interna, MAS nunca com frases motivacionais genéricas ou coaching vazio.',
+    provocativo: 'Provocativo — desconfortável no bom sentido. Faz o leitor parar e repensar algo que achava óbvio.',
+    contrarian: 'Contrarian — vai explicitamente contra o consenso. Defende uma posição impopular com argumentos fortes.',
+  }
+
+  const styleMap = {
+    observacao: 'Observação — começa com algo que o criador notou no dia a dia, na timeline, no comportamento de pessoas ao redor.',
+    insight: 'Insight — faz uma conexão inesperada entre duas coisas que parecem desconectadas.',
+    explicacao: 'Explicação — pega algo complexo e traduz com analogias e exemplos que qualquer pessoa entende.',
+    historia: 'História — narrativa real (pessoal ou observada) que carrega uma lição, sem moral explícita.',
+    'analise-tendencia': 'Análise de tendência — algo que está crescendo silenciosamente e que poucas pessoas perceberam ainda.',
+    previsao: 'Previsão — faz uma aposta fundamentada sobre o que vai acontecer nos próximos meses/anos.',
+  }
+
+  const intensityMap = {
+    suave: 'Suave — acessível, não polêmico, confortável de compartilhar. Tom de conversa entre amigos.',
+    equilibrado: 'Equilibrado — tem opinião mas respeita quem pensa diferente. Argumenta sem atacar.',
+    forte: 'Forte — posição clara e firme. Não tem medo de incomodar. Vai gerar discordância — e isso é intencional.',
+  }
+
+  const avoidPrevious = previousTitles.length > 0
+    ? `\n\nIMPORTANTE: NÃO repita ideias, estruturas ou ângulos similares a estas já geradas:\n${previousTitles.map(t => `- "${t}"`).join('\n')}\nCada nova ideia deve trazer um ÂNGULO NARRATIVO COMPLETAMENTE DIFERENTE.`
+    : ''
+
+  return `Você é um estrategista de conteúdo que detesta marketing genérico. Você cria ideias que soam como observações reais de alguém que pensa profundamente sobre o mundo — NUNCA como um guru de produtividade ou coach motivacional.
+
+TÓPICO: ${topic}
+AUDIÊNCIA: ${audience || 'Profissionais e criadores digitais brasileiros'}
+TOM: ${toneMap[tone] || toneMap.reflexivo}
+ESTILO NARRATIVO: ${styleMap[narrativeStyle] || styleMap.observacao}
+INTENSIDADE: ${intensityMap[intensity] || intensityMap.equilibrado}
+
+REGRAS ABSOLUTAS:
+1. PROIBIDO: "X dicas para...", "Como fazer...", "O guia definitivo", "Você precisa saber...", linguagem de guru, coaching vazio, produtividade genérica
+2. PROIBIDO: ganchos exagerados tipo "Isso vai mudar sua vida", "Ninguém te conta isso", "O segredo de..."
+3. Cada ideia deve ser construída sobre esta estrutura interna: OBSERVAÇÃO → TENSÃO → INTERPRETAÇÃO → CONCLUSÃO
+4. Ideias devem soar como insights sobre padrões reais acontecendo AGORA — não conselhos genéricos
+5. Os títulos devem soar como algo que um amigo inteligente diria numa conversa, não como headline de blog
+6. Ganchos devem ser frases que fazem a pessoa PARAR porque ressoam com algo que ela já sentia mas não sabia articular
+7. TUDO em português brasileiro coloquial mas inteligente
+8. Gere exatamente 6 ideias, variando formatos e plataformas${avoidPrevious}
+
+Responda SOMENTE com JSON válido (sem markdown, sem texto antes/depois):
+{
+  "ideas": [
+    {
+      "title": "Título conversacional, específico, que soa como uma observação real",
+      "hook": "Primeira frase — interrompe o scroll porque ressoa com algo que a pessoa já sentiu",
+      "core_argument": "O argumento central em 2-3 frases. O que exatamente você está dizendo que é novo ou diferente.",
+      "structure": {
+        "observation": "O que está acontecendo agora que poucas pessoas perceberam",
+        "tension": "A contradição, o conflito, ou o desconforto por trás dessa observação",
+        "interpretation": "Sua leitura única: por que isso está acontecendo e o que isso significa",
+        "conclusion": "O que o leitor deve fazer com essa informação / como isso muda a perspectiva dele"
+      },
+      "format": "Carrossel | Reels/TikTok | Thread | Vídeo longo | Post reflexivo | Stories | Artigo",
+      "platform": "Instagram | LinkedIn | TikTok | Twitter/X | YouTube",
+      "why_now": "Por que essa ideia é relevante AGORA e não há 6 meses — qual o gatilho cultural ou de timing"
+    }
+  ]
+}`
+}
+
+async function generateIdeas(apiKey, params) {
+  const prompt = buildPrompt(params)
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 6000,
+      system: 'You are a content strategist. Respond ONLY with valid JSON. No markdown, no code blocks, no text before or after the JSON.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Erro ${res.status}`)
+  }
+
+  const data = await res.json()
+  const raw = data.content[0].text
+  const match = raw.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error('Resposta inválida da IA')
+  return JSON.parse(match[0])
+}
+
+// ── Idea Card ─────────────────────────────────────────────────────────────────
+function IdeaCard({ idea, index, onSave, saved, onCopy, copied }) {
+  const [expanded, setExpanded] = useState(false)
+
+  const formatColor = {
+    'Carrossel': 'bg-pink-100 text-pink-700 border-pink-200',
+    'Reels/TikTok': 'bg-purple-100 text-purple-700 border-purple-200',
+    'Thread': 'bg-sky-100 text-sky-700 border-sky-200',
+    'Vídeo longo': 'bg-red-100 text-red-700 border-red-200',
+    'Post reflexivo': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'Stories': 'bg-orange-100 text-orange-700 border-orange-200',
+    'Artigo': 'bg-blue-100 text-blue-700 border-blue-200',
+  }
+
+  const platformColor = {
+    'Instagram': 'bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 border-pink-200',
+    'LinkedIn': 'bg-blue-100 text-blue-700 border-blue-200',
+    'TikTok': 'bg-gray-100 text-gray-700 border-gray-300',
+    'Twitter/X': 'bg-sky-100 text-sky-700 border-sky-200',
+    'YouTube': 'bg-red-100 text-red-700 border-red-200',
+  }
+
+  return (
+    <div className="card overflow-hidden hover:border-orange-200 transition-all">
+      {/* Saved overlay */}
+      {saved && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-emerald-600/90 rounded-xl backdrop-blur-sm">
+          <span className="text-white font-semibold text-sm flex items-center gap-2"><Check size={16} /> Salvo no Hub</span>
+        </div>
+      )}
+
+      <div className="p-4 sm:p-5 space-y-4 relative">
+        {/* Header: number + badges */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
+              {index + 1}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 leading-snug">{idea.title}</p>
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${formatColor[idea.format] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                  {idea.format}
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${platformColor[idea.platform] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                  {idea.platform}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hook */}
+        <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+          <p className="text-[10px] text-orange-500 font-semibold uppercase tracking-wide mb-1">Gancho</p>
+          <p className="text-xs text-gray-800 font-medium italic leading-relaxed">"{idea.hook}"</p>
+        </div>
+
+        {/* Core argument */}
+        <div>
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1.5">Argumento Central</p>
+          <p className="text-xs text-gray-700 leading-relaxed">{idea.core_argument}</p>
+        </div>
+
+        {/* Why now */}
+        {idea.why_now && (
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
+            <Zap size={12} className="text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5">Por que agora</p>
+              <p className="text-[11px] text-gray-700 leading-relaxed">{idea.why_now}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Expandable structure */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2 text-[11px] font-semibold text-gray-500 hover:text-gray-700 transition-colors w-full"
+        >
+          <Layers size={12} />
+          Estrutura Narrativa (Observação → Tensão → Interpretação → Conclusão)
+          {expanded ? <ChevronUp size={12} className="ml-auto" /> : <ChevronDown size={12} className="ml-auto" />}
+        </button>
+
+        {expanded && idea.structure && (
+          <div className="space-y-2 animate-slide-up">
+            {[
+              { key: 'observation', label: 'Observação', color: 'border-l-blue-400 bg-blue-50/30', icon: Eye },
+              { key: 'tension', label: 'Tensão', color: 'border-l-red-400 bg-red-50/30', icon: Flame },
+              { key: 'interpretation', label: 'Interpretação', color: 'border-l-violet-400 bg-violet-50/30', icon: Lightbulb },
+              { key: 'conclusion', label: 'Conclusão', color: 'border-l-emerald-400 bg-emerald-50/30', icon: ArrowRight },
+            ].map(({ key, label, color, icon: Icon }) => (
+              idea.structure[key] && (
+                <div key={key} className={`border-l-4 ${color} rounded-r-xl p-3`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Icon size={10} className="text-gray-400" />
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+                  </div>
+                  <p className="text-xs text-gray-700 leading-relaxed">{idea.structure[key]}</p>
+                </div>
+              )
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+          <button
+            onClick={() => onSave(idea)}
+            disabled={saved}
+            className="flex-1 btn-primary text-xs py-2 justify-center"
+          >
+            <Plus size={12} /> Salvar no Hub
+          </button>
+          <button
+            onClick={() => onCopy(idea)}
+            className="btn-secondary text-xs py-2 px-3"
+          >
+            {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function IdeaGenerator() {
+  const { addIdea } = useStore()
+  const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
+
+  // Controls
+  const [topic, setTopic] = useState('')
+  const [audience, setAudience] = useState('')
+  const [tone, setTone] = useState('reflexivo')
+  const [narrativeStyle, setNarrativeStyle] = useState('observacao')
+  const [intensity, setIntensity] = useState('equilibrado')
+
+  // State
+  const [loading, setLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
+  const [results, setResults] = useState([])
+  const [error, setError] = useState('')
+  const [savedIds, setSavedIds] = useState(new Set())
+  const [copiedId, setCopiedId] = useState(null)
+  const [allPreviousTitles, setAllPreviousTitles] = useState([])
+  const [genCount, setGenCount] = useState(0)
+
+  const handleGenerate = async () => {
+    if (!topic.trim()) { setError('Defina o tópico.'); return }
+    if (!apiKey) { setError('Configure sua chave Anthropic nas configurações do Analisador de Vídeo.'); return }
+
+    setLoading(true)
+    setError('')
+
+    const msgs = [
+      'Analisando o espaço cultural...',
+      'Buscando tensões e padrões...',
+      'Construindo narrativas...',
+      'Refinando ganchos e argumentos...',
+      'Rankeando por relevância...',
+    ]
+    let i = 0
+    setLoadingMsg(msgs[0])
+    const interval = setInterval(() => { i = (i + 1) % msgs.length; setLoadingMsg(msgs[i]) }, 2200)
+
+    try {
+      const data = await generateIdeas(apiKey, {
+        topic, audience, tone, narrativeStyle, intensity,
+        previousTitles: allPreviousTitles,
+      })
+
+      const ideas = (data.ideas || []).map((idea, idx) => ({
+        ...idea,
+        _id: `gen-${Date.now()}-${idx}`,
+      }))
+
+      setResults(ideas)
+      setAllPreviousTitles(prev => [...prev, ...ideas.map(i => i.title)])
+      setGenCount(c => c + 1)
+      setSavedIds(new Set())
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      clearInterval(interval)
+      setLoading(false)
+    }
+  }
+
+  const handleSave = (idea) => {
+    addIdea({
+      title: idea.title,
+      description: `${idea.core_argument}\n\nGancho: "${idea.hook}"\n\n${idea.why_now ? `Por que agora: ${idea.why_now}` : ''}`,
+      topic: topic,
+      format: idea.format?.toLowerCase().includes('carrossel') ? 'carrossel'
+        : idea.format?.toLowerCase().includes('reel') || idea.format?.toLowerCase().includes('tiktok') ? 'reel'
+        : idea.format?.toLowerCase().includes('thread') ? 'thread'
+        : idea.format?.toLowerCase().includes('vídeo') ? 'video'
+        : idea.format?.toLowerCase().includes('stor') ? 'story'
+        : 'artigo',
+      platform: idea.platform?.toLowerCase().includes('instagram') ? 'instagram'
+        : idea.platform?.toLowerCase().includes('linkedin') ? 'linkedin'
+        : idea.platform?.toLowerCase().includes('tiktok') ? 'tiktok'
+        : idea.platform?.toLowerCase().includes('twitter') ? 'twitter'
+        : 'youtube',
+      priority: 'medium',
+      status: 'idea',
+      tags: ['gerador-moderno', topic.toLowerCase().slice(0, 20)].filter(Boolean),
+    })
+    setSavedIds(prev => new Set([...prev, idea._id]))
+  }
+
+  const handleCopy = (idea) => {
+    const text = [
+      idea.title,
+      '',
+      `Gancho: "${idea.hook}"`,
+      '',
+      idea.core_argument,
+      '',
+      idea.structure ? `Observação: ${idea.structure.observation}` : '',
+      idea.structure ? `Tensão: ${idea.structure.tension}` : '',
+      idea.structure ? `Interpretação: ${idea.structure.interpretation}` : '',
+      idea.structure ? `Conclusão: ${idea.structure.conclusion}` : '',
+      '',
+      `Formato: ${idea.format}`,
+      `Plataforma: ${idea.platform}`,
+      idea.why_now ? `\nPor que agora: ${idea.why_now}` : '',
+    ].filter(Boolean).join('\n')
+    navigator.clipboard.writeText(text)
+    setCopiedId(idea._id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  return (
+    <div className="min-h-full bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-5">
+        <div className="max-w-6xl mx-auto flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-200">
+              <Sparkles size={18} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Gerador de Ideias</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Ideias que soam como observações reais, não como marketing genérico</p>
+            </div>
+          </div>
+          {genCount > 0 && (
+            <span className="text-[11px] text-gray-400">
+              {genCount} geração{genCount !== 1 ? 'ões' : ''} · {allPreviousTitles.length} ideias criadas
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+
+          {/* ── Controls Panel ──────────────────────────────────────────────── */}
+          <div className="lg:w-[340px] shrink-0 space-y-4">
+            <div className="card p-4 sm:p-5 space-y-5 lg:sticky lg:top-24">
+
+              {/* Topic */}
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                  <Target size={11} /> Tópico *
+                </label>
+                <input
+                  className="input text-sm"
+                  placeholder="Ex: inteligência artificial, criação de conteúdo, carreira..."
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                />
+              </div>
+
+              {/* Audience */}
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                  <Users size={11} /> Audiência
+                </label>
+                <input
+                  className="input text-sm"
+                  placeholder="Ex: profissionais de 25-40, empreendedores..."
+                  value={audience}
+                  onChange={(e) => setAudience(e.target.value)}
+                />
+              </div>
+
+              {/* Tone */}
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1 uppercase tracking-wide">
+                  <MessageCircle size={11} /> Tom
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {TONES.map(({ id, label, desc, emoji }) => (
+                    <button
+                      key={id}
+                      onClick={() => setTone(id)}
+                      className={`text-left p-2 rounded-lg border transition-all text-xs ${
+                        tone === id
+                          ? 'border-orange-400 bg-orange-50 text-orange-800'
+                          : 'border-gray-150 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="font-medium">{emoji} {label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Narrative style */}
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1 uppercase tracking-wide">
+                  <BookOpen size={11} /> Estilo Narrativo
+                </label>
+                <div className="space-y-1.5">
+                  {NARRATIVE_STYLES.map(({ id, label, desc }) => (
+                    <button
+                      key={id}
+                      onClick={() => setNarrativeStyle(id)}
+                      className={`w-full text-left p-2.5 rounded-lg border transition-all ${
+                        narrativeStyle === id
+                          ? 'border-orange-400 bg-orange-50'
+                          : 'border-gray-150 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className={`text-xs font-medium ${narrativeStyle === id ? 'text-orange-800' : 'text-gray-700'}`}>{label}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Intensity */}
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1 uppercase tracking-wide">
+                  <Sliders size={11} /> Intensidade
+                </label>
+                <div className="flex gap-2">
+                  {INTENSITIES.map(({ id, label, color }) => (
+                    <button
+                      key={id}
+                      onClick={() => setIntensity(id)}
+                      className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${
+                        intensity === id ? color : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Generate button */}
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-xl p-2.5 text-[11px]">
+                  <AlertCircle size={12} className="shrink-0" /> {error}
+                </div>
+              )}
+
+              <button
+                onClick={handleGenerate}
+                disabled={loading || !topic.trim() || !apiKey}
+                className="w-full btn-primary justify-center py-3 text-sm"
+                style={{ background: loading ? undefined : 'linear-gradient(135deg, #ea580c, #dc2626)' }}
+              >
+                {loading ? (
+                  <><RefreshCw size={15} className="animate-spin" /> {loadingMsg}</>
+                ) : genCount > 0 ? (
+                  <><RefreshCw size={15} /> Gerar Novas Ideias</>
+                ) : (
+                  <><Sparkles size={15} /> Gerar 6 Ideias</>
+                )}
+              </button>
+
+              {genCount > 0 && (
+                <p className="text-[10px] text-gray-400 text-center">
+                  Cada geração traz ângulos narrativos diferentes. Ideias anteriores não se repetem.
+                </p>
+              )}
+
+              {!apiKey && (
+                <p className="text-center text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                  Configure sua chave Anthropic nas configurações do Analisador de Vídeo.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Results Panel ───────────────────────────────────────────────── */}
+          <div className="flex-1 min-w-0">
+            {/* Loading */}
+            {loading && (
+              <div className="card p-16 flex flex-col items-center gap-5">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+                  <Sparkles size={20} className="absolute inset-0 m-auto text-orange-500" />
+                </div>
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-semibold text-gray-800">{loadingMsg}</p>
+                  <p className="text-xs text-gray-400">
+                    Tom: {TONES.find(t => t.id === tone)?.label} · Estilo: {NARRATIVE_STYLES.find(s => s.id === narrativeStyle)?.label} · Intensidade: {intensity}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!loading && results.length === 0 && !error && (
+              <div className="card p-12 sm:p-16 text-center">
+                <Sparkles size={32} className="text-gray-200 mx-auto mb-4" />
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Configure e gere</h3>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
+                  Defina o tópico, escolha o tom e estilo narrativo, e gere ideias que soam como observações reais sobre o que está acontecendo agora — nunca como marketing genérico.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 mt-6">
+                  {['Observação → Tensão → Interpretação → Conclusão'].map((s) => (
+                    <span key={s} className="text-[10px] px-3 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Results */}
+            {!loading && results.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <p className="text-xs text-gray-500">
+                    <span className="font-semibold text-gray-700">{results.length} ideias</span> · Tom {TONES.find(t => t.id === tone)?.label?.toLowerCase()} · {NARRATIVE_STYLES.find(s => s.id === narrativeStyle)?.label}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {savedIds.size > 0 && (
+                      <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                        <Check size={11} /> {savedIds.size} salva{savedIds.size !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    <button onClick={handleGenerate} disabled={loading} className="text-xs text-orange-600 font-medium flex items-center gap-1 hover:text-orange-700">
+                      <RefreshCw size={11} /> Gerar mais
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {results.map((idea, idx) => (
+                    <IdeaCard
+                      key={idea._id}
+                      idea={idea}
+                      index={idx}
+                      onSave={handleSave}
+                      saved={savedIds.has(idea._id)}
+                      onCopy={handleCopy}
+                      copied={copiedId === idea._id}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
