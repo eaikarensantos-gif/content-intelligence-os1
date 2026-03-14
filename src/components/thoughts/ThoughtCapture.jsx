@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Brain, Sparkles, Copy, Check, Plus, Trash2,
-  ChevronDown, ChevronUp, Clock, Layers,
-  Video, AlignLeft, BookOpen, Zap,
-  ArrowRight, RefreshCw, LayoutGrid, Mic,
+  Clock, Layers, Video, AlignLeft, BookOpen, Zap,
+  RefreshCw, LayoutGrid, Mic, Instagram, Music2,
+  Play, Repeat2, MessageCircle, Heart, ChevronRight,
+  Film, Smartphone,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
-// ─── Claude call ────────────────────────────────────────────────────────────
+// ─── Claude call ─────────────────────────────────────────────────────────────
 async function captureThought(apiKey, { thought, niche, tone }) {
   const toneInstruction = {
     reflexivo:   'Tom suave, introspectivo e pessoal.',
@@ -16,7 +17,7 @@ async function captureThought(apiKey, { thought, niche, tone }) {
     analítico:   'Tom racional e perspicaz, mas ainda humano e não acadêmico.',
   }[tone] || ''
 
-  const prompt = `Você é um ghostwriter especialista em conteúdo autêntico para criadores digitais brasileiros.
+  const prompt = `Você é um ghostwriter especialista em conteúdo autêntico para criadores digitais brasileiros. Você conhece profundamente o que performa bem em cada plataforma.
 
 O criador teve este pensamento bruto:
 "${thought}"
@@ -24,75 +25,145 @@ O criador teve este pensamento bruto:
 ${niche ? `Contexto / nicho: ${niche}` : ''}
 ${toneInstruction}
 
-Transforme este pensamento em 4 formatos distintos de conteúdo.
+Transforme este pensamento em 7 formatos distintos de conteúdo, cada um adaptado para performar melhor na sua plataforma/contexto.
 
 PRINCÍPIOS ABSOLUTOS:
 - Conteúdo humano, conversacional e reflexivo
 - PROIBIDO: listas genéricas, "X dicas para...", "Como fazer em 5 passos", linguagem corporativa
 - Cada formato deve girar em torno de UMA ideia central bem desenvolvida
-- Tom: como se fosse escrito para um amigo próximo e inteligente
 - Idioma: português brasileiro coloquial mas cuidadoso
 
-FORMATO 1 — POST REFLEXIVO CURTO
-- 200-400 palavras
-- Sem bullets, sem tópicos numerados
-- Uma ideia que se desenvolve naturalmente em parágrafos
-- A última frase deve deixar algo ecoando na mente do leitor
-- Tom: como um diário ou uma carta aberta
+─────────────────────────────────────────────────────
+FORMATO 1 — POST REFLEXIVO (LinkedIn / Instagram feed)
+- 200-400 palavras em parágrafos corridos (zero bullets)
+- Uma ideia que se desenvolve naturalmente
+- A última frase ecoa na mente do leitor
 
-FORMATO 2 — PONTO DE FALA PARA VÍDEO
-- Hook: 1 frase que para o scroll nos primeiros 3 segundos
-- 3 pontos de desenvolvimento em linguagem falada (não lida)
+FORMATO 2 — ROTEIRO DE VÍDEO LONGO (YouTube / Podcast)
+- Hook: 1 frase que prende nos primeiros 3 segundos
+- 3 pontos de desenvolvimento em linguagem falada natural
 - Encerramento que convida à reflexão, não à compra
-- Estimativa de duração: 3-6 min
+- Estimativa: 3-6 min
 
-FORMATO 3 — ESTRUTURA DE CARROSSEL
+FORMATO 3 — CARROSSEL (Instagram / LinkedIn)
 - Slide 1: Afirmação ou pergunta que causa pausa (NUNCA "X dicas...")
-- 4 slides de desenvolvimento: cada um com um headline provocativo e 1-2 frases
-- Slide final: O insight central que o leitor vai querer salvar
+- 4 slides de desenvolvimento: headline provocativo + 1-2 frases cada
+- Slide final: O insight que o leitor vai salvar
 
-FORMATO 4 — NARRATIVA (STORYTELLING)
-- Situação: o cenário, o que todo mundo conhece
-- Tensão: o conflito que existe mas quase ninguém nomeia
-- Virada: o ponto de insight que muda a perspectiva
-- Resolução: o que fica, o que muda, o que importa
+FORMATO 4 — ARCO NARRATIVO (Storytelling universal)
+- Situação → Tensão → Virada → Resolução
 
+─────────────────────────────────────────────────────
+FORMATO 5 — ROTEIRO PARA REELS (Instagram Reels, 15-60 seg)
+Otimize para: loop, saves e compartilhamentos.
+O Reels performa quando tem loop natural, texto na tela complementando a fala, ritmo rápido e a ideia completa em <30 segundos.
+- Hook visual: o que o usuário VÊ nos primeiros 2 segundos (texto na tela, ação, expressão)
+- Hook falado: a frase exata que abre o vídeo (para o scroll em 2s)
+- Batidas de conteúdo: 3 beats rápidos (o que falar/mostrar + duração em seg cada)
+- Elemento de loop: como o final puxa de volta ao início para causar replay
+- Texto na tela: a frase principal que aparece em sobreposição durante o vídeo
+- Estratégia de áudio: voz original, som trending + voz, ou só voz
+- CTA final: o que pedir (salvar, compartilhar, comentar "X")
+- Duração sugerida: X-Y segundos
+
+FORMATO 6 — SEQUÊNCIA DE STORIES (Instagram Stories, 5-7 slides)
+Otimize para: tap-through rate, respostas e conversas.
+Stories performam com sequência de curiosidade (cada slide deixa uma pergunta), elemento interativo no meio e CTA claro no último.
+- Slide de abertura: o que faz a pessoa NÃO pular (afirmação provocativa ou pergunta)
+- Sequência de slides: 5-7 slides, cada um com: conteúdo + elemento interativo (enquete/pergunta/nenhum) + propósito
+- Elemento interativo recomendado: qual usar, onde colocar e por que
+- Slide de fechamento: CTA direto (responder, salvar, DM)
+
+FORMATO 7 — ROTEIRO TIKTOK (TikTok, 15-60 seg)
+Otimize para: replays, comentários e duet/stitch.
+TikTok performa quando os primeiros 2 segundos são absurdamente específicos, há um elemento surpresa no meio, e o final provoca comentários ou replay.
+- Hook (linha exata): as primeiras palavras — específica e inesperada, não genérica
+- Hook visual: o que o usuário VÊ na tela nos primeiros 2 segundos
+- Interrupção de padrão: o elemento surpresa/inesperado que faz continuar assistindo (aparece em ~5s)
+- Beats de conteúdo: 3-4 beats com a técnica de retenção que cada um usa
+- Momento de loop: a cena ou frase que incentiva assistir de novo
+- Estratégia de som: som trending + voz, voz original, texto sem fala
+- Isca de comentário: pergunta ou afirmação que PROVOCA comentários (não genérica)
+- Duração sugerida: X-Y segundos
+
+─────────────────────────────────────────────────────
 Responda APENAS com JSON válido, sem texto antes ou depois:
 {
-  "core_insight": "a essência do pensamento em 1 frase poderosa — a frase que o criador vai querer citar",
-  "emotional_angle": "qual emoção central este conteúdo ativa (ex: alívio, reconhecimento, curiosidade, tensão saudável)",
+  "core_insight": "a essência do pensamento em 1 frase poderosa",
+  "emotional_angle": "emoção central ativada (ex: alívio, reconhecimento, curiosidade, tensão saudável)",
   "reflection_post": {
-    "text": "o post completo com parágrafos naturais, sem bullets",
-    "opening_line": "a primeira frase exata do post",
-    "closing_line": "a última frase/pergunta exata",
+    "text": "post completo com parágrafos naturais, sem bullets",
+    "opening_line": "primeira frase exata",
+    "closing_line": "última frase/pergunta exata",
     "suggested_platform": "LinkedIn ou Instagram"
   },
   "video_talking_point": {
-    "hook": "a frase exata de abertura para o vídeo",
+    "hook": "frase exata de abertura",
     "talking_points": [
       "primeiro ponto em linguagem falada natural",
       "segundo ponto em linguagem falada natural",
       "terceiro ponto em linguagem falada natural"
     ],
-    "closing": "encerramento natural do vídeo",
+    "closing": "encerramento natural",
     "estimated_duration": "4-5 min",
-    "suggested_platform": "YouTube ou TikTok"
+    "suggested_platform": "YouTube ou Podcast"
   },
   "carousel": {
     "slide_1": "afirmação ou pergunta do primeiro slide",
     "slides": [
-      { "headline": "headline provocativo", "body": "1-2 frases de desenvolvimento" },
-      { "headline": "headline provocativo", "body": "1-2 frases de desenvolvimento" },
-      { "headline": "headline provocativo", "body": "1-2 frases de desenvolvimento" },
-      { "headline": "headline provocativo", "body": "1-2 frases de desenvolvimento" }
+      { "headline": "headline provocativo", "body": "1-2 frases" },
+      { "headline": "headline provocativo", "body": "1-2 frases" },
+      { "headline": "headline provocativo", "body": "1-2 frases" },
+      { "headline": "headline provocativo", "body": "1-2 frases" }
     ],
-    "final_slide": "o insight central que o leitor vai salvar"
+    "final_slide": "insight central que o leitor vai salvar"
   },
   "storytelling": {
     "situation": "o cenário que todo mundo reconhece",
-    "tension": "o conflito ou questionamento que raramente é nomeado",
+    "tension": "o conflito que raramente é nomeado",
     "turning_point": "o momento de insight ou mudança de perspectiva",
     "resolution": "o que fica — a conclusão que ressoa"
+  },
+  "reel_script": {
+    "hook_visual": "o que o usuário vê na tela nos primeiros 2 segundos",
+    "hook_spoken": "a frase exata que abre o vídeo",
+    "beats": [
+      { "content": "o que falar/mostrar", "duration_sec": 8 },
+      { "content": "o que falar/mostrar", "duration_sec": 8 },
+      { "content": "o que falar/mostrar", "duration_sec": 7 }
+    ],
+    "loop_element": "como o final volta ao início para causar replay",
+    "text_overlay": "a frase principal em sobreposição visual durante o vídeo",
+    "audio_strategy": "voz original / som trending + voz / narração com música",
+    "cta": "salvar / comentar 'X' / compartilhar — texto exato do CTA",
+    "suggested_duration_sec": 30
+  },
+  "stories_sequence": {
+    "opening_slide": "o primeiro slide que faz a pessoa não pular",
+    "slides": [
+      { "number": 1, "content": "conteúdo do slide", "interactive": "nenhum/enquete/pergunta/quiz", "purpose": "gancho" },
+      { "number": 2, "content": "conteúdo do slide", "interactive": "nenhum/enquete/pergunta/quiz", "purpose": "desenvolvimento" },
+      { "number": 3, "content": "conteúdo do slide", "interactive": "enquete", "purpose": "engajamento" },
+      { "number": 4, "content": "conteúdo do slide", "interactive": "nenhum", "purpose": "desenvolvimento" },
+      { "number": 5, "content": "conteúdo do slide", "interactive": "pergunta", "purpose": "revelação" },
+      { "number": 6, "content": "conteúdo do slide", "interactive": "nenhum", "purpose": "cta" }
+    ],
+    "interactive_tip": "qual elemento interativo usar, onde colocar e por que aumenta respostas",
+    "closing_cta": "o que pedir no último slide (responder, DM, salvar)"
+  },
+  "tiktok_script": {
+    "hook_line": "as primeiras palavras exatas — específica e inesperada",
+    "hook_visual": "o que o usuário vê nos primeiros 2 segundos",
+    "pattern_interrupt": "o elemento surpresa em ~5s que faz continuar assistindo",
+    "beats": [
+      { "content": "o que falar/mostrar", "retention_technique": "técnica de retenção usada" },
+      { "content": "o que falar/mostrar", "retention_technique": "técnica de retenção usada" },
+      { "content": "o que falar/mostrar", "retention_technique": "técnica de retenção usada" }
+    ],
+    "loop_moment": "a cena ou frase que incentiva assistir de novo",
+    "sound_strategy": "som trending + voz / voz original / narração sem rosto",
+    "comment_bait": "pergunta ou afirmação que provoca comentários (específica, não genérica)",
+    "suggested_duration_sec": 30
   },
   "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "save_as_idea": {
@@ -113,7 +184,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     },
     body: JSON.stringify({
       model: 'claude-opus-4-5',
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -130,85 +201,26 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   return JSON.parse(match[0])
 }
 
-// ─── Loading phases ──────────────────────────────────────────────────────────
+// ─── Loading phases ───────────────────────────────────────────────────────────
 const PHASES = [
   { label: 'Capturando a essência...', icon: Brain, color: 'text-indigo-500' },
   { label: 'Estruturando os formatos...', icon: Layers, color: 'text-violet-500' },
+  { label: 'Adaptando para cada plataforma...', icon: Smartphone, color: 'text-pink-500' },
   { label: 'Refinando o tom...', icon: Sparkles, color: 'text-purple-500' },
 ]
 
-// ─── Format meta ─────────────────────────────────────────────────────────────
-const FORMATS = [
-  {
-    key: 'reflection_post',
-    label: 'Post Reflexivo',
-    icon: AlignLeft,
-    color: 'indigo',
-    description: 'Texto corrido, pessoal, sem bullets',
-    platform_field: 'suggested_platform',
-  },
-  {
-    key: 'video_talking_point',
-    label: 'Roteiro de Vídeo',
-    icon: Video,
-    color: 'violet',
-    description: 'Hook + pontos de fala + encerramento',
-    platform_field: 'suggested_platform',
-  },
-  {
-    key: 'carousel',
-    label: 'Estrutura de Carrossel',
-    icon: LayoutGrid,
-    color: 'purple',
-    description: 'Slides com headline e desenvolvimento',
-    platform_field: null,
-  },
-  {
-    key: 'storytelling',
-    label: 'Arco Narrativo',
-    icon: BookOpen,
-    color: 'fuchsia',
-    description: 'Situação → Tensão → Virada → Resolução',
-    platform_field: null,
-  },
-]
-
+// ─── Colors ───────────────────────────────────────────────────────────────────
 const COLOR_MAP = {
-  indigo: {
-    badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    icon: 'text-indigo-500',
-    border: 'border-indigo-100',
-    header: 'bg-indigo-50/60',
-    dot: 'bg-indigo-400',
-    btn: 'bg-indigo-500 hover:bg-indigo-600 text-white',
-  },
-  violet: {
-    badge: 'bg-violet-50 text-violet-700 border-violet-200',
-    icon: 'text-violet-500',
-    border: 'border-violet-100',
-    header: 'bg-violet-50/60',
-    dot: 'bg-violet-400',
-    btn: 'bg-violet-500 hover:bg-violet-600 text-white',
-  },
-  purple: {
-    badge: 'bg-purple-50 text-purple-700 border-purple-200',
-    icon: 'text-purple-500',
-    border: 'border-purple-100',
-    header: 'bg-purple-50/60',
-    dot: 'bg-purple-400',
-    btn: 'bg-purple-500 hover:bg-purple-600 text-white',
-  },
-  fuchsia: {
-    badge: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
-    icon: 'text-fuchsia-500',
-    border: 'border-fuchsia-100',
-    header: 'bg-fuchsia-50/60',
-    dot: 'bg-fuchsia-400',
-    btn: 'bg-fuchsia-500 hover:bg-fuchsia-600 text-white',
-  },
+  indigo:  { badge: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: 'text-indigo-500', border: 'border-indigo-100', header: 'bg-indigo-50/60', btn: 'bg-indigo-500 hover:bg-indigo-600 text-white' },
+  violet:  { badge: 'bg-violet-50 text-violet-700 border-violet-200', icon: 'text-violet-500', border: 'border-violet-100', header: 'bg-violet-50/60', btn: 'bg-violet-500 hover:bg-violet-600 text-white' },
+  purple:  { badge: 'bg-purple-50 text-purple-700 border-purple-200', icon: 'text-purple-500', border: 'border-purple-100', header: 'bg-purple-50/60', btn: 'bg-purple-500 hover:bg-purple-600 text-white' },
+  fuchsia: { badge: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200', icon: 'text-fuchsia-500', border: 'border-fuchsia-100', header: 'bg-fuchsia-50/60', btn: 'bg-fuchsia-500 hover:bg-fuchsia-600 text-white' },
+  rose:    { badge: 'bg-rose-50 text-rose-700 border-rose-200', icon: 'text-rose-500', border: 'border-rose-100', header: 'bg-rose-50/60', btn: 'bg-rose-500 hover:bg-rose-600 text-white' },
+  pink:    { badge: 'bg-pink-50 text-pink-700 border-pink-200', icon: 'text-pink-500', border: 'border-pink-100', header: 'bg-pink-50/60', btn: 'bg-pink-500 hover:bg-pink-600 text-white' },
+  zinc:    { badge: 'bg-zinc-100 text-zinc-700 border-zinc-300', icon: 'text-zinc-600', border: 'border-zinc-200', header: 'bg-zinc-50', btn: 'bg-zinc-800 hover:bg-zinc-900 text-white' },
 }
 
-// ─── Clipboard hook ──────────────────────────────────────────────────────────
+// ─── Clipboard hook ───────────────────────────────────────────────────────────
 function useCopy() {
   const [copiedKey, setCopiedKey] = useState(null)
   const copy = (text, key) => {
@@ -219,90 +231,78 @@ function useCopy() {
   return { copiedKey, copy }
 }
 
-// ─── Format: Reflection Post ─────────────────────────────────────────────────
-function ReflectionCard({ data, onSaveIdea, saved, apiKey }) {
+// ─── Save button ──────────────────────────────────────────────────────────────
+function SaveBtn({ saved, onClick, color }) {
+  const c = COLOR_MAP[color]
+  return (
+    <button
+      onClick={onClick}
+      disabled={saved}
+      className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
+        saved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : c.btn
+      }`}
+    >
+      {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub de Ideias</>}
+    </button>
+  )
+}
+
+// ─── Format 1: Reflection Post ────────────────────────────────────────────────
+function ReflectionCard({ data, onSave, saved }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.indigo
   return (
     <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-4 flex items-center justify-between ${c.header} border-b ${c.border}`}>
+      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
         <div className="flex items-center gap-2.5">
-          <AlignLeft size={15} className={c.icon} />
+          <AlignLeft size={14} className={c.icon} />
           <span className="text-sm font-semibold text-gray-800">Post Reflexivo</span>
-          {data.suggested_platform && (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
-          )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
         </div>
-        <button
-          onClick={() => copy(data.text, 'post')}
-          className="btn-secondary text-xs py-1 px-2.5"
-        >
+        <button onClick={() => copy(data.text, 'post')} className="btn-secondary text-xs py-1 px-2.5">
           {copiedKey === 'post' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
         </button>
       </div>
-      <div className="px-5 py-4 space-y-4">
-        {/* Opening line highlight */}
+      <div className="px-5 py-4 space-y-3">
         <div className={`rounded-xl p-3 border ${c.border} bg-indigo-50/30`}>
-          <p className="text-[10px] text-indigo-500 font-semibold uppercase tracking-wide mb-1">Primeira frase</p>
+          <p className="text-[10px] text-indigo-500 font-semibold uppercase tracking-wide mb-1">Abertura</p>
           <p className="text-xs text-gray-700 italic">"{data.opening_line}"</p>
         </div>
-        {/* Full text */}
         <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{data.text}</p>
-        {/* Closing line */}
         <div className="rounded-xl p-3 bg-gray-50 border border-gray-100">
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Encerramento</p>
           <p className="text-xs text-gray-600 italic">"{data.closing_line}"</p>
         </div>
-        <button
-          onClick={onSaveIdea}
-          disabled={saved}
-          className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            saved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : `${c.btn}`
-          }`}
-        >
-          {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub de Ideias</>}
-        </button>
+        <SaveBtn saved={saved} onClick={onSave} color="indigo" />
       </div>
     </div>
   )
 }
 
-// ─── Format: Video Talking Point ─────────────────────────────────────────────
-function VideoCard({ data, onSaveIdea, saved }) {
+// ─── Format 2: Video Talking Point ───────────────────────────────────────────
+function VideoCard({ data, onSave, saved }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.violet
-  const fullScript = [
-    `HOOK: ${data.hook}`,
-    '',
-    data.talking_points?.map((p, i) => `${i + 1}. ${p}`).join('\n'),
-    '',
-    `ENCERRAMENTO: ${data.closing}`,
-  ].join('\n')
-
+  const script = [`HOOK: ${data.hook}`, '', ...(data.talking_points || []).map((p, i) => `${i + 1}. ${p}`), '', `ENCERRAMENTO: ${data.closing}`].join('\n')
   return (
     <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-4 flex items-center justify-between ${c.header} border-b ${c.border}`}>
+      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
         <div className="flex items-center gap-2.5">
-          <Video size={15} className={c.icon} />
+          <Video size={14} className={c.icon} />
           <span className="text-sm font-semibold text-gray-800">Roteiro de Vídeo</span>
-          {data.suggested_platform && (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
-          )}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{data.estimated_duration}</span>
         </div>
-        <button onClick={() => copy(fullScript, 'video')} className="btn-secondary text-xs py-1 px-2.5">
+        <button onClick={() => copy(script, 'video')} className="btn-secondary text-xs py-1 px-2.5">
           {copiedKey === 'video' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
         </button>
       </div>
       <div className="px-5 py-4 space-y-3">
-        {/* Hook */}
         <div className="rounded-xl p-3.5 bg-violet-50 border border-violet-200">
           <p className="text-[10px] text-violet-500 font-bold uppercase tracking-wide mb-1.5">🎙 Hook de abertura</p>
           <p className="text-sm font-semibold text-gray-800">"{data.hook}"</p>
         </div>
-        {/* Talking points */}
         <div className="space-y-2">
-          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Pontos de fala</p>
           {(data.talking_points || []).map((p, i) => (
             <div key={i} className="flex gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
               <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-600 shrink-0 mt-0.5">{i + 1}</div>
@@ -310,41 +310,27 @@ function VideoCard({ data, onSaveIdea, saved }) {
             </div>
           ))}
         </div>
-        {/* Closing */}
         <div className="rounded-xl p-3 bg-gray-50 border border-gray-100">
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Encerramento</p>
           <p className="text-xs text-gray-600 italic">{data.closing}</p>
         </div>
-        <button
-          onClick={onSaveIdea}
-          disabled={saved}
-          className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            saved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : `${c.btn}`
-          }`}
-        >
-          {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub de Ideias</>}
-        </button>
+        <SaveBtn saved={saved} onClick={onSave} color="violet" />
       </div>
     </div>
   )
 }
 
-// ─── Format: Carousel ────────────────────────────────────────────────────────
-function CarouselCard({ data, onSaveIdea, saved }) {
+// ─── Format 3: Carousel ───────────────────────────────────────────────────────
+function CarouselCard({ data, onSave, saved }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.purple
-  const allSlides = [
-    `SLIDE 1 (CAPA): ${data.slide_1}`,
-    ...(data.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`),
-    `\nSLIDE FINAL:\n${data.final_slide}`,
-  ].join('\n')
-
+  const allSlides = [`SLIDE 1 (CAPA): ${data.slide_1}`, ...(data.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`), `\nSLIDE FINAL:\n${data.final_slide}`].join('\n')
   return (
     <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-4 flex items-center justify-between ${c.header} border-b ${c.border}`}>
+      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
         <div className="flex items-center gap-2.5">
-          <LayoutGrid size={15} className={c.icon} />
-          <span className="text-sm font-semibold text-gray-800">Estrutura de Carrossel</span>
+          <LayoutGrid size={14} className={c.icon} />
+          <span className="text-sm font-semibold text-gray-800">Carrossel</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{(data.slides?.length || 0) + 2} slides</span>
         </div>
         <button onClick={() => copy(allSlides, 'carousel')} className="btn-secondary text-xs py-1 px-2.5">
@@ -352,12 +338,10 @@ function CarouselCard({ data, onSaveIdea, saved }) {
         </button>
       </div>
       <div className="px-5 py-4 space-y-2">
-        {/* Slide 1 */}
         <div className="rounded-xl p-3.5 bg-purple-50 border border-purple-200">
           <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wide mb-1">Slide 1 — Capa</p>
           <p className="text-sm font-bold text-gray-800">"{data.slide_1}"</p>
         </div>
-        {/* Development slides */}
         <div className="grid grid-cols-2 gap-2">
           {(data.slides || []).map((s, i) => (
             <div key={i} className="rounded-xl p-3 border border-gray-100 bg-gray-50/80 space-y-1">
@@ -369,42 +353,32 @@ function CarouselCard({ data, onSaveIdea, saved }) {
             </div>
           ))}
         </div>
-        {/* Final slide */}
         <div className="rounded-xl p-3.5 bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-200">
           <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wide mb-1">Slide Final — Insight Central</p>
           <p className="text-xs font-semibold text-gray-800">"{data.final_slide}"</p>
         </div>
-        <button
-          onClick={onSaveIdea}
-          disabled={saved}
-          className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            saved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : `${c.btn}`
-          }`}
-        >
-          {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub de Ideias</>}
-        </button>
+        <SaveBtn saved={saved} onClick={onSave} color="purple" />
       </div>
     </div>
   )
 }
 
-// ─── Format: Storytelling ────────────────────────────────────────────────────
-function StorytellingCard({ data, onSaveIdea, saved }) {
+// ─── Format 4: Storytelling ───────────────────────────────────────────────────
+function StorytellingCard({ data, onSave, saved }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.fuchsia
   const STEPS = [
-    { key: 'situation', label: 'Situação', color: 'bg-blue-50 border-blue-200', labelColor: 'text-blue-500', num: '01' },
-    { key: 'tension', label: 'Tensão', color: 'bg-orange-50 border-orange-200', labelColor: 'text-orange-500', num: '02' },
-    { key: 'turning_point', label: 'Virada', color: 'bg-fuchsia-50 border-fuchsia-200', labelColor: 'text-fuchsia-500', num: '03' },
-    { key: 'resolution', label: 'Resolução', color: 'bg-emerald-50 border-emerald-200', labelColor: 'text-emerald-600', num: '04' },
+    { key: 'situation',     label: 'Situação',  color: 'bg-blue-50 border-blue-200',     labelColor: 'text-blue-500',    num: '01' },
+    { key: 'tension',       label: 'Tensão',    color: 'bg-orange-50 border-orange-200', labelColor: 'text-orange-500',  num: '02' },
+    { key: 'turning_point', label: 'Virada',    color: 'bg-fuchsia-50 border-fuchsia-200', labelColor: 'text-fuchsia-500', num: '03' },
+    { key: 'resolution',    label: 'Resolução', color: 'bg-emerald-50 border-emerald-200', labelColor: 'text-emerald-600', num: '04' },
   ]
   const fullStory = STEPS.map(s => `${s.label.toUpperCase()}:\n${data[s.key]}`).join('\n\n')
-
   return (
     <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-4 flex items-center justify-between ${c.header} border-b ${c.border}`}>
+      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
         <div className="flex items-center gap-2.5">
-          <BookOpen size={15} className={c.icon} />
+          <BookOpen size={14} className={c.icon} />
           <span className="text-sm font-semibold text-gray-800">Arco Narrativo</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>4 partes</span>
         </div>
@@ -413,7 +387,7 @@ function StorytellingCard({ data, onSaveIdea, saved }) {
         </button>
       </div>
       <div className="px-5 py-4 space-y-2.5">
-        {STEPS.map((step, i) => (
+        {STEPS.map((step) => (
           <div key={step.key} className={`rounded-xl p-3.5 border ${step.color} space-y-1`}>
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-black text-gray-300">{step.num}</span>
@@ -422,25 +396,254 @@ function StorytellingCard({ data, onSaveIdea, saved }) {
             <p className="text-xs text-gray-700 leading-relaxed">{data[step.key]}</p>
           </div>
         ))}
-        <button
-          onClick={onSaveIdea}
-          disabled={saved}
-          className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            saved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : `${c.btn}`
-          }`}
-        >
-          {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub de Ideias</>}
-        </button>
+        <SaveBtn saved={saved} onClick={onSave} color="fuchsia" />
       </div>
     </div>
   )
 }
 
-// ─── Thought history item ────────────────────────────────────────────────────
+// ─── Format 5: Reels Script ───────────────────────────────────────────────────
+function ReelCard({ data, onSave, saved }) {
+  const { copiedKey, copy } = useCopy()
+  const c = COLOR_MAP.rose
+  const script = [
+    `HOOK VISUAL: ${data.hook_visual}`,
+    `HOOK FALADO: "${data.hook_spoken}"`,
+    '',
+    ...(data.beats || []).map((b, i) => `BEAT ${i + 1} (~${b.duration_sec}s): ${b.content}`),
+    '',
+    `LOOP: ${data.loop_element}`,
+    `TEXTO NA TELA: "${data.text_overlay}"`,
+    `ÁUDIO: ${data.audio_strategy}`,
+    `CTA: ${data.cta}`,
+    `DURAÇÃO: ${data.suggested_duration_sec}s`,
+  ].join('\n')
+  return (
+    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
+      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
+        <div className="flex items-center gap-2.5">
+          <Film size={14} className={c.icon} />
+          <span className="text-sm font-semibold text-gray-800">Reels</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>Instagram</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">~{data.suggested_duration_sec}s</span>
+        </div>
+        <button onClick={() => copy(script, 'reel')} className="btn-secondary text-xs py-1 px-2.5">
+          {copiedKey === 'reel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+        </button>
+      </div>
+      <div className="px-5 py-4 space-y-3">
+        {/* Hook */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl p-3 bg-rose-50 border border-rose-200 space-y-1">
+            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wide">👁 Hook Visual</p>
+            <p className="text-xs text-gray-700">{data.hook_visual}</p>
+          </div>
+          <div className="rounded-xl p-3 bg-rose-50 border border-rose-200 space-y-1">
+            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wide">🎙 Hook Falado</p>
+            <p className="text-xs font-semibold text-gray-800 italic">"{data.hook_spoken}"</p>
+          </div>
+        </div>
+        {/* Beats */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Beats de conteúdo</p>
+          {(data.beats || []).map((b, i) => (
+            <div key={i} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+              <span className="text-[9px] font-black text-rose-300 shrink-0 mt-0.5">0{i + 1}</span>
+              <div className="flex-1">
+                <p className="text-xs text-gray-700">{b.content}</p>
+              </div>
+              <span className="text-[10px] font-semibold text-gray-400 shrink-0 bg-white border border-gray-200 px-1.5 py-0.5 rounded-lg">{b.duration_sec}s</span>
+            </div>
+          ))}
+        </div>
+        {/* Loop + overlay */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
+            <div className="flex items-center gap-1"><Repeat2 size={10} className="text-rose-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Loop</p></div>
+            <p className="text-[11px] text-gray-600">{data.loop_element}</p>
+          </div>
+          <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
+            <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Texto na Tela</p>
+            <p className="text-[11px] text-gray-700 font-medium italic">"{data.text_overlay}"</p>
+          </div>
+        </div>
+        {/* Audio + CTA */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl p-2.5 bg-gray-50 border border-gray-100 space-y-1">
+            <div className="flex items-center gap-1"><Music2 size={10} className="text-rose-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Áudio</p></div>
+            <p className="text-[11px] text-gray-600">{data.audio_strategy}</p>
+          </div>
+          <div className="rounded-xl p-2.5 bg-rose-50 border border-rose-200 space-y-1">
+            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wide">CTA</p>
+            <p className="text-[11px] text-gray-700 font-semibold">{data.cta}</p>
+          </div>
+        </div>
+        <SaveBtn saved={saved} onClick={onSave} color="rose" />
+      </div>
+    </div>
+  )
+}
+
+// ─── Format 6: Stories Sequence ──────────────────────────────────────────────
+const PURPOSE_COLORS = {
+  gancho:        'bg-orange-100 text-orange-600 border-orange-200',
+  desenvolvimento: 'bg-blue-100 text-blue-600 border-blue-200',
+  engajamento:   'bg-violet-100 text-violet-600 border-violet-200',
+  revelação:     'bg-emerald-100 text-emerald-600 border-emerald-200',
+  cta:           'bg-pink-100 text-pink-600 border-pink-200',
+}
+const INTERACTIVE_ICONS = {
+  enquete:   '📊',
+  pergunta:  '💬',
+  quiz:      '🎯',
+  nenhum:    '',
+}
+
+function StoriesCard({ data, onSave, saved }) {
+  const { copiedKey, copy } = useCopy()
+  const c = COLOR_MAP.pink
+  const script = [`ABERTURA: ${data.opening_slide}`, '', ...(data.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`), '', `INTERATIVIDADE: ${data.interactive_tip}`, `CTA FINAL: ${data.closing_cta}`].join('\n')
+  return (
+    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
+      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
+        <div className="flex items-center gap-2.5">
+          <Smartphone size={14} className={c.icon} />
+          <span className="text-sm font-semibold text-gray-800">Stories</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>Instagram</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{data.slides?.length || 0} slides</span>
+        </div>
+        <button onClick={() => copy(script, 'stories')} className="btn-secondary text-xs py-1 px-2.5">
+          {copiedKey === 'stories' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+        </button>
+      </div>
+      <div className="px-5 py-4 space-y-3">
+        {/* Opening slide */}
+        <div className="rounded-xl p-3.5 bg-pink-50 border border-pink-200">
+          <p className="text-[9px] text-pink-500 font-bold uppercase tracking-wide mb-1">📲 Slide de Abertura (faz não pular)</p>
+          <p className="text-sm font-semibold text-gray-800">"{data.opening_slide}"</p>
+        </div>
+        {/* Slides */}
+        <div className="space-y-1.5">
+          {(data.slides || []).map((s) => (
+            <div key={s.number} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+              <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[9px] font-bold text-pink-600 shrink-0">{s.number}</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-700 leading-snug">{s.content}</p>
+                {s.interactive && s.interactive !== 'nenhum' && (
+                  <span className="text-[9px] text-pink-500 font-semibold mt-0.5 inline-block">{INTERACTIVE_ICONS[s.interactive] || '🔸'} Adicionar: {s.interactive}</span>
+                )}
+              </div>
+              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border shrink-0 capitalize ${PURPOSE_COLORS[s.purpose] || 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                {s.purpose}
+              </span>
+            </div>
+          ))}
+        </div>
+        {/* Tip + CTA */}
+        <div className="rounded-xl p-3 bg-violet-50 border border-violet-200 space-y-1">
+          <p className="text-[9px] text-violet-500 font-bold uppercase tracking-wide">💡 Dica de interatividade</p>
+          <p className="text-[11px] text-gray-600">{data.interactive_tip}</p>
+        </div>
+        <div className="rounded-xl p-3 bg-pink-50 border border-pink-200">
+          <p className="text-[9px] text-pink-500 font-bold uppercase tracking-wide mb-1">CTA Final</p>
+          <p className="text-xs text-gray-700 font-medium">{data.closing_cta}</p>
+        </div>
+        <SaveBtn saved={saved} onClick={onSave} color="pink" />
+      </div>
+    </div>
+  )
+}
+
+// ─── Format 7: TikTok Script ──────────────────────────────────────────────────
+function TikTokCard({ data, onSave, saved }) {
+  const { copiedKey, copy } = useCopy()
+  const c = COLOR_MAP.zinc
+  const script = [
+    `HOOK (fala): "${data.hook_line}"`,
+    `HOOK (visual): ${data.hook_visual}`,
+    `INTERRUPÇÃO DE PADRÃO: ${data.pattern_interrupt}`,
+    '',
+    ...(data.beats || []).map((b, i) => `BEAT ${i + 1} [${b.retention_technique}]: ${b.content}`),
+    '',
+    `LOOP: ${data.loop_moment}`,
+    `ÁUDIO: ${data.sound_strategy}`,
+    `ISCA DE COMENTÁRIO: "${data.comment_bait}"`,
+    `DURAÇÃO: ${data.suggested_duration_sec}s`,
+  ].join('\n')
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
+      <div className="px-5 py-3.5 flex items-center justify-between bg-zinc-50 border-b border-zinc-200">
+        <div className="flex items-center gap-2.5">
+          <Music2 size={14} className="text-zinc-700" />
+          <span className="text-sm font-semibold text-gray-800">TikTok</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-zinc-100 text-zinc-700 border-zinc-300">TikTok</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">~{data.suggested_duration_sec}s</span>
+        </div>
+        <button onClick={() => copy(script, 'tiktok')} className="btn-secondary text-xs py-1 px-2.5">
+          {copiedKey === 'tiktok' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+        </button>
+      </div>
+      <div className="px-5 py-4 space-y-3">
+        {/* Hooks */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl p-3 bg-zinc-900 space-y-1">
+            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wide">🔥 Hook (fala)</p>
+            <p className="text-xs font-bold text-white">"{data.hook_line}"</p>
+          </div>
+          <div className="rounded-xl p-3 bg-zinc-100 border border-zinc-200 space-y-1">
+            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wide">👁 Hook (visual)</p>
+            <p className="text-xs text-gray-700">{data.hook_visual}</p>
+          </div>
+        </div>
+        {/* Pattern interrupt */}
+        <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
+          <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide mb-1">⚡ Interrupção de padrão (~5s)</p>
+          <p className="text-xs text-gray-700">{data.pattern_interrupt}</p>
+        </div>
+        {/* Beats */}
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Beats + técnica de retenção</p>
+          {(data.beats || []).map((b, i) => (
+            <div key={i} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+              <span className="text-[9px] font-black text-zinc-400 shrink-0 mt-0.5">0{i + 1}</span>
+              <div className="flex-1">
+                <p className="text-xs text-gray-700">{b.content}</p>
+                <span className="text-[9px] text-zinc-500 italic">{b.retention_technique}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Loop + audio + comment bait */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl p-2.5 bg-gray-50 border border-gray-100 space-y-1">
+            <div className="flex items-center gap-1"><Repeat2 size={10} className="text-zinc-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Loop</p></div>
+            <p className="text-[11px] text-gray-600">{data.loop_moment}</p>
+          </div>
+          <div className="rounded-xl p-2.5 bg-gray-50 border border-gray-100 space-y-1">
+            <div className="flex items-center gap-1"><Music2 size={10} className="text-zinc-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Som</p></div>
+            <p className="text-[11px] text-gray-600">{data.sound_strategy}</p>
+          </div>
+        </div>
+        <div className="rounded-xl p-3 bg-zinc-900">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <MessageCircle size={11} className="text-zinc-400" />
+            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wide">Isca de comentário</p>
+          </div>
+          <p className="text-xs font-semibold text-white">"{data.comment_bait}"</p>
+        </div>
+        <SaveBtn saved={saved} onClick={onSave} color="zinc" />
+      </div>
+    </div>
+  )
+}
+
+// ─── History item ─────────────────────────────────────────────────────────────
 function HistoryItem({ capture, onLoad, onDelete }) {
   return (
-    <div className="group flex items-start gap-2.5 p-3 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-indigo-100 transition-all cursor-pointer"
-      onClick={() => onLoad(capture)}>
+    <div
+      className="group flex items-start gap-2.5 p-3 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-indigo-100 transition-all cursor-pointer"
+      onClick={() => onLoad(capture)}
+    >
       <div className="w-2 h-2 rounded-full bg-indigo-300 shrink-0 mt-1.5" />
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-700 leading-snug line-clamp-2">{capture.thought}</p>
@@ -461,7 +664,7 @@ function HistoryItem({ capture, onLoad, onDelete }) {
   )
 }
 
-// ─── Loading animation ───────────────────────────────────────────────────────
+// ─── Loading ──────────────────────────────────────────────────────────────────
 function LoadingView({ phase }) {
   const PhaseIcon = PHASES[phase]?.icon || Brain
   return (
@@ -477,33 +680,21 @@ function LoadingView({ phase }) {
           <PhaseIcon size={14} className={PHASES[phase]?.color} />
           {PHASES[phase]?.label}
         </p>
-        <p className="text-xs text-gray-400">Transformando seu pensamento em conteúdo...</p>
+        <p className="text-xs text-gray-400">Transformando em 7 formatos para diferentes plataformas...</p>
       </div>
-      {/* Phase dots */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {PHASES.map((p, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
-              i < phase ? 'bg-indigo-500' : i === phase ? 'bg-indigo-400 scale-125 animate-pulse' : 'bg-gray-200'
-            }`} />
-            {i < PHASES.length - 1 && (
-              <div className={`h-0.5 w-8 transition-all duration-700 ${i < phase ? 'bg-indigo-300' : 'bg-gray-200'}`} />
-            )}
+          <div key={i} className="flex items-center gap-2">
+            <div className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${i < phase ? 'bg-indigo-500' : i === phase ? 'bg-indigo-400 scale-125 animate-pulse' : 'bg-gray-200'}`} />
+            {i < PHASES.length - 1 && <div className={`h-0.5 w-6 transition-all duration-700 ${i < phase ? 'bg-indigo-300' : 'bg-gray-200'}`} />}
           </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2 justify-center opacity-60">
-        {PHASES.map((p, i) => (
-          <span key={i} className={`text-[10px] px-2.5 py-1 rounded-full border transition-all duration-300 ${
-            i === phase ? 'bg-indigo-50 text-indigo-600 border-indigo-200 opacity-100' : 'bg-gray-50 text-gray-400 border-gray-100'
-          }`}>{p.label}</span>
         ))}
       </div>
     </div>
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Tone options ─────────────────────────────────────────────────────────────
 const TONE_OPTIONS = [
   { value: 'reflexivo', label: 'Reflexivo', emoji: '🌿' },
   { value: 'provocador', label: 'Provocador', emoji: '⚡' },
@@ -511,6 +702,9 @@ const TONE_OPTIONS = [
   { value: 'analítico', label: 'Analítico', emoji: '🔍' },
 ]
 
+const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', 'storytelling', 'reel_script', 'stories_sequence', 'tiktok_script']
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
   const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea } = useStore()
 
@@ -526,44 +720,28 @@ export default function ThoughtCapture() {
 
   const phaseRef = useRef(null)
   const resultsRef = useRef(null)
-
   const apiKey = localStorage.getItem('cio-anthropic-key')
 
-  // Phase animation
   const startPhases = () => {
     setLoadPhase(0)
     let p = 0
     phaseRef.current = setInterval(() => {
       p += 1
-      if (p >= PHASES.length) {
-        clearInterval(phaseRef.current)
-      } else {
-        setLoadPhase(p)
-      }
-    }, 1800)
+      if (p >= PHASES.length) clearInterval(phaseRef.current)
+      else setLoadPhase(p)
+    }, 1600)
   }
   useEffect(() => () => clearInterval(phaseRef.current), [])
 
   const handleCapture = async () => {
-    if (!thought.trim() || thought.trim().length < 10) {
-      setError('Escreva ao menos 10 caracteres para capturar.')
-      return
-    }
-    if (!apiKey) {
-      setError('Chave da API Anthropic não configurada. Vá em Configurações.')
-      return
-    }
-    setError('')
-    setLoading(true)
-    setResult(null)
-    setSavedFormats(new Set())
-    setCurrentThought(thought)
+    if (!thought.trim() || thought.trim().length < 10) { setError('Escreva ao menos 10 caracteres para capturar.'); return }
+    if (!apiKey) { setError('Chave da API Anthropic não configurada. Vá em Configurações.'); return }
+    setError(''); setLoading(true); setResult(null); setSavedFormats(new Set()); setCurrentThought(thought)
     startPhases()
     try {
       const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone })
       setResult(data)
       addThoughtCapture({ thought: thought.trim(), niche, tone, result: data })
-      // Scroll to results
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     } catch (e) {
       setError(e.message)
@@ -574,32 +752,38 @@ export default function ThoughtCapture() {
   }
 
   const handleLoadCapture = (capture) => {
-    setThought(capture.thought)
-    setNiche(capture.niche || '')
-    setTone(capture.tone || 'reflexivo')
-    setResult(capture.result)
-    setCurrentThought(capture.thought)
-    setSavedFormats(new Set())
+    setThought(capture.thought); setNiche(capture.niche || ''); setTone(capture.tone || 'reflexivo')
+    setResult(capture.result); setCurrentThought(capture.thought); setSavedFormats(new Set())
   }
 
-  const handleSaveFormat = (formatKey) => {
+  const FORMAT_LABELS = {
+    reflection_post: 'post reflexivo', video_talking_point: 'roteiro de vídeo',
+    carousel: 'carrossel', storytelling: 'arco narrativo',
+    reel_script: 'reels', stories_sequence: 'stories', tiktok_script: 'tiktok',
+  }
+  const FORMAT_PLATFORMS = {
+    reflection_post: 'Instagram', video_talking_point: 'YouTube',
+    carousel: 'Instagram', storytelling: 'Instagram',
+    reel_script: 'Instagram', stories_sequence: 'Instagram', tiktok_script: 'TikTok',
+  }
+  const FORMAT_FORMATS = {
+    reflection_post: 'post', video_talking_point: 'video',
+    carousel: 'carrossel', storytelling: 'post',
+    reel_script: 'reel', stories_sequence: 'stories', tiktok_script: 'video',
+  }
+
+  const handleSaveFormat = (key) => {
     if (!result?.save_as_idea) return
-    const formatLabels = {
-      reflection_post: 'post reflexivo',
-      video_talking_point: 'roteiro de vídeo',
-      carousel: 'carrossel',
-      storytelling: 'arco narrativo',
-    }
     addIdea({
       title: result.save_as_idea.title,
-      description: `${result.save_as_idea.description} [${formatLabels[formatKey]}]`,
-      platform: result.save_as_idea.platform || 'Instagram',
-      format: formatKey === 'carousel' ? 'carrossel' : formatKey === 'video_talking_point' ? 'video' : 'post',
+      description: `${result.save_as_idea.description} [${FORMAT_LABELS[key]}]`,
+      platform: FORMAT_PLATFORMS[key] || result.save_as_idea.platform || 'Instagram',
+      format: FORMAT_FORMATS[key] || 'post',
       status: 'idea',
-      tags: ['thought-capture', formatLabels[formatKey], ...(result.hashtags || []).slice(0, 2)],
+      tags: ['thought-capture', FORMAT_LABELS[key], ...(result.hashtags || []).slice(0, 2)],
       hook_type: 'reflexivo',
     })
-    setSavedFormats(prev => new Set([...prev, formatKey]))
+    setSavedFormats(prev => new Set([...prev, key]))
   }
 
   const charCount = thought.length
@@ -607,7 +791,7 @@ export default function ThoughtCapture() {
 
   return (
     <div className="flex h-full">
-      {/* ── Left: Input + History ─────────────────────────────────────────── */}
+      {/* ── Left panel ──────────────────────────────────────────────────── */}
       <div className="w-80 shrink-0 border-r border-gray-100 bg-white flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-6 pb-4 border-b border-gray-100">
@@ -617,14 +801,13 @@ export default function ThoughtCapture() {
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-900">Thought Capture</h1>
-              <p className="text-[10px] text-gray-400">Pensamentos → Conteúdo real</p>
+              <p className="text-[10px] text-gray-400">Pensamentos → 7 formatos para cada plataforma</p>
             </div>
           </div>
         </div>
 
-        {/* Input area */}
+        {/* Input */}
         <div className="px-4 py-4 border-b border-gray-100 space-y-3">
-          {/* Textarea */}
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Seu pensamento</label>
             <div className="relative">
@@ -633,28 +816,22 @@ export default function ThoughtCapture() {
                 onChange={e => setThought(e.target.value)}
                 placeholder={"Tenho visto muita gente cansada de produzir conteúdo perfeito..."}
                 className="w-full h-36 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 placeholder:text-gray-300 leading-relaxed"
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && e.ctrlKey) handleCapture()
-                }}
+                onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) handleCapture() }}
               />
-              <span className={`absolute bottom-2 right-2.5 text-[10px] font-medium ${
-                charCount === 0 ? 'text-gray-300' : isReady ? 'text-indigo-400' : 'text-amber-400'
-              }`}>{charCount}</span>
+              <span className={`absolute bottom-2 right-2.5 text-[10px] font-medium ${charCount === 0 ? 'text-gray-300' : isReady ? 'text-indigo-400' : 'text-amber-400'}`}>{charCount}</span>
             </div>
           </div>
 
-          {/* Niche */}
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nicho / contexto <span className="text-gray-300">(opcional)</span></label>
             <input
               value={niche}
               onChange={e => setNiche(e.target.value)}
-              placeholder="ex: marketing digital, saúde mental, empreendedorismo..."
+              placeholder="ex: marketing digital, saúde mental..."
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 placeholder:text-gray-300"
             />
           </div>
 
-          {/* Tone */}
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Tom</label>
             <div className="grid grid-cols-2 gap-1.5">
@@ -662,11 +839,7 @@ export default function ThoughtCapture() {
                 <button
                   key={t.value}
                   onClick={() => setTone(t.value)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
-                    tone === t.value
-                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                  }`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${tone === t.value ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
                 >
                   <span>{t.emoji}</span> {t.label}
                 </button>
@@ -674,31 +847,20 @@ export default function ThoughtCapture() {
             </div>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="rounded-xl p-3 bg-red-50 border border-red-100">
               <p className="text-[11px] text-red-600">{error}</p>
             </div>
           )}
 
-          {/* CTA */}
           <button
             onClick={handleCapture}
             disabled={loading || !isReady}
-            className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${
-              loading
-                ? 'bg-indigo-100 text-indigo-400 cursor-not-allowed shadow-none'
-                : isReady
-                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:opacity-90 shadow-indigo-200'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-            }`}
+            className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${loading ? 'bg-indigo-100 text-indigo-400 cursor-not-allowed shadow-none' : isReady ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:opacity-90 shadow-indigo-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'}`}
           >
-            {loading
-              ? <><RefreshCw size={14} className="animate-spin" /> Capturando...</>
-              : <><Sparkles size={14} /> Capturar Pensamento</>
-            }
+            {loading ? <><RefreshCw size={14} className="animate-spin" /> Capturando...</> : <><Sparkles size={14} /> Capturar Pensamento</>}
           </button>
-          <p className="text-[10px] text-gray-400 text-center">Ctrl+Enter para enviar</p>
+          <p className="text-[10px] text-gray-400 text-center">Ctrl+Enter para enviar · Gera 7 formatos</p>
         </div>
 
         {/* History */}
@@ -706,15 +868,10 @@ export default function ThoughtCapture() {
           {thoughtCaptures.length > 0 ? (
             <div className="space-y-1">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-2 pb-1">
-                Pensamentos capturados ({thoughtCaptures.length})
+                Capturados ({thoughtCaptures.length})
               </p>
               {thoughtCaptures.map(c => (
-                <HistoryItem
-                  key={c.id}
-                  capture={c}
-                  onLoad={handleLoadCapture}
-                  onDelete={deleteThoughtCapture}
-                />
+                <HistoryItem key={c.id} capture={c} onLoad={handleLoadCapture} onDelete={deleteThoughtCapture} />
               ))}
             </div>
           ) : (
@@ -726,28 +883,25 @@ export default function ThoughtCapture() {
         </div>
       </div>
 
-      {/* ── Right: Results ────────────────────────────────────────────────── */}
+      {/* ── Right panel: Results ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <LoadingView phase={loadPhase} />
         ) : result ? (
           <div className="p-6 space-y-6" ref={resultsRef}>
+
             {/* Core insight banner */}
             <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-5 space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Zap size={14} className="text-indigo-500 shrink-0" />
                 <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">Essência capturada</p>
-                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 border border-indigo-200 font-medium">
-                  {result.emotional_angle}
-                </span>
+                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 border border-indigo-200 font-medium">{result.emotional_angle}</span>
               </div>
               <p className="text-base font-semibold text-gray-900 leading-snug">"{result.core_insight}"</p>
-              <div className="flex items-center gap-2 text-[10px] text-gray-500">
+              <div className="flex items-center gap-2 text-[10px] text-gray-500 flex-wrap">
                 <Brain size={11} className="text-indigo-400" />
-                <span>Pensamento original:</span>
                 <span className="text-gray-400 italic truncate max-w-xs">{currentThought}</span>
               </div>
-              {/* Hashtags */}
               {result.hashtags?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {result.hashtags.map((h, i) => (
@@ -757,53 +911,66 @@ export default function ThoughtCapture() {
               )}
             </div>
 
-            {/* 4 format cards in 2x2 grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <ReflectionCard
-                data={result.reflection_post}
-                onSaveIdea={() => handleSaveFormat('reflection_post')}
-                saved={savedFormats.has('reflection_post')}
-              />
-              <VideoCard
-                data={result.video_talking_point}
-                onSaveIdea={() => handleSaveFormat('video_talking_point')}
-                saved={savedFormats.has('video_talking_point')}
-              />
-              <CarouselCard
-                data={result.carousel}
-                onSaveIdea={() => handleSaveFormat('carousel')}
-                saved={savedFormats.has('carousel')}
-              />
-              <StorytellingCard
-                data={result.storytelling}
-                onSaveIdea={() => handleSaveFormat('storytelling')}
-                saved={savedFormats.has('storytelling')}
-              />
+            {/* ── Section 1: Long-form formats ── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-gray-100" />
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3">Conteúdo de Texto & Vídeo Longo</span>
+                <div className="h-px flex-1 bg-gray-100" />
+              </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                {result.reflection_post && (
+                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} />
+                )}
+                {result.video_talking_point && (
+                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} />
+                )}
+                {result.carousel && (
+                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} />
+                )}
+                {result.storytelling && (
+                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} />
+                )}
+              </div>
             </div>
 
-            {/* Save all banner */}
+            {/* ── Section 2: Short-form platforms ── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-gray-100" />
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3">Roteiros para Redes Sociais</span>
+                <div className="h-px flex-1 bg-gray-100" />
+              </div>
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                {result.reel_script && (
+                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} />
+                )}
+                {result.stories_sequence && (
+                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} />
+                )}
+                {result.tiktok_script && (
+                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} />
+                )}
+              </div>
+            </div>
+
+            {/* Save all */}
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
                   <Plus size={15} className="text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-700">Salvar todos os formatos no Hub</p>
-                  <p className="text-[10px] text-gray-400">Cada formato vira uma ideia separada para produzir</p>
+                  <p className="text-xs font-semibold text-gray-700">Salvar todos os 7 formatos no Hub</p>
+                  <p className="text-[10px] text-gray-400">Cada formato vira uma ideia separada pronta para produzir</p>
                 </div>
               </div>
               <button
-                onClick={() => ['reflection_post','video_talking_point','carousel','storytelling'].forEach(k => {
-                  if (!savedFormats.has(k)) handleSaveFormat(k)
-                })}
-                disabled={savedFormats.size === 4}
-                className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all shrink-0 ${
-                  savedFormats.size === 4
-                    ? 'bg-emerald-100 text-emerald-600 border border-emerald-200'
-                    : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-100'
-                }`}
+                onClick={() => ALL_FORMAT_KEYS.forEach(k => { if (!savedFormats.has(k)) handleSaveFormat(k) })}
+                disabled={savedFormats.size === ALL_FORMAT_KEYS.length}
+                className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all shrink-0 flex items-center gap-1.5 ${savedFormats.size === ALL_FORMAT_KEYS.length ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-100'}`}
               >
-                {savedFormats.size === 4 ? <><Check size={12} /> Todos salvos</> : <><Sparkles size={12} /> Salvar todos</>}
+                {savedFormats.size === ALL_FORMAT_KEYS.length ? <><Check size={12} /> Todos salvos</> : <><Sparkles size={12} /> Salvar todos</>}
               </button>
             </div>
           </div>
@@ -816,8 +983,8 @@ export default function ThoughtCapture() {
             <div className="text-center space-y-2 max-w-md">
               <h2 className="text-lg font-bold text-gray-800">Capture seu próximo pensamento</h2>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Escreva qualquer reflexão bruta — uma observação, uma frustração, algo que você notou hoje.
-                O sistema transforma em 4 formatos de conteúdo prontos para produzir.
+                Escreva qualquer reflexão bruta — uma observação, frustração, algo que você notou hoje.
+                O sistema transforma em <strong>7 formatos</strong> adaptados para cada plataforma.
               </p>
             </div>
             {/* Examples */}
@@ -836,15 +1003,19 @@ export default function ThoughtCapture() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-6 text-center">
+            {/* Format preview */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
               {[
-                { icon: AlignLeft, label: 'Post reflexivo', color: 'text-indigo-500' },
-                { icon: Video, label: 'Roteiro de vídeo', color: 'text-violet-500' },
-                { icon: LayoutGrid, label: 'Carrossel', color: 'text-purple-500' },
-                { icon: BookOpen, label: 'Arco narrativo', color: 'text-fuchsia-500' },
-              ].map(({ icon: Icon, label, color }) => (
-                <div key={label} className="flex flex-col items-center gap-1.5 opacity-70">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                { icon: AlignLeft, label: 'Post', color: 'text-indigo-500', bg: 'bg-indigo-50' },
+                { icon: Video, label: 'Vídeo', color: 'text-violet-500', bg: 'bg-violet-50' },
+                { icon: LayoutGrid, label: 'Carrossel', color: 'text-purple-500', bg: 'bg-purple-50' },
+                { icon: BookOpen, label: 'Narrativa', color: 'text-fuchsia-500', bg: 'bg-fuchsia-50' },
+                { icon: Film, label: 'Reels', color: 'text-rose-500', bg: 'bg-rose-50' },
+                { icon: Smartphone, label: 'Stories', color: 'text-pink-500', bg: 'bg-pink-50' },
+                { icon: Music2, label: 'TikTok', color: 'text-zinc-600', bg: 'bg-zinc-100' },
+              ].map(({ icon: Icon, label, color, bg }) => (
+                <div key={label} className="flex flex-col items-center gap-1.5 opacity-80">
+                  <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center`}>
                     <Icon size={18} className={color} />
                   </div>
                   <p className="text-[10px] text-gray-500 font-medium">{label}</p>
