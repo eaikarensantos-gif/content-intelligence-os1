@@ -3,12 +3,13 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
   Plus, Search, Calendar, Tag,
   GripVertical, Kanban, Zap, RefreshCw, Sparkles, Radar, Loader2,
-  Check, ChevronLeft, ChevronRight, X,
+  Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
+  ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
-import { generateIdeasFromInsights, generateIdeasFromTrends } from '../../utils/ideaGenerator'
+import { generateIdeasFromInsights, generateIdeasFromTrends, generateIdeasWithClaude } from '../../utils/ideaGenerator'
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -283,6 +284,15 @@ function CalendarView({ ideas, onCardClick, onNewIdea }) {
   )
 }
 
+// ─── Loading phases ───────────────────────────────────────────────────────────
+const LOADING_PHASES = [
+  'Analisando seu contexto...',
+  'Identificando ângulos únicos...',
+  'Criando hooks irresistíveis...',
+  'Estruturando roteiros...',
+  'Refinando ideias finais...',
+]
+
 // ─── Visualização Gerar ───────────────────────────────────────────────────────
 function GenerateView() {
   const insights          = useStore((s) => s.insights)
@@ -291,23 +301,68 @@ function GenerateView() {
   const setGeneratedIdeas = useStore((s) => s.setGeneratedIdeas)
   const saveGeneratedIdea = useStore((s) => s.saveGeneratedIdea)
 
-  const [loading, setLoading]   = useState(false)
-  const [source, setSource]     = useState('all')
-  const [savedIds, setSavedIds] = useState(new Set())
+  const [loading, setLoading]       = useState(false)
+  const [loadPhase, setLoadPhase]   = useState(0)
+  const [niche, setNiche]           = useState('')
+  const [audience, setAudience]     = useState('')
+  const [source, setSource]         = useState('all')
+  const [savedIds, setSavedIds]     = useState(new Set())
+  const [error, setError]           = useState(null)
+  const [usedAI, setUsedAI]         = useState(false)
 
   const hasInsights = insights.length > 0
   const hasTrends   = !!trendResults
 
   const handleGenerate = async () => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1000))
-    let ideas = []
-    if (source === 'insights' || source === 'all') ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
-    if ((source === 'trends' || source === 'all') && trendResults) ideas = [...ideas, ...generateIdeasFromTrends(trendResults, 4)]
-    if (source === 'ai' || ideas.length === 0) ideas = [...ideas, ...generateIdeasFromInsights([], 6)]
-    setGeneratedIdeas(ideas)
-    setLoading(false)
-    setSavedIds(new Set())
+    setError(null)
+    setLoadPhase(0)
+
+    // Animate loading phases
+    const phaseInterval = setInterval(() => {
+      setLoadPhase((p) => (p < LOADING_PHASES.length - 1 ? p + 1 : p))
+    }, 900)
+
+    try {
+      const apiKey = localStorage.getItem('cio-anthropic-key')
+
+      if (apiKey) {
+        // Real Claude AI generation
+        const ideas = await generateIdeasWithClaude(apiKey, {
+          niche: niche.trim() || undefined,
+          audience: audience.trim() || undefined,
+          insights: (source === 'insights' || source === 'all') ? insights : [],
+          trendResults: (source === 'trends' || source === 'all') ? trendResults : null,
+          count: 10,
+        })
+        setGeneratedIdeas(ideas)
+        setUsedAI(true)
+      } else {
+        // Fallback: template-based
+        await new Promise((r) => setTimeout(r, 1200))
+        let ideas = []
+        if (source === 'insights' || source === 'all') ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
+        if ((source === 'trends' || source === 'all') && trendResults) ideas = [...ideas, ...generateIdeasFromTrends(trendResults, 4)]
+        if (source === 'ai' || ideas.length === 0) ideas = [...ideas, ...generateIdeasFromInsights([], 6)]
+        setGeneratedIdeas(ideas)
+        setUsedAI(false)
+      }
+    } catch (e) {
+      setError(e.message || 'Erro ao gerar ideias')
+    } finally {
+      clearInterval(phaseInterval)
+      setLoading(false)
+      setSavedIds(new Set())
+    }
+  }
+
+  const handleSaveAll = () => {
+    generatedIdeas.forEach((idea) => {
+      if (!savedIds.has(idea.id)) {
+        saveGeneratedIdea(idea)
+      }
+    })
+    setSavedIds(new Set(generatedIdeas.map((i) => i.id)))
   }
 
   const handleSave = (idea) => {
@@ -315,58 +370,122 @@ function GenerateView() {
     setSavedIds((s) => new Set([...s, idea.id]))
   }
 
-  const fromInsights = generatedIdeas.filter((i) => i.source_type === 'insight')
-  const fromTrends   = generatedIdeas.filter((i) => i.source_type === 'trend')
-  const fromAI       = generatedIdeas.filter((i) => i.source_type === 'ai')
+  const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
 
   return (
     <div className="space-y-5">
-      <div className="card p-4 flex items-center gap-4 flex-wrap">
-        <div className="flex-1">
-          <p className="text-xs text-gray-500 mb-2 font-medium">Gerar a partir de:</p>
-          <div className="flex gap-2 flex-wrap">
-            {[
-              { id: 'all',      label: 'Tudo',       icon: RefreshCw },
-              { id: 'insights', label: `Insights ${hasInsights ? `(${insights.length})` : '(0)'}`, icon: Sparkles, disabled: !hasInsights },
-              { id: 'trends',   label: `Tendências ${hasTrends ? `(${trendResults?.topic})` : '(nenhuma)'}`, icon: Radar, disabled: !hasTrends },
-              { id: 'ai',       label: 'IA Pura',    icon: Zap },
-            ].map(({ id, label, icon: Icon, disabled }) => (
-              <button
-                key={id}
-                onClick={() => !disabled && setSource(id)}
-                disabled={disabled}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                  source === id
-                    ? 'bg-orange-100 border-orange-300 text-orange-700'
-                    : disabled
-                    ? 'border-gray-100 text-gray-300 cursor-not-allowed'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                <Icon size={11} /> {label}
-              </button>
-            ))}
+
+      {/* Context inputs + source selector */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Brain size={16} className="text-orange-500" />
+          <h3 className="text-sm font-semibold text-gray-800">Configurar Geração</h3>
+          {hasApiKey ? (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+              <Brain size={9} /> IA Real Ativa
+            </span>
+          ) : (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
+              <KeyRound size={9} /> Modo Templates
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-[11px] font-medium text-gray-500 mb-1.5 flex items-center gap-1">
+              <Target size={11} /> Nicho / Tema Principal
+            </label>
+            <input
+              className="input text-sm"
+              placeholder="Ex: marketing digital, finanças pessoais, fitness..."
+              value={niche}
+              onChange={(e) => setNiche(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-500 mb-1.5 flex items-center gap-1">
+              <Users size={11} /> Audiência-Alvo
+            </label>
+            <input
+              className="input text-sm"
+              placeholder="Ex: empreendedores iniciantes, mães de 30-40 anos..."
+              value={audience}
+              onChange={(e) => setAudience(e.target.value)}
+            />
           </div>
         </div>
-        <button onClick={handleGenerate} disabled={loading} className="btn-primary shrink-0">
-          {loading ? <><Loader2 size={14} className="animate-spin" /> Gerando...</> : <><Zap size={14} /> Gerar Ideias</>}
-        </button>
+
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-[11px] text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Contexto adicional:</p>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { id: 'all',      label: 'Tudo',       icon: RefreshCw },
+                { id: 'insights', label: `Insights ${hasInsights ? `(${insights.length})` : '(0)'}`, icon: Sparkles, disabled: !hasInsights },
+                { id: 'trends',   label: `Tendências ${hasTrends ? `(${trendResults?.topic})` : '(nenhuma)'}`, icon: Radar, disabled: !hasTrends },
+                { id: 'ai',       label: 'Sem contexto', icon: Zap },
+              ].map(({ id, label, icon: Icon, disabled }) => (
+                <button
+                  key={id}
+                  onClick={() => !disabled && setSource(id)}
+                  disabled={disabled}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all ${
+                    source === id
+                      ? 'bg-orange-100 border-orange-300 text-orange-700'
+                      : disabled
+                      ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                >
+                  <Icon size={11} /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="btn-primary shrink-0 gap-2"
+          >
+            {loading
+              ? <><Loader2 size={14} className="animate-spin" /> Gerando...</>
+              : <><Brain size={14} /> Gerar {hasApiKey ? '10 Ideias com IA' : 'Ideias'}</>
+            }
+          </button>
+        </div>
+
+        {!hasApiKey && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-700">
+              <span className="font-semibold">Configure sua chave Anthropic</span> para ativar a geração real com IA — ideias específicas com hooks, roteiros e hashtags personalizados. Adicione em Configurações.
+            </p>
+          </div>
+        )}
       </div>
 
+      {/* Context status cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className={`card p-4 border ${hasInsights ? 'border-purple-200' : 'border-gray-200'}`}>
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={14} className={hasInsights ? 'text-purple-500' : 'text-gray-300'} />
             <span className="text-xs font-semibold text-gray-700">Insights Disponíveis</span>
+            {hasInsights && (
+              <span className="ml-auto text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                {insights.length}
+              </span>
+            )}
           </div>
           {hasInsights ? (
             <div className="space-y-1">
               {insights.slice(0, 3).map((ins) => (
                 <p key={ins.id} className="text-[11px] text-gray-500 flex items-start gap-1.5">
-                  <span className="text-purple-500 mt-0.5 shrink-0">•</span> {ins.title}
+                  <span className="text-purple-400 mt-0.5 shrink-0">•</span>
+                  <span className="line-clamp-1">{ins.title}</span>
                 </p>
               ))}
-              {insights.length > 3 && <p className="text-[11px] text-gray-400">+ {insights.length - 3} mais</p>}
+              {insights.length > 3 && <p className="text-[11px] text-gray-400">+ {insights.length - 3} mais insights</p>}
             </div>
           ) : (
             <p className="text-xs text-gray-400">Nenhum insight ainda. Gere-os na aba Analytics.</p>
@@ -375,84 +494,146 @@ function GenerateView() {
         <div className={`card p-4 border ${hasTrends ? 'border-blue-200' : 'border-gray-200'}`}>
           <div className="flex items-center gap-2 mb-2">
             <Radar size={14} className={hasTrends ? 'text-blue-500' : 'text-gray-300'} />
-            <span className="text-xs font-semibold text-gray-700">Dados do Radar de Tendências</span>
+            <span className="text-xs font-semibold text-gray-700">Radar de Tendências</span>
+            {hasTrends && (
+              <span className="ml-auto text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                {trendResults.opportunities?.length} oport.
+              </span>
+            )}
           </div>
           {hasTrends ? (
             <div className="space-y-1">
               <p className="text-[11px] text-gray-700 font-medium">Tópico: "{trendResults.topic}"</p>
-              <p className="text-[11px] text-gray-500">{trendResults.opportunities?.length} oportunidades encontradas</p>
+              <div className="space-y-1">
+                {(trendResults.opportunities || []).slice(0, 2).map((o, i) => (
+                  <p key={i} className="text-[11px] text-gray-500 flex items-start gap-1.5">
+                    <span className="text-blue-400 mt-0.5 shrink-0">•</span>
+                    <span className="line-clamp-1">{o.title}</span>
+                  </p>
+                ))}
+              </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-400">Sem dados de tendências ainda. Use o Radar de Tendências para analisar um nicho.</p>
+            <p className="text-xs text-gray-400">Sem dados de tendências. Use o Radar de Tendências para analisar um nicho.</p>
           )}
         </div>
       </div>
 
+      {/* Loading state */}
       {loading && (
-        <div className="card p-12 flex flex-col items-center gap-4">
+        <div className="card p-12 flex flex-col items-center gap-5">
           <div className="relative">
-            <div className="w-14 h-14 rounded-full border-2 border-amber-200 border-t-amber-500 animate-spin" />
-            <Zap size={18} className="absolute inset-0 m-auto text-amber-500" />
+            <div className="w-16 h-16 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+            <Brain size={20} className="absolute inset-0 m-auto text-orange-500" />
           </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-800">Gerando ideias...</p>
-            <p className="text-xs text-gray-400 mt-1">Combinando insights, tendências e criatividade da IA</p>
+          <div className="text-center space-y-2">
+            <p className="text-sm font-semibold text-gray-800">{LOADING_PHASES[loadPhase]}</p>
+            <div className="flex justify-center gap-1">
+              {LOADING_PHASES.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 rounded-full transition-all duration-500 ${i <= loadPhase ? 'bg-orange-500 w-6' : 'bg-gray-200 w-3'}`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-gray-400">
+              {hasApiKey ? 'Claude está criando ideias personalizadas com base no seu contexto' : 'Gerando ideias com templates personalizados'}
+            </p>
           </div>
         </div>
       )}
 
-      {!loading && generatedIdeas.length > 0 && (
+      {/* Error state */}
+      {!loading && error && (
+        <div className="p-4 rounded-xl border border-red-200 bg-red-50 flex items-start gap-3">
+          <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-700">Erro ao gerar ideias</p>
+            <p className="text-xs text-red-500 mt-0.5">{error}</p>
+          </div>
+          <button onClick={handleGenerate} className="ml-auto text-xs text-red-600 hover:text-red-800 font-medium flex items-center gap-1">
+            <RefreshCw size={11} /> Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {/* Results */}
+      {!loading && !error && generatedIdeas.length > 0 && (
         <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">
-              {generatedIdeas.length} Ideias Geradas
-              {savedIds.size > 0 && <span className="ml-2 text-xs text-emerald-600 font-normal">({savedIds.size} salvas)</span>}
-            </h3>
-            <button onClick={handleGenerate} className="btn-ghost text-xs">
-              <RefreshCw size={12} /> Regenerar
-            </button>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-semibold text-gray-800">
+                {generatedIdeas.length} Ideias Geradas
+              </h3>
+              {usedAI ? (
+                <span className="flex items-center gap-1 text-[10px] font-semibold bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full">
+                  <Brain size={9} /> Geradas com IA Real
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
+                  <FileText size={9} /> Via Templates
+                </span>
+              )}
+              {savedIds.size > 0 && (
+                <span className="text-xs text-emerald-600 font-medium">
+                  {savedIds.size} salvas
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {savedIds.size < generatedIdeas.length && (
+                <button
+                  onClick={handleSaveAll}
+                  className="btn-ghost text-xs border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <Check size={12} /> Salvar Todas
+                </button>
+              )}
+              <button onClick={handleGenerate} className="btn-ghost text-xs">
+                <RefreshCw size={12} /> Regenerar
+              </button>
+            </div>
           </div>
 
-          {[
-            { items: fromInsights, icon: Sparkles, color: 'text-purple-500', label: 'De Insights Analytics' },
-            { items: fromTrends,   icon: Radar,    color: 'text-blue-500',   label: 'Do Radar de Tendências' },
-            { items: fromAI,       icon: Zap,      color: 'text-amber-500',  label: 'Gerado por IA' },
-          ].filter(({ items }) => items.length > 0).map(({ items, icon: Icon, color, label }) => (
-            <div key={label}>
-              <div className="flex items-center gap-2 mb-3">
-                <Icon size={13} className={color} />
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {items.map((idea) => (
-                  <GeneratedIdeaCard key={idea.id} idea={idea} onSave={handleSave} saved={savedIds.has(idea.id)} />
-                ))}
-              </div>
-            </div>
-          ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {generatedIdeas.map((idea) => (
+              <GeneratedIdeaCard key={idea.id} idea={idea} onSave={handleSave} saved={savedIds.has(idea.id)} />
+            ))}
+          </div>
 
           {savedIds.size > 0 && (
             <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center gap-3">
               <Check size={16} className="text-emerald-500 shrink-0" />
               <p className="text-sm text-emerald-700">
-                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visíveis no Quadro e Calendário.
+                <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visíveis no Quadro Kanban e Calendário.
               </p>
             </div>
           )}
         </div>
       )}
 
-      {!loading && generatedIdeas.length === 0 && (
+      {/* Empty state */}
+      {!loading && !error && generatedIdeas.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-4">
-            <Zap size={28} className="text-amber-500" />
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 border border-orange-200 flex items-center justify-center mb-5 shadow-sm">
+            <Brain size={32} className="text-orange-500" />
           </div>
-          <h3 className="text-gray-700 font-semibold mb-2">Pronto para gerar ideias</h3>
-          <p className="text-gray-400 text-sm max-w-sm mb-4">
-            Escolha sua fonte e clique em "Gerar Ideias" para receber sugestões de conteúdo com IA.
+          <h3 className="text-gray-800 font-semibold text-base mb-2">
+            {hasApiKey ? 'IA pronta para criar suas ideias' : 'Gerador de Ideias'}
+          </h3>
+          <p className="text-gray-400 text-sm max-w-sm mb-2 leading-relaxed">
+            {hasApiKey
+              ? 'Preencha seu nicho e audiência para receber ideias altamente específicas e acionáveis, com hooks, roteiro e hashtags.'
+              : 'Configure seu nicho e clique em Gerar para criar ideias baseadas em templates. Adicione sua chave Anthropic para resultados com IA real.'
+            }
           </p>
-          <button onClick={handleGenerate} className="btn-primary">
-            <Zap size={14} /> Gerar Ideias Agora
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 items-center">
+            {!niche && (
+              <p className="text-xs text-orange-500 font-medium">💡 Dica: preencha o nicho acima para ideias mais precisas</p>
+            )}
+          </div>
+          <button onClick={handleGenerate} className="btn-primary mt-5 gap-2">
+            <Brain size={14} /> {hasApiKey ? 'Gerar Ideias com IA' : 'Gerar Ideias Agora'}
           </button>
         </div>
       )}
@@ -461,36 +642,133 @@ function GenerateView() {
 }
 
 function GeneratedIdeaCard({ idea, onSave, saved }) {
+  const [expanded, setExpanded] = useState(false)
   const Icon = SOURCE_ICONS[idea.source_type] || Zap
   const sourceLabel = idea.source_type === 'insight' ? 'De Insights' : idea.source_type === 'trend' ? 'De Tendências' : 'Gerado por IA'
   const platforms = getPlatforms(idea)
+  const hasExtras = idea.hook_suggestion || idea.script_outline?.length || idea.hashtags?.length || idea.angle || idea.why_now
+
   return (
-    <div className={`card-hover p-4 space-y-3 relative transition-all ${saved ? 'opacity-60' : ''}`}>
+    <div className={`card-hover p-4 space-y-3 relative flex flex-col transition-all ${saved ? 'opacity-70' : ''}`}>
       {saved && (
         <div className="absolute top-3 right-3 p-1 rounded-full bg-emerald-500 text-white">
           <Check size={11} />
         </div>
       )}
-      <div className="flex items-center gap-1.5">
-        <span className={`chip border text-[10px] ${SOURCE_COLORS[idea.source_type] || SOURCE_COLORS.ai}`}>
-          <Icon size={10} />
-          {sourceLabel}
-        </span>
+
+      {/* Header badges */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {idea.ai_powered ? (
+          <span className="chip border text-[10px] bg-orange-100 text-orange-700 border-orange-200">
+            <Brain size={9} /> IA Real
+          </span>
+        ) : (
+          <span className={`chip border text-[10px] ${SOURCE_COLORS[idea.source_type] || SOURCE_COLORS.ai}`}>
+            <Icon size={9} /> {sourceLabel}
+          </span>
+        )}
+        {idea.hook && (
+          <span className="chip border text-[10px] bg-gray-100 text-gray-600 border-gray-200 capitalize">
+            {idea.hook}
+          </span>
+        )}
       </div>
+
+      {/* Title */}
       <h3 className="text-sm font-semibold text-gray-800 leading-snug">{idea.title}</h3>
-      <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{idea.description}</p>
+
+      {/* Description */}
+      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{idea.description}</p>
+
+      {/* Hook suggestion — always visible if present */}
+      {idea.hook_suggestion && (
+        <div className="p-2.5 rounded-lg bg-orange-50 border border-orange-100">
+          <p className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+            <Zap size={9} /> Hook de abertura
+          </p>
+          <p className="text-xs text-gray-700 italic leading-relaxed">"{idea.hook_suggestion}"</p>
+        </div>
+      )}
+
+      {/* Platform / format / priority */}
       <div className="flex flex-wrap gap-1.5">
         {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
         <FormatBadge format={idea.format} />
         <PriorityBadge priority={idea.priority} />
       </div>
-      {idea.hook && (
-        <div className="text-[11px] text-gray-500 flex items-center gap-1.5">
-          <span className="text-orange-500 font-medium">Gancho:</span>
-          <span className="capitalize">{idea.hook}</span>
-        </div>
+
+      {/* Expandable section */}
+      {hasExtras && (
+        <>
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-orange-500 transition-colors font-medium"
+          >
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {expanded ? 'Menos detalhes' : 'Ver roteiro, ângulo e hashtags'}
+          </button>
+
+          {expanded && (
+            <div className="space-y-3 pt-1 border-t border-gray-100">
+              {/* Why now */}
+              {idea.why_now && (
+                <div>
+                  <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+                    <Radar size={9} /> Por que agora
+                  </p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{idea.why_now}</p>
+                </div>
+              )}
+
+              {/* Unique angle */}
+              {idea.angle && (
+                <div>
+                  <p className="text-[10px] font-semibold text-purple-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+                    <Target size={9} /> Ângulo único
+                  </p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{idea.angle}</p>
+                </div>
+              )}
+
+              {/* Script outline */}
+              {idea.script_outline?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                    <FileText size={9} /> Roteiro resumido
+                  </p>
+                  <ol className="space-y-1">
+                    {idea.script_outline.map((point, i) => (
+                      <li key={i} className="text-xs text-gray-600 flex gap-2">
+                        <span className="text-emerald-500 font-bold shrink-0">{i + 1}.</span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Hashtags */}
+              {idea.hashtags?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+                    <Hash size={9} /> Hashtags
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {idea.hashtags.map((tag) => (
+                      <span key={tag} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
-      <div className="pt-1 border-t border-gray-100">
+
+      {/* Save button */}
+      <div className="pt-2 border-t border-gray-100 mt-auto">
         <button
           onClick={() => onSave(idea)}
           disabled={saved}

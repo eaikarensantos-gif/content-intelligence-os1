@@ -47,6 +47,91 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+// ─── Claude-powered idea generation ──────────────────────────────────────────
+export async function generateIdeasWithClaude(apiKey, { niche, audience, insights, trendResults, count = 10 }) {
+  const insightsSummary = insights?.length
+    ? insights.slice(0, 12).map((ins) => `- ${ins.title}${ins.description ? ': ' + ins.description : ''}`).join('\n')
+    : 'Nenhum insight disponível'
+
+  const trendSummary = trendResults
+    ? `Tópico: "${trendResults.topic}"\nOportunidades:\n${(trendResults.opportunities || []).slice(0, 6).map((o) => `- ${o.title}: ${o.description || ''}`).join('\n')}`
+    : 'Nenhum dado de tendências disponível'
+
+  const prompt = `You are a world-class content strategist specialized in Brazilian Portuguese social media. Generate ${count} highly specific, creative, and immediately actionable content ideas.
+
+CREATOR NICHE: ${niche || 'Criação de conteúdo e marketing digital'}
+TARGET AUDIENCE: ${audience || 'Criadores digitais e empreendedores'}
+
+ANALYTICS INSIGHTS FROM THIS CREATOR'S DATA:
+${insightsSummary}
+
+TREND RADAR DATA:
+${trendSummary}
+
+RULES:
+- All text must be in Brazilian Portuguese
+- Titles must be specific and compelling, not generic
+- Each idea must have a unique angle that makes it stand out
+- Vary formats (carrossel, reel, thread, video, artigo) and platforms (instagram, linkedin, twitter, youtube, tiktok)
+- Mix hook types: lista, contrario, historia, dados, problema, pergunta, curiosidade, numero
+- hook_suggestion must be the EXACT first sentence — make it irresistible
+- script_outline must have 4-6 specific bullet points, not generic ones
+- hashtags: 3-5 relevant Brazilian hashtags
+
+Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
+[
+  {
+    "title": "Título específico e compelling em português",
+    "description": "2-3 frases descrevendo o ângulo e proposta de valor únicos",
+    "hook_suggestion": "Frase exata de abertura que vai parar o scroll — irresistível",
+    "angle": "O que torna este conteúdo único versus o que já existe sobre este tema",
+    "why_now": "Por que agora é o momento certo para este conteúdo",
+    "script_outline": ["Ponto específico 1", "Ponto específico 2", "Ponto específico 3", "CTA"],
+    "format": "carrossel",
+    "platform": "instagram",
+    "priority": "high",
+    "hook": "dados",
+    "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3"],
+    "source_type": "ai"
+  }
+]`
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 5000,
+      system: 'You are a content strategist. Respond ONLY with a valid JSON array. No markdown, no code blocks, no explanation text before or after.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`API error ${response.status}: ${err}`)
+  }
+
+  const data = await response.json()
+  const raw = data.content?.[0]?.text || ''
+  const match = raw.match(/\[[\s\S]*\]/)
+  if (!match) throw new Error('Resposta da IA não contém JSON válido')
+
+  const ideas = JSON.parse(match[0])
+  return ideas.map((idea, i) => ({
+    ...idea,
+    id: `ai-${Date.now()}-${i}`,
+    generated_at: new Date().toISOString(),
+    ai_powered: true,
+  }))
+}
+
+// ─── Template-based fallback ──────────────────────────────────────────────────
 export function generateIdeasFromInsights(insights, count = 6) {
   if (!insights || insights.length === 0) return []
 
@@ -76,6 +161,7 @@ export function generateIdeasFromInsights(insights, count = 6) {
       source_type: 'insight',
       priority: insight.value > 0.04 ? 'high' : 'medium',
       generated_at: new Date().toISOString(),
+      ai_powered: false,
     })
   })
 
@@ -96,6 +182,7 @@ export function generateIdeasFromInsights(insights, count = 6) {
       source_type: 'ai',
       priority: 'medium',
       generated_at: new Date().toISOString(),
+      ai_powered: false,
     })
   }
 
@@ -117,6 +204,7 @@ export function generateIdeasFromTrends(trendResults, count = 4) {
     source_type: 'trend',
     priority: opp.potential === 'Very High' ? 'high' : opp.potential === 'High' ? 'medium' : 'low',
     generated_at: new Date().toISOString(),
+    ai_powered: false,
   }))
 }
 
