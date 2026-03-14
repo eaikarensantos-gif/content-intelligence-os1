@@ -138,11 +138,11 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-4 gap-4 min-h-[60vh]">
+      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 min-h-[60vh]">
         {KANBAN_COLUMNS.map((col) => {
           const colIdeas = columnIdeas(col.id)
           return (
-            <div key={col.id} className={`flex flex-col rounded-xl border ${col.color}`}>
+            <div key={col.id} className={`flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
               <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80 rounded-t-xl">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
@@ -230,52 +230,63 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete }) {
         </div>
       </div>
 
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
-          {WEEKDAYS.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-medium text-gray-500">{d}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {cells.map((day, i) => {
-            const dayStr = day ? makeDateStr(day) : null
-            const isToday = dayStr === todayStr
-            const dayIdeas = day ? ideasForDay(day) : []
-            return (
-              <div
-                key={i}
-                className={`border-b border-r border-gray-100 p-1.5 ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
-                onClick={() => day && onNewIdea(dayStr)}
-              >
-                {day && (
-                  <>
-                    <span className={`text-xs font-medium block mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
-                      {day}
-                    </span>
-                    <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                      {dayIdeas.slice(0, 2).map((idea) => (
-                        <KanbanMiniCard
-                          key={idea.id}
-                          idea={idea}
-                          onClick={() => onCardClick(idea)}
-                          onDelete={onDelete}
-                          compact
-                        />
-                      ))}
-                      {dayIdeas.length > 2 && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onCardClick(dayIdeas[2]) }}
-                          className="text-[10px] text-gray-400 pl-1 hover:text-orange-500"
-                        >
-                          +{dayIdeas.length - 2} mais
-                        </button>
+      <div className="border border-gray-200 rounded-xl overflow-x-auto">
+        <div className="min-w-[500px]">
+          <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+            {WEEKDAYS.map((d) => (
+              <div key={d} className="py-2 text-center text-[11px] sm:text-xs font-medium text-gray-500">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {cells.map((day, i) => {
+              const dayStr = day ? makeDateStr(day) : null
+              const isToday = dayStr === todayStr
+              const dayIdeas = day ? ideasForDay(day) : []
+              return (
+                <div
+                  key={i}
+                  className={`border-b border-r border-gray-100 p-1 sm:p-1.5 min-h-[56px] sm:min-h-0 ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
+                  onClick={() => day && onNewIdea(dayStr)}
+                >
+                  {day && (
+                    <>
+                      <span className={`text-[10px] sm:text-xs font-medium block mb-0.5 sm:mb-1 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
+                        {day}
+                      </span>
+                      <div className="space-y-1 hidden sm:block" onClick={(e) => e.stopPropagation()}>
+                        {dayIdeas.slice(0, 2).map((idea) => (
+                          <KanbanMiniCard
+                            key={idea.id}
+                            idea={idea}
+                            onClick={() => onCardClick(idea)}
+                            onDelete={onDelete}
+                            compact
+                          />
+                        ))}
+                        {dayIdeas.length > 2 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onCardClick(dayIdeas[2]) }}
+                            className="text-[10px] text-gray-400 pl-1 hover:text-orange-500"
+                          >
+                            +{dayIdeas.length - 2} mais
+                          </button>
+                        )}
+                      </div>
+                      {/* Mobile: show dot indicators */}
+                      {dayIdeas.length > 0 && (
+                        <div className="flex gap-0.5 mt-0.5 sm:hidden" onClick={(e) => { e.stopPropagation(); onCardClick(dayIdeas[0]) }}>
+                          {dayIdeas.slice(0, 3).map((idea, idx) => (
+                            <span key={idx} className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                          ))}
+                          {dayIdeas.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length - 3}</span>}
+                        </div>
                       )}
-                    </div>
-                  </>
-                )}
-              </div>
-            )
-          })}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -982,19 +993,19 @@ export default function IdeasHub() {
   const handleTagClick = (tag) => setFilterTag((prev) => (prev === tag ? null : tag))
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 animate-fade-in">
       {/* Barra de abas + botão Nova Ideia */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto flex-1 min-w-0">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 sm:px-3 py-2 rounded-lg transition-all whitespace-nowrap ${
                 tab === id ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Icon size={13} /> {label}
+              <Icon size={13} /> <span className="hidden sm:inline">{label}</span>
               {id === 'kanban' && ideas.length > 0 && (
                 <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md ml-0.5">
                   {ideas.length}
@@ -1003,29 +1014,31 @@ export default function IdeasHub() {
             </button>
           ))}
         </div>
-        <button onClick={() => openNew()} className="btn-primary shrink-0">
-          <Plus size={15} /> Nova Ideia
+        <button onClick={() => openNew()} className="btn-primary shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+          <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>
         </button>
       </div>
 
       {/* Filtros */}
       {(tab === 'kanban' || tab === 'calendar') && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
+            <div className="relative flex-1 sm:max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className="input pl-8" placeholder="Buscar ideias..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <select className="select w-auto" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
-              {allPlatforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Todas Plataformas' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-            </select>
-            <select className="select w-auto" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-              {['all','idea','draft','ready','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
-            </select>
-            <select className="select w-auto" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-              {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
-            </select>
-            <p className="text-xs text-gray-400 ml-auto">{filtered.length} de {ideas.length} ideias</p>
+            <div className="flex gap-2 flex-wrap">
+              <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
+                {allPlatforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Plataforma' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+              </select>
+              <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                {['all','idea','draft','ready','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
+              </select>
+              <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+                {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
+              </select>
+            </div>
+            <p className="text-[11px] text-gray-400 sm:ml-auto">{filtered.length} de {ideas.length} ideias</p>
           </div>
 
           {/* Tags selecionáveis */}
