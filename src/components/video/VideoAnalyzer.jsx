@@ -12,6 +12,7 @@ import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
 
 const LS_KEY = 'cio-anthropic-key'
+const LS_KEY_GROQ = 'cio-groq-key'
 
 const INPUT_MODES = [
   { id: 'url', label: 'URL do Vídeo', icon: Link2 },
@@ -100,6 +101,30 @@ async function extractKeyframes(videoFile, count = 6) {
     })
     video.load()
   })
+}
+
+// ── Groq Whisper transcription ────────────────────────────────────────────────
+async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
+  const MAX_SIZE = 25 * 1024 * 1024
+  if (audioFile.size > MAX_SIZE) {
+    throw new Error(`Arquivo muito grande (${(audioFile.size / 1024 / 1024).toFixed(1)} MB). O limite do Whisper é 25 MB. Compacte o arquivo ou use um trecho menor.`)
+  }
+  const formData = new FormData()
+  formData.append('file', audioFile, audioFile.name)
+  formData.append('model', 'whisper-large-v3-turbo')
+  formData.append('response_format', 'text')
+  if (lang !== 'auto') formData.append('language', lang)
+
+  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${groqKey}` },
+    body: formData,
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Erro na transcrição (${res.status}): ${err}`)
+  }
+  return (await res.text()).trim()
 }
 
 // ── Claude API — supports image frames via Vision ─────────────────────────────
@@ -333,6 +358,78 @@ Return ONLY this JSON:
   return JSON.parse(match[0])
 }
 
+// ── Groq Key Modal ────────────────────────────────────────────────────────────
+function GroqKeyModal({ onClose, onSave }) {
+  const [val, setVal] = useState('')
+  const [show, setShow] = useState(false)
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mic size={16} className="text-emerald-500" />
+            <h2 className="text-sm font-bold text-gray-900">Chave Groq — Transcrição Gratuita</h2>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+        </div>
+
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 space-y-2">
+          <p className="text-xs font-semibold text-emerald-800">Como obter sua chave gratuita:</p>
+          {[
+            { n: '1', text: 'Acesse console.groq.com e crie uma conta gratuita' },
+            { n: '2', text: 'Vá em "API Keys" → clique em "Create API Key"' },
+            { n: '3', text: 'Copie a chave e cole abaixo' },
+          ].map(({ n, text }) => (
+            <div key={n} className="flex items-start gap-2">
+              <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{n}</span>
+              <p className="text-xs text-gray-600">{text}</p>
+            </div>
+          ))}
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold hover:underline mt-1">
+            <ExternalLink size={11} /> Abrir console.groq.com
+          </a>
+        </div>
+
+        <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-start gap-2">
+          <ShieldCheck size={14} className="text-gray-400 mt-0.5 shrink-0" />
+          <p className="text-xs text-gray-500">
+            Plano gratuito: 7.200 minutos/dia de transcrição. Chave salva <strong>apenas no seu navegador</strong>.
+          </p>
+        </div>
+
+        <div>
+          <label className="label">Cole sua Groq API Key</label>
+          <div className="relative">
+            <input
+              type={show ? 'text' : 'password'}
+              className="input pr-16"
+              placeholder="gsk_..."
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+            />
+            <button onClick={() => setShow((x) => !x)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600">
+              {show ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
+          <button
+            onClick={() => { if (val.trim()) { onSave(val.trim()); onClose() } }}
+            disabled={!val.trim()}
+            className="btn-primary flex-1"
+            style={{ background: val.trim() ? 'linear-gradient(135deg, #059669, #047857)' : undefined }}
+          >
+            <Mic size={13} /> Salvar e Ativar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── API Key Modal ─────────────────────────────────────────────────────────────
 function ApiKeyModal({ onClose, onSave }) {
   const [val, setVal] = useState('')
@@ -476,6 +573,10 @@ export default function VideoAnalyzer() {
 
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
   const [showKeyModal, setShowKeyModal] = useState(false)
+  const [groqKey, setGroqKey] = useState(() => localStorage.getItem(LS_KEY_GROQ) || '')
+  const [showGroqModal, setShowGroqModal] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [transcriptLang, setTranscriptLang] = useState('pt')
 
   // Input
   const [inputMode, setInputMode] = useState('url')
@@ -631,6 +732,23 @@ export default function VideoAnalyzer() {
     }
   }
 
+  const handleTranscribe = async () => {
+    if (!videoFile || !groqKey) return
+    setTranscribing(true)
+    setError('')
+    try {
+      const text = await transcribeWithGroq(groqKey, videoFile, transcriptLang)
+      setTranscript(text)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
+  const handleSaveGroqKey = (key) => { localStorage.setItem(LS_KEY_GROQ, key); setGroqKey(key) }
+  const handleRemoveGroqKey = () => { localStorage.removeItem(LS_KEY_GROQ); setGroqKey('') }
+
   const handleCopyTemplate = () => {
     if (!analysis?.template) return
     const t = analysis.template
@@ -664,6 +782,7 @@ export default function VideoAnalyzer() {
   return (
     <div className="p-6 space-y-5 animate-fade-in">
       {showKeyModal && <ApiKeyModal onClose={() => setShowKeyModal(false)} onSave={handleSaveKey} />}
+      {showGroqModal && <GroqKeyModal onClose={() => setShowGroqModal(false)} onSave={handleSaveGroqKey} />}
       {generatedScript && <ScriptModal script={generatedScript} onClose={() => setGeneratedScript(null)} />}
 
       {/* Header */}
@@ -903,26 +1022,78 @@ export default function VideoAnalyzer() {
                 )}
               </div>
 
-              {/* How to get a transcript */}
+              {/* Auto-transcribe section */}
               <div className="space-y-2">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <Info size={10} /> Como obter uma transcrição real
+                  <Mic size={10} /> Transcrição automática com Whisper AI
                 </p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {[
-                    { icon: '▶', label: 'YouTube', desc: 'Clique em "…" → Transcrição → copiar o texto' },
-                    { icon: '◉', label: 'TikTok / Instagram', desc: 'Use otter.ai, Whisper ou Descript para transcrever' },
-                    { icon: '⬆', label: 'Arquivo de vídeo', desc: 'Envie o arquivo no painel ao lado — frames são extraídos automaticamente' },
-                  ].map(({ icon, label, desc }) => (
-                    <div key={label} className="flex items-start gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
-                      <span className="text-gray-400 text-[11px] shrink-0 mt-0.5">{icon}</span>
-                      <div>
-                        <p className="text-[11px] font-semibold text-gray-700">{label}</p>
-                        <p className="text-[10px] text-gray-400">{desc}</p>
-                      </div>
+
+                {groqKey ? (
+                  /* Groq key configured — show transcribe button */
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+                      <ShieldCheck size={11} /> <span>Groq Whisper ativo</span>
+                      <button onClick={handleRemoveGroqKey} className="ml-auto text-emerald-400 hover:text-red-400" title="Remover chave"><X size={10} /></button>
                     </div>
-                  ))}
-                </div>
+                    {videoFile ? (
+                      <div className="flex gap-2">
+                        <select
+                          className="select text-xs py-1.5"
+                          value={transcriptLang}
+                          onChange={(e) => setTranscriptLang(e.target.value)}
+                        >
+                          <option value="pt">Português</option>
+                          <option value="en">English</option>
+                          <option value="es">Español</option>
+                          <option value="auto">Auto-detectar</option>
+                        </select>
+                        <button
+                          onClick={handleTranscribe}
+                          disabled={transcribing}
+                          className="btn-primary flex-1 text-xs py-1.5"
+                          style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}
+                        >
+                          {transcribing
+                            ? <><RefreshCw size={12} className="animate-spin" /> Transcrevendo...</>
+                            : <><Mic size={12} /> Transcrever Arquivo</>
+                          }
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2 p-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 text-center">
+                        <p className="text-[11px] text-emerald-600 w-full">
+                          Envie um arquivo de vídeo ou áudio no painel ao lado para transcrever automaticamente
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* No Groq key — invite to configure */
+                  <button
+                    onClick={() => setShowGroqModal(true)}
+                    className="w-full flex items-center gap-2.5 p-3 rounded-xl border border-dashed border-emerald-300 hover:border-emerald-400 bg-emerald-50/40 hover:bg-emerald-50 text-left transition-all group"
+                  >
+                    <div className="p-1.5 rounded-lg bg-emerald-100 shrink-0">
+                      <Mic size={13} className="text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[11px] font-semibold text-gray-800">Ativar transcrição automática</p>
+                      <p className="text-[10px] text-gray-400">Configure uma chave Groq gratuita — 7.200 min/dia com Whisper AI</p>
+                    </div>
+                    <ChevronRight size={13} className="text-gray-300 group-hover:text-emerald-500 transition-colors shrink-0" />
+                  </button>
+                )}
+
+                {/* YouTube tip */}
+                {url.includes('youtube') || url.includes('youtu.be') ? (
+                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-50 border border-red-100">
+                    <span className="text-[13px] shrink-0">▶</span>
+                    <div>
+                      <p className="text-[11px] font-semibold text-gray-700">Para YouTube</p>
+                      <p className="text-[10px] text-gray-400">No YouTube: clique em "…" abaixo do vídeo → <strong>Transcrição</strong> → selecione tudo → cole aqui</p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               {/* Transcript textarea */}
