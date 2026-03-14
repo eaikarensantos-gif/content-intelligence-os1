@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { X } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
@@ -55,6 +55,18 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [form, setForm] = useState(EMPTY)
   const [tagInput, setTagInput] = useState('')
   const tagRef = useRef(null)
+  const descRef = useRef(null)
+  const autoResizeDesc = useCallback((el) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 500) + 'px'
+  }, [])
+
+  useEffect(() => {
+    if (open && descRef.current) {
+      setTimeout(() => autoResizeDesc(descRef.current), 50)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -142,11 +154,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         <div>
           <label className="label">Descrição</label>
           <textarea
-            className="input resize-y min-h-[110px]"
-            rows={5}
+            ref={descRef}
+            className="input resize-none min-h-[80px]"
             placeholder="Qual é a ideia central? Que valor ela entrega? Você pode escrever um briefing completo aqui..."
             value={form.description}
-            onChange={(e) => set('description', e.target.value)}
+            onChange={(e) => {
+              set('description', e.target.value)
+              autoResizeDesc(e.target)
+            }}
           />
         </div>
 

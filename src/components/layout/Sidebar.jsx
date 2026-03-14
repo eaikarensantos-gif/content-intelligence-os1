@@ -1,7 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, Video, Brain,
+  Zap, ChevronRight, Video, Brain, Wand2, X,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -13,16 +14,32 @@ const NAV = [
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
   { to: '/thoughts', icon: Brain, label: 'Thought Capture' },
+  { to: '/text', icon: Wand2, label: 'Text Studio' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const ideas = useStore((s) => s.ideas)
   const readyCount = ideas.filter((i) => i.status === 'ready').length
+  const location = useLocation()
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    onClose?.()
+  }, [location.pathname])
 
   return (
-    <aside className="w-64 shrink-0 h-screen sticky top-0 bg-orange-50 border-r border-orange-100 flex flex-col">
-      {/* Logo */}
-      <div className="px-5 pt-6 pb-5 border-b border-orange-100">
+    <aside
+      className={clsx(
+        'w-64 shrink-0 h-screen bg-orange-50 border-r border-orange-100 flex flex-col',
+        // Desktop: always visible static
+        'lg:static lg:translate-x-0',
+        // Mobile: fixed overlay, slide in/out
+        'fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out',
+        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      )}
+    >
+      {/* Logo + mobile close */}
+      <div className="px-5 pt-6 pb-5 border-b border-orange-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200">
             <Zap size={16} className="text-white" />
@@ -32,6 +49,13 @@ export default function Sidebar() {
             <div className="text-xs text-orange-600 font-medium mt-0.5">Intelligence OS</div>
           </div>
         </div>
+        {/* Close button — only on mobile */}
+        <button
+          onClick={onClose}
+          className="lg:hidden p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {/* Nav */}
