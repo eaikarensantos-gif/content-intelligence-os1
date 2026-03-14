@@ -163,7 +163,7 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
 }
 
 // ── Analysis prompt builder ───────────────────────────────────────────────────
-function buildPrompt({ url, title, channel, topic, videoType, transcript, hasFrames, frameCount }) {
+function buildPrompt({ url, title, channel, topic, videoType, transcript, hasFrames, frameCount, inferenceOnly = false }) {
   const hasTranscript = transcript && transcript.trim().length > 30
 
   const dataSection = hasTranscript
@@ -173,7 +173,10 @@ CRITICAL: Every field that asks for a quote (hook.text, promise.text, cta.text, 
 ${transcript.trim().slice(0, 6000)}
 ---
 `
-    : `${frameCount} keyframes from the video are attached as images. Describe only what you visually observe in each frame. Do not invent quotes or narration. For all quote fields (hook.text, promise.text, cta.text, etc.) return null since no transcript is available.
+    : hasFrames
+    ? `${frameCount} keyframes from the video are attached as images. Describe only what you visually observe in each frame. Do not invent quotes or narration. For all quote fields (hook.text, promise.text, cta.text, etc.) return null since no transcript is available.
+`
+    : `No transcript or frames available. Analyze based on title, channel, and your knowledge of this content space. For all quote fields (hook.text, promise.text, cta.text, etc.) return null — do not invent quotes. Fill structural descriptions based on the title, topic, and typical patterns for this content type.
 `
 
   return `You are a professional video content analyst helping creators reverse-engineer successful videos.
@@ -188,16 +191,16 @@ ${hasFrames ? `- Frames: ${frameCount} keyframes attached as images` : ''}
 
 ${dataSection}
 RULES:
-- ${hasTranscript ? 'EVERY quoted field must be an exact verbatim copy from the transcript above. Never paraphrase. If not found, use null.' : 'This is a visual-only analysis. All quote fields must be null. Only describe what is visible in the attached frames.'}
+- ${hasTranscript ? 'EVERY quoted field must be an exact verbatim copy from the transcript above. Never paraphrase. If not found, use null.' : hasFrames ? 'Visual-only analysis. All quote fields must be null. Only describe what is visible in the frames.' : 'Inference-only analysis (no transcript, no frames). All quote fields MUST be null. Base descriptions on title, topic, and content type patterns only.'}
 - Classify tone as one of: educational, storytelling, provocative, contrarian, tutorial, motivational, humorous
 - All analysis text in Brazilian Portuguese
-- Generate 5 content_ideas based on the topic and what was actually found in the content
-- For transcript_reconstruction: ${hasTranscript ? 'reproduce the FULL transcript verbatim, exactly as provided, without any changes' : 'return null — no transcript available'}
+- Generate 5 content_ideas based on the topic
+- For transcript_reconstruction: ${hasTranscript ? 'reproduce the FULL transcript verbatim, exactly as provided, without any changes' : 'return null'}
 - Respond with ONLY the JSON below (no markdown fences, no extra text):
 
 {
   "archetype": "educational|storytelling|contrarian|listicle|tutorial|motivational|humorous",
-  "data_source": "${hasTranscript ? 'transcript' : 'frames'}",
+  "data_source": "${hasTranscript ? 'transcript' : hasFrames ? 'frames' : 'inference'}",
   "overview": {
     "platform_fit": "Melhor(es) plataforma(s) para este estilo de conteúdo",
     "estimated_duration": "X:XX",
@@ -618,8 +621,9 @@ export default function VideoAnalyzer() {
   ]
 
   const SOURCE_BADGE = {
-    transcript: { label: '✦ Análise baseada em transcrição real', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    transcript: { label: '✦ Análise por transcrição real', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
     frames: { label: '✦ Análise visual por frames reais', color: 'bg-violet-100 text-violet-700 border-violet-200' },
+    inference: { label: '◌ Análise por inferência — sem transcrição', color: 'bg-amber-100 text-amber-700 border-amber-200' },
   }
 
   const handleFileSelect = async (file) => {
@@ -637,15 +641,16 @@ export default function VideoAnalyzer() {
   const handleAnalyze = async () => {
     const hasTranscriptText = transcript.trim().length > 30
     const hasFramesData = frames.length > 0
+    const hasUrl = url.trim().length > 0
+    const hasTitle = title.trim().length > 0
 
-    // Require real data — never run on title/URL alone
-    if (!hasTranscriptText && !hasFramesData) {
-      setError('Adicione uma transcrição real ou envie um arquivo de vídeo para análise. A análise por título/URL não é suportada — isso geraria conteúdo fictício.')
+    if (!hasTranscriptText && !hasFramesData && !hasUrl && !hasTitle) {
+      setError('Informe pelo menos a URL ou o título do vídeo para analisar.')
       return
     }
 
     if (!apiKey) {
-      setError('Uma API Key da Anthropic é necessária para análise real. Clique em "Adicionar API Key" acima.')
+      setError('Uma API Key da Anthropic é necessária. Clique em "Adicionar API Key" acima.')
       return
     }
 
@@ -661,7 +666,7 @@ export default function VideoAnalyzer() {
       let channel = ''
 
       setLoadingStep(0)
-      if (url.trim()) {
+      if (hasUrl) {
         const meta = await fetchYouTubeMeta(url)
         if (meta) {
           if (!title.trim()) metaTitle = meta.title
@@ -670,11 +675,13 @@ export default function VideoAnalyzer() {
       }
 
       setLoadingStep(2)
+      const source = hasTranscriptText ? 'transcript' : hasFramesData ? 'frames' : 'inference'
       const prompt = buildPrompt({
         url, title: metaTitle, channel, topic, videoType,
         transcript: hasTranscriptText ? transcript : '',
         hasFrames: hasFramesData,
         frameCount: frames.length,
+        inferenceOnly: source === 'inference',
       })
       setLoadingStep(3)
       const raw = await callClaudeAPI(apiKey, prompt, hasFramesData ? frames : [])
@@ -684,7 +691,7 @@ export default function VideoAnalyzer() {
       setLoadingStep(4)
       await new Promise((r) => setTimeout(r, 300))
       setAnalysis(result)
-      setAnalysisSource(hasTranscriptText ? 'transcript' : 'frames')
+      setAnalysisSource(source)
       if (metaTitle && !title) setTitle(metaTitle)
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
@@ -777,7 +784,8 @@ export default function VideoAnalyzer() {
   const handleRemoveKey = () => { localStorage.removeItem(LS_KEY); setApiKey('') }
 
   const hasRealData = transcript.trim().length > 30 || frames.length > 0
-  const canAnalyze = !extractingFrames
+  const hasAnyData = hasRealData || url.trim().length > 0 || title.trim().length > 0
+  const canAnalyze = !extractingFrames && hasAnyData && !!apiKey
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
@@ -850,8 +858,8 @@ export default function VideoAnalyzer() {
                 <p className="text-xs font-medium text-gray-800 truncate">{saved.title || saved.url || 'Análise sem título'}</p>
                 <div className="flex items-center gap-2">
                   <p className="text-[10px] text-gray-400">{new Date(saved.analyzed_at).toLocaleDateString('pt-BR')}</p>
-                  <span className={`text-[10px] font-medium ${saved.source === 'transcript' ? 'text-emerald-600' : saved.source === 'frames' ? 'text-violet-600' : 'text-gray-400'}`}>
-                    {saved.source === 'transcript' ? '✦ Transcrição real' : saved.source === 'frames' ? '✦ Frames visuais' : '✦ IA'}
+                  <span className={`text-[10px] font-medium ${saved.source === 'transcript' ? 'text-emerald-600' : saved.source === 'frames' ? 'text-violet-600' : 'text-amber-500'}`}>
+                    {saved.source === 'transcript' ? '✦ Transcrição real' : saved.source === 'frames' ? '✦ Frames visuais' : '◌ Inferência'}
                   </span>
                 </div>
               </div>
@@ -1153,9 +1161,9 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                     <p className="text-[10px] text-gray-300 hidden sm:block">— {desc}</p>
                   </div>
                 ))}
-                {!transcript.trim() && frames.length === 0 && (
-                  <p className="text-[10px] text-red-400 font-medium mt-1">
-                    ⚠ Adicione uma transcrição ou envie um vídeo para habilitar a análise
+                {!transcript.trim() && frames.length === 0 && (url.trim() || title.trim()) && (
+                  <p className="text-[10px] text-amber-500 font-medium mt-1">
+                    ◌ Análise por inferência — adicione transcrição para resultados mais precisos
                   </p>
                 )}
               </div>
@@ -1170,41 +1178,44 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {/* Data / key hints — shown when something is missing */}
-          {(!hasRealData || !apiKey) && !extractingFrames && (
-            <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
-              <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                <Info size={12} className="text-gray-400" /> Para analisar, você precisa de:
+          {/* Upgrade-path hint — shown only when no real data (inference mode) */}
+          {!hasRealData && !extractingFrames && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+              <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                <Info size={12} /> Análise por inferência — para análise mais precisa:
               </p>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${transcript.trim().length > 30 || frames.length > 0 ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                  <p className={`text-xs ${transcript.trim().length > 30 || frames.length > 0 ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
-                    Transcrição real (cole abaixo) ou arquivo de vídeo/áudio com frames extraídos
+              <div className="space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 font-bold text-xs shrink-0">①</span>
+                  <p className="text-xs text-gray-600">
+                    <strong>Transcrição automática:</strong> envie o arquivo de áudio/vídeo no painel esquerdo e clique em "Transcrever Arquivo"
+                    {!groqKey && <> — <button onClick={() => setShowGroqModal(true)} className="text-emerald-600 hover:underline font-medium">ativar Groq gratuito</button></>}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${apiKey ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                  <p className={`text-xs ${apiKey ? 'text-emerald-700 font-medium' : 'text-gray-400'}`}>
-                    {apiKey ? 'API Key configurada ✓' : (
-                      <>
-                        API Key da Anthropic —{' '}
-                        <button onClick={() => setShowKeyModal(true)} className="text-violet-600 hover:underline font-medium">
-                          adicionar agora
-                        </button>
-                      </>
-                    )}
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 font-bold text-xs shrink-0">②</span>
+                  <p className="text-xs text-gray-600">
+                    <strong>YouTube:</strong> abra o vídeo → clique em "…" → <strong>Transcrição</strong> → selecione tudo → cole na caixa à direita
                   </p>
                 </div>
               </div>
             </div>
           )}
 
+          {!apiKey && (
+            <button
+              onClick={() => setShowKeyModal(true)}
+              className="btn-primary w-full py-2 text-xs mb-2"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+            >
+              <Key size={13} /> Adicionar API Key para Analisar
+            </button>
+          )}
           <button
             onClick={handleAnalyze}
-            disabled={extractingFrames}
+            disabled={extractingFrames || !hasAnyData}
             className="btn-primary w-full py-3 text-sm"
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+            style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
           >
             {extractingFrames
               ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
