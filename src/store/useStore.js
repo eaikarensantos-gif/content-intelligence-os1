@@ -15,6 +15,7 @@ const useStore = create(
       trendResults: null,
       clients: [],
       videoAnalyses: [],
+      thoughtCaptures: [],
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -123,6 +124,18 @@ const useStore = create(
       deleteVideoAnalysis: (id) =>
         set((s) => ({ videoAnalyses: s.videoAnalyses.filter((v) => v.id !== id) })),
 
+      // ── Thought Captures ───────────────────────────────────
+      addThoughtCapture: (capture) =>
+        set((s) => ({
+          thoughtCaptures: [
+            { id: uuidv4(), created_at: new Date().toISOString(), ...capture },
+            ...s.thoughtCaptures,
+          ],
+        })),
+
+      deleteThoughtCapture: (id) =>
+        set((s) => ({ thoughtCaptures: s.thoughtCaptures.filter((t) => t.id !== id) })),
+
       // ── Ideias Geradas ─────────────────────────────────────
       setGeneratedIdeas: (ideas) => set({ generatedIdeas: ideas }),
 
@@ -171,6 +184,7 @@ const useStore = create(
           trendResults: null,
           clients: [],
           videoAnalyses: [],
+          thoughtCaptures: [],
         }),
     }),
     {
@@ -184,6 +198,7 @@ const useStore = create(
         trendResults: s.trendResults,
         clients: s.clients,
         videoAnalyses: s.videoAnalyses,
+        thoughtCaptures: s.thoughtCaptures,
       }),
     }
   )

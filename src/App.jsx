@@ -6,6 +6,7 @@ import IdeasHub from './components/ideas/IdeasHub'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
+import ThoughtCapture from './components/thoughts/ThoughtCapture'
 
 function Layout({ children }) {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/trends" element={<TrendRadar />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/video" element={<VideoAnalyzer />} />
+          <Route path="/thoughts" element={<ThoughtCapture />} />
         </Routes>
       </Layout>
     </BrowserRouter>
