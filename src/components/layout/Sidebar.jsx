@@ -9,7 +9,7 @@ import useStore from '../../store/useStore'
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
-  { to: '/trends', icon: Radar, label: 'Radar de Tendências' },
+  { to: '/trends', icon: Radar, label: 'Creator Insights' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
 ]
