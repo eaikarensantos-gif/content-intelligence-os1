@@ -659,7 +659,7 @@ export default function VideoAnalyzer() {
   const handleRemoveKey = () => { localStorage.removeItem(LS_KEY); setApiKey('') }
 
   const hasRealData = transcript.trim().length > 30 || frames.length > 0
-  const canAnalyze = !extractingFrames && hasRealData && !!apiKey
+  const canAnalyze = !extractingFrames
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
@@ -999,8 +999,8 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {/* Disabled state hints */}
-          {!canAnalyze && !extractingFrames && (
+          {/* Data / key hints — shown when something is missing */}
+          {(!hasRealData || !apiKey) && !extractingFrames && (
             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 space-y-1.5">
               <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
                 <Info size={12} className="text-gray-400" /> Para analisar, você precisa de:
@@ -1031,9 +1031,9 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 
           <button
             onClick={handleAnalyze}
-            disabled={!canAnalyze}
+            disabled={extractingFrames}
             className="btn-primary w-full py-3 text-sm"
-            style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
+            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
           >
             {extractingFrames
               ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
