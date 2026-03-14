@@ -4,9 +4,9 @@ import {
   Lightbulb, Layers, Clock, Eye, Copy, Check,
   Sparkles, Trash2, RotateCcw, ExternalLink,
   Mic, Film, Zap, Target, TrendingUp, Star,
-  FileVideo, AlertCircle, Key, X, ShieldCheck,
+  Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
-  Upload, Type, AlignLeft, Info,
+  Upload, AlignLeft, Info, Bookmark, BookMarked,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
@@ -710,7 +710,14 @@ export default function VideoAnalyzer() {
 
   const handleSaveAnalysis = () => {
     if (!analysis) return
-    addVideoAnalysis({ url, title, topic, videoType, result: analysis, source: analysisSource, analyzed_at: new Date().toISOString() })
+    addVideoAnalysis({
+      url, title, topic, videoType,
+      result: analysis,
+      transcript: transcript || '',
+      thumbnail: thumbnail || (frames.length > 0 ? frames[0].dataUrl : null),
+      source: analysisSource,
+      analyzed_at: new Date().toISOString(),
+    })
     setSavedAnalysis(true)
   }
 
@@ -774,10 +781,18 @@ export default function VideoAnalyzer() {
   }
 
   const loadSavedAnalysis = (saved) => {
-    setUrl(saved.url || ''); setTitle(saved.title || ''); setTopic(saved.topic || '')
-    setVideoType(saved.videoType || 'auto'); setAnalysis(saved.result)
-    setAnalysisSource(saved.source || 'simulation'); setFrames([])
-    setActiveTab('estrutura'); setSavedIdeas(new Set()); setSavedAnalysis(true); setShowHistory(false)
+    setUrl(saved.url || '')
+    setTitle(saved.title || '')
+    setTopic(saved.topic || '')
+    setVideoType(saved.videoType || 'auto')
+    setAnalysis(saved.result)
+    setTranscript(saved.transcript || '')
+    setAnalysisSource(saved.source || 'inference')
+    setFrames([])
+    setActiveTab('resumo')
+    setSavedIdeas(new Set())
+    setSavedAnalysis(true)
+    setShowHistory(false)
   }
 
   const handleSaveKey = (key) => { localStorage.setItem(LS_KEY, key); setApiKey(key) }
@@ -815,11 +830,9 @@ export default function VideoAnalyzer() {
               <Key size={12} /> Adicionar API Key
             </button>
           )}
-          {videoAnalyses.length > 0 && (
-            <button onClick={() => setShowHistory((x) => !x)} className="btn-secondary text-xs">
-              <Clock size={13} /> Histórico ({videoAnalyses.length})
-            </button>
-          )}
+          <button onClick={() => setShowHistory((x) => !x)} className={`btn-secondary text-xs ${showHistory ? 'bg-violet-50 border-violet-200 text-violet-700' : ''}`}>
+            <BookMarked size={13} /> Biblioteca {videoAnalyses.length > 0 && `(${videoAnalyses.length})`}
+          </button>
           {analysis && (
             <button onClick={handleReset} className="btn-secondary text-xs">
               <RotateCcw size={13} /> Nova Análise
@@ -845,30 +858,81 @@ export default function VideoAnalyzer() {
         </div>
       )}
 
-      {/* History panel */}
+      {/* Biblioteca de Vídeos */}
       {showHistory && videoAnalyses.length > 0 && (
-        <div className="card p-4 space-y-2 animate-slide-up border border-violet-100">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Análises Salvas</h3>
-          {videoAnalyses.map((saved) => (
-            <div key={saved.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-violet-50 transition-colors group">
-              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                <Video size={14} className="text-violet-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-800 truncate">{saved.title || saved.url || 'Análise sem título'}</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-[10px] text-gray-400">{new Date(saved.analyzed_at).toLocaleDateString('pt-BR')}</p>
-                  <span className={`text-[10px] font-medium ${saved.source === 'transcript' ? 'text-emerald-600' : saved.source === 'frames' ? 'text-violet-600' : 'text-amber-500'}`}>
-                    {saved.source === 'transcript' ? '✦ Transcrição real' : saved.source === 'frames' ? '✦ Frames visuais' : '◌ Inferência'}
+        <div className="card p-4 space-y-3 animate-slide-up border border-violet-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-gray-700 flex items-center gap-2">
+              <BookMarked size={13} className="text-violet-500" /> Biblioteca de Vídeos Salvos
+            </h3>
+            <span className="text-[10px] text-gray-400">{videoAnalyses.length} vídeo{videoAnalyses.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {videoAnalyses.map((saved) => (
+              <div key={saved.id} className="rounded-xl border border-gray-200 bg-white hover:border-violet-200 hover:shadow-sm transition-all group overflow-hidden">
+                {/* Thumbnail */}
+                <div className="relative h-24 bg-gray-100 overflow-hidden">
+                  {saved.thumbnail ? (
+                    <img src={saved.thumbnail} alt="thumb" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Video size={24} className="text-gray-300" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  {/* Source badge on thumbnail */}
+                  <span className={`absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                    saved.source === 'transcript' ? 'bg-emerald-100/90 text-emerald-700 border-emerald-200' :
+                    saved.source === 'frames' ? 'bg-violet-100/90 text-violet-700 border-violet-200' :
+                    'bg-amber-100/90 text-amber-700 border-amber-200'
+                  }`}>
+                    {saved.source === 'transcript' ? '✦ Transcrição' : saved.source === 'frames' ? '✦ Frames' : '◌ Inferência'}
                   </span>
+                  {/* Archetype on thumbnail */}
+                  {saved.result?.archetype && (
+                    <span className="absolute bottom-1.5 right-1.5 text-[9px] bg-black/60 text-white px-1.5 py-0.5 rounded-full capitalize">
+                      {saved.result.archetype}
+                    </span>
+                  )}
+                  {/* Delete button */}
+                  <button
+                    onClick={() => deleteVideoAnalysis(saved.id)}
+                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/40 text-white/70 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+
+                {/* Info */}
+                <div className="p-3 space-y-2">
+                  <p className="text-xs font-semibold text-gray-800 leading-tight line-clamp-2">
+                    {saved.title || saved.url || 'Vídeo sem título'}
+                  </p>
+                  {saved.topic && <p className="text-[10px] text-gray-400">Tópico: {saved.topic}</p>}
+
+                  {/* What's saved */}
+                  <div className="flex flex-wrap gap-1">
+                    {['resumo','estrutura','tom','template','ideias'].map((tab) => (
+                      <span key={tab} className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500 border border-violet-100 capitalize">{tab}</span>
+                    ))}
+                    {saved.transcript && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">transcrição</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[10px] text-gray-400">{new Date(saved.analyzed_at).toLocaleDateString('pt-BR')}</p>
+                    <button
+                      onClick={() => loadSavedAnalysis(saved)}
+                      className="text-[11px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1 transition-colors"
+                    >
+                      Abrir <ChevronRight size={11} />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => loadSavedAnalysis(saved)} className="text-xs text-violet-600 hover:text-violet-800 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Abrir</button>
-              <button onClick={() => deleteVideoAnalysis(saved.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all">
-                <Trash2 size={12} />
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
@@ -1273,9 +1337,17 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {!savedAnalysis ? (
-                <button onClick={handleSaveAnalysis} className="btn-secondary text-xs"><Star size={12} /> Salvar</button>
+                <button
+                  onClick={handleSaveAnalysis}
+                  className="btn-primary text-xs"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                >
+                  <Bookmark size={12} /> Salvar na Biblioteca
+                </button>
               ) : (
-                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1"><Check size={12} /> Salvo</span>
+                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <BookMarked size={12} /> Salvo na Biblioteca
+                </span>
               )}
               <button onClick={handleReset} className="btn-secondary text-xs"><RotateCcw size={12} /> Nova</button>
             </div>
