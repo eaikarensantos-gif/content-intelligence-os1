@@ -93,6 +93,9 @@ export default function Analytics() {
   const [postTabSearch, setPostTabSearch] = useState('')
   const [postTabPlatform, setPostTabPlatform] = useState('')
   const [postTabType, setPostTabType] = useState('')
+  const [postTabDateFrom, setPostTabDateFrom] = useState('')
+  const [postTabDateTo, setPostTabDateTo] = useState('')
+  const [postTabSort, setPostTabSort] = useState('date') // date, engagement, impressions, likes
 
   const enriched = metrics.map(enrichMetric)
   const timeline = timelineData(metrics)
@@ -501,14 +504,23 @@ export default function Analytics() {
             if (postTabType && m.post_type !== postTabType) return false
             if (postTabPlatform && m.platform !== postTabPlatform) return false
             if (postTabSearch && !m.description?.toLowerCase().includes(postTabSearch.toLowerCase())) return false
+            if (postTabDateFrom && m.date < postTabDateFrom) return false
+            if (postTabDateTo && m.date > postTabDateTo) return false
             return true
           })
-          .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+          .sort((a, b) => {
+            if (postTabSort === 'date') return new Date(b.date || 0) - new Date(a.date || 0)
+            if (postTabSort === 'engagement') return (b.engagement || 0) - (a.engagement || 0)
+            if (postTabSort === 'impressions') return (b.impressions || 0) - (a.impressions || 0)
+            if (postTabSort === 'likes') return (b.likes || 0) - (a.likes || 0)
+            if (postTabSort === 'engagement_rate') return (b.engagement_rate || 0) - (a.engagement_rate || 0)
+            return 0
+          })
 
         const bestImpressions = enriched.length ? Math.max(...enriched.map((m) => m.impressions)) : 0
         const fmtDate = (d) => {
           if (!d) return '—'
-          try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) }
+          try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) }
           catch { return d }
         }
 
@@ -531,42 +543,75 @@ export default function Analytics() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2 items-center flex-wrap">
-              <input
-                className="input text-xs py-1.5 flex-1 min-w-[180px]"
-                placeholder="Buscar por descrição…"
-                value={postTabSearch}
-                onChange={(e) => setPostTabSearch(e.target.value)}
-              />
-              <select
-                className="select text-xs py-1.5 w-40"
-                value={postTabPlatform}
-                onChange={(e) => setPostTabPlatform(e.target.value)}
-              >
-                <option value="">Todas plataformas</option>
-                {['instagram', 'linkedin', 'twitter', 'youtube', 'tiktok'].map((p) => (
-                  <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
-                ))}
-              </select>
-              <select
-                className="select text-xs py-1.5 w-36"
-                value={postTabType}
-                onChange={(e) => setPostTabType(e.target.value)}
-              >
-                <option value="">Todos os tipos</option>
-                {['story', 'reel', 'carousel', 'image', 'video'].map((t) => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                ))}
-              </select>
-              {(postTabSearch || postTabPlatform || postTabType) && (
-                <button
-                  onClick={() => { setPostTabSearch(''); setPostTabPlatform(''); setPostTabType('') }}
-                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            <div className="card p-4 space-y-3">
+              <div className="flex gap-2 items-center flex-wrap">
+                <input
+                  className="input text-xs py-1.5 flex-1 min-w-[180px]"
+                  placeholder="Buscar por descrição…"
+                  value={postTabSearch}
+                  onChange={(e) => setPostTabSearch(e.target.value)}
+                />
+                <select
+                  className="select text-xs py-1.5 w-40"
+                  value={postTabPlatform}
+                  onChange={(e) => setPostTabPlatform(e.target.value)}
                 >
-                  Limpar
-                </button>
-              )}
-              <span className="text-xs text-gray-400 ml-auto">{filteredPostsView.length} resultado{filteredPostsView.length !== 1 ? 's' : ''}</span>
+                  <option value="">Todas plataformas</option>
+                  {['instagram', 'linkedin', 'twitter', 'youtube', 'tiktok'].map((p) => (
+                    <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                  ))}
+                </select>
+                <select
+                  className="select text-xs py-1.5 w-36"
+                  value={postTabType}
+                  onChange={(e) => setPostTabType(e.target.value)}
+                >
+                  <option value="">Todos os tipos</option>
+                  {['story', 'reel', 'carousel', 'image', 'video'].map((t) => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2 items-center flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-400 font-medium">De:</span>
+                  <input
+                    type="date"
+                    className="input text-xs py-1 w-36"
+                    value={postTabDateFrom}
+                    onChange={(e) => setPostTabDateFrom(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-400 font-medium">Até:</span>
+                  <input
+                    type="date"
+                    className="input text-xs py-1 w-36"
+                    value={postTabDateTo}
+                    onChange={(e) => setPostTabDateTo(e.target.value)}
+                  />
+                </div>
+                <select
+                  className="select text-xs py-1.5 w-44"
+                  value={postTabSort}
+                  onChange={(e) => setPostTabSort(e.target.value)}
+                >
+                  <option value="date">Ordenar: Mais recente</option>
+                  <option value="engagement">Ordenar: Mais engajamento</option>
+                  <option value="impressions">Ordenar: Mais impressões</option>
+                  <option value="likes">Ordenar: Mais curtidas</option>
+                  <option value="engagement_rate">Ordenar: Melhor taxa eng.</option>
+                </select>
+                {(postTabSearch || postTabPlatform || postTabType || postTabDateFrom || postTabDateTo) && (
+                  <button
+                    onClick={() => { setPostTabSearch(''); setPostTabPlatform(''); setPostTabType(''); setPostTabDateFrom(''); setPostTabDateTo('') }}
+                    className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Limpar filtros
+                  </button>
+                )}
+                <span className="text-xs text-gray-400 ml-auto">{filteredPostsView.length} resultado{filteredPostsView.length !== 1 ? 's' : ''}</span>
+              </div>
             </div>
 
             {/* Cards */}
@@ -626,7 +671,10 @@ export default function Analytics() {
                         </div>
 
                         {/* Date */}
-                        <p className="text-[11px] text-gray-400 mb-2">{fmtDate(m.date)}</p>
+                        <p className="text-[11px] text-gray-400 mb-2">
+                          📅 {fmtDate(m.date)}
+                          {m.duration_sec > 0 && <span className="ml-2 text-gray-300">· {m.duration_sec}s</span>}
+                        </p>
 
                         {/* Description */}
                         <p className="text-xs text-gray-700 line-clamp-2 mb-3 min-h-[2rem]">
