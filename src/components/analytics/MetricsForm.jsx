@@ -5,13 +5,15 @@ import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 
 const EMPTY = {
-  post_id: '', platform: 'linkedin', date: new Date().toISOString().split('T')[0],
+  post_id: '', platform: 'instagram', date: new Date().toISOString().split('T')[0],
   impressions: '', reach: '', likes: '', comments: '', shares: '', saves: '', link_clicks: '',
+  follows: '', duration_sec: '',
 }
 
 const NUMERIC_FIELDS = [
-  ['impressions', 'Impressões'], ['reach', 'Alcance'], ['likes', 'Curtidas'],
-  ['comments', 'Comentários'], ['shares', 'Compartilhamentos'], ['saves', 'Salvamentos'], ['link_clicks', 'Cliques no Link'],
+  ['impressions', 'Visualizações'], ['reach', 'Alcance'], ['likes', 'Curtidas'],
+  ['comments', 'Comentários'], ['shares', 'Compartilhamentos'], ['saves', 'Salvamentos'],
+  ['follows', 'Seguimentos'], ['link_clicks', 'Cliques no Link'], ['duration_sec', 'Duração (s)'],
 ]
 
 export default function MetricsForm({ open, onClose }) {
@@ -37,24 +39,60 @@ export default function MetricsForm({ open, onClose }) {
   const COL_MAP = {
     // identificador
     'post_id': 'post_id', 'post id': 'post_id',
-    // datas — "Publish time" do export bruto; "Data" do export PT
-    // Nota: NÃO mapeamos 'date' pois no export bruto a coluna "Date" sempre contém "Lifetime"
-    'data': 'date', 'publish time': 'date',
+
+    // datas
+    'data': 'date', 'publish time': 'date', 'horário de publicação': 'date',
+    'horario de publicação': 'date', 'horário de publicacao': 'date',
+    'horario de publicacao': 'date', 'publish_time': 'date',
+
     // plataforma
     'plataforma': 'platform', 'platform': 'platform',
-    // tipo de post (export bruto: "IG story", "IG Reel", "IG carousel post"…)
-    'post type': 'post_type',
+
+    // tipo de post
+    'post type': 'post_type', 'tipo de post': 'post_type', 'tipo': 'post_type',
+    'post_type': 'post_type',
+
     // descrição / legenda do post
     'description': 'description', 'descrição': 'description', 'descricao': 'description',
-    // permalink
-    'permalink': 'link',
-    // números — export bruto usa "Views" para impressões e "Replies" para comentários
-    'impressões': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions', 'views': 'impressions',
+    'descriçao': 'description', 'legenda': 'description',
+
+    // permalink / link permanente
+    'permalink': 'link', 'link permanente': 'link', 'link': 'link', 'url': 'link',
+
+    // comentário de dados (campo extra de observações)
+    'comentário de dados': 'data_comment', 'comentario de dados': 'data_comment',
+    'data comment': 'data_comment',
+
+    // duração
+    'duração (s)': 'duration_sec', 'duracao (s)': 'duration_sec', 'duração': 'duration_sec',
+    'duracao': 'duration_sec', 'duration': 'duration_sec', 'duration (s)': 'duration_sec',
+
+    // visualizações / impressões
+    'visualizações': 'impressions', 'visualizacoes': 'impressions', 'visualizaçoes': 'impressions',
+    'impressões': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions',
+    'views': 'impressions',
+
+    // alcance
     'alcance': 'reach', 'reach': 'reach',
+
+    // curtidas
     'curtidas': 'likes', 'likes': 'likes',
-    'coment.': 'comments', 'comentários': 'comments', 'comentarios': 'comments', 'comments': 'comments', 'replies': 'comments',
+
+    // comentários
+    'coment.': 'comments', 'comentários': 'comments', 'comentarios': 'comments',
+    'comments': 'comments', 'replies': 'comments',
+
+    // compartilhamentos
     'compart.': 'shares', 'compartilhamentos': 'shares', 'shares': 'shares',
+
+    // seguimentos / follows
+    'seguimentos': 'follows', 'follows': 'follows', 'seguidores': 'follows',
+    'new followers': 'follows', 'novos seguidores': 'follows',
+
+    // salvamentos
     'salvam.': 'saves', 'salvamentos': 'saves', 'saves': 'saves', 'sticker taps': 'saves',
+
+    // cliques no link
     'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks', 'link clicks': 'link_clicks',
   }
 
@@ -80,12 +118,40 @@ export default function MetricsForm({ open, onClose }) {
     return v || ''
   }
 
-  // MM/DD/YYYY HH:MM  →  YYYY-MM-DD
+  // Aceita múltiplos formatos de data:
+  // DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, "20 mar. 2025 16:52"
   const normalizeDate = (raw = '') => {
-    const m = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/)
-    if (m) return `${m[3]}-${m[1]}-${m[2]}`
-    // fallback: tenta ISO direto
-    const d = new Date(raw)
+    const s = raw.trim()
+    if (!s) return new Date().toISOString().split('T')[0]
+
+    // ISO direto: YYYY-MM-DD
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+
+    // Formato "20 mar. 2025 16:52" ou "20 mar 2025"
+    const ptMonth = { 'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
+                      'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12' }
+    const brLong = s.match(/(\d{1,2})\s+de?\s*(\w{3})\.?\s+(\d{4})/)
+    if (brLong) {
+      const mon = ptMonth[brLong[2].toLowerCase().replace('.', '')] || '01'
+      return `${brLong[3]}-${mon}-${brLong[1].padStart(2, '0')}`
+    }
+
+    // DD/MM/YYYY ou MM/DD/YYYY — assume DD/MM/YYYY (padrão BR)
+    const slash = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+    if (slash) {
+      const day = slash[1].padStart(2, '0')
+      const month = slash[2].padStart(2, '0')
+      // Se dia > 12, é com certeza DD/MM/YYYY
+      // Se mês > 12, é com certeza MM/DD/YYYY
+      // Default: assume DD/MM/YYYY (formato brasileiro)
+      if (Number(slash[1]) > 12) return `${slash[3]}-${month}-${day}`
+      if (Number(slash[2]) > 12) return `${slash[3]}-${slash[1].padStart(2, '0')}-${slash[2].padStart(2, '0')}`
+      return `${slash[3]}-${month}-${day}` // default BR: DD/MM/YYYY
+    }
+
+    // Fallback genérico
+    const d = new Date(s)
     if (!isNaN(d)) return d.toISOString().split('T')[0]
     return new Date().toISOString().split('T')[0]
   }
@@ -104,20 +170,23 @@ export default function MetricsForm({ open, onClose }) {
       ? normalizePlatform(row.platform)
       : (row.post_type ? 'instagram' : 'instagram')
     return {
-      post_id:     row.post_id || '',
+      post_id:      row.post_id || '',
       platform,
-      date:        normalizeDate(row.date),
-      impressions: toNumber(row.impressions),
-      reach:       toNumber(row.reach),
-      likes:       toNumber(row.likes),
-      comments:    toNumber(row.comments),
-      shares:      toNumber(row.shares),
-      saves:       toNumber(row.saves),
-      link_clicks: toNumber(row.link_clicks),
-      // Campos novos do export bruto
-      description: (row.description || '').trim(),
-      link:        (row.link || '').trim(),
-      post_type:   normalizePostType(row.post_type),
+      date:         normalizeDate(row.date),
+      impressions:  toNumber(row.impressions),
+      reach:        toNumber(row.reach),
+      likes:        toNumber(row.likes),
+      comments:     toNumber(row.comments),
+      shares:       toNumber(row.shares),
+      saves:        toNumber(row.saves),
+      follows:      toNumber(row.follows),
+      link_clicks:  toNumber(row.link_clicks),
+      duration_sec: toNumber(row.duration_sec),
+      // Campos de texto
+      description:  (row.description || '').trim(),
+      link:         (row.link || '').trim(),
+      post_type:    normalizePostType(row.post_type),
+      data_comment: (row.data_comment || '').trim(),
     }
   }
 
@@ -237,7 +306,7 @@ export default function MetricsForm({ open, onClose }) {
             <Upload size={24} className="text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-700 mb-1">Faça upload de um arquivo CSV</p>
             <p className="text-xs text-gray-400 mb-3">
-              Aceita exportações brutas do Instagram: <span className="text-gray-500">Post ID, Description, Publish time, Permalink, Post type, Views, Reach, Likes, Shares, Replies, Sticker taps, Link clicks</span>
+              Aceita colunas em português: <span className="text-gray-500">Descrição, Duração (s), Horário de publicação, Link permanente, Tipo de post, Comentário de dados, Data, Visualizações, Alcance, Curtidas, Compartilhamentos, Seguimentos, Comentários, Salvamentos</span>
             </p>
             <label className="btn-primary cursor-pointer inline-flex">
               <FileText size={14} /> Escolher CSV
@@ -252,18 +321,30 @@ export default function MetricsForm({ open, onClose }) {
               </p>
               <div className="max-h-40 overflow-y-auto rounded-lg bg-gray-50 border border-gray-200">
                 {csvResult.slice(0, 5).map((row, i) => (
-                  <div key={i} className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 last:border-0 flex items-center gap-2 flex-wrap">
-                    {row.post_type && (
-                      <span className="chip border text-[10px] bg-purple-50 text-purple-600 border-purple-200 capitalize">{row.post_type}</span>
-                    )}
-                    <span>{row.platform} · {row.date} · {(row.impressions || 0).toLocaleString()} imp. · {row.likes} curtidas</span>
+                  <div key={i} className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 last:border-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {row.post_type && (
+                        <span className="chip border text-[10px] bg-purple-50 text-purple-600 border-purple-200 capitalize">{row.post_type}</span>
+                      )}
+                      <span className="font-medium text-gray-700">{row.platform} · {row.date}</span>
+                      {row.duration_sec > 0 && <span className="text-[10px] text-gray-400">{row.duration_sec}s</span>}
+                      {row.link && (
+                        <a href={row.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-400 hover:text-blue-600">
+                          <ExternalLink size={10} />
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                      <span>{(row.impressions || 0).toLocaleString()} vis.</span>
+                      <span>{(row.reach || 0).toLocaleString()} alc.</span>
+                      <span>{row.likes} curt.</span>
+                      <span>{row.comments} coment.</span>
+                      <span>{row.shares} compart.</span>
+                      {row.follows > 0 && <span>{row.follows} seg.</span>}
+                      <span>{row.saves} salv.</span>
+                    </div>
                     {row.description && (
-                      <span className="text-gray-400 truncate max-w-[200px]">{row.description.slice(0, 60)}{row.description.length > 60 ? '…' : ''}</span>
-                    )}
-                    {row.link && (
-                      <a href={row.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-400 hover:text-blue-600">
-                        <ExternalLink size={10} />
-                      </a>
+                      <p className="text-[10px] text-gray-400 truncate">{row.description.slice(0, 80)}{row.description.length > 80 ? '…' : ''}</p>
                     )}
                   </div>
                 ))}
