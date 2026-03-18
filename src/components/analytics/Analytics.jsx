@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts'
-import { Plus, TrendingUp, Eye, Heart, Share2, Bookmark, MousePointer, Trophy, Trash2, Download, AlertTriangle, ExternalLink, Film, Image, Play, Layers, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { Plus, TrendingUp, Eye, Heart, Share2, Bookmark, MousePointer, Trophy, Trash2, Download, AlertTriangle, ExternalLink, Film, Image, Play, Layers, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus } from 'lucide-react'
 import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
@@ -106,6 +106,7 @@ export default function Analytics() {
   const totalAuthority = enriched.reduce((s, m) => s + m.authority_score, 0)
   const totalShares = enriched.reduce((s, m) => s + (m.shares || 0), 0)
   const totalSaves = enriched.reduce((s, m) => s + (m.saves || 0), 0)
+  const totalFollows = enriched.reduce((s, m) => s + (m.follows || 0), 0)
 
   const formatChartData = byFormat.map((d) => ({
     name: d.format,
@@ -124,12 +125,15 @@ export default function Analytics() {
     const csv = Papa.unparse(data.map((m) => ({
       data: m.date,
       plataforma: m.platform,
+      tipo: m.post_type || '',
+      descricao: m.description || '',
       impressoes: m.impressions,
       alcance: m.reach,
       curtidas: m.likes,
       comentarios: m.comments,
       compartilhamentos: m.shares,
       salvamentos: m.saves,
+      seguimentos: m.follows || 0,
       cliques: m.link_clicks,
       engajamento: m.engagement,
       taxa_engajamento: (m.engagement_rate * 100).toFixed(2) + '%',
@@ -173,13 +177,14 @@ export default function Analytics() {
       {tab === 'visao-geral' && (
         <>
           {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <MiniStat icon={Eye} label="Impressões" value={totalImpressions.toLocaleString()} color="orange" />
             <MiniStat icon={TrendingUp} label="Eng. Médio" value={`${avgER}%`} color="emerald" />
             <MiniStat icon={Heart} label="Total Curtidas" value={enriched.reduce((s, m) => s + (m.likes || 0), 0).toLocaleString()} color="pink" />
             <MiniStat icon={Share2} label="Compartilhamentos" value={totalShares.toLocaleString()} color="blue" />
             <MiniStat icon={Bookmark} label="Salvamentos" value={totalSaves.toLocaleString()} color="amber" />
-            <MiniStat icon={Trophy} label="Score Autoridade" value={totalAuthority.toLocaleString()} color="sky" />
+            <MiniStat icon={UserPlus} label="Seguimentos" value={totalFollows.toLocaleString()} color="sky" />
+            <MiniStat icon={Trophy} label="Score Autoridade" value={totalAuthority.toLocaleString()} color="orange" />
           </div>
 
           {/* Gráficos linha 1 */}
@@ -316,6 +321,7 @@ export default function Analytics() {
               { key: 'comments', label: 'Coment.', sortable: true },
               { key: 'shares', label: 'Compart.', sortable: true },
               { key: 'saves', label: 'Salvam.', sortable: true },
+              { key: 'follows', label: 'Seguim.', sortable: true },
               { key: 'engagement', label: 'Eng.', sortable: true },
               { key: 'engagement_rate', label: 'Taxa Eng.', sortable: true },
               { key: '_del', label: '', sortable: false },
@@ -460,6 +466,7 @@ export default function Analytics() {
                             <td className="py-2 px-2.5 text-gray-500">{m.comments.toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{m.shares.toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{m.saves.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.follows || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-700 font-medium">{m.engagement.toLocaleString()}</td>
                             <td className="py-2 px-2.5">
                               <span className={`font-semibold ${m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
@@ -643,12 +650,13 @@ export default function Analytics() {
                         </div>
 
                         {/* Secondary stats */}
-                        {(m.shares > 0 || m.saves > 0 || m.comments > 0 || m.reach > 0) && (
+                        {(m.shares > 0 || m.saves > 0 || m.comments > 0 || m.reach > 0 || m.follows > 0) && (
                           <div className="flex items-center gap-2.5 text-[10px] text-gray-400 flex-wrap">
                             {m.reach > 0 && <span className="flex items-center gap-0.5"><Eye size={9} />{m.reach.toLocaleString()}</span>}
                             {m.comments > 0 && <span className="flex items-center gap-0.5"><MousePointer size={9} />{m.comments}</span>}
                             {m.shares > 0 && <span className="flex items-center gap-0.5"><Share2 size={9} />{m.shares}</span>}
                             {m.saves > 0 && <span className="flex items-center gap-0.5"><Bookmark size={9} />{m.saves}</span>}
+                            {m.follows > 0 && <span className="flex items-center gap-0.5"><UserPlus size={9} />{m.follows}</span>}
                           </div>
                         )}
                       </div>
