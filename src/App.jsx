@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
 import Dashboard from './components/dashboard/Dashboard'
@@ -13,6 +14,8 @@ import IdeaGenerator from './components/generate/IdeaGenerator'
 import CreateContent from './components/create/CreateContent'
 import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
+import ClientReports from './components/reports/ClientReports'
+import AccessLog from './components/auth/AccessLog'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -41,22 +44,26 @@ function Layout({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/ideas" element={<IdeasHub />} />
-          <Route path="/trends" element={<TrendRadar />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/video" element={<VideoAnalyzer />} />
-          <Route path="/create" element={<CreateContent />} />
-          <Route path="/thoughts" element={<ThoughtCapture />} />
-          <Route path="/text" element={<TextStudio />} />
-          <Route path="/generate" element={<IdeaGenerator />} />
-          <Route path="/presentation" element={<PresentationMode />} />
-          <Route path="/dna" element={<ContentDNA />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <LoginGate>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/ideas" element={<IdeasHub />} />
+            <Route path="/trends" element={<TrendRadar />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/video" element={<VideoAnalyzer />} />
+            <Route path="/create" element={<CreateContent />} />
+            <Route path="/thoughts" element={<ThoughtCapture />} />
+            <Route path="/text" element={<TextStudio />} />
+            <Route path="/generate" element={<IdeaGenerator />} />
+            <Route path="/presentation" element={<PresentationMode />} />
+            <Route path="/dna" element={<ContentDNA />} />
+            <Route path="/reports" element={<ClientReports />} />
+            <Route path="/security" element={<AccessLog />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </LoginGate>
   )
 }

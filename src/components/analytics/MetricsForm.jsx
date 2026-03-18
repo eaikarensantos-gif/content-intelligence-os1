@@ -7,7 +7,7 @@ import useStore from '../../store/useStore'
 const EMPTY = {
   post_id: '', platform: 'instagram', date: new Date().toISOString().split('T')[0],
   impressions: '', reach: '', likes: '', comments: '', shares: '', saves: '', link_clicks: '',
-  follows: '', duration_sec: '',
+  follows: '', duration_sec: '', client: '',
 }
 
 const NUMERIC_FIELDS = [
@@ -35,15 +35,21 @@ export default function MetricsForm({ open, onClose }) {
     onClose()
   }
 
+  // Remove acentos para matching robusto de colunas CSV
+  const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
   // ── mapeamento de colunas PT → EN (+ exportação bruta do Instagram) ────────
+  // NOTA: stripAccents é usado no lookup, então todas as chaves aqui SEM acento
   const COL_MAP = {
     // identificador
     'post_id': 'post_id', 'post id': 'post_id',
 
     // datas
-    'data': 'date', 'publish time': 'date', 'horário de publicação': 'date',
-    'horario de publicação': 'date', 'horário de publicacao': 'date',
+    'data': 'date', 'date': 'date', 'publish time': 'date',
     'horario de publicacao': 'date', 'publish_time': 'date',
+    'data de publicacao': 'date',
+    'published at': 'date', 'published_at': 'date', 'created at': 'date',
+    'data do post': 'date', 'data post': 'date',
 
     // plataforma
     'plataforma': 'platform', 'platform': 'platform',
@@ -52,25 +58,22 @@ export default function MetricsForm({ open, onClose }) {
     'post type': 'post_type', 'tipo de post': 'post_type', 'tipo': 'post_type',
     'post_type': 'post_type',
 
-    // descrição / legenda do post
-    'description': 'description', 'descrição': 'description', 'descricao': 'description',
-    'descriçao': 'description', 'legenda': 'description',
+    // descricao / legenda do post
+    'description': 'description', 'descricao': 'description', 'legenda': 'description',
 
     // permalink / link permanente
     'permalink': 'link', 'link permanente': 'link', 'link': 'link', 'url': 'link',
 
-    // comentário de dados (campo extra de observações)
-    'comentário de dados': 'data_comment', 'comentario de dados': 'data_comment',
-    'data comment': 'data_comment',
+    // comentario de dados
+    'comentario de dados': 'data_comment', 'data comment': 'data_comment',
 
-    // duração
-    'duração (s)': 'duration_sec', 'duracao (s)': 'duration_sec', 'duração': 'duration_sec',
-    'duracao': 'duration_sec', 'duration': 'duration_sec', 'duration (s)': 'duration_sec',
+    // duracao
+    'duracao (s)': 'duration_sec', 'duracao': 'duration_sec',
+    'duration': 'duration_sec', 'duration (s)': 'duration_sec',
 
-    // visualizações / impressões
-    'visualizações': 'impressions', 'visualizacoes': 'impressions', 'visualizaçoes': 'impressions',
-    'impressões': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions',
-    'views': 'impressions',
+    // visualizacoes / impressoes
+    'visualizacoes': 'impressions', 'impressoes': 'impressions',
+    'impressions': 'impressions', 'views': 'impressions',
 
     // alcance
     'alcance': 'reach', 'reach': 'reach',
@@ -78,8 +81,8 @@ export default function MetricsForm({ open, onClose }) {
     // curtidas
     'curtidas': 'likes', 'likes': 'likes',
 
-    // comentários
-    'coment.': 'comments', 'comentários': 'comments', 'comentarios': 'comments',
+    // comentarios
+    'coment.': 'comments', 'comentarios': 'comments',
     'comments': 'comments', 'replies': 'comments',
 
     // compartilhamentos
@@ -94,6 +97,10 @@ export default function MetricsForm({ open, onClose }) {
 
     // cliques no link
     'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks', 'link clicks': 'link_clicks',
+
+    // cliente
+    'cliente': 'client', 'client': 'client', 'projeto': 'client', 'project': 'client',
+    'marca': 'client', 'brand': 'client',
   }
 
   const normalizePlatform = (raw = '') => {
@@ -120,15 +127,21 @@ export default function MetricsForm({ open, onClose }) {
 
   // Aceita múltiplos formatos de data:
   // DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, "20 mar. 2025 16:52"
+  // Extrai horário de uma string de data (ex: "03/16/2026 04:44" → "04:44")
+  const extractTime = (raw = '') => {
+    const timeMatch = raw.trim().match(/(\d{1,2}:\d{2}(?::\d{2})?)/)
+    return timeMatch ? timeMatch[1] : ''
+  }
+
   const normalizeDate = (raw = '') => {
     const s = raw.trim()
-    if (!s) return new Date().toISOString().split('T')[0]
+    if (!s) return ''  // Sem data = vazio (não usar data de upload)
 
-    // ISO direto: YYYY-MM-DD
+    // ISO direto: YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss
     const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
     if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
 
-    // Formato "20 mar. 2025 16:52" ou "20 mar 2025"
+    // Formato "20 mar. 2025 16:52" ou "20 mar 2025" ou "20 de mar. 2025"
     const ptMonth = { 'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
                       'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12' }
     const brLong = s.match(/(\d{1,2})\s+de?\s*(\w{3})\.?\s+(\d{4})/)
@@ -137,23 +150,40 @@ export default function MetricsForm({ open, onClose }) {
       return `${brLong[3]}-${mon}-${brLong[1].padStart(2, '0')}`
     }
 
-    // DD/MM/YYYY ou MM/DD/YYYY — assume DD/MM/YYYY (padrão BR)
-    const slash = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+    // Formato "Mar 20, 2025" ou "March 20, 2025" (inglês)
+    const enMonth = { 'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'may': '05', 'jun': '06',
+                      'jul': '07', 'aug': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12' }
+    const enLong = s.match(/(\w{3})\w*\.?\s+(\d{1,2}),?\s+(\d{4})/)
+    if (enLong) {
+      const mon = enMonth[enLong[1].toLowerCase()] || ptMonth[enLong[1].toLowerCase()]
+      if (mon) return `${enLong[3]}-${mon}-${enLong[2].padStart(2, '0')}`
+    }
+
+    // MM/DD/YYYY HH:MM ou DD/MM/YYYY HH:MM (com ou sem horário)
+    const slash = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/)
     if (slash) {
-      const day = slash[1].padStart(2, '0')
-      const month = slash[2].padStart(2, '0')
-      // Se dia > 12, é com certeza DD/MM/YYYY
-      // Se mês > 12, é com certeza MM/DD/YYYY
-      // Default: assume DD/MM/YYYY (formato brasileiro)
-      if (Number(slash[1]) > 12) return `${slash[3]}-${month}-${day}`
-      if (Number(slash[2]) > 12) return `${slash[3]}-${slash[1].padStart(2, '0')}-${slash[2].padStart(2, '0')}`
-      return `${slash[3]}-${month}-${day}` // default BR: DD/MM/YYYY
+      // Se primeiro > 12: com certeza é DD/MM/YYYY
+      if (Number(slash[1]) > 12) {
+        const day = slash[1].padStart(2, '0')
+        const month = slash[2].padStart(2, '0')
+        return `${slash[3]}-${month}-${day}`
+      }
+      // Se segundo > 12: com certeza é MM/DD/YYYY
+      if (Number(slash[2]) > 12) {
+        const month = slash[1].padStart(2, '0')
+        const day = slash[2].padStart(2, '0')
+        return `${slash[3]}-${month}-${day}`
+      }
+      // Ambíguo: assume MM/DD/YYYY (formato Instagram export)
+      const month = slash[1].padStart(2, '0')
+      const day = slash[2].padStart(2, '0')
+      return `${slash[3]}-${month}-${day}`
     }
 
     // Fallback genérico
     const d = new Date(s)
     if (!isNaN(d)) return d.toISOString().split('T')[0]
-    return new Date().toISOString().split('T')[0]
+    return ''  // Sem data válida = vazio
   }
 
   const toNumber = (v = '') =>
@@ -162,17 +192,20 @@ export default function MetricsForm({ open, onClose }) {
   const normalizeRow = (raw) => {
     const row = {}
     for (const [key, val] of Object.entries(raw)) {
-      const mapped = COL_MAP[key.toLowerCase().trim()]
+      const clean = stripAccents(key.toLowerCase().trim())
+      const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
       if (mapped) row[mapped] = val
     }
     // Se não veio platform mas veio post_type, deduz instagram
     const platform = row.platform
       ? normalizePlatform(row.platform)
       : (row.post_type ? 'instagram' : 'instagram')
+    const rawDate = (row.date || '').trim()
     return {
       post_id:      row.post_id || '',
       platform,
-      date:         normalizeDate(row.date),
+      date:         normalizeDate(rawDate),
+      publish_time: extractTime(rawDate),  // Horário original do post (ex: "04:44")
       impressions:  toNumber(row.impressions),
       reach:        toNumber(row.reach),
       likes:        toNumber(row.likes),
@@ -187,6 +220,7 @@ export default function MetricsForm({ open, onClose }) {
       link:         (row.link || '').trim(),
       post_type:    normalizePostType(row.post_type),
       data_comment: (row.data_comment || '').trim(),
+      client:       (row.client || '').trim(),
     }
   }
 
@@ -237,6 +271,12 @@ export default function MetricsForm({ open, onClose }) {
                 <option key={p.id} value={p.id}>{p.title.slice(0, 50)} — {p.platform}</option>
               ))}
             </select>
+          </div>
+
+          {/* Cliente */}
+          <div>
+            <label className="label">Cliente / Projeto</label>
+            <input type="text" className="input" placeholder="Ex: FIAP, Brand X, Personal..." value={form.client} onChange={(e) => set('client', e.target.value)} />
           </div>
 
           {/* Plataforma + Data */}

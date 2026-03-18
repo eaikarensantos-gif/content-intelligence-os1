@@ -8,6 +8,8 @@ const TITLES = {
   '/analytics': { title: 'Analytics', sub: 'Acompanhe o desempenho dos seus posts' },
   '/video': { title: 'Analisador de Vídeo', sub: 'Analise e aprenda com vídeos de referência' },
   '/dna': { title: 'Content DNA', sub: 'Descubra os padrões que fazem seu conteúdo funcionar' },
+  '/reports': { title: 'Relatórios', sub: 'Gere relatórios profissionais para seus clientes' },
+  '/security': { title: 'Segurança', sub: 'Registro de tentativas de acesso ao sistema' },
   '/create': { title: 'Criar Conteúdo', sub: 'Escolha como quer começar sua criação' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
