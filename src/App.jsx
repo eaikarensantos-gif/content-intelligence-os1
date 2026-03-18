@@ -12,6 +12,7 @@ import TextStudio from './components/text/TextStudio'
 import IdeaGenerator from './components/generate/IdeaGenerator'
 import CreateContent from './components/create/CreateContent'
 import PresentationMode from './components/presentation/PresentationMode'
+import ContentDNA from './components/dna/ContentDNA'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/text" element={<TextStudio />} />
           <Route path="/generate" element={<IdeaGenerator />} />
           <Route path="/presentation" element={<PresentationMode />} />
+          <Route path="/dna" element={<ContentDNA />} />
         </Routes>
       </Layout>
     </BrowserRouter>

@@ -7,6 +7,7 @@ const TITLES = {
   '/trends': { title: 'Creator Insights', sub: 'Tendências e criadores em alta no seu nicho' },
   '/analytics': { title: 'Analytics', sub: 'Acompanhe o desempenho dos seus posts' },
   '/video': { title: 'Analisador de Vídeo', sub: 'Analise e aprenda com vídeos de referência' },
+  '/dna': { title: 'Content DNA', sub: 'Descubra os padrões que fazem seu conteúdo funcionar' },
   '/create': { title: 'Criar Conteúdo', sub: 'Escolha como quer começar sua criação' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
