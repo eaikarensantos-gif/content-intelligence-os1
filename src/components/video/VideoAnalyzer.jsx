@@ -155,8 +155,8 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
     }),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `Erro ${res.status}`)
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(res)
   }
   const data = await res.json()
   return data.content[0].text
@@ -354,11 +354,15 @@ Return ONLY this JSON:
       messages: [{ role: 'user', content: prompt }],
     }),
   })
-  if (!res.ok) throw new Error(`Erro ${res.status}`)
+  if (!res.ok) {
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(res)
+  }
   const data = await res.json()
   const match = data.content[0].text.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  return JSON.parse(match[0])
+  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
+  return JSON.parse(sanitized)
 }
 
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
@@ -1853,8 +1857,9 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                 {(analysis.content_ideas || []).map((idea, i) => (
                   <div key={i} className="card p-4 space-y-3 hover:border-orange-300 transition-colors relative overflow-hidden">
                     {savedIdeas.has(idea.title) && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-emerald-600/90 rounded-xl backdrop-blur-sm">
-                        <span className="text-white font-semibold text-sm flex items-center gap-2"><Check size={16} /> Salvo no Hub</span>
+                      <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 rounded-full">
+                        <Check size={10} className="text-emerald-600" />
+                        <span className="text-[10px] font-semibold text-emerald-700">Salvo</span>
                       </div>
                     )}
                     <div className="flex items-start justify-between gap-2">

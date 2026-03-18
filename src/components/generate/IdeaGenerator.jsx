@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
   Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
   Flame, Eye, MessageCircle, Layers, ArrowRight, Save, Star,
-  Lightbulb,
+  Lightbulb, ExternalLink,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -69,7 +70,9 @@ function buildPrompt({ topic, audience, tone, narrativeStyle, intensity, previou
     ? `\n\nIMPORTANTE: NÃO repita ideias, estruturas ou ângulos similares a estas já geradas:\n${previousTitles.map(t => `- "${t}"`).join('\n')}\nCada nova ideia deve trazer um ÂNGULO NARRATIVO COMPLETAMENTE DIFERENTE.`
     : ''
 
-  return `Você é um estrategista de conteúdo que detesta marketing genérico. Você cria ideias que soam como observações reais de alguém que pensa profundamente sobre o mundo — NUNCA como um guru de produtividade ou coach motivacional.
+  return `Você é um criador de conteúdo brasileiro que pensa profundamente sobre o mundo. Você escreve como alguém que observa padrões reais na vida das pessoas — nunca como um guru, coach motivacional ou copywriter agressivo.
+
+Seu estilo é de quem compartilha um insight genuíno com a audiência. Você fala como um amigo inteligente que notou algo interessante.
 
 TÓPICO: ${topic}
 AUDIÊNCIA: ${audience || 'Profissionais e criadores digitais brasileiros'}
@@ -77,32 +80,57 @@ TOM: ${toneMap[tone] || toneMap.reflexivo}
 ESTILO NARRATIVO: ${styleMap[narrativeStyle] || styleMap.observacao}
 INTENSIDADE: ${intensityMap[intensity] || intensityMap.equilibrado}
 
-REGRAS ABSOLUTAS:
-1. PROIBIDO: "X dicas para...", "Como fazer...", "O guia definitivo", "Você precisa saber...", linguagem de guru, coaching vazio, produtividade genérica
-2. PROIBIDO: ganchos exagerados tipo "Isso vai mudar sua vida", "Ninguém te conta isso", "O segredo de..."
-3. Cada ideia deve ser construída sobre esta estrutura interna: OBSERVAÇÃO → TENSÃO → INTERPRETAÇÃO → CONCLUSÃO
-4. Ideias devem soar como insights sobre padrões reais acontecendo AGORA — não conselhos genéricos
-5. Os títulos devem soar como algo que um amigo inteligente diria numa conversa, não como headline de blog
-6. Ganchos devem ser frases que fazem a pessoa PARAR porque ressoam com algo que ela já sentia mas não sabia articular
-7. TUDO em português brasileiro coloquial mas inteligente
-8. Gere exatamente 6 ideias, variando formatos e plataformas${avoidPrevious}
+REGRAS DE LINGUAGEM — SIGA COM RIGOR:
+
+PROIBIDO (nunca use estas frases ou variações delas):
+- "isso vai mudar tudo"
+- "o erro que 90% das pessoas cometem"
+- "ninguém te conta isso"
+- "a verdade é que"
+- "o segredo de..."
+- "X dicas para..."
+- "Como fazer..."
+- "O guia definitivo"
+- "Você precisa saber..."
+- Qualquer linguagem de guru, coaching vazio ou copywriting agressivo
+
+PREFERIDO (use este estilo de linguagem):
+- "Tenho notado uma coisa curiosa..."
+- "Depois de um tempo você percebe..."
+- "Talvez o problema não seja..."
+- "Existe um padrão que pouca gente percebeu..."
+- "O que me chamou atenção foi..."
+- Insights calmos, reflexões genuínas, observações do mundo real, curiosidade sutil
+
+ESTRUTURA DE CADA IDEIA:
+1. OBSERVAÇÃO — algo real que está acontecendo agora, que o criador notou
+2. TENSÃO — a contradição, o desconforto ou o conflito que ninguém nomeou
+3. INTERPRETAÇÃO — a leitura única do criador sobre por que isso importa
+4. CONCLUSÃO — como isso muda a perspectiva do leitor
+
+REGRAS ADICIONAIS:
+- Títulos devem soar como algo dito numa conversa entre amigos, NUNCA como headline de blog
+- Ganchos devem ressoar com algo que a pessoa já sentia mas não sabia articular
+- Ideias devem parecer observações sobre o mundo real, não conselhos genéricos
+- TUDO em português brasileiro — coloquial, cuidadoso, humano
+- Gere exatamente 6 ideias, variando formatos e plataformas${avoidPrevious}
 
 Responda SOMENTE com JSON válido (sem markdown, sem texto antes/depois):
 {
   "ideas": [
     {
-      "title": "Título conversacional, específico, que soa como uma observação real",
-      "hook": "Primeira frase — interrompe o scroll porque ressoa com algo que a pessoa já sentiu",
-      "core_argument": "O argumento central em 2-3 frases. O que exatamente você está dizendo que é novo ou diferente.",
+      "title": "Título que soa como uma observação real dita em conversa — ex: 'A gente tá confundindo ocupação com propósito e nem percebeu'",
+      "hook": "Primeira frase reflexiva que faz a pessoa pausar — ex: 'Tenho notado uma coisa curiosa nos últimos meses...'",
+      "core_argument": "O argumento central em 2-3 frases. A ideia nova que você está trazendo, com profundidade.",
       "structure": {
-        "observation": "O que está acontecendo agora que poucas pessoas perceberam",
-        "tension": "A contradição, o conflito, ou o desconforto por trás dessa observação",
-        "interpretation": "Sua leitura única: por que isso está acontecendo e o que isso significa",
-        "conclusion": "O que o leitor deve fazer com essa informação / como isso muda a perspectiva dele"
+        "observation": "O que está acontecendo agora — algo concreto e específico que o criador percebeu",
+        "tension": "O conflito ou contradição por trás: o que ninguém está nomeando",
+        "interpretation": "A leitura do criador: por que isso está acontecendo e o que significa",
+        "conclusion": "A reflexão final: como isso muda a perspectiva ou o que vale repensar"
       },
       "format": "Carrossel | Reels/TikTok | Thread | Vídeo longo | Post reflexivo | Stories | Artigo",
       "platform": "Instagram | LinkedIn | TikTok | Twitter/X | YouTube",
-      "why_now": "Por que essa ideia é relevante AGORA e não há 6 meses — qual o gatilho cultural ou de timing"
+      "why_now": "O gatilho cultural ou de timing — por que essa conversa está acontecendo agora"
     }
   ]
 }`
@@ -128,20 +156,31 @@ async function generateIdeas(apiKey, params) {
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `Erro ${res.status}`)
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(res)
   }
 
   const data = await res.json()
   const raw = data.content[0].text
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  return JSON.parse(match[0])
+  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
+  return JSON.parse(sanitized)
 }
 
 // ── Idea Card ─────────────────────────────────────────────────────────────────
-function IdeaCard({ idea, index, onSave, saved, onCopy, copied }) {
+function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub }) {
   const [expanded, setExpanded] = useState(false)
+  const [showSavedFlash, setShowSavedFlash] = useState(false)
+
+  // Flash green overlay briefly when saved changes to true
+  useEffect(() => {
+    if (saved) {
+      setShowSavedFlash(true)
+      const t = setTimeout(() => setShowSavedFlash(false), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [saved])
 
   const formatColor = {
     'Carrossel': 'bg-pink-100 text-pink-700 border-pink-200',
@@ -163,10 +202,17 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied }) {
 
   return (
     <div className="card overflow-hidden hover:border-orange-200 transition-all">
-      {/* Saved overlay */}
-      {saved && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-emerald-600/90 rounded-xl backdrop-blur-sm">
+      {/* Saved flash — brief confirmation then disappears */}
+      {showSavedFlash && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-emerald-600/90 rounded-xl backdrop-blur-sm animate-pulse">
           <span className="text-white font-semibold text-sm flex items-center gap-2"><Check size={16} /> Salvo no Hub</span>
+        </div>
+      )}
+      {/* Saved badge — small persistent indicator */}
+      {saved && !showSavedFlash && (
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 rounded-full">
+          <Check size={10} className="text-emerald-600" />
+          <span className="text-[10px] font-semibold text-emerald-700">Salvo</span>
         </div>
       )}
 
@@ -247,13 +293,22 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-          <button
-            onClick={() => onSave(idea)}
-            disabled={saved}
-            className="flex-1 btn-primary text-xs py-2 justify-center"
-          >
-            <Plus size={12} /> Salvar no Hub
-          </button>
+          {saved ? (
+            <button
+              onClick={onOpenHub}
+              className="flex-1 text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+            >
+              <Check size={12} /> Salvo no Hub
+              <ExternalLink size={10} className="ml-1 text-orange-500" />
+            </button>
+          ) : (
+            <button
+              onClick={() => onSave(idea)}
+              className="flex-1 btn-primary text-xs py-2 justify-center"
+            >
+              <Plus size={12} /> Salvar no Hub
+            </button>
+          )}
           <button
             onClick={() => onCopy(idea)}
             className="btn-secondary text-xs py-2 px-3"
@@ -269,6 +324,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function IdeaGenerator() {
   const { addIdea } = useStore()
+  const navigate = useNavigate()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 
   // Controls
@@ -348,6 +404,7 @@ export default function IdeaGenerator() {
       priority: 'medium',
       status: 'idea',
       tags: ['gerador-moderno', topic.toLowerCase().slice(0, 20)].filter(Boolean),
+      source: 'Gerador de Ideias',
     })
     setSavedIds(prev => new Set([...prev, idea._id]))
   }
@@ -595,6 +652,7 @@ export default function IdeaGenerator() {
                       saved={savedIds.has(idea._id)}
                       onCopy={handleCopy}
                       copied={copiedId === idea._id}
+                      onOpenHub={() => navigate('/ideas')}
                     />
                   ))}
                 </div>

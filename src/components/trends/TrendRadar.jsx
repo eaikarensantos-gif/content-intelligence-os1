@@ -216,15 +216,19 @@ Respond with ONLY a valid JSON object, no markdown, no code blocks:
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`API error ${response.status}: ${err}`)
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(response)
   }
 
   const data = await response.json()
   const raw = data.content?.[0]?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
-  return JSON.parse(match[0])
+  // Sanitize common AI JSON mistakes: trailing commas before ] or }
+  const sanitized = match[0]
+    .replace(/,\s*]/g, ']')
+    .replace(/,\s*}/g, '}')
+  return JSON.parse(sanitized)
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────

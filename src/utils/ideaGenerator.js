@@ -136,8 +136,8 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`API error ${response.status}: ${err}`)
+    const { handleApiError } = await import('./apiError.js')
+    await handleApiError(response)
   }
 
   const data = await response.json()
@@ -145,7 +145,7 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
 
-  const result = JSON.parse(match[0])
+  const result = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
   return {
     signals: result.signals || [],
     ideas: (result.ideas || []).map((idea, i) => ({
@@ -229,8 +229,8 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`API error ${response.status}: ${err}`)
+    const { handleApiError } = await import('./apiError.js')
+    await handleApiError(response)
   }
 
   const data = await response.json()
@@ -238,7 +238,7 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
   const match = raw.match(/\[[\s\S]*\]/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
 
-  const ideas = JSON.parse(match[0])
+  const ideas = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
   return ideas.map((idea, i) => ({
     ...idea,
     id: `ai-${Date.now()}-${i}`,

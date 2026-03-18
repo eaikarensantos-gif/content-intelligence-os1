@@ -535,7 +535,7 @@ export default function Dashboard() {
           />
           <QuickAction
             icon={Flame} label="Gerar Ideias" sub="IA + sinais culturais"
-            to="/ideas" navigate={navigate}
+            to="/generate" navigate={navigate}
             gradient="from-amber-50 to-amber-100/50 border-amber-200" iconColor="text-amber-500"
           />
         </div>

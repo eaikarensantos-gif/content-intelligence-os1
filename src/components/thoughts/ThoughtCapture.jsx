@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Brain, Sparkles, Copy, Check, Plus, Trash2,
   Clock, Layers, Video, AlignLeft, BookOpen, Zap,
   RefreshCw, LayoutGrid, Mic, Instagram, Music2,
   Play, Repeat2, MessageCircle, Heart, ChevronRight,
-  Film, Smartphone,
+  Film, Smartphone, ExternalLink,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -208,15 +209,16 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   })
 
   if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`API ${res.status}: ${err}`)
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(res)
   }
 
   const data = await res.json()
   const raw = data.content?.[0]?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da API')
-  return JSON.parse(match[0])
+  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
+  return JSON.parse(sanitized)
 }
 
 // ─── Loading phases ───────────────────────────────────────────────────────────
@@ -250,23 +252,32 @@ function useCopy() {
 }
 
 // ─── Save button ──────────────────────────────────────────────────────────────
-function SaveBtn({ saved, onClick, color }) {
+function SaveBtn({ saved, onClick, color, onOpenHub }) {
   const c = COLOR_MAP[color]
-  return (
+  return saved ? (
+    <div className="flex items-center gap-2 w-full">
+      <span className="flex-1 text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200">
+        <Check size={12} /> Salvo no Hub
+      </span>
+      <button
+        onClick={onOpenHub}
+        className="text-[10px] font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1 shrink-0 px-2 py-2 rounded-lg hover:bg-orange-50 transition-colors"
+      >
+        Abrir no Hub <ExternalLink size={9} />
+      </button>
+    </div>
+  ) : (
     <button
       onClick={onClick}
-      disabled={saved}
-      className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-        saved ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : c.btn
-      }`}
+      className={`w-full text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${c.btn}`}
     >
-      {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub de Ideias</>}
+      <Plus size={12} /> Salvar no Hub de Ideias
     </button>
   )
 }
 
 // ─── Format 1: Reflection Post ────────────────────────────────────────────────
-function ReflectionCard({ data, onSave, saved }) {
+function ReflectionCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.indigo
   return (
@@ -291,14 +302,14 @@ function ReflectionCard({ data, onSave, saved }) {
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Encerramento</p>
           <p className="text-xs text-gray-600 italic">"{data.closing_line}"</p>
         </div>
-        <SaveBtn saved={saved} onClick={onSave} color="indigo" />
+        <SaveBtn saved={saved} onClick={onSave} color="indigo" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
 }
 
 // ─── Format 2: Video Talking Point ───────────────────────────────────────────
-function VideoCard({ data, onSave, saved }) {
+function VideoCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.violet
   const script = [`HOOK: ${data.hook}`, '', ...(data.talking_points || []).map((p, i) => `${i + 1}. ${p}`), '', `ENCERRAMENTO: ${data.closing}`].join('\n')
@@ -332,14 +343,14 @@ function VideoCard({ data, onSave, saved }) {
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Encerramento</p>
           <p className="text-xs text-gray-600 italic">{data.closing}</p>
         </div>
-        <SaveBtn saved={saved} onClick={onSave} color="violet" />
+        <SaveBtn saved={saved} onClick={onSave} color="violet" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
 }
 
 // ─── Format 3: Carousel ───────────────────────────────────────────────────────
-function CarouselCard({ data, onSave, saved }) {
+function CarouselCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.purple
   const allSlides = [`SLIDE 1 (CAPA): ${data.slide_1}`, ...(data.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`), `\nSLIDE FINAL:\n${data.final_slide}`].join('\n')
@@ -375,14 +386,14 @@ function CarouselCard({ data, onSave, saved }) {
           <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wide mb-1">Slide Final — Insight Central</p>
           <p className="text-xs font-semibold text-gray-800">"{data.final_slide}"</p>
         </div>
-        <SaveBtn saved={saved} onClick={onSave} color="purple" />
+        <SaveBtn saved={saved} onClick={onSave} color="purple" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
 }
 
 // ─── Format 4: Storytelling ───────────────────────────────────────────────────
-function StorytellingCard({ data, onSave, saved }) {
+function StorytellingCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.fuchsia
   const STEPS = [
@@ -414,14 +425,14 @@ function StorytellingCard({ data, onSave, saved }) {
             <p className="text-xs text-gray-700 leading-relaxed">{data[step.key]}</p>
           </div>
         ))}
-        <SaveBtn saved={saved} onClick={onSave} color="fuchsia" />
+        <SaveBtn saved={saved} onClick={onSave} color="fuchsia" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
 }
 
 // ─── Format 5: Reels Script ───────────────────────────────────────────────────
-function ReelCard({ data, onSave, saved }) {
+function ReelCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.rose
   const script = [
@@ -496,7 +507,7 @@ function ReelCard({ data, onSave, saved }) {
             <p className="text-[11px] text-gray-700 font-semibold">{data.cta}</p>
           </div>
         </div>
-        <SaveBtn saved={saved} onClick={onSave} color="rose" />
+        <SaveBtn saved={saved} onClick={onSave} color="rose" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
@@ -517,7 +528,7 @@ const INTERACTIVE_ICONS = {
   nenhum:    '',
 }
 
-function StoriesCard({ data, onSave, saved }) {
+function StoriesCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.pink
   const script = [`ABERTURA: ${data.opening_slide}`, '', ...(data.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`), '', `INTERATIVIDADE: ${data.interactive_tip}`, `CTA FINAL: ${data.closing_cta}`].join('\n')
@@ -566,14 +577,14 @@ function StoriesCard({ data, onSave, saved }) {
           <p className="text-[9px] text-pink-500 font-bold uppercase tracking-wide mb-1">CTA Final</p>
           <p className="text-xs text-gray-700 font-medium">{data.closing_cta}</p>
         </div>
-        <SaveBtn saved={saved} onClick={onSave} color="pink" />
+        <SaveBtn saved={saved} onClick={onSave} color="pink" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
 }
 
 // ─── Format 7: TikTok Script ──────────────────────────────────────────────────
-function TikTokCard({ data, onSave, saved }) {
+function TikTokCard({ data, onSave, saved, onOpenHub }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.zinc
   const script = [
@@ -649,7 +660,7 @@ function TikTokCard({ data, onSave, saved }) {
           </div>
           <p className="text-xs font-semibold text-white">"{data.comment_bait}"</p>
         </div>
-        <SaveBtn saved={saved} onClick={onSave} color="zinc" />
+        <SaveBtn saved={saved} onClick={onSave} color="zinc" onOpenHub={onOpenHub} />
       </div>
     </div>
   )
@@ -725,6 +736,7 @@ const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', '
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
   const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea } = useStore()
+  const navigate = useNavigate()
 
   const [thought, setThought] = useState('')
   const [niche, setNiche] = useState('')
@@ -760,6 +772,16 @@ export default function ThoughtCapture() {
       const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone })
       setResult(data)
       addThoughtCapture({ thought: thought.trim(), niche, tone, result: data })
+      // Auto-save draft to Hub
+      if (data.save_as_idea) {
+        addIdea({
+          title: data.save_as_idea.title || thought.trim().slice(0, 60),
+          description: data.save_as_idea.description || data.core_insight || '',
+          status: 'draft',
+          tags: ['thought-capture', 'auto-save'],
+          source: 'Thought Capture',
+        })
+      }
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     } catch (e) {
       setError(e.message)
@@ -797,12 +819,15 @@ export default function ThoughtCapture() {
       description: `${result.save_as_idea.description} [${FORMAT_LABELS[key]}]`,
       platform: FORMAT_PLATFORMS[key] || result.save_as_idea.platform || 'Instagram',
       format: FORMAT_FORMATS[key] || 'post',
-      status: 'idea',
+      status: 'draft',
       tags: ['thought-capture', FORMAT_LABELS[key], ...(result.hashtags || []).slice(0, 2)],
       hook_type: 'reflexivo',
+      source: 'Thought Capture',
     })
     setSavedFormats(prev => new Set([...prev, key]))
   }
+
+  const goToHub = () => navigate('/ideas')
 
   const charCount = thought.length
   const isReady = charCount >= 10
@@ -938,16 +963,16 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {result.reflection_post && (
-                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} />
+                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} />
                 )}
                 {result.video_talking_point && (
-                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} />
+                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} />
                 )}
                 {result.carousel && (
-                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} />
+                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} />
                 )}
                 {result.storytelling && (
-                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} />
+                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} />
                 )}
               </div>
             </div>
@@ -961,13 +986,13 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 {result.reel_script && (
-                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} />
+                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} />
                 )}
                 {result.stories_sequence && (
-                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} />
+                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} />
                 )}
                 {result.tiktok_script && (
-                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} />
+                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} />
                 )}
               </div>
             </div>
@@ -983,13 +1008,20 @@ export default function ThoughtCapture() {
                   <p className="text-[10px] text-gray-400">Cada formato vira uma ideia separada pronta para produzir</p>
                 </div>
               </div>
-              <button
-                onClick={() => ALL_FORMAT_KEYS.forEach(k => { if (!savedFormats.has(k)) handleSaveFormat(k) })}
-                disabled={savedFormats.size === ALL_FORMAT_KEYS.length}
-                className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all shrink-0 flex items-center gap-1.5 ${savedFormats.size === ALL_FORMAT_KEYS.length ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-100'}`}
-              >
-                {savedFormats.size === ALL_FORMAT_KEYS.length ? <><Check size={12} /> Todos salvos</> : <><Sparkles size={12} /> Salvar todos</>}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => ALL_FORMAT_KEYS.forEach(k => { if (!savedFormats.has(k)) handleSaveFormat(k) })}
+                  disabled={savedFormats.size === ALL_FORMAT_KEYS.length}
+                  className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${savedFormats.size === ALL_FORMAT_KEYS.length ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-100'}`}
+                >
+                  {savedFormats.size === ALL_FORMAT_KEYS.length ? <><Check size={12} /> Todos salvos</> : <><Sparkles size={12} /> Salvar todos</>}
+                </button>
+                {savedFormats.size > 0 && (
+                  <button onClick={goToHub} className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1 px-3 py-2 rounded-xl hover:bg-orange-50 border border-orange-200 transition-all">
+                    Abrir no Hub <ExternalLink size={10} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (

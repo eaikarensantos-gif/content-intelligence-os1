@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, Video, Brain, Wand2, X, Sparkles,
+  Zap, ChevronRight, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -14,9 +14,7 @@ const NAV = [
   { to: '/trends', icon: Radar, label: 'Creator Insights' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
-  { to: '/thoughts', icon: Brain, label: 'Thought Capture' },
-  { to: '/generate', icon: Sparkles, label: 'Gerador de Ideias' },
-  { to: '/text', icon: Wand2, label: 'Text Studio' },
+  { to: '/create', icon: PenTool, label: 'Criar Conteúdo' },
 ]
 
 const STORE_KEY = 'content-intelligence-os-v3'
@@ -125,34 +123,45 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              clsx(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative',
-                isActive
-                  ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-white'
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon size={16} className={isActive ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
-                <span className="flex-1">{label}</span>
-                {label === 'Hub de Ideias' && readyCount > 0 && (
-                  <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                    {readyCount}
-                  </span>
-                )}
-                {isActive && <ChevronRight size={12} className="text-orange-500" />}
-              </>
-            )}
-          </NavLink>
-        ))}
+        {NAV.map(({ to, icon: Icon, label }) => {
+          // "Criar Conteúdo" also highlights on its sub-routes
+          const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation']
+          const isCreateGroup = to === '/create'
+          const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
+
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/' || isCreateGroup}
+              className={({ isActive }) => {
+                const active = isActive || forceActive
+                return clsx(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative',
+                  active
+                    ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-white'
+                )
+              }}
+            >
+              {({ isActive }) => {
+                const active = isActive || forceActive
+                return (
+                  <>
+                    <Icon size={16} className={active ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
+                    <span className="flex-1">{label}</span>
+                    {label === 'Hub de Ideias' && readyCount > 0 && (
+                      <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                        {readyCount}
+                      </span>
+                    )}
+                    {active && <ChevronRight size={12} className="text-orange-500" />}
+                  </>
+                )
+              }}
+            </NavLink>
+          )
+        })}
       </nav>
 
       {/* Footer — Sync + User */}

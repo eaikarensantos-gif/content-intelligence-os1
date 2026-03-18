@@ -10,6 +10,8 @@ import VideoAnalyzer from './components/video/VideoAnalyzer'
 import ThoughtCapture from './components/thoughts/ThoughtCapture'
 import TextStudio from './components/text/TextStudio'
 import IdeaGenerator from './components/generate/IdeaGenerator'
+import CreateContent from './components/create/CreateContent'
+import PresentationMode from './components/presentation/PresentationMode'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -46,9 +48,11 @@ export default function App() {
           <Route path="/trends" element={<TrendRadar />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/video" element={<VideoAnalyzer />} />
+          <Route path="/create" element={<CreateContent />} />
           <Route path="/thoughts" element={<ThoughtCapture />} />
           <Route path="/text" element={<TextStudio />} />
           <Route path="/generate" element={<IdeaGenerator />} />
+          <Route path="/presentation" element={<PresentationMode />} />
         </Routes>
       </Layout>
     </BrowserRouter>

@@ -5,7 +5,7 @@ import {
   GripVertical, Kanban, Zap, RefreshCw, Sparkles, Radar, Loader2,
   Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
   ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound, Trash2,
-  TrendingUp, ArrowRight, Flame,
+  TrendingUp, ArrowRight, Flame, Minus,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
@@ -79,14 +79,14 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
         onClick={onClick}
       >
         {/* Delete button — hover only */}
-        {onDelete && !compact && (
+        {onDelete && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onDelete(idea.id) }}
-            className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all z-10"
+            className="absolute top-1.5 right-1.5 p-1 rounded-md opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all z-10"
             title="Excluir ideia"
           >
-            <Trash2 size={11} />
+            <Trash2 size={compact ? 10 : 11} />
           </button>
         )}
 
@@ -191,9 +191,10 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
 }
 
 // ─── Visualização Calendário ──────────────────────────────────────────────────
-function CalendarView({ ideas, onCardClick, onNewIdea, onDelete }) {
+function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [contextDay, setContextDay] = useState(null) // day string for context menu
   const year = current.getFullYear()
   const month = current.getMonth()
   const firstDay = new Date(year, month, 1).getDay()
@@ -245,8 +246,8 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete }) {
               return (
                 <div
                   key={i}
-                  className={`border-b border-r border-gray-100 p-1 sm:p-1.5 min-h-[56px] sm:min-h-0 ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
-                  onClick={() => day && onNewIdea(dayStr)}
+                  className={`border-b border-r border-gray-100 p-1 sm:p-1.5 min-h-[56px] sm:min-h-0 relative ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
+                  onClick={() => day && setContextDay(contextDay === dayStr ? null : dayStr)}
                 >
                   {day && (
                     <>
@@ -279,6 +280,23 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete }) {
                             <span key={idx} className="w-1.5 h-1.5 rounded-full bg-orange-400" />
                           ))}
                           {dayIdeas.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length - 3}</span>}
+                        </div>
+                      )}
+                      {/* Context menu — add idea or gap */}
+                      {contextDay === dayStr && (
+                        <div className="absolute z-20 mt-1 left-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[130px] animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => { setContextDay(null); onNewIdea(dayStr) }}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                          >
+                            <Plus size={11} /> Nova ideia
+                          </button>
+                          <button
+                            onClick={() => { setContextDay(null); onAddGap(dayStr) }}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
+                          >
+                            <Minus size={11} /> Lacuna
+                          </button>
                         </div>
                       )}
                     </>
@@ -990,6 +1008,19 @@ export default function IdeasHub() {
   const openNew  = (defaults = null) => { setEditTarget(defaults); setFormOpen(true) }
   const handleCalendarDateClick = (dateStr) => openNew({ scheduled_date: dateStr })
 
+  const handleAddGap = (dateStr) => {
+    addIdea({
+      title: 'Lacuna — reservado',
+      status: 'idea',
+      priority: 'low',
+      format: '',
+      platforms: [],
+      tags: ['lacuna'],
+      scheduled_date: dateStr,
+      notes: 'Espaço reservado no calendário. Substitua por uma ideia real.',
+    })
+  }
+
   const handleTagClick = (tag) => setFilterTag((prev) => (prev === tag ? null : tag))
 
   return (
@@ -1091,7 +1122,7 @@ export default function IdeasHub() {
 
       {/* Visualização Calendário */}
       {tab === 'calendar' && (
-        <CalendarView ideas={filtered} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} />
+        <CalendarView ideas={filtered} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} onAddGap={handleAddGap} />
       )}
 
       {/* Visualização Gerar */}

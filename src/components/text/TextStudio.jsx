@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Wand2, Copy, Check, RefreshCw,
-  Linkedin, Instagram, Youtube, Twitter, Smartphone,
-  AlignLeft, Film, X, Zap, Save,
+  AlignLeft, X, Zap, Save, ExternalLink,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -146,14 +146,15 @@ Responda SOMENTE com um JSON válido neste formato:
     }),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `Erro ${res.status}`)
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(res)
   }
   const data = await res.json()
   const raw = data.content[0].text
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  return JSON.parse(match[0])
+  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
+  return JSON.parse(sanitized)
 }
 
 // ─── Platform output renderers ────────────────────────────────────────────────
@@ -393,6 +394,7 @@ function buildCopyText(platform, data) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function TextStudio() {
   const { addIdea } = useStore()
+  const navigate = useNavigate()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 
   const [text, setText] = useState('')
@@ -488,6 +490,7 @@ export default function TextStudio() {
       tags: ['text-studio', sourceType, platform],
       priority: 'medium',
       status: 'draft',
+      source: 'Text Studio',
     })
     setSavedVersions(prev => new Set([...prev, platform]))
   }
@@ -667,9 +670,17 @@ export default function TextStudio() {
                     </p>
                     <div className="flex items-center gap-2">
                       {savedVersions.has(activeTab) ? (
-                        <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-200">
-                          <Check size={11} /> Salvo no Hub
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-200">
+                            <Check size={11} /> Salvo no Hub
+                          </span>
+                          <button
+                            onClick={() => navigate('/ideas')}
+                            className="text-[11px] text-orange-600 font-medium flex items-center gap-1 px-2 py-1 hover:bg-orange-50 rounded-lg transition-colors"
+                          >
+                            Abrir no Hub <ExternalLink size={9} />
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleSaveToHub(activeTab)}
