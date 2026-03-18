@@ -299,25 +299,6 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
           </div>
         </div>
 
-        {/* Vincular Métrica */}
-        {metrics.length > 0 && (
-          <div>
-            <label className="label">Vincular a uma Métrica (opcional)</label>
-            <select
-              className="select"
-              value={form.linked_metric_id || ''}
-              onChange={(e) => set('linked_metric_id', e.target.value)}
-            >
-              <option value="">— Nenhuma —</option>
-              {metrics.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {[m.description, m.post_type, m.platform, m.date].filter(Boolean).join(' · ')}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {/* Ações */}
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>

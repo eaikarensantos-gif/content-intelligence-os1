@@ -18,10 +18,13 @@ const NUMERIC_FIELDS = [
 
 export default function MetricsForm({ open, onClose }) {
   const posts = useStore((s) => s.posts)
+  const metrics = useStore((s) => s.metrics)
   const addMetric = useStore((s) => s.addMetric)
+  const updateMetric = useStore((s) => s.updateMetric)
   const [form, setForm] = useState(EMPTY)
   const [tab, setTab] = useState('manual')
   const [csvResult, setCsvResult] = useState(null)
+  const [updateResult, setUpdateResult] = useState(null)
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -243,6 +246,29 @@ export default function MetricsForm({ open, onClose }) {
     onClose()
   }
 
+  // Atualiza datas de métricas existentes usando CSV (match por descrição + impressões)
+  const updateDatesFromCSV = () => {
+    if (!csvResult) return
+    let updated = 0
+    csvResult.forEach((row) => {
+      if (!row.date) return // CSV sem data = pular
+      // Match por descrição (primeiros 50 chars) + impressões
+      const match = metrics.find(m =>
+        m.description && row.description &&
+        m.description.slice(0, 50).toLowerCase() === row.description.slice(0, 50).toLowerCase() &&
+        m.impressions === row.impressions
+      )
+      if (match) {
+        updateMetric(match.id, { date: row.date, publish_time: row.publish_time || '' })
+        updated++
+      }
+    })
+    setCsvResult(null)
+    setUpdateResult(updated)
+    setTimeout(() => setUpdateResult(null), 4000)
+    if (updated > 0) onClose()
+  }
+
   return (
     <Modal open={open} onClose={onClose} title="Adicionar Métricas de Desempenho">
       {/* Abas */}
@@ -392,11 +418,26 @@ export default function MetricsForm({ open, onClose }) {
                   <div className="px-3 py-2 text-xs text-gray-400">+ {csvResult.length - 5} linhas mais</div>
                 )}
               </div>
-              <div className="flex justify-end gap-2">
-                <button className="btn-secondary" onClick={() => setCsvResult(null)}>Limpar</button>
-                <button className="btn-primary" onClick={importCSV}>
-                  Importar {csvResult.length} linhas
-                </button>
+              <div className="flex flex-col gap-2">
+                {metrics.length > 0 && (
+                  <button
+                    className="w-full text-xs py-2 px-3 rounded-lg font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all flex items-center justify-center gap-1.5"
+                    onClick={updateDatesFromCSV}
+                  >
+                    🔄 Atualizar datas dos {metrics.length} posts existentes
+                  </button>
+                )}
+                {updateResult !== null && (
+                  <div className="text-xs text-center py-1.5 px-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ✅ {updateResult} datas atualizadas com sucesso!
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button className="btn-secondary" onClick={() => setCsvResult(null)}>Limpar</button>
+                  <button className="btn-primary" onClick={importCSV}>
+                    Importar {csvResult.length} linhas
+                  </button>
+                </div>
               </div>
             </div>
           )}
