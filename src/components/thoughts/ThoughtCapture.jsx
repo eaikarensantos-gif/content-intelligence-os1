@@ -5,7 +5,7 @@ import {
   Clock, Layers, Video, AlignLeft, BookOpen, Zap,
   RefreshCw, LayoutGrid, Mic, Instagram, Music2,
   Play, Repeat2, MessageCircle, Heart, ChevronRight,
-  Film, Smartphone, ExternalLink,
+  Film, Smartphone, ExternalLink, Quote, Target,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -71,6 +71,21 @@ FORMATO 3 — CARROSSEL (Instagram / LinkedIn)
 
 FORMATO 4 — ARCO NARRATIVO (Storytelling universal)
 - Situação → Tensão → Virada → Resolução
+
+─────────────────────────────────────────────────────
+FRASES VIRAIS (NOVO — CRÍTICO):
+A partir do insight central do pensamento, gere 5-8 frases curtas e impactantes.
+Essas frases devem funcionar como ganchos, legendas ou frases-chave em vídeos.
+
+TIPOS DE FRASE (inclua uma mistura):
+1. Observacional — "Tem uma coisa estranha acontecendo com..."
+2. Contradição — "Nunca foi tão fácil X. E nunca foi tão difícil Y."
+3. Insight direto — "O problema não é falta de X. É excesso de Y."
+4. Reflexiva — "Talvez a gente esteja fazendo X... quando deveria estar fazendo Y."
+
+Cada frase deve: soar natural e humana, ser concisa e memorável, evitar clichês de IA, evitar tom dramático ou agressivo, parecer algo que um criador real diria.
+
+Depois, selecione as 2-3 frases mais fortes e adapte como hooks para: vídeo, post escrito e conteúdo curto (reels/stories).
 
 ─────────────────────────────────────────────────────
 FORMATO 5 — ROTEIRO PARA REELS (Instagram Reels, 15-60 seg)
@@ -184,6 +199,27 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "comment_bait": "pergunta ou afirmação que provoca comentários (específica, não genérica)",
     "suggested_duration_sec": 30
   },
+  "viral_phrases": {
+    "analysis": {
+      "main_observation": "a observação principal do pensamento",
+      "underlying_tension": "a tensão implícita que torna interessante",
+      "implicit_insight": "o insight que a maioria não percebe"
+    },
+    "phrases": [
+      { "text": "frase viral 1", "type": "observacional|contradição|insight|reflexiva" },
+      { "text": "frase viral 2", "type": "observacional|contradição|insight|reflexiva" },
+      { "text": "frase viral 3", "type": "observacional|contradição|insight|reflexiva" },
+      { "text": "frase viral 4", "type": "observacional|contradição|insight|reflexiva" },
+      { "text": "frase viral 5", "type": "observacional|contradição|insight|reflexiva" },
+      { "text": "frase viral 6", "type": "observacional|contradição|insight|reflexiva" }
+    ],
+    "top_hooks": [
+      { "phrase": "a frase mais forte adaptada para vídeo", "format": "video", "context": "como usar: abertura de vídeo, primeiros 3 segundos" },
+      { "phrase": "a frase mais forte adaptada para post escrito", "format": "post", "context": "como usar: primeira linha do post, antes do ver mais" },
+      { "phrase": "a frase mais forte adaptada para conteúdo curto", "format": "short", "context": "como usar: texto na tela do reels/stories/tiktok" }
+    ],
+    "suggested_formats": ["carrossel de frases", "reels com texto na tela", "post reflexivo"]
+  },
   "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "save_as_idea": {
     "title": "título para salvar no Hub de Ideias",
@@ -203,7 +239,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     },
     body: JSON.stringify({
       model: 'claude-opus-4-5',
-      max_tokens: 6000,
+      max_tokens: 8000,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -224,6 +260,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 // ─── Loading phases ───────────────────────────────────────────────────────────
 const PHASES = [
   { label: 'Capturando a essência...', icon: Brain, color: 'text-indigo-500' },
+  { label: 'Gerando frases virais...', icon: Quote, color: 'text-orange-500' },
   { label: 'Estruturando os formatos...', icon: Layers, color: 'text-violet-500' },
   { label: 'Adaptando para cada plataforma...', icon: Smartphone, color: 'text-pink-500' },
   { label: 'Refinando o tom...', icon: Sparkles, color: 'text-purple-500' },
@@ -666,6 +703,132 @@ function TikTokCard({ data, onSave, saved, onOpenHub }) {
   )
 }
 
+// ─── Viral Phrases Card ──────────────────────────────────────────────────────
+const PHRASE_TYPE_STYLES = {
+  observacional: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', label: '👁 Observacional' },
+  'contradição':  { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', label: '⚡ Contradição' },
+  insight:       { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', label: '💡 Insight' },
+  reflexiva:     { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-600', label: '🌿 Reflexiva' },
+}
+const HOOK_FORMAT_STYLES = {
+  video: { icon: Video, label: 'Vídeo', color: 'text-violet-500', bg: 'bg-violet-50', border: 'border-violet-200' },
+  post:  { icon: AlignLeft, label: 'Post', color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  short: { icon: Film, label: 'Curto (Reels/Stories)', color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200' },
+}
+
+function ViralPhrasesCard({ data }) {
+  const { copiedKey, copy } = useCopy()
+  const allPhrases = (data.phrases || []).map(p => `"${p.text}"`).join('\n\n')
+
+  return (
+    <div className="rounded-2xl border border-orange-200 bg-white overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="px-5 py-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-sm">
+            <Quote size={14} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-800">Frases Virais</p>
+            <p className="text-[10px] text-gray-400">{data.phrases?.length || 0} frases geradas a partir do seu pensamento</p>
+          </div>
+        </div>
+        <button onClick={() => copy(allPhrases, 'all-phrases')} className="btn-secondary text-xs py-1.5 px-3">
+          {copiedKey === 'all-phrases' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar todas</>}
+        </button>
+      </div>
+
+      <div className="p-5 space-y-5">
+        {/* Analysis */}
+        {data.analysis && (
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Observação principal</p>
+              <p className="text-[11px] text-gray-700 leading-relaxed">{data.analysis.main_observation}</p>
+            </div>
+            <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Tensão subjacente</p>
+              <p className="text-[11px] text-gray-700 leading-relaxed">{data.analysis.underlying_tension}</p>
+            </div>
+            <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Insight implícito</p>
+              <p className="text-[11px] text-gray-700 leading-relaxed">{data.analysis.implicit_insight}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Phrases */}
+        <div className="space-y-2">
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Frases de impacto</p>
+          <div className="space-y-2">
+            {(data.phrases || []).map((p, i) => {
+              const style = PHRASE_TYPE_STYLES[p.type] || PHRASE_TYPE_STYLES.observacional
+              return (
+                <div key={i} className={`rounded-xl p-3.5 ${style.bg} border ${style.border} flex items-start gap-3 group`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-gray-800 leading-snug">"{p.text}"</p>
+                    <span className={`text-[9px] font-semibold mt-1.5 inline-block ${style.text}`}>{style.label}</span>
+                  </div>
+                  <button
+                    onClick={() => copy(p.text, `phrase-${i}`)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all shrink-0"
+                  >
+                    {copiedKey === `phrase-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Top Hooks */}
+        {data.top_hooks?.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Target size={12} className="text-orange-500" />
+              <p className="text-[10px] text-orange-600 font-bold uppercase tracking-wide">Melhores hooks para conteúdo</p>
+            </div>
+            <div className="space-y-2">
+              {data.top_hooks.map((hook, i) => {
+                const fmt = HOOK_FORMAT_STYLES[hook.format] || HOOK_FORMAT_STYLES.post
+                const HookIcon = fmt.icon
+                return (
+                  <div key={i} className={`rounded-xl p-4 ${fmt.bg} border ${fmt.border} space-y-2 group`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <HookIcon size={13} className={fmt.color} />
+                        <span className={`text-[10px] font-bold uppercase tracking-wide ${fmt.color}`}>{fmt.label}</span>
+                      </div>
+                      <button
+                        onClick={() => copy(hook.phrase, `hook-${i}`)}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all"
+                      >
+                        {copiedKey === `hook-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 leading-snug">"{hook.phrase}"</p>
+                    <p className="text-[10px] text-gray-500 italic">{hook.context}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Suggested Formats */}
+        {data.suggested_formats?.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-[10px] text-gray-400 font-semibold">Formatos sugeridos:</span>
+            {data.suggested_formats.map((f, i) => (
+              <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 border border-orange-200 font-medium">{f}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── History item ─────────────────────────────────────────────────────────────
 function HistoryItem({ capture, onLoad, onDelete }) {
   return (
@@ -709,7 +872,7 @@ function LoadingView({ phase }) {
           <PhaseIcon size={14} className={PHASES[phase]?.color} />
           {PHASES[phase]?.label}
         </p>
-        <p className="text-xs text-gray-400">Transformando em 7 formatos para diferentes plataformas...</p>
+        <p className="text-xs text-gray-400">Transformando em 7 formatos + frases virais...</p>
       </div>
       <div className="flex items-center gap-2">
         {PHASES.map((p, i) => (
@@ -844,7 +1007,7 @@ export default function ThoughtCapture() {
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-900">Thought Capture</h1>
-              <p className="text-[10px] text-gray-400">Pensamentos → 7 formatos para cada plataforma</p>
+              <p className="text-[10px] text-gray-400">Pensamentos → 7 formatos + frases virais</p>
             </div>
           </div>
         </div>
@@ -903,7 +1066,7 @@ export default function ThoughtCapture() {
           >
             {loading ? <><RefreshCw size={14} className="animate-spin" /> Capturando...</> : <><Sparkles size={14} /> Capturar Pensamento</>}
           </button>
-          <p className="text-[10px] text-gray-400 text-center">Ctrl+Enter para enviar · Gera 7 formatos</p>
+          <p className="text-[10px] text-gray-400 text-center">Ctrl+Enter para enviar · Gera 7 formatos + frases virais</p>
         </div>
 
         {/* History */}
@@ -953,6 +1116,20 @@ export default function ThoughtCapture() {
                 </div>
               )}
             </div>
+
+            {/* ── Viral Phrases ── */}
+            {result.viral_phrases && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-orange-100" />
+                  <span className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide px-3 flex items-center gap-1.5">
+                    <Quote size={10} /> Frases Virais & Hooks
+                  </span>
+                  <div className="h-px flex-1 bg-orange-100" />
+                </div>
+                <ViralPhrasesCard data={result.viral_phrases} />
+              </div>
+            )}
 
             {/* ── Section 1: Long-form formats ── */}
             <div className="space-y-3">
@@ -1034,7 +1211,7 @@ export default function ThoughtCapture() {
               <h2 className="text-lg font-bold text-gray-800">Capture seu próximo pensamento</h2>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Escreva qualquer reflexão bruta — uma observação, frustração, algo que você notou hoje.
-                O sistema transforma em <strong>7 formatos</strong> adaptados para cada plataforma.
+                O sistema transforma em <strong>7 formatos + frases virais</strong> adaptados para cada plataforma.
               </p>
             </div>
             {/* Examples */}
