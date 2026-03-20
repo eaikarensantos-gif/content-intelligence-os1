@@ -45,7 +45,7 @@ async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-opus-4-5',
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
@@ -69,68 +69,97 @@ async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
 
 // ── Prompts ────────────────────────────────────────────────────────────────────
 
-const SYSTEM = 'Você é um estrategista de conteúdo de elite. Analise referências de criadores e extraia arquétipos de conteúdo reutilizáveis. Escreva em português brasileiro natural. Responda SOMENTE com JSON válido.'
+const SYSTEM = `Você é um analista de conteúdo digital de elite com conhecimento profundo sobre criadores de conteúdo reais — brasileiros e internacionais — em todas as plataformas (Instagram, YouTube, TikTok, LinkedIn, Twitter/X).
+
+REGRA FUNDAMENTAL: Você DEVE analisar os criadores REAIS mencionados pelo usuário. Use seu conhecimento de treinamento sobre esses criadores para identificar padrões REAIS e VERIFICÁVEIS do conteúdo deles.
+
+Quando o usuário mencionar um criador (por nome, @handle, ou descrição), você deve:
+1. Identificar QUEM é esse criador (nome, plataforma, nicho, tamanho)
+2. Analisar os padrões REAIS de conteúdo que esse criador usa
+3. Citar EXEMPLOS REAIS de posts/vídeos conhecidos desse criador
+4. Extrair as fórmulas REAIS que fizeram esse conteúdo funcionar
+
+NUNCA invente criadores genéricos. NUNCA crie arquétipos abstratos desconectados das referências. Cada arquétipo deve ser claramente rastreável ao criador mencionado.
+
+Escreva em português brasileiro natural. Responda SOMENTE com JSON válido.`
 
 function buildExtractPrompt(input, niche, platform) {
-  return `Analise estas referências de criadores e conteúdos e extraia os ARQUÉTIPOS DE CONTEÚDO — os modelos reutilizáveis por trás do sucesso deles.
+  return `Analise os criadores e referências abaixo e extraia os ARQUÉTIPOS DE CONTEÚDO REAIS — os modelos por trás do sucesso deles.
 
 REFERÊNCIAS DO USUÁRIO:
 ${input}
 ${niche ? `\nNICHO/ÁREA: ${niche}` : ''}
 ${platform ? `\nPLATAFORMA PRINCIPAL: ${platform}` : ''}
 
-Para cada padrão identificado, crie um ARQUÉTIPO com:
-1. Nome criativo e memorável (ex: "O Provocador Analítico", "O Contador de Padrões")
-2. Descrição do padrão — o que define este arquétipo
-3. Pilar de conteúdo — o tema central
-4. Fórmula de gancho — a estrutura do hook com [variáveis] (ex: "[Afirmação contrária] + [Dado surpreendente]")
-5. Exemplos de ganchos — 3 exemplos concretos usando a fórmula
-6. Estrutura do conteúdo — passos sequenciais (ex: ["Hook provocativo", "Contexto", "Reframe", "CTA"])
-7. Tom — como este arquétipo se comunica
-8. Estratégia de engajamento — como gera interação
-9. Formatos ideais
-10. Caso de uso — quando usar este arquétipo
+INSTRUÇÕES CRÍTICAS:
+1. Para cada criador mencionado, identifique os padrões REAIS de conteúdo que ele usa
+2. Cite EXEMPLOS CONCRETOS de posts, vídeos ou formatos que esse criador realmente fez
+3. A fórmula de gancho deve ser extraída de ganchos REAIS que o criador usou
+4. Os exemplos de gancho devem ser baseados em posts REAIS ou no estilo exato do criador
+5. Se o usuário mencionou um @handle, identifique o criador e analise seu conteúdo real
 
-Extraia de 2 a 5 arquétipos distintos. Cada um deve ser ÚNICO e reutilizável.
+Para cada padrão identificado, crie um ARQUÉTIPO com:
+1. Nome: baseado no estilo REAL do criador (ex: "O Storytelling Data-Driven do @thiagonigro", "O Provocador Reflexivo do @arthurpetry")
+2. Criador de origem: quem inspira este arquétipo (nome real e @handle)
+3. Descrição: o que define este padrão no conteúdo REAL do criador
+4. Pilar de conteúdo: o tema central deste criador
+5. Fórmula de gancho: a estrutura REAL que este criador usa com [variáveis]
+6. Exemplos de ganchos: 3 exemplos concretos baseados no estilo REAL do criador
+7. Estrutura do conteúdo: passos que este criador REALMENTE segue
+8. Tom: como este criador REALMENTE se comunica
+9. Estratégia de engajamento: como este criador gera interação
+10. Formatos e plataformas onde o criador atua
+11. Posts de referência: exemplos de posts REAIS ou típicos deste criador
+12. Caso de uso: quando e por que replicar este modelo
+
+Extraia de 2 a 5 arquétipos distintos. Cada um DEVE ser rastreável a um criador real.
 
 Responda SOMENTE com JSON:
 {
   "archetypes": [
     {
-      "name": "Nome do Arquétipo",
-      "description": "O que define este modelo de conteúdo...",
-      "content_pillar": "O pilar central",
-      "hook_formula": "[Estrutura] + [Variável] — fórmula reutilizável",
-      "hook_examples": ["Exemplo 1...", "Exemplo 2...", "Exemplo 3..."],
-      "content_structure": ["Passo 1", "Passo 2", "Passo 3", "Passo 4"],
-      "tone": "Descrição do tom de voz",
-      "engagement_strategy": "Como gera engajamento",
-      "formats": ["Carrossel", "Reels"],
-      "use_case": "Quando e por que usar este arquétipo"
+      "name": "Nome do Arquétipo — baseado no criador real",
+      "creator_ref": "@handle ou nome do criador real que inspira este arquétipo",
+      "creator_info": "Breve bio: quem é, quantos seguidores tem, qual plataforma principal",
+      "description": "O que define este modelo de conteúdo no trabalho REAL do criador...",
+      "content_pillar": "O pilar central do conteúdo deste criador",
+      "hook_formula": "[Estrutura] + [Variável] — fórmula extraída do criador real",
+      "hook_examples": ["Gancho real ou no estilo do criador 1", "Gancho 2", "Gancho 3"],
+      "content_structure": ["Passo real 1", "Passo 2", "Passo 3", "Passo 4"],
+      "tone": "Descrição do tom REAL de voz deste criador",
+      "engagement_strategy": "Como este criador REALMENTE gera engajamento",
+      "formats": ["Formato 1", "Formato 2"],
+      "reference_posts": ["Exemplo de post real 1", "Exemplo de post real 2"],
+      "use_case": "Quando usar este modelo e para qual tipo de conteúdo"
     }
   ]
 }`
 }
 
 function buildGeneratePrompt(archetype, topic, count) {
-  return `Você tem este ARQUÉTIPO DE CONTEÚDO como modelo:
+  const p = archetype.patterns || archetype
+  return `Você tem este ARQUÉTIPO DE CONTEÚDO como modelo — baseado em um criador REAL:
 
 NOME: ${archetype.name}
-DESCRIÇÃO: ${archetype.description || archetype.patterns?.description || ''}
-PILAR: ${archetype.patterns?.content_pillar || archetype.content_pillar || ''}
-FÓRMULA DE GANCHO: ${archetype.patterns?.hook_formula || archetype.hook_formula || ''}
-EXEMPLOS DE GANCHO: ${(archetype.patterns?.hook_examples || archetype.hook_examples || []).join(' | ')}
-ESTRUTURA: ${(archetype.patterns?.content_structure || archetype.content_structure || []).join(' → ')}
-TOM: ${archetype.patterns?.tone || archetype.tone || ''}
-ESTRATÉGIA: ${archetype.patterns?.engagement_strategy || archetype.engagement_strategy || ''}
-FORMATOS: ${(archetype.patterns?.formats || archetype.formats || []).join(', ')}
+CRIADOR DE REFERÊNCIA: ${p.creator_ref || 'Não especificado'}
+INFO DO CRIADOR: ${p.creator_info || ''}
+DESCRIÇÃO: ${archetype.description || p.description || ''}
+PILAR: ${p.content_pillar || ''}
+FÓRMULA DE GANCHO: ${p.hook_formula || ''}
+EXEMPLOS DE GANCHO DO CRIADOR: ${(p.hook_examples || []).join(' | ')}
+ESTRUTURA REAL: ${(p.content_structure || []).join(' → ')}
+TOM: ${p.tone || ''}
+ESTRATÉGIA: ${p.engagement_strategy || ''}
+FORMATOS: ${(p.formats || []).join(', ')}
+POSTS DE REFERÊNCIA: ${(p.reference_posts || []).join(' | ')}
 ${topic ? `\nTÓPICO ESPECÍFICO: ${topic}` : ''}
 
-Gere exatamente ${count} ideias de conteúdo que SEGUEM este arquétipo. Cada ideia deve:
-- Usar a fórmula de gancho do arquétipo
-- Seguir a estrutura definida
-- Manter o tom especificado
-- Ser única e prática
+Gere exatamente ${count} ideias de conteúdo que SEGUEM o estilo e padrão REAL deste criador. Cada ideia deve:
+- Usar a fórmula de gancho REAL do criador (como ele realmente faz)
+- Seguir a estrutura de conteúdo que este criador REALMENTE usa
+- Manter o tom REAL do criador — como ele fala, escreve, se comunica
+- Ser prática, aplicável e no nível de qualidade do criador original
+- Se o tópico for diferente do nicho original, adapte o ESTILO mantendo o modelo
 
 REGRAS DE TÍTULOS:
 - Máximo 12 palavras — curtos, diretos, impactantes
@@ -162,6 +191,7 @@ function buildHybridPrompt(archetypes) {
   const descriptions = archetypes.map((a, i) => {
     const p = a.patterns || a
     return `ARQUÉTIPO ${i + 1}: "${a.name}"
+- Criador de referência: ${p.creator_ref || 'N/A'}
 - Pilar: ${p.content_pillar || ''}
 - Fórmula: ${p.hook_formula || ''}
 - Estrutura: ${(p.content_structure || []).join(' → ')}
@@ -169,15 +199,15 @@ function buildHybridPrompt(archetypes) {
 - Estratégia: ${p.engagement_strategy || ''}`
   }).join('\n\n')
 
-  return `Combine estes arquétipos em um HÍBRIDO único e poderoso:
+  return `Combine estes arquétipos (baseados em criadores REAIS) em um HÍBRIDO único:
 
 ${descriptions}
 
 Crie um novo arquétipo que:
-1. Misture os melhores elementos de cada um
-2. Tenha uma identidade própria (não seja apenas a soma)
-3. Resolva limitações de cada arquétipo individual
-4. Seja prático e aplicável
+1. Misture os melhores elementos de cada criador de referência
+2. Tenha uma identidade própria — como se fosse um novo criador que aprendeu com todos
+3. Resolva limitações de cada estilo individual
+4. Seja prático e aplicável — alguém consegue usar amanhã
 
 Responda SOMENTE com JSON:
 {
@@ -216,6 +246,19 @@ function ArchetypeCard({ arch, onDelete, onGenerate, onSelect, selected, selecta
             )}
             <h3 className="font-semibold text-gray-900 text-sm truncate">{arch.name}</h3>
           </div>
+          {/* Creator reference */}
+          {(p.creator_ref || p.creator_info) && (
+            <div className="flex items-center gap-2 mt-1">
+              {p.creator_ref && (
+                <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded-md">
+                  {p.creator_ref}
+                </span>
+              )}
+              {p.creator_info && (
+                <span className="text-[10px] text-gray-400 truncate">{p.creator_info}</span>
+              )}
+            </div>
+          )}
           <p className="text-xs text-gray-500 mt-1 line-clamp-2">{arch.description || p.description}</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -296,6 +339,17 @@ function ArchetypeCard({ arch, onDelete, onGenerate, onSelect, selected, selecta
             <div>
               <div className="font-semibold text-gray-700 flex items-center gap-1.5 mb-1"><Target size={12} className="text-emerald-500" /> Engajamento</div>
               <p className="text-gray-600">{p.engagement_strategy}</p>
+            </div>
+          )}
+
+          {(p.reference_posts || []).length > 0 && (
+            <div>
+              <div className="font-semibold text-gray-700 flex items-center gap-1.5 mb-1"><Star size={12} className="text-yellow-500" /> Posts de Referência</div>
+              <ul className="space-y-1">
+                {p.reference_posts.map((post, i) => (
+                  <li key={i} className="text-gray-600 pl-3 border-l-2 border-yellow-200 text-[11px]">"{post}"</li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -489,6 +543,8 @@ export default function ContentArchetypes() {
       description: arch.description,
       source_input: input.slice(0, 500),
       patterns: {
+        creator_ref: arch.creator_ref || '',
+        creator_info: arch.creator_info || '',
         content_pillar: arch.content_pillar,
         hook_formula: arch.hook_formula,
         hook_examples: arch.hook_examples || [],
@@ -496,6 +552,7 @@ export default function ContentArchetypes() {
         tone: arch.tone,
         engagement_strategy: arch.engagement_strategy,
         formats: arch.formats || [],
+        reference_posts: arch.reference_posts || [],
         use_case: arch.use_case,
       },
     })
@@ -681,7 +738,7 @@ export default function ContentArchetypes() {
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={"Cole aqui referências de criadores, @handles, exemplos de conteúdos, análises de benchmarks, ou descreva os padrões que você identificou...\n\nExemplo:\n@thifraga — carrosséis com dados + storytelling pessoal\n@arthuraguiar — conteúdo provocativo sobre mercado\nPost: 'A gente confundiu ocupação com propósito'"}
+                placeholder={"Digite nomes reais de criadores, @handles ou descreva criadores que admira.\n\nExemplos:\n@icaborges — storytelling emocional com dados\n@arthurpetry — humor ácido sobre comportamento\nThiago Nigro — finanças com provocação e dados\nIcaro de Carvalho — copywriting e persuasão\n@nataliabeau — lifestyle com profundidade"}
                 rows={8}
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none text-sm resize-none"
               />
@@ -709,7 +766,8 @@ export default function ContentArchetypes() {
 
             <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 text-xs text-orange-800 space-y-1">
               <div className="font-semibold flex items-center gap-1.5"><Lightbulb size={12} /> Como funciona</div>
-              <p>Cole nomes de criadores, @handles, exemplos de posts ou descreva padrões de conteúdo que admirou. A IA vai extrair os modelos reutilizáveis por trás do sucesso.</p>
+              <p>Digite nomes reais de criadores ou @handles. A IA vai analisar o conteúdo REAL desses criadores — ganchos, estrutura, tom, estratégias — e transformar em modelos reutilizáveis para você.</p>
+              <p className="mt-1 text-[10px] text-orange-600">Dica: Quanto mais específico, melhor. "@icaborges" funciona melhor que "criador de storytelling".</p>
             </div>
           </div>
 
