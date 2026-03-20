@@ -219,6 +219,22 @@ const useStore = create(
       deleteAd: (id) =>
         set((s) => ({ ads: s.ads.filter((a) => a.id !== id) })),
 
+      // ── Leads ────────────────────────────────────────────────
+      leads: [],
+
+      addLead: (lead) =>
+        set((s) => ({
+          leads: [...s.leads, { id: uuidv4(), created_at: new Date().toISOString(), ...lead }],
+        })),
+
+      updateLead: (id, updates) =>
+        set((s) => ({
+          leads: s.leads.map((l) => (l.id === id ? { ...l, ...updates } : l)),
+        })),
+
+      deleteLead: (id) =>
+        set((s) => ({ leads: s.leads.filter((l) => l.id !== id) })),
+
       // ── Archetypes ───────────────────────────────────────────
       archetypes: [],
       hybridArchetypes: [],
@@ -258,6 +274,7 @@ const useStore = create(
           thoughtCaptures: [],
           tasks: [],
           ads: [],
+          leads: [],
           archetypes: [],
           hybridArchetypes: [],
         }),
@@ -276,6 +293,7 @@ const useStore = create(
         thoughtCaptures: s.thoughtCaptures,
         tasks: s.tasks,
         ads: s.ads,
+        leads: s.leads,
         archetypes: s.archetypes,
         hybridArchetypes: s.hybridArchetypes,
       }),

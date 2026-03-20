@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Plus, DollarSign, Calendar, TrendingUp, BarChart2, Edit3,
   Trash2, X, Check, Filter, Search, Eye, Target, Users,
   ArrowUpRight, ArrowDownRight, Minus, Clock, CheckCircle2,
-  AlertCircle, ChevronDown, ExternalLink,
+  AlertCircle, ChevronDown, ExternalLink, UserPlus, Phone,
+  MessageSquare, Star, XCircle, ArrowRight, Mail,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -36,23 +37,28 @@ const AD_TYPES = [
   { id: 'other', label: 'Outro' },
 ]
 
+const LEAD_STAGES = [
+  { id: 'new', label: 'Novo Lead', color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+  { id: 'contact', label: 'Contato Feito', color: 'bg-purple-100 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+  { id: 'proposal', label: 'Proposta Enviada', color: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
+  { id: 'negotiation', label: 'Negociação', color: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
+  { id: 'won', label: 'Fechou!', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  { id: 'lost', label: 'Perdido', color: 'bg-red-100 text-red-600 border-red-200', dot: 'bg-red-500' },
+]
+
+const LEAD_SOURCES = [
+  'Instagram DM', 'LinkedIn', 'Indicação', 'Email', 'WhatsApp', 'Site', 'Evento', 'Outro',
+]
+
 const EMPTY_AD = {
-  title: '',
-  client: '',
-  platform: 'instagram',
-  ad_type: 'publi',
-  status: 'draft',
-  budget: '',
-  spent: '',
-  revenue: '',
-  start_date: '',
-  end_date: '',
-  impressions: '',
-  reach: '',
-  clicks: '',
-  conversions: '',
-  notes: '',
-  link: '',
+  title: '', client: '', platform: 'instagram', ad_type: 'publi', status: 'draft',
+  budget: '', spent: '', revenue: '', start_date: '', end_date: '',
+  impressions: '', reach: '', clicks: '', conversions: '', notes: '', link: '',
+}
+
+const EMPTY_LEAD = {
+  name: '', company: '', contact: '', email: '', source: 'Instagram DM',
+  stage: 'new', value: '', notes: '', next_followup: '', service: '',
 }
 
 function fmt(n) {
@@ -68,6 +74,13 @@ function fmtMoney(n) {
 function calcROI(revenue, spent) {
   if (!spent || !revenue) return null
   return ((Number(revenue) - Number(spent)) / Number(spent) * 100)
+}
+
+function daysAgo(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  const now = new Date()
+  return Math.floor((now - d) / (1000 * 60 * 60 * 24))
 }
 
 /* ── Ad Form Modal ──────────────────────────────────────── */
@@ -92,7 +105,6 @@ function AdForm({ ad, onSave, onClose }) {
             <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
           </div>
 
-          {/* Title + Client */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Título *</label>
@@ -106,7 +118,6 @@ function AdForm({ ad, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Platform + Type + Status */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Plataforma</label>
@@ -131,7 +142,6 @@ function AdForm({ ad, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Budget + Spent + Revenue */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Orçamento (R$)</label>
@@ -150,7 +160,6 @@ function AdForm({ ad, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Dates */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Início</label>
@@ -164,7 +173,6 @@ function AdForm({ ad, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Metrics */}
           <div className="grid grid-cols-4 gap-3">
             {[
               { key: 'impressions', label: 'Impressões' },
@@ -180,7 +188,6 @@ function AdForm({ ad, onSave, onClose }) {
             ))}
           </div>
 
-          {/* Link + Notes */}
           <div>
             <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Link do Post/Anúncio</label>
             <input value={form.link} onChange={e => set('link', e.target.value)}
@@ -204,6 +211,108 @@ function AdForm({ ad, onSave, onClose }) {
   )
 }
 
+/* ── Lead Form Modal ────────────────────────────────────── */
+function LeadForm({ lead, onSave, onClose }) {
+  const [form, setForm] = useState(lead || EMPTY_LEAD)
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    onSave(form)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-gray-900">{lead?.id ? 'Editar Lead' : 'Novo Lead'}</h3>
+            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome / Marca *</label>
+              <input value={form.name} onChange={e => set('name', e.target.value)} required
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Nome do lead ou marca" />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Empresa</label>
+              <input value={form.company} onChange={e => set('company', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Empresa (opcional)" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Contato (WhatsApp/Telefone)</label>
+              <input value={form.contact} onChange={e => set('contact', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="(11) 99999-9999" />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
+              <input value={form.email} onChange={e => set('email', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="email@exemplo.com" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
+              <select value={form.source} onChange={e => set('source', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
+                {LEAD_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Etapa</label>
+              <select value={form.stage} onChange={e => set('stage', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
+                {LEAD_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor Estimado (R$)</label>
+              <input type="number" step="0.01" value={form.value} onChange={e => set('value', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="0.00" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Serviço / Proposta</label>
+              <input value={form.service} onChange={e => set('service', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Ex: Pack 3 Reels + 1 Carrossel" />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Próximo Follow-up</label>
+              <input type="date" value={form.next_followup} onChange={e => set('next_followup', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300 resize-none"
+              placeholder="Histórico de conversas, detalhes da negociação, o que foi combinado..." />
+          </div>
+
+          <div className="flex gap-2 pt-2 border-t border-gray-100">
+            <button type="submit" className="flex-1 py-2 text-sm font-medium bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors">
+              {lead?.id ? 'Salvar' : 'Adicionar Lead'}
+            </button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 rounded-xl transition-colors">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 /* ── Ad Card ────────────────────────────────────────────── */
 function AdCard({ ad, onEdit, onDelete }) {
   const status = STATUSES.find(s => s.id === ad.status) || STATUSES[0]
@@ -215,20 +324,16 @@ function AdCard({ ad, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-orange-200 hover:shadow-md transition-all">
       <div className="p-4 space-y-3">
-        {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">{ad.title}</p>
             {ad.client && <p className="text-[10px] text-gray-400 mt-0.5">{ad.client}</p>}
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border', status.color)}>
-              {status.label}
-            </span>
-          </div>
+          <span className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border shrink-0', status.color)}>
+            {status.label}
+          </span>
         </div>
 
-        {/* Badges */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border', platform.color)}>{platform.label}</span>
           {adType && <span className="text-[10px] font-medium px-2 py-0.5 rounded-md border bg-gray-50 text-gray-600 border-gray-200">{adType.label}</span>}
@@ -240,7 +345,6 @@ function AdCard({ ad, onEdit, onDelete }) {
           )}
         </div>
 
-        {/* Budget bar */}
         {ad.budget && (
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -254,7 +358,6 @@ function AdCard({ ad, onEdit, onDelete }) {
           </div>
         )}
 
-        {/* Metrics row */}
         <div className="grid grid-cols-4 gap-2">
           {[
             { label: 'Impressões', value: ad.impressions, icon: Eye },
@@ -270,7 +373,6 @@ function AdCard({ ad, onEdit, onDelete }) {
           ))}
         </div>
 
-        {/* ROI + Revenue */}
         {(ad.revenue || roi !== null) && (
           <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
             {ad.revenue && (
@@ -289,7 +391,6 @@ function AdCard({ ad, onEdit, onDelete }) {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex gap-2 pt-1">
           <button onClick={() => onEdit(ad)} className="flex-1 text-[10px] font-medium text-gray-500 hover:text-orange-600 bg-gray-50 hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-lg py-1.5 flex items-center justify-center gap-1 transition-all">
             <Edit3 size={10} /> Editar
@@ -309,117 +410,354 @@ function AdCard({ ad, onEdit, onDelete }) {
   )
 }
 
+/* ── Lead Card ──────────────────────────────────────────── */
+function LeadCard({ lead, onEdit, onDelete, onStageChange }) {
+  const stage = LEAD_STAGES.find(s => s.id === lead.stage) || LEAD_STAGES[0]
+  const days = daysAgo(lead.created_at)
+  const fupDays = lead.next_followup ? daysAgo(lead.next_followup) : null
+  const isOverdue = fupDays !== null && fupDays > 0
+  const isFupToday = fupDays === 0
+
+  return (
+    <div className={clsx(
+      'bg-white rounded-xl border hover:shadow-md transition-all',
+      isOverdue ? 'border-red-200' : 'border-gray-200 hover:border-orange-200'
+    )}>
+      <div className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">{lead.name}</p>
+            {lead.company && <p className="text-[10px] text-gray-400 mt-0.5">{lead.company}</p>}
+          </div>
+          <span className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border shrink-0', stage.color)}>
+            {stage.label}
+          </span>
+        </div>
+
+        {/* Info badges */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {lead.source && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md border bg-gray-50 text-gray-600 border-gray-200">{lead.source}</span>
+          )}
+          {lead.value && (
+            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+              {fmtMoney(lead.value)}
+            </span>
+          )}
+          {days !== null && (
+            <span className="text-[10px] text-gray-400">{days === 0 ? 'Hoje' : `${days}d atrás`}</span>
+          )}
+        </div>
+
+        {/* Service */}
+        {lead.service && (
+          <p className="text-xs text-gray-600 bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100">{lead.service}</p>
+        )}
+
+        {/* Contact info */}
+        <div className="flex items-center gap-3 text-[11px] text-gray-500">
+          {lead.contact && (
+            <span className="flex items-center gap-1"><Phone size={10} /> {lead.contact}</span>
+          )}
+          {lead.email && (
+            <span className="flex items-center gap-1 truncate"><Mail size={10} /> {lead.email}</span>
+          )}
+        </div>
+
+        {/* Follow-up alert */}
+        {lead.next_followup && (
+          <div className={clsx(
+            'flex items-center gap-2 text-[11px] px-2.5 py-1.5 rounded-lg border',
+            isOverdue ? 'bg-red-50 border-red-200 text-red-700' :
+            isFupToday ? 'bg-amber-50 border-amber-200 text-amber-700' :
+            'bg-blue-50 border-blue-200 text-blue-700'
+          )}>
+            <Clock size={11} />
+            {isOverdue ? `Follow-up atrasado ${Math.abs(fupDays)}d` :
+             isFupToday ? 'Follow-up hoje!' :
+             `Próximo FUP: ${new Date(lead.next_followup + 'T00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`}
+          </div>
+        )}
+
+        {/* Notes preview */}
+        {lead.notes && (
+          <p className="text-[11px] text-gray-500 line-clamp-2 italic">"{lead.notes}"</p>
+        )}
+
+        {/* Stage quick-change */}
+        {lead.stage !== 'won' && lead.stage !== 'lost' && (
+          <div className="flex gap-1.5 pt-1">
+            {LEAD_STAGES.filter(s => s.id !== lead.stage && s.id !== 'new').map(s => (
+              <button key={s.id} onClick={() => onStageChange(lead.id, s.id)}
+                className={clsx('flex-1 text-[9px] font-medium py-1 rounded-md border transition-all hover:shadow-sm', s.color)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1 border-t border-gray-100">
+          <button onClick={() => onEdit(lead)} className="flex-1 text-[10px] font-medium text-gray-500 hover:text-orange-600 bg-gray-50 hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-lg py-1.5 flex items-center justify-center gap-1 transition-all">
+            <Edit3 size={10} /> Editar
+          </button>
+          <button onClick={() => onDelete(lead.id)} className="text-[10px] font-medium text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-lg py-1.5 px-3 flex items-center gap-1 transition-all">
+            <Trash2 size={10} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Main Component ─────────────────────────────────────── */
 export default function AdManager() {
   const ads = useStore(s => s.ads)
   const addAd = useStore(s => s.addAd)
   const updateAd = useStore(s => s.updateAd)
   const deleteAd = useStore(s => s.deleteAd)
+  const leads = useStore(s => s.leads) || []
+  const addLead = useStore(s => s.addLead)
+  const updateLead = useStore(s => s.updateLead)
+  const deleteLead = useStore(s => s.deleteLead)
 
+  const [tab, setTab] = useState('campaigns') // 'campaigns' | 'leads'
   const [showForm, setShowForm] = useState(false)
   const [editingAd, setEditingAd] = useState(null)
+  const [showLeadForm, setShowLeadForm] = useState(false)
+  const [editingLead, setEditingLead] = useState(null)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterPlatform, setFilterPlatform] = useState('all')
+  const [filterStage, setFilterStage] = useState('all')
 
-  const handleSave = (data) => {
-    if (editingAd?.id) {
-      updateAd(editingAd.id, data)
-    } else {
-      addAd(data)
-    }
+  // ── Campaign handlers ──
+  const handleSaveAd = (data) => {
+    if (editingAd?.id) updateAd(editingAd.id, data)
+    else addAd(data)
     setEditingAd(null)
   }
 
-  const handleEdit = (ad) => {
-    setEditingAd(ad)
-    setShowForm(true)
+  const handleEditAd = (ad) => { setEditingAd(ad); setShowForm(true) }
+
+  // ── Lead handlers ──
+  const handleSaveLead = (data) => {
+    if (editingLead?.id) updateLead(editingLead.id, data)
+    else addLead(data)
+    setEditingLead(null)
   }
 
-  const filtered = (ads || []).filter(ad => {
+  const handleEditLead = (lead) => { setEditingLead(lead); setShowLeadForm(true) }
+
+  const handleStageChange = (id, stage) => updateLead(id, { stage })
+
+  // ── Filtered data ──
+  const filteredAds = (ads || []).filter(ad => {
     if (search && !ad.title.toLowerCase().includes(search.toLowerCase()) && !(ad.client || '').toLowerCase().includes(search.toLowerCase())) return false
     if (filterStatus !== 'all' && ad.status !== filterStatus) return false
     if (filterPlatform !== 'all' && ad.platform !== filterPlatform) return false
     return true
   })
 
-  // Stats
+  const filteredLeads = leads.filter(l => {
+    if (search && !l.name.toLowerCase().includes(search.toLowerCase()) && !(l.company || '').toLowerCase().includes(search.toLowerCase())) return false
+    if (filterStage !== 'all' && l.stage !== filterStage) return false
+    return true
+  })
+
+  // ── Stats ──
   const totalBudget = (ads || []).reduce((s, a) => s + (Number(a.budget) || 0), 0)
   const totalSpent = (ads || []).reduce((s, a) => s + (Number(a.spent) || 0), 0)
   const totalRevenue = (ads || []).reduce((s, a) => s + (Number(a.revenue) || 0), 0)
   const activeCount = (ads || []).filter(a => a.status === 'active').length
 
+  const pipelineValue = leads.filter(l => !['won', 'lost'].includes(l.stage)).reduce((s, l) => s + (Number(l.value) || 0), 0)
+  const wonValue = leads.filter(l => l.stage === 'won').reduce((s, l) => s + (Number(l.value) || 0), 0)
+  const activeLeads = leads.filter(l => !['won', 'lost'].includes(l.stage)).length
+  const overdueLeads = leads.filter(l => {
+    if (!l.next_followup || ['won', 'lost'].includes(l.stage)) return false
+    return daysAgo(l.next_followup) > 0
+  }).length
+
   return (
     <div className="p-4 sm:p-6 space-y-5">
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><DollarSign size={16} className="text-orange-500" /></div>
-          <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalBudget)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Orçamento Total</div></div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center"><TrendingUp size={16} className="text-red-500" /></div>
-          <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalSpent)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Total Gasto</div></div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><DollarSign size={16} className="text-emerald-500" /></div>
-          <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalRevenue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Receita Total</div></div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center"><BarChart2 size={16} className="text-blue-500" /></div>
-          <div><div className="text-sm font-bold text-gray-900">{activeCount}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Campanhas Ativas</div></div>
-        </div>
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-md">
+        <button onClick={() => setTab('campaigns')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            tab === 'campaigns' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+          <DollarSign size={14} /> Campanhas
+        </button>
+        <button onClick={() => setTab('leads')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            tab === 'leads' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+          <UserPlus size={14} /> Leads
+          {activeLeads > 0 && (
+            <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{activeLeads}</span>
+          )}
+        </button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 w-full sm:max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar campanhas..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-300" />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
-            <option value="all">Todos Status</option>
-            {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-          <select value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
-            <option value="all">Todas Plataformas</option>
-            {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-          </select>
-          <button onClick={() => { setEditingAd(null); setShowForm(true) }}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm">
-            <Plus size={14} /> Nova Campanha
-          </button>
-        </div>
-      </div>
-
-      {/* Ads grid */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <DollarSign size={28} className="text-gray-300" />
+      {/* ════════════════ CAMPAIGNS TAB ════════════════ */}
+      {tab === 'campaigns' && (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><DollarSign size={16} className="text-orange-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalBudget)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Orçamento Total</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center"><TrendingUp size={16} className="text-red-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalSpent)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Total Gasto</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><DollarSign size={16} className="text-emerald-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalRevenue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Receita Total</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center"><BarChart2 size={16} className="text-blue-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{activeCount}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Campanhas Ativas</div></div>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">Nenhuma campanha encontrada</p>
-          <p className="text-xs text-gray-400 mt-1">Clique em "Nova Campanha" para registrar publis, impulsionamentos e parcerias</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(ad => (
-            <AdCard key={ad.id} ad={ad} onEdit={handleEdit} onDelete={deleteAd} />
-          ))}
-        </div>
+
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 w-full sm:max-w-xs">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar campanhas..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-300" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
+                <option value="all">Todos Status</option>
+                {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+              <select value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
+                <option value="all">Todas Plataformas</option>
+                {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+              <button onClick={() => { setEditingAd(null); setShowForm(true) }}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm">
+                <Plus size={14} /> Nova Campanha
+              </button>
+            </div>
+          </div>
+
+          {filteredAds.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <DollarSign size={28} className="text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-500">Nenhuma campanha encontrada</p>
+              <p className="text-xs text-gray-400 mt-1">Clique em "Nova Campanha" para registrar publis, impulsionamentos e parcerias</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredAds.map(ad => (
+                <AdCard key={ad.id} ad={ad} onEdit={handleEditAd} onDelete={deleteAd} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Form modal */}
+      {/* ════════════════ LEADS TAB ════════════════ */}
+      {tab === 'leads' && (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><UserPlus size={16} className="text-orange-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{activeLeads}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Leads Ativos</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center"><DollarSign size={16} className="text-amber-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(pipelineValue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Pipeline</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><CheckCircle2 size={16} className="text-emerald-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(wonValue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Fechados</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', overdueLeads > 0 ? 'bg-red-50' : 'bg-gray-50')}>
+                <Clock size={16} className={overdueLeads > 0 ? 'text-red-500' : 'text-gray-400'} />
+              </div>
+              <div>
+                <div className={clsx('text-sm font-bold', overdueLeads > 0 ? 'text-red-600' : 'text-gray-900')}>{overdueLeads}</div>
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">FUPs Atrasados</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 w-full sm:max-w-xs">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar leads..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-300" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
+                <option value="all">Todas Etapas</option>
+                {LEAD_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+              <button onClick={() => { setEditingLead(null); setShowLeadForm(true) }}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm">
+                <Plus size={14} /> Novo Lead
+              </button>
+            </div>
+          </div>
+
+          {/* Pipeline visual */}
+          {leads.length > 0 && filterStage === 'all' && !search && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <h3 className="text-xs font-semibold text-gray-700 mb-3">Pipeline</h3>
+              <div className="flex gap-1 items-end h-8">
+                {LEAD_STAGES.map(stage => {
+                  const count = leads.filter(l => l.stage === stage.id).length
+                  const maxCount = Math.max(...LEAD_STAGES.map(s => leads.filter(l => l.stage === s.id).length), 1)
+                  const pct = (count / maxCount) * 100
+                  return (
+                    <div key={stage.id} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-bold text-gray-700">{count}</span>
+                      <div className={clsx('w-full rounded-t-md transition-all', stage.dot)} style={{ height: `${Math.max(pct * 0.32, 4)}px` }} />
+                      <span className="text-[8px] text-gray-400 truncate w-full text-center">{stage.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {filteredLeads.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <UserPlus size={28} className="text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-500">Nenhum lead encontrado</p>
+              <p className="text-xs text-gray-400 mt-1">Clique em "Novo Lead" para adicionar propostas e negociações em andamento</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredLeads.map(lead => (
+                <LeadCard key={lead.id} lead={lead} onEdit={handleEditLead} onDelete={deleteLead} onStageChange={handleStageChange} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Form modals */}
       {showForm && (
-        <AdForm
-          ad={editingAd}
-          onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditingAd(null) }}
-        />
+        <AdForm ad={editingAd} onSave={handleSaveAd} onClose={() => { setShowForm(false); setEditingAd(null) }} />
+      )}
+      {showLeadForm && (
+        <LeadForm lead={editingLead} onSave={handleSaveLead} onClose={() => { setShowLeadForm(false); setEditingLead(null) }} />
       )}
     </div>
   )
