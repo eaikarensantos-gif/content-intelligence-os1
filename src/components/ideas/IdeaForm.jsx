@@ -45,13 +45,10 @@ const EMPTY = {
   tags: [],                   // array de strings
   scheduled_date: '',
   content_type: 'organic',
-  linked_metric_id: '',
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeaForm({ open, onClose, onSave, initial }) {
-  const metrics = useStore((s) => s.metrics)
-
   const [form, setForm] = useState(EMPTY)
   const [tagInput, setTagInput] = useState('')
   const tagRef = useRef(null)
@@ -129,7 +126,6 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       ...form,
       platform: (form.platforms || [])[0] || 'instagram', // retrocompat
       scheduled_date: form.scheduled_date || null,
-      linked_metric_id: form.linked_metric_id || null,
     })
     onClose()
   }

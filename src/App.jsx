@@ -16,6 +16,7 @@ import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
 import ClientReports from './components/reports/ClientReports'
 import AccessLog from './components/auth/AccessLog'
+import TaskBoard from './components/tasks/TaskBoard'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/reports" element={<ClientReports />} />
+            <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/security" element={<AccessLog />} />
           </Routes>
         </Layout>

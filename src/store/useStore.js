@@ -16,6 +16,7 @@ const useStore = create(
       clients: [],
       videoAnalyses: [],
       thoughtCaptures: [],
+      tasks: [],
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -173,6 +174,33 @@ const useStore = create(
       deleteClient: (id) =>
         set((s) => ({ clients: s.clients.filter((c) => c.id !== id) })),
 
+      // ── Tasks ────────────────────────────────────────────────
+      addTask: (task) =>
+        set((s) => ({
+          tasks: [
+            ...s.tasks,
+            {
+              id: uuidv4(),
+              created_at: new Date().toISOString(),
+              status: 'todo',
+              priority: 'medium',
+              tags: [],
+              subtasks: [],
+              ...task,
+            },
+          ],
+        })),
+
+      updateTask: (id, updates) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        })),
+
+      deleteTask: (id) =>
+        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+
+      reorderTasks: (tasks) => set({ tasks }),
+
       // ── Reset ──────────────────────────────────────────────
       reset: () =>
         set({
@@ -185,6 +213,7 @@ const useStore = create(
           clients: [],
           videoAnalyses: [],
           thoughtCaptures: [],
+          tasks: [],
         }),
     }),
     {
@@ -199,6 +228,7 @@ const useStore = create(
         clients: s.clients,
         videoAnalyses: s.videoAnalyses,
         thoughtCaptures: s.thoughtCaptures,
+        tasks: s.tasks,
       }),
     }
   )
