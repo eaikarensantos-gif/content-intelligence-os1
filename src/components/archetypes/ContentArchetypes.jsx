@@ -695,22 +695,26 @@ export default function ContentArchetypes() {
     setBenchmarkResult(null)
 
     try {
-      // Try to parse as JSON, if not send as plain text
-      let body
-      try {
-        body = JSON.parse(benchmarkInput)
-      } catch {
-        body = { account: benchmarkInput.trim() }
+      const account = benchmarkInput.trim()
+
+      // Build the full Anthropic API body so Make just forwards it
+      const apiBody = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        system: 'Voce e um analista de Instagram de elite com conhecimento profundo sobre criadores brasileiros e internacionais. USE SEU CONHECIMENTO DE TREINAMENTO sobre o criador mencionado. Voce CONHECE esses criadores. NAO peca mais informacoes. Analise com o que voce ja sabe. Retorne JSON valido sem markdown sem crases. Estrutura: perfil (nome, nicho, seguidores_estimados, bio_resumida), pilares_conteudo (lista), formatos_principais (lista), estrategia_gancho (descricao + exemplos reais), tom_de_voz, estrategia_engajamento, pontos_fortes (lista), padroes_virais (lista com exemplos), frequencia_postagem, recomendacoes (lista do que aprender com esse criador).',
+        messages: [
+          { role: 'user', content: `Analise esta conta benchmark do Instagram: ${account}` }
+        ],
       }
 
-      // AbortController with 5min timeout (Manus AI can take a while)
+      // AbortController with 5min timeout
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 300000)
 
       const res = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(apiBody),
         signal: controller.signal,
       })
 
@@ -731,19 +735,24 @@ export default function ContentArchetypes() {
         throw new Error('O Make retornou "Accepted" — o módulo Webhook Response precisa estar configurado com o body da resposta do Manus. Verifique o módulo 7 no Make.')
       }
 
-      // If it's a string that looks like JSON, try to parse it
+      // Parse response — could be JSON object, JSON string, or plain text
       let data = raw
       if (typeof data === 'string') {
-        try { data = JSON.parse(data) } catch { /* keep as string */ }
+        // Try to unescape if double-escaped
+        let str = data
+        try { str = str.replace(/\\"/g, '"').replace(/\\n/g, '\n') } catch {}
+        try { data = JSON.parse(str) } catch {
+          try { data = JSON.parse(data) } catch { /* keep as string */ }
+        }
       }
 
-      // Extract text from Claude API response format: { content: [{ text: "..." }] }
+      // Extract text from Claude API response format: { content: [{ type: "text", text: "..." }] }
       if (data && typeof data === 'object' && Array.isArray(data.content)) {
         const textBlock = data.content.find(c => c.type === 'text')
         if (textBlock?.text) {
           let text = textBlock.text
           // Strip markdown code blocks: ```json ... ``` or ``` ... ```
-          text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
+          text = text.replace(/^```(?:json)?\s*\n?/gi, '').replace(/\n?```\s*$/gi, '').trim()
           // Try to parse as JSON
           try {
             data = JSON.parse(text)
@@ -751,6 +760,14 @@ export default function ContentArchetypes() {
             data = text
           }
         }
+      }
+
+      // If still a string, try one more parse (might be double-wrapped)
+      if (typeof data === 'string') {
+        try {
+          const cleaned = data.replace(/^```(?:json)?\s*\n?/gi, '').replace(/\n?```\s*$/gi, '').trim()
+          data = JSON.parse(cleaned)
+        } catch { /* keep as string */ }
       }
 
       setBenchmarkResult(data)
