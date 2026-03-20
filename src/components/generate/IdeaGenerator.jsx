@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
   Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
@@ -108,8 +108,15 @@ ESTRUTURA DE CADA IDEIA:
 3. INTERPRETAÇÃO — a leitura única do criador sobre por que isso importa
 4. CONCLUSÃO — como isso muda a perspectiva do leitor
 
+REGRAS DE TÍTULOS — OBRIGATÓRIO:
+- Títulos devem ter NO MÁXIMO 10-15 palavras — curtos, diretos, impactantes
+- Devem soar como uma frase dita numa conversa que faz a pessoa parar e pensar
+- Devem ser persuasivos sem ser clickbait, extremistas ou sensacionalistas
+- NUNCA use "você precisa", "isso vai mudar", "o erro que", "ninguém fala sobre"
+- Bons exemplos: "A gente confundiu produtividade com ansiedade", "Soft skill mais rara: saber a hora de calar", "Criatividade morreu quando virou processo"
+- O título deve provocar curiosidade genuína, não promessas vazias
+
 REGRAS ADICIONAIS:
-- Títulos devem soar como algo dito numa conversa entre amigos, NUNCA como headline de blog
 - Ganchos devem ressoar com algo que a pessoa já sentia mas não sabia articular
 - Ideias devem parecer observações sobre o mundo real, não conselhos genéricos
 - TUDO em português brasileiro — coloquial, cuidadoso, humano
@@ -119,7 +126,7 @@ Responda SOMENTE com JSON válido (sem markdown, sem texto antes/depois):
 {
   "ideas": [
     {
-      "title": "Título que soa como uma observação real dita em conversa — ex: 'A gente tá confundindo ocupação com propósito e nem percebeu'",
+      "title": "Título CURTO (max 12 palavras), viral e persuasivo sem clickbait — ex: 'A gente confundiu ocupação com propósito'",
       "hook": "Primeira frase reflexiva que faz a pessoa pausar — ex: 'Tenho notado uma coisa curiosa nos últimos meses...'",
       "core_argument": "O argumento central em 2-3 frases. A ideia nova que você está trazendo, com profundidade.",
       "structure": {
@@ -325,11 +332,20 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub }) {
 export default function IdeaGenerator() {
   const { addIdea } = useStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 
   // Controls
   const [topic, setTopic] = useState('')
   const [audience, setAudience] = useState('')
+
+  // Pre-fill from Analytics "Gerar Similar"
+  useEffect(() => {
+    const ctx = searchParams.get('context')
+    if (ctx) {
+      setTopic(decodeURIComponent(ctx))
+    }
+  }, [])
   const [tone, setTone] = useState('reflexivo')
   const [narrativeStyle, setNarrativeStyle] = useState('observacao')
   const [intensity, setIntensity] = useState('equilibrado')
@@ -386,9 +402,27 @@ export default function IdeaGenerator() {
   }
 
   const handleSave = (idea) => {
+    // Prevent duplicate saves
+    if (savedIds.has(idea._id)) return
+
+    // Build full description with all sections
+    const parts = [
+      idea.core_argument,
+      '',
+      `Gancho: "${idea.hook}"`,
+    ]
+    if (idea.structure) {
+      parts.push('', '--- Estrutura Narrativa ---')
+      if (idea.structure.observation) parts.push(`Observação: ${idea.structure.observation}`)
+      if (idea.structure.tension) parts.push(`Tensão: ${idea.structure.tension}`)
+      if (idea.structure.interpretation) parts.push(`Interpretação: ${idea.structure.interpretation}`)
+      if (idea.structure.conclusion) parts.push(`Conclusão: ${idea.structure.conclusion}`)
+    }
+    if (idea.why_now) parts.push('', `Por que agora: ${idea.why_now}`)
+
     addIdea({
       title: idea.title,
-      description: `${idea.core_argument}\n\nGancho: "${idea.hook}"\n\n${idea.why_now ? `Por que agora: ${idea.why_now}` : ''}`,
+      description: parts.join('\n'),
       topic: topic,
       format: idea.format?.toLowerCase().includes('carrossel') ? 'carrossel'
         : idea.format?.toLowerCase().includes('reel') || idea.format?.toLowerCase().includes('tiktok') ? 'reel'

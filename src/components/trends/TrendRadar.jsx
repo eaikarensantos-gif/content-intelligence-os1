@@ -70,8 +70,11 @@ ${insightsContext}
 CRITICAL RULES:
 - ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
 - Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
-- Include 15+ creators (mix Brazilian + international) across all 5 platforms
+- Include 15+ creators that ACTUALLY exist and create content about "${topic}". Use REAL names and handles of known Brazilian and international creators. Do NOT invent fictional creators.
+- For each creator, provide their REAL handle/username and a search URL so the user can find them
 - For profile_url use search URLs: LinkedIn=https://www.linkedin.com/search/results/people/?keywords=NAME, Instagram=https://www.instagram.com/explore/search/keyword/?q=HANDLE, TikTok=https://www.tiktok.com/search?q=HANDLE, YouTube=https://www.youtube.com/results?search_query=NAME, Twitter=https://x.com/search?q=HANDLE&f=user
+- Prioritize creators who are actively posting about "${topic}" in the last 6 months
+- Include a MIX of: mega creators (100K+), mid-tier (10K-100K), and micro creators (1K-10K) for diverse perspectives
 - Hook examples must be SPECIFIC to topic "${topic}", not generic
 - Content gaps must be REAL underexplored angles about "${topic}"
 
@@ -517,6 +520,8 @@ export default function TrendRadar() {
   const [error, setError]       = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [savedIds, setSavedIds] = useState(new Set())
+  const [creatorPlatformFilter, setCreatorPlatformFilter] = useState('all')
+  const [creatorSearch, setCreatorSearch] = useState('')
 
   const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
 
@@ -779,19 +784,54 @@ export default function TrendRadar() {
           )}
 
           {/* ── Tab: Criadores ───────────────────────────────────────────────── */}
-          {activeTab === 'creators' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                  <Users size={15} className="text-blue-500" /> Criadores Relevantes
-                  <span className="text-[11px] text-gray-400 font-normal">· {trendResults.creators?.length} encontrados em diversas plataformas</span>
-                </h3>
+          {activeTab === 'creators' && (() => {
+            const allCreators = trendResults.creators || []
+            const platforms = [...new Set(allCreators.map(c => c.platform))].sort()
+            const filtered = allCreators.filter(c => {
+              if (creatorPlatformFilter !== 'all' && c.platform !== creatorPlatformFilter) return false
+              if (creatorSearch && !c.name.toLowerCase().includes(creatorSearch.toLowerCase()) && !(c.handle || '').toLowerCase().includes(creatorSearch.toLowerCase()) && !(c.niche || '').toLowerCase().includes(creatorSearch.toLowerCase())) return false
+              return true
+            })
+            return (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Users size={15} className="text-blue-500" /> Criadores Relevantes
+                    <span className="text-[11px] text-gray-400 font-normal">· {filtered.length} de {allCreators.length}</span>
+                  </h3>
+                  <div className="flex items-center gap-2 ml-auto flex-wrap">
+                    <div className="relative">
+                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input value={creatorSearch} onChange={e => setCreatorSearch(e.target.value)} placeholder="Buscar criador..."
+                        className="pl-8 pr-3 py-1.5 text-[11px] border border-gray-200 rounded-lg outline-none focus:border-orange-300 w-40" />
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setCreatorPlatformFilter('all')}
+                        className={`text-[10px] px-2 py-1 rounded-md border font-medium transition-all ${creatorPlatformFilter === 'all' ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                        Todos
+                      </button>
+                      {platforms.map(p => {
+                        const meta = PLATFORM_META[p]
+                        return (
+                          <button key={p} onClick={() => setCreatorPlatformFilter(p)}
+                            className={`text-[10px] px-2 py-1 rounded-md border font-medium transition-all ${creatorPlatformFilter === p ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                            {meta?.emoji || '🌐'} {p.charAt(0).toUpperCase() + p.slice(1)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+                {filtered.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-gray-400">Nenhum criador encontrado com esses filtros</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filtered.map((c) => <CreatorCard key={c.id} creator={c} />)}
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {(trendResults.creators || []).map((c) => <CreatorCard key={c.id} creator={c} />)}
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* ── Tab: Posts ───────────────────────────────────────────────────── */}
           {activeTab === 'posts' && (

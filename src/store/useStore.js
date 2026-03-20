@@ -17,6 +17,7 @@ const useStore = create(
       videoAnalyses: [],
       thoughtCaptures: [],
       tasks: [],
+      ads: [],
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -201,6 +202,23 @@ const useStore = create(
 
       reorderTasks: (tasks) => set({ tasks }),
 
+      // ── Ads (Publicidades) ─────────────────────────────────
+      addAd: (ad) =>
+        set((s) => ({
+          ads: [
+            ...s.ads,
+            { id: uuidv4(), created_at: new Date().toISOString(), ...ad },
+          ],
+        })),
+
+      updateAd: (id, updates) =>
+        set((s) => ({
+          ads: s.ads.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+        })),
+
+      deleteAd: (id) =>
+        set((s) => ({ ads: s.ads.filter((a) => a.id !== id) })),
+
       // ── Reset ──────────────────────────────────────────────
       reset: () =>
         set({
@@ -214,6 +232,7 @@ const useStore = create(
           videoAnalyses: [],
           thoughtCaptures: [],
           tasks: [],
+          ads: [],
         }),
     }),
     {
@@ -229,6 +248,7 @@ const useStore = create(
         videoAnalyses: s.videoAnalyses,
         thoughtCaptures: s.thoughtCaptures,
         tasks: s.tasks,
+        ads: s.ads,
       }),
     }
   )

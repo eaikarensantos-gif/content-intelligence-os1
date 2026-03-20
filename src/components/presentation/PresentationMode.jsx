@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Mic, Copy, Check, Loader2, ChevronDown, ChevronUp,
   Sparkles, MessageCircle, Zap, Target, BookOpen,
   Users, ArrowRight, RefreshCw, Save, Plus, ExternalLink,
+  Play, Pause, X, Minus as MinusIcon, PlusCircle, Monitor,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -206,6 +207,116 @@ const LOADING_PHASES = [
   'Finalizando a apresentação...',
 ]
 
+// ─── Teleprompter ───────────────────────────────────────────────────────────
+function Teleprompter({ result, onClose }) {
+  const scrollRef = useRef(null)
+  const animRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [speed, setSpeed] = useState(1.5) // px per frame at 60fps
+  const [fontSize, setFontSize] = useState(28)
+
+  // Build full script text
+  const scripts = []
+  if (result.opening?.script) scripts.push({ label: 'ABERTURA', text: result.opening.script })
+  if (result.context?.script) scripts.push({ label: 'CONTEXTO', text: result.context.script })
+  ;(result.main_blocks || []).forEach((b, i) => {
+    if (b.script) scripts.push({ label: `BLOCO ${i + 1}: ${b.title}`, text: b.script })
+  })
+  if (result.conclusion?.script) scripts.push({ label: 'FECHAMENTO', text: result.conclusion.script })
+
+  const scroll = useCallback(() => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollTop += speed
+    animRef.current = requestAnimationFrame(scroll)
+  }, [speed])
+
+  useEffect(() => {
+    if (playing) {
+      animRef.current = requestAnimationFrame(scroll)
+    } else {
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+    }
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
+  }, [playing, scroll])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.code === 'Space') { e.preventDefault(); setPlaying(p => !p) }
+      if (e.code === 'ArrowUp') { e.preventDefault(); setSpeed(s => Math.min(s + 0.3, 5)) }
+      if (e.code === 'ArrowDown') { e.preventDefault(); setSpeed(s => Math.max(s - 0.3, 0.3)) }
+      if (e.code === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+      {/* Control bar */}
+      <div className="flex items-center justify-between px-6 py-3 bg-black/80 border-b border-gray-800 shrink-0">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setPlaying(p => !p)}
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+            {playing ? <Pause size={18} /> : <Play size={18} />}
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 uppercase font-semibold w-20">Velocidade</span>
+            <button onClick={() => setSpeed(s => Math.max(s - 0.3, 0.3))}
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+              <MinusIcon size={12} />
+            </button>
+            <span className="text-sm text-white font-mono w-10 text-center">{speed.toFixed(1)}x</span>
+            <button onClick={() => setSpeed(s => Math.min(s + 0.3, 5))}
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+              <PlusCircle size={12} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 ml-4">
+            <span className="text-xs text-gray-400 uppercase font-semibold w-14">Fonte</span>
+            <button onClick={() => setFontSize(s => Math.max(s - 2, 16))}
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs font-bold">A-</button>
+            <span className="text-sm text-white font-mono w-8 text-center">{fontSize}</span>
+            <button onClick={() => setFontSize(s => Math.min(s + 2, 48))}
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs font-bold">A+</button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-gray-500">Espaço = play/pause · Setas = velocidade · Esc = sair</span>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white/10 hover:bg-red-500/50 flex items-center justify-center text-white transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Script area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-8 sm:px-16 md:px-32 py-16"
+        style={{ scrollBehavior: 'auto' }}>
+        {/* Top padding for reading position */}
+        <div className="h-[40vh]" />
+        {scripts.map((s, i) => (
+          <div key={i} className="mb-16">
+            <div className="text-rose-400 font-bold uppercase tracking-widest mb-4" style={{ fontSize: fontSize * 0.5 }}>
+              {s.label}
+            </div>
+            <p className="text-white leading-[1.8] whitespace-pre-wrap" style={{ fontSize }}>
+              {s.text}
+            </p>
+          </div>
+        ))}
+        {/* Bottom padding */}
+        <div className="h-[60vh]" />
+      </div>
+
+      {/* Reading guide line */}
+      <div className="fixed left-0 right-0 top-1/3 pointer-events-none">
+        <div className="h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function PresentationMode() {
@@ -219,6 +330,7 @@ export default function PresentationMode() {
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
   const [copiedAll, setCopiedAll] = useState(false)
+  const [showTeleprompter, setShowTeleprompter] = useState(false)
 
   const { addIdea } = useStore()
   const navigate = useNavigate()
@@ -479,7 +591,11 @@ export default function PresentationMode() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 flex-wrap">
+                    <button onClick={() => setShowTeleprompter(true)}
+                      className="text-xs px-3 py-2 rounded-lg bg-gray-900 text-white font-medium flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
+                      <Monitor size={12} /> Teleprompter
+                    </button>
                     <button onClick={handleCopyAll} className="btn-secondary text-xs px-3 py-2">
                       {copiedAll ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
                       {copiedAll ? 'Copiado' : 'Copiar tudo'}
@@ -670,6 +786,11 @@ export default function PresentationMode() {
           )}
         </div>
       </div>
+
+      {/* Teleprompter overlay */}
+      {showTeleprompter && result && (
+        <Teleprompter result={result} onClose={() => setShowTeleprompter(false)} />
+      )}
     </div>
   )
 }

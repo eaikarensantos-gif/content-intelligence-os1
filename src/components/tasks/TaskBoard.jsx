@@ -106,6 +106,7 @@ function QuickAdd({ columnId, onAdd }) {
 function TaskCard({ task, onUpdate, onDelete, onEdit, onMove }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const dragStartPos = useRef(null)
   const priority = PRIORITIES.find(p => p.id === task.priority) || PRIORITIES[2]
   const PriorityIcon = priority.icon
   const completedSubs = (task.subtasks || []).filter(s => s.done).length
@@ -117,13 +118,24 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onMove }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [menuOpen])
 
+  // Distinguish click from drag — only open edit if mouse didn't move much
+  const handleMouseDown = (e) => { dragStartPos.current = { x: e.clientX, y: e.clientY } }
+  const handleClick = (e) => {
+    if (!dragStartPos.current) return
+    const dx = Math.abs(e.clientX - dragStartPos.current.x)
+    const dy = Math.abs(e.clientY - dragStartPos.current.y)
+    if (dx < 5 && dy < 5) onEdit(task)
+    dragStartPos.current = null
+  }
+
   return (
     <div
       className={clsx(
         'group bg-white rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer',
         task.status === 'done' ? 'opacity-70 border-gray-100' : 'border-gray-200 hover:border-orange-200'
       )}
-      onClick={() => onEdit(task)}
+      onMouseDown={handleMouseDown}
+      onClick={handleClick}
     >
       <div className="p-3 space-y-2.5">
         {/* Tags */}

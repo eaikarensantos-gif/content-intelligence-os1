@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, Wand2, X, PenTool,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -16,6 +16,7 @@ const NAV = [
   { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/reports', icon: FileText, label: 'Relatórios' },
+  { to: '/ads', icon: DollarSign, label: 'Publicidade' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
   { to: '/trends', icon: Radar, label: 'Creator Insights' },
   { to: '/security', icon: Shield, label: 'Segurança' },

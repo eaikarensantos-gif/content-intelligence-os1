@@ -10,6 +10,7 @@ const TITLES = {
   '/dna': { title: 'Content DNA', sub: 'Descubra os padrões que fazem seu conteúdo funcionar' },
   '/reports': { title: 'Relatórios', sub: 'Gere relatórios profissionais para seus clientes' },
   '/tasks': { title: 'Tarefas', sub: 'Organize suas tarefas do dia e acompanhe o progresso' },
+  '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
   '/security': { title: 'Segurança', sub: 'Registro de tentativas de acesso ao sistema' },
   '/create': { title: 'Criar Conteúdo', sub: 'Escolha como quer começar sua criação' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
