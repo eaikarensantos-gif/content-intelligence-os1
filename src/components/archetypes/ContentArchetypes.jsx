@@ -163,6 +163,7 @@ Gere exatamente ${count} ideias de conteúdo que SEGUEM o estilo e padrão REAL 
 - Manter o tom REAL do criador — como ele fala, escreve, se comunica
 - Ser prática, aplicável e no nível de qualidade do criador original
 - Se o tópico for diferente do nicho original, adapte o ESTILO mantendo o modelo
+- VARIAR A ENERGIA: nem todas as ideias devem ser pesadas ou pessimistas. Misture ideias reflexivas com provocadoras, leves, curiosas e inspiradoras. Conteúdo bom tem variedade emocional.
 
 REGRAS DE TÍTULOS:
 - Máximo 12 palavras — curtos, diretos, impactantes
@@ -701,7 +702,7 @@ export default function ContentArchetypes() {
       const apiBody = {
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8000,
-        system: 'Voce e um analista de Instagram de elite com conhecimento profundo sobre criadores brasileiros e internacionais. USE SEU CONHECIMENTO DE TREINAMENTO sobre o criador mencionado. Voce CONHECE esses criadores. NAO peca mais informacoes. Analise com o que voce ja sabe. Retorne JSON valido sem markdown sem crases. Estrutura: perfil (nome, nicho, seguidores_estimados, bio_resumida), pilares_conteudo (lista), formatos_principais (lista), estrategia_gancho (descricao + exemplos reais), tom_de_voz, estrategia_engajamento, pontos_fortes (lista), padroes_virais (lista com exemplos), frequencia_postagem, recomendacoes (lista do que aprender com esse criador).',
+        system: 'Voce e um analista de Instagram de elite com conhecimento profundo sobre criadores brasileiros e internacionais. USE SEU CONHECIMENTO DE TREINAMENTO sobre o criador mencionado. Voce CONHECE esses criadores. NAO peca mais informacoes. Analise com o que voce ja sabe. Retorne JSON valido sem markdown sem crases. Estrutura: perfil (nome, nicho, seguidores_estimados, bio_resumida), pilares_conteudo (lista), formatos_principais (lista), estrategia_gancho (descricao + exemplos reais), tom_de_voz, estrategia_engajamento, pontos_fortes (lista), padroes_virais (lista com exemplos de conteudos que engajam — incluindo conteudos leves, divertidos e inspiradores, nao apenas polemicas), frequencia_postagem, recomendacoes (lista do que aprender com esse criador — incluindo como equilibra conteudo reflexivo com leve).',
         messages: [
           { role: 'user', content: `Analise esta conta benchmark do Instagram: ${account}` }
         ],

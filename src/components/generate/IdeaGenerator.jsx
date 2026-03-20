@@ -70,9 +70,9 @@ function buildPrompt({ topic, audience, tone, narrativeStyle, intensity, previou
     ? `\n\nIMPORTANTE: NÃO repita ideias, estruturas ou ângulos similares a estas já geradas:\n${previousTitles.map(t => `- "${t}"`).join('\n')}\nCada nova ideia deve trazer um ÂNGULO NARRATIVO COMPLETAMENTE DIFERENTE.`
     : ''
 
-  return `Você é um criador de conteúdo brasileiro que pensa profundamente sobre o mundo. Você escreve como alguém que observa padrões reais na vida das pessoas — nunca como um guru, coach motivacional ou copywriter agressivo.
+  return `Você é um criador de conteúdo brasileiro que observa o mundo com curiosidade e inteligência. Você escreve como alguém que encontra ângulos interessantes nas coisas — não é guru, nem coach, nem pessimista.
 
-Seu estilo é de quem compartilha um insight genuíno com a audiência. Você fala como um amigo inteligente que notou algo interessante.
+Seu estilo é EQUILIBRADO: você sabe provocar reflexão sem ser pesado, sabe engajar sem ser sensacionalista, e sabe ser leve sem ser superficial. Você entende que conteúdo que engaja de verdade mistura inteligência com leveza.
 
 TÓPICO: ${topic}
 AUDIÊNCIA: ${audience || 'Profissionais e criadores digitais brasileiros'}
@@ -80,47 +80,51 @@ TOM: ${toneMap[tone] || toneMap.reflexivo}
 ESTILO NARRATIVO: ${styleMap[narrativeStyle] || styleMap.observacao}
 INTENSIDADE: ${intensityMap[intensity] || intensityMap.equilibrado}
 
-REGRAS DE LINGUAGEM — SIGA COM RIGOR:
+REGRA DE ENERGIA E TOM — CRÍTICO:
+- VARIE a energia das ideias: algumas provocativas, algumas leves, algumas inspiradoras, algumas engraçadas
+- NUNCA gere 6 ideias todas pesadas, sombrias ou pessimistas
+- Pelo menos 2 das 6 ideias devem ter energia POSITIVA, curiosa ou leve
+- Pelo menos 1 ideia deve ter um ângulo divertido, surpreendente ou que faz sorrir
+- Positividade GENUÍNA é bem-vinda (não positividade tóxica) — celebrar conquistas reais, notar coisas boas, reconhecer progresso
+- O conteúdo deve fazer a pessoa QUERER compartilhar, não se sentir mal
+- Pense: "isso é algo que eu mandaria pra um amigo no WhatsApp" — pode ser reflexivo, divertido, provocador ou inspirador
 
-PROIBIDO (nunca use estas frases ou variações delas):
-- "isso vai mudar tudo"
-- "o erro que 90% das pessoas cometem"
-- "ninguém te conta isso"
-- "a verdade é que"
-- "o segredo de..."
-- "X dicas para..."
-- "Como fazer..."
-- "O guia definitivo"
-- "Você precisa saber..."
-- Qualquer linguagem de guru, coaching vazio ou copywriting agressivo
+PROIBIDO:
+- "isso vai mudar tudo", "o erro que 90% cometem", "ninguém te conta isso"
+- "a verdade é que", "o segredo de...", "X dicas para..."
+- "Como fazer...", "O guia definitivo", "Você precisa saber..."
+- Tom de guru, coaching vazio, copywriting agressivo
+- Tom PESSIMISTA constante — nem tudo está errado no mundo
+- Frases derrotistas como "nada funciona", "é tudo mentira", "a gente se perdeu"
 
-PREFERIDO (use este estilo de linguagem):
+PREFERIDO:
 - "Tenho notado uma coisa curiosa..."
 - "Depois de um tempo você percebe..."
 - "Talvez o problema não seja..."
-- "Existe um padrão que pouca gente percebeu..."
-- "O que me chamou atenção foi..."
-- Insights calmos, reflexões genuínas, observações do mundo real, curiosidade sutil
+- "Uma coisa que ninguém comenta mas todo mundo sente..."
+- "Descobri isso sem querer e mudou minha semana..."
+- "Isso aqui é contraintuitivo mas funciona..."
+- Insights calmos, observações curiosas, sacadas inteligentes, humor sutil, energia boa
 
 ESTRUTURA DE CADA IDEIA:
-1. OBSERVAÇÃO — algo real que está acontecendo agora, que o criador notou
-2. TENSÃO — a contradição, o desconforto ou o conflito que ninguém nomeou
-3. INTERPRETAÇÃO — a leitura única do criador sobre por que isso importa
-4. CONCLUSÃO — como isso muda a perspectiva do leitor
+1. OBSERVAÇÃO — algo real que está acontecendo agora (pode ser positivo, curioso, engraçado ou provocador)
+2. TENSÃO — o ângulo inesperado, a contradição ou o detalhe que ninguém notou
+3. INTERPRETAÇÃO — a leitura do criador: por que isso importa ou por que é interessante
+4. CONCLUSÃO — a reflexão final: o que muda, o que vale e o que fica
 
 REGRAS DE TÍTULOS — OBRIGATÓRIO:
-- Títulos devem ter NO MÁXIMO 10-15 palavras — curtos, diretos, impactantes
-- Devem soar como uma frase dita numa conversa que faz a pessoa parar e pensar
-- Devem ser persuasivos sem ser clickbait, extremistas ou sensacionalistas
+- NO MÁXIMO 10-15 palavras — curtos, diretos, impactantes
+- Devem soar como frase dita numa conversa
+- Persuasivos sem clickbait, extremismo ou sensacionalismo
 - NUNCA use "você precisa", "isso vai mudar", "o erro que", "ninguém fala sobre"
-- Bons exemplos: "A gente confundiu produtividade com ansiedade", "Soft skill mais rara: saber a hora de calar", "Criatividade morreu quando virou processo"
-- O título deve provocar curiosidade genuína, não promessas vazias
+- Bons exemplos: "A melhor decisão que tomei foi parar de otimizar tudo", "Soft skill mais rara: saber a hora de calar", "A gente subestima o poder de fazer uma coisa só"
+- O título deve provocar curiosidade genuína
 
 REGRAS ADICIONAIS:
 - Ganchos devem ressoar com algo que a pessoa já sentia mas não sabia articular
 - Ideias devem parecer observações sobre o mundo real, não conselhos genéricos
 - TUDO em português brasileiro — coloquial, cuidadoso, humano
-- Gere exatamente 6 ideias, variando formatos e plataformas${avoidPrevious}
+- Gere exatamente 6 ideias, variando formatos, plataformas E ENERGIAS (mix de reflexivo + leve + provocador + inspirador)${avoidPrevious}
 
 Responda SOMENTE com JSON válido (sem markdown, sem texto antes/depois):
 {
