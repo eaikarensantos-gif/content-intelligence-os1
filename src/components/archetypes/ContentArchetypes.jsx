@@ -703,25 +703,51 @@ export default function ContentArchetypes() {
         body = { account: benchmarkInput.trim() }
       }
 
+      // AbortController with 5min timeout (Manus AI can take a while)
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 300000)
+
       const res = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeout)
 
       if (!res.ok) throw new Error(`Webhook retornou status ${res.status}`)
 
       const contentType = res.headers.get('content-type') || ''
-      let data
+      let raw
       if (contentType.includes('application/json')) {
-        data = await res.json()
+        raw = await res.json()
       } else {
-        data = await res.text()
+        raw = await res.text()
+      }
+
+      // If response is just "accepted" or "Accepted", the webhook returned too early
+      if (typeof raw === 'string' && raw.trim().toLowerCase() === 'accepted') {
+        throw new Error('O Make retornou "Accepted" — o módulo Webhook Response precisa estar configurado com o body da resposta do Manus. Verifique o módulo 7 no Make.')
+      }
+
+      // If it's a string that looks like JSON, try to parse it
+      let data = raw
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data)
+        } catch {
+          // keep as string
+        }
       }
 
       setBenchmarkResult(data)
     } catch (e) {
-      setBenchmarkError(e.message)
+      if (e.name === 'AbortError') {
+        setBenchmarkError('Timeout — a análise demorou mais de 5 minutos. Verifique se o Manus AI está respondendo.')
+      } else {
+        setBenchmarkError(e.message)
+      }
     } finally {
       setBenchmarkLoading(false)
     }
@@ -839,7 +865,10 @@ export default function ContentArchetypes() {
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <RefreshCw size={28} className="text-blue-500 animate-spin mx-auto mb-4" />
                 <p className="text-sm font-medium text-gray-700">Analisando benchmark via webhook...</p>
-                <p className="text-xs text-gray-400 mt-1">Aguardando resposta do Manus AI</p>
+                <p className="text-xs text-gray-400 mt-1">Aguardando resposta do Manus AI — pode levar alguns minutos</p>
+                <div className="w-48 h-1 bg-gray-100 rounded-full mx-auto mt-4 overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full animate-pulse w-full" />
+                </div>
               </div>
             )}
 
