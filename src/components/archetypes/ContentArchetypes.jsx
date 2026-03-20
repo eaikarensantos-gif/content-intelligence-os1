@@ -3,18 +3,21 @@ import {
   Shapes, Sparkles, RefreshCw, Plus, Trash2, Check, Copy, Save,
   ChevronDown, ChevronUp, AlertCircle, Layers, Zap, BookOpen,
   Target, Eye, MessageCircle, ArrowRight, Combine, Lightbulb,
-  Search, X, Edit3, Star, Flame, Hash,
+  Search, X, Edit3, Star, Flame, Hash, Globe, Send, ExternalLink, CheckCircle2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const LS_KEY = 'cio-anthropic-key'
 
 const TABS = [
+  { id: 'benchmark', label: 'Benchmark', icon: Globe },
   { id: 'extract', label: 'Extrair Padrões', icon: Search },
   { id: 'library', label: 'Biblioteca', icon: BookOpen },
   { id: 'generate', label: 'Gerar Conteúdo', icon: Sparkles },
   { id: 'hybridize', label: 'Hibridizar', icon: Combine },
 ]
+
+const WEBHOOK_KEY = 'cio-benchmark-webhook-url'
 
 const PHASES = [
   'Analisando referências de criadores...',
@@ -460,7 +463,14 @@ export default function ContentArchetypes() {
     addIdea,
   } = useStore()
 
-  const [tab, setTab] = useState('extract')
+  const [tab, setTab] = useState('benchmark')
+
+  // Benchmark state
+  const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem(WEBHOOK_KEY) || '')
+  const [benchmarkInput, setBenchmarkInput] = useState('')
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false)
+  const [benchmarkResult, setBenchmarkResult] = useState(null)
+  const [benchmarkError, setBenchmarkError] = useState(null)
 
   // Extract state
   const [input, setInput] = useState('')
@@ -669,6 +679,54 @@ export default function ContentArchetypes() {
     setHybridSelection(new Set())
   }
 
+  // ── Benchmark ──────────────────────────────────────────────────────────────
+
+  const handleSaveWebhookUrl = (url) => {
+    setWebhookUrl(url)
+    localStorage.setItem(WEBHOOK_KEY, url)
+  }
+
+  const handleBenchmark = async () => {
+    if (!webhookUrl.trim()) { setBenchmarkError('Configure a URL do webhook primeiro.'); return }
+    if (!benchmarkInput.trim()) { setBenchmarkError('Insira os dados da conta benchmark.'); return }
+
+    setBenchmarkLoading(true)
+    setBenchmarkError(null)
+    setBenchmarkResult(null)
+
+    try {
+      // Try to parse as JSON, if not send as plain text
+      let body
+      try {
+        body = JSON.parse(benchmarkInput)
+      } catch {
+        body = { account: benchmarkInput.trim() }
+      }
+
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (!res.ok) throw new Error(`Webhook retornou status ${res.status}`)
+
+      const contentType = res.headers.get('content-type') || ''
+      let data
+      if (contentType.includes('application/json')) {
+        data = await res.json()
+      } else {
+        data = await res.text()
+      }
+
+      setBenchmarkResult(data)
+    } catch (e) {
+      setBenchmarkError(e.message)
+    } finally {
+      setBenchmarkLoading(false)
+    }
+  }
+
   // ── Navigate to generate with archetype ──────────────────────────────────────
 
   const goToGenerate = (arch) => {
@@ -725,6 +783,171 @@ export default function ContentArchetypes() {
           </button>
         ))}
       </div>
+
+      {/* ── TAB: Benchmark ────────────────────────────────────────────────────── */}
+      {tab === 'benchmark' && (
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
+          {/* Left panel — config + input */}
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <Globe size={14} className="text-blue-500" /> Analisar Benchmark
+              </h3>
+
+              {/* Webhook URL */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">URL do Webhook</label>
+                <input
+                  value={webhookUrl}
+                  onChange={(e) => handleSaveWebhookUrl(e.target.value)}
+                  placeholder="https://hook.us1.make.com/..."
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-mono text-xs"
+                />
+              </div>
+
+              {/* Benchmark data */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Dados da Conta Benchmark</label>
+                <textarea
+                  value={benchmarkInput}
+                  onChange={(e) => setBenchmarkInput(e.target.value)}
+                  placeholder={'Cole o JSON da conta ou o @handle do benchmark.\n\nExemplos:\n{"username": "@icaborges", "platform": "instagram"}\n\nou simplesmente:\n@icaborges'}
+                  rows={10}
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-mono text-xs resize-none"
+                />
+              </div>
+
+              <button
+                onClick={handleBenchmark}
+                disabled={benchmarkLoading || !benchmarkInput.trim() || !webhookUrl.trim()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-indigo-600 disabled:opacity-50 transition-all shadow-lg shadow-blue-200"
+              >
+                {benchmarkLoading ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                {benchmarkLoading ? 'Analisando...' : 'Analisar Benchmark'}
+              </button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800 space-y-1">
+              <div className="font-semibold flex items-center gap-1.5"><Lightbulb size={12} /> Como funciona</div>
+              <p>Conecte seu webhook (Make/Zapier/n8n) ao Manus AI. Insira os dados da conta benchmark e o sistema enviará o JSON para análise externa. O resultado da análise aparecerá ao lado.</p>
+            </div>
+          </div>
+
+          {/* Right panel — resultado */}
+          <div className="space-y-4">
+            {benchmarkLoading && (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <RefreshCw size={28} className="text-blue-500 animate-spin mx-auto mb-4" />
+                <p className="text-sm font-medium text-gray-700">Analisando benchmark via webhook...</p>
+                <p className="text-xs text-gray-400 mt-1">Aguardando resposta do Manus AI</p>
+              </div>
+            )}
+
+            {benchmarkError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 text-sm text-red-700">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-semibold">Erro na análise</div>
+                  <p className="text-xs mt-0.5">{benchmarkError}</p>
+                </div>
+              </div>
+            )}
+
+            {benchmarkResult && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-500" /> Resultado da Análise
+                  </h3>
+                  <button
+                    onClick={() => {
+                      const text = typeof benchmarkResult === 'string' ? benchmarkResult : JSON.stringify(benchmarkResult, null, 2)
+                      navigator.clipboard.writeText(text)
+                    }}
+                    className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100"
+                  >
+                    <Copy size={12} /> Copiar
+                  </button>
+                </div>
+
+                {/* Render result based on type */}
+                {typeof benchmarkResult === 'string' ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                      {benchmarkResult}
+                    </div>
+                  </div>
+                ) : Array.isArray(benchmarkResult) ? (
+                  benchmarkResult.map((item, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                      {typeof item === 'string' ? (
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{item}</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {Object.entries(item).map(([key, val]) => (
+                            <div key={key}>
+                              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{key}</span>
+                              <p className="text-sm text-gray-800 mt-0.5 whitespace-pre-wrap">
+                                {typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : typeof benchmarkResult === 'object' ? (
+                  <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                    {Object.entries(benchmarkResult).map(([key, val]) => (
+                      <div key={key} className="p-4">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
+                        {typeof val === 'string' || typeof val === 'number' ? (
+                          <p className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{String(val)}</p>
+                        ) : Array.isArray(val) ? (
+                          <ul className="mt-1 space-y-1">
+                            {val.map((v, i) => (
+                              <li key={i} className="text-sm text-gray-700 pl-3 border-l-2 border-blue-200">
+                                {typeof v === 'object' ? (
+                                  <pre className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{JSON.stringify(v, null, 2)}</pre>
+                                ) : String(v)}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : typeof val === 'object' && val !== null ? (
+                          <div className="mt-1 bg-gray-50 rounded-lg p-3 space-y-1.5">
+                            {Object.entries(val).map(([k2, v2]) => (
+                              <div key={k2}>
+                                <span className="text-[9px] font-semibold text-gray-400 uppercase">{k2.replace(/_/g, ' ')}</span>
+                                <p className="text-xs text-gray-700 whitespace-pre-wrap">
+                                  {typeof v2 === 'object' ? JSON.stringify(v2, null, 2) : String(v2)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-800 mt-1">{String(val)}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <pre className="text-xs font-mono text-gray-600 whitespace-pre-wrap">{JSON.stringify(benchmarkResult, null, 2)}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!benchmarkLoading && !benchmarkResult && !benchmarkError && (
+              <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
+                <Globe size={32} className="text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">Configure o webhook e insira os dados da conta para analisar</p>
+                <p className="text-xs text-gray-400 mt-1">O resultado da análise do Manus AI aparecerá aqui</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── TAB: Extract ──────────────────────────────────────────────────────── */}
       {tab === 'extract' && (
