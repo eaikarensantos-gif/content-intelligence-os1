@@ -219,6 +219,31 @@ const useStore = create(
       deleteAd: (id) =>
         set((s) => ({ ads: s.ads.filter((a) => a.id !== id) })),
 
+      // ── Archetypes ───────────────────────────────────────────
+      archetypes: [],
+      hybridArchetypes: [],
+
+      addArchetype: (archetype) =>
+        set((s) => ({
+          archetypes: [...s.archetypes, { id: uuidv4(), created_at: new Date().toISOString(), ...archetype }],
+        })),
+
+      updateArchetype: (id, updates) =>
+        set((s) => ({
+          archetypes: s.archetypes.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+        })),
+
+      deleteArchetype: (id) =>
+        set((s) => ({ archetypes: s.archetypes.filter((a) => a.id !== id) })),
+
+      addHybridArchetype: (hybrid) =>
+        set((s) => ({
+          hybridArchetypes: [...s.hybridArchetypes, { id: uuidv4(), created_at: new Date().toISOString(), ...hybrid }],
+        })),
+
+      deleteHybridArchetype: (id) =>
+        set((s) => ({ hybridArchetypes: s.hybridArchetypes.filter((h) => h.id !== id) })),
+
       // ── Reset ──────────────────────────────────────────────
       reset: () =>
         set({
@@ -233,6 +258,8 @@ const useStore = create(
           thoughtCaptures: [],
           tasks: [],
           ads: [],
+          archetypes: [],
+          hybridArchetypes: [],
         }),
     }),
     {
@@ -249,6 +276,8 @@ const useStore = create(
         thoughtCaptures: s.thoughtCaptures,
         tasks: s.tasks,
         ads: s.ads,
+        archetypes: s.archetypes,
+        hybridArchetypes: s.hybridArchetypes,
       }),
     }
   )

@@ -11,6 +11,7 @@ const TITLES = {
   '/reports': { title: 'Relatórios', sub: 'Gere relatórios profissionais para seus clientes' },
   '/tasks': { title: 'Tarefas', sub: 'Organize suas tarefas do dia e acompanhe o progresso' },
   '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
+  '/archetypes': { title: 'Arquétipos de Conteúdo', sub: 'Extraia padrões de criadores e gere conteúdo baseado em arquétipos' },
   '/security': { title: 'Segurança', sub: 'Registro de tentativas de acesso ao sistema' },
   '/create': { title: 'Criar Conteúdo', sub: 'Escolha como quer começar sua criação' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },

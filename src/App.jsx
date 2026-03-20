@@ -18,6 +18,7 @@ import ClientReports from './components/reports/ClientReports'
 import AccessLog from './components/auth/AccessLog'
 import TaskBoard from './components/tasks/TaskBoard'
 import AdManager from './components/ads/AdManager'
+import ContentArchetypes from './components/archetypes/ContentArchetypes'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/reports" element={<ClientReports />} />
             <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/ads" element={<AdManager />} />
+            <Route path="/archetypes" element={<ContentArchetypes />} />
             <Route path="/security" element={<AccessLog />} />
           </Routes>
         </Layout>
