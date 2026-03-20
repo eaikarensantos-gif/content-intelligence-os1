@@ -734,10 +734,22 @@ export default function ContentArchetypes() {
       // If it's a string that looks like JSON, try to parse it
       let data = raw
       if (typeof data === 'string') {
-        try {
-          data = JSON.parse(data)
-        } catch {
-          // keep as string
+        try { data = JSON.parse(data) } catch { /* keep as string */ }
+      }
+
+      // Extract text from Claude API response format: { content: [{ text: "..." }] }
+      if (data && typeof data === 'object' && Array.isArray(data.content)) {
+        const textBlock = data.content.find(c => c.type === 'text')
+        if (textBlock?.text) {
+          let text = textBlock.text
+          // Strip markdown code blocks: ```json ... ``` or ``` ... ```
+          text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
+          // Try to parse as JSON
+          try {
+            data = JSON.parse(text)
+          } catch {
+            data = text
+          }
         }
       }
 
