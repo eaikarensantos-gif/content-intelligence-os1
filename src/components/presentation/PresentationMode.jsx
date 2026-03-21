@@ -40,7 +40,7 @@ async function generatePresentation(apiKey, { topic, audience, goal, duration, c
   const audienceLabel = AUDIENCES.find(a => a.id === audience)?.label || audience
   const durationLabel = DURATIONS.find(d => d.id === duration)?.label || duration
 
-  const prompt = `Você é um preparador de apresentações e talks para criadores brasileiros. Sua especialidade é transformar ideias em falas envolventes que soam NATURAIS — como uma pessoa de verdade falando, não lendo um texto.
+  const prompt = `Você é um preparador de apresentações e roteiros para criadores brasileiros. Sua especialidade é transformar ideias em falas envolventes que soam NATURAIS — como uma pessoa de verdade falando, não lendo um texto.
 
 DADOS DA APRESENTAÇÃO:
 - Tema: ${topic}
@@ -49,14 +49,22 @@ DADOS DA APRESENTAÇÃO:
 - Duração: ${durationLabel}
 ${context ? `- Contexto adicional: ${context}` : ''}
 
-REGRAS DE ESTILO (CRÍTICO):
+REGRAS DE TOM E ENERGIA (CRÍTICO):
+- O tom deve ser ADAPTÁVEL ao tema e ao objetivo
+- Se o tema é sobre uma marca/produto/parceria: seja ENTUSIASMADO, mostre valor genuíno, destaque benefícios reais, seja convincente sem ser forçado
+- Se o tema é reflexivo: seja inteligente mas NÃO pessimista. Reflexão ≠ tristeza. Reflexão pode ser curiosa, surpreendente, até divertida
+- Se o tema é educativo: seja claro, direto, com exemplos práticos e energia de quem está compartilhando algo útil
+- NUNCA seja melancólico, derrotista ou negativista sem motivo
+- Conteúdo para marca/parceria deve ter energia POSITIVA e construtiva — mostre o lado bom, a solução, o valor, sem ser lambe-botas
+- Conteúdo orgânico pode ter provocação inteligente, mas sempre com saída positiva ou construtiva
+
+REGRAS DE ESTILO:
 - Escreva TUDO em linguagem FALADA, não escrita
-- Frases curtas, como alguém realmente fala no palco
+- Frases curtas, como alguém realmente fala
 - Ritmo natural com pausas implícitas
 - Use "você" direto, como se estivesse conversando
-- Inclua momentos de respiração, pausa dramática
-- PROIBIDO: "isso vai mudar tudo", "o erro que 90% cometem", "ninguém te conta isso", linguagem de autoajuda genérica, frases motivacionais vazias
-- PREFERIDO: "Tenho notado uma coisa curiosa...", "Deixa eu contar uma coisa...", "Talvez o problema não seja...", "Sabe o que é engraçado?"
+- PROIBIDO: "isso vai mudar tudo", "o erro que 90% cometem", "ninguém te conta isso", linguagem de autoajuda genérica, tom pessimista/derrotista constante
+- PREFERIDO: "Deixa eu contar uma coisa...", "Sabe o que é engraçado?", "Isso aqui me surpreendeu...", "A parte boa é que...", "O que eu descobri foi..."
 
 GERE a apresentação completa com esta estrutura JSON:
 
@@ -117,7 +125,7 @@ Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 8000,
-      system: 'You are a Brazilian presentation coach who writes in natural spoken Portuguese. Everything you write must sound like someone TALKING, not writing. Respond ONLY with valid JSON — no markdown, no explanations.',
+      system: 'You are a Brazilian content and presentation coach. You write in natural spoken Portuguese. Everything must sound like someone TALKING naturally. Your tone adapts to the goal: brand content = enthusiastic and genuine, reflective content = curious and intelligent (never pessimistic), educational = clear and practical. You NEVER default to melancholic or defeatist tone. Respond ONLY with valid JSON.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
