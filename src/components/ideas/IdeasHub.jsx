@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
   Plus, Search, Calendar, Tag,
@@ -955,7 +956,6 @@ const TABS = [
   { id: 'kanban',   label: 'Quadro',    icon: Kanban },
   { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'order',    label: 'Ordem',     icon: ListOrdered },
-  { id: 'generate', label: 'Gerar',     icon: Zap },
 ]
 
 // ─── Visualização Ordem de Criação ────────────────────────────────────────────
@@ -1070,6 +1070,7 @@ const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeasHub() {
+  const navigate          = useNavigate()
   const ideas             = useStore((s) => s.ideas)
   const addIdea           = useStore((s) => s.addIdea)
   const updateIdea        = useStore((s) => s.updateIdea)
@@ -1154,11 +1155,16 @@ export default function IdeasHub() {
             </button>
           ))}
         </div>
-        {ideas.length > 0 && (
-          <button onClick={() => openNew()} className="btn-primary shrink-0 text-xs sm:text-sm px-3 sm:px-4">
-            <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => navigate('/generate')} className="btn-secondary text-xs sm:text-sm px-3 sm:px-4">
+            <Zap size={14} /> <span className="hidden sm:inline">Gerar com IA</span>
           </button>
-        )}
+          {ideas.length > 0 && (
+            <button onClick={() => openNew()} className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
+              <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filtros */}
@@ -1265,8 +1271,7 @@ export default function IdeasHub() {
         <OrderView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} />
       )}
 
-      {/* Visualização Gerar */}
-      {tab === 'generate' && <GenerateView />}
+      {/* Link rápido para Gerador de Ideias */}
 
       {/* Modal */}
       <IdeaForm
