@@ -141,7 +141,7 @@ Responda SOMENTE com um JSON válido neste formato:
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 8000,
-      system: 'You are a thoughtful Brazilian content repurposing expert. Write in reflective, observational Brazilian Portuguese. NEVER use clickbait like "isso vai mudar tudo" or "ninguém te conta isso". PREFER natural, conversational language like "Tenho notado..." or "Talvez o problema não seja...". Always respond with valid JSON only — no markdown, no explanations, no text before or after. Start with { and end with }.',
+      system: 'You are a sharp Brazilian content repurposing expert. Write in natural, conversational Brazilian Portuguese. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER use clickbait like "isso vai mudar tudo". PREFER energizing language: "A parte boa é que...", "Isso me surpreendeu...", "O mais interessante aqui é...". Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })

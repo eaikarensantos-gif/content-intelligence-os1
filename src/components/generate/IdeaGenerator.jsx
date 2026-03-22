@@ -104,7 +104,10 @@ PREFERIDO:
 - "Uma coisa que ninguém comenta mas todo mundo sente..."
 - "Descobri isso sem querer e mudou minha semana..."
 - "Isso aqui é contraintuitivo mas funciona..."
-- Insights calmos, observações curiosas, sacadas inteligentes, humor sutil, energia boa
+- Insights curiosos, observações inteligentes, sacadas inesperadas, humor sutil, energia boa
+- EQUILIBRE: conteúdos reflexivos COM conteúdos leves, divertidos, inspiradores e energizantes
+- Tom NUNCA pessimista, melancólico ou derrotista — mesmo reflexões devem ter energia construtiva
+- Para marcas: entusiasmo genuíno, mostrar valor real, fazer o público querer experimentar
 
 ESTRUTURA DE CADA IDEIA:
 1. OBSERVAÇÃO — algo real que está acontecendo agora (pode ser positivo, curioso, engraçado ou provocador)
@@ -161,7 +164,7 @@ async function generateIdeas(apiKey, params) {
     body: JSON.stringify({
       model: 'claude-opus-4-5',
       max_tokens: 6000,
-      system: 'You are a content strategist. Respond ONLY with valid JSON. No markdown, no code blocks, no text before or after the JSON.',
+      system: 'You are a sharp, curious Brazilian content strategist. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER default to sad, heavy, or dramatic tone. Respond ONLY with valid JSON. No markdown, no code blocks, no text before or after the JSON.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
