@@ -5,7 +5,7 @@ import {
   Sparkles, MessageCircle, Zap, Target, BookOpen,
   Users, ArrowRight, RefreshCw, Save, Plus, ExternalLink,
   Play, Pause, X, Minus as MinusIcon, PlusCircle, Monitor,
-  Wand2, ArrowLeft,
+  Wand2, ArrowLeft, Heart,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -341,7 +341,7 @@ export default function PresentationMode() {
   const [copiedAll, setCopiedAll] = useState(false)
   const [showTeleprompter, setShowTeleprompter] = useState(false)
 
-  const { addIdea } = useStore()
+  const { addIdea, addFavorite, removeFavorite, favorites } = useStore()
   const navigate = useNavigate()
   const [savedToHub, setSavedToHub] = useState(false)
 
@@ -417,6 +417,29 @@ export default function PresentationMode() {
       notes: `Duração: ${result.duration_estimate}\n\n${result.overview || ''}\n\nAbertura: ${result.opening?.hook || ''}\n\nBlocos: ${(result.main_blocks || []).map(b => b.title).join(' → ')}`,
     })
     setSavedToHub(true)
+  }
+
+  const isPresentationFavorited = () => {
+    if (!result) return false
+    return favorites.some(f => f.type === 'presentation' && f.title === (result.title || topic))
+  }
+  const togglePresentationFav = () => {
+    if (!result) return
+    const title = result.title || topic
+    const existing = favorites.find(f => f.type === 'presentation' && f.title === title)
+    if (existing) {
+      removeFavorite(existing.id)
+    } else {
+      const sections = [
+        `# ${result.title}`,
+        result.overview,
+        result.opening?.script,
+        result.context?.script,
+        ...(result.main_blocks || []).map(b => b.script),
+        result.conclusion?.script,
+      ].filter(Boolean).join('\n\n')
+      addFavorite({ type: 'presentation', title, content: sections, source: 'Presentation Mode' })
+    }
   }
 
   return (
@@ -624,6 +647,13 @@ export default function PresentationMode() {
                         <Save size={12} /> Salvar no Hub
                       </button>
                     )}
+                    <button
+                      onClick={togglePresentationFav}
+                      className={`p-2 rounded-lg transition-colors ${isPresentationFavorited() ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+                      title={isPresentationFavorited() ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                    >
+                      <Heart size={15} className={isPresentationFavorited() ? 'fill-current' : ''} />
+                    </button>
                   </div>
                 </div>
               </div>

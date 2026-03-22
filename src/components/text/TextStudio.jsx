@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wand2, Copy, Check, RefreshCw,
   AlignLeft, X, Zap, Save, ExternalLink,
-  Sparkles, Mic, ArrowLeft,
+  Sparkles, Mic, ArrowLeft, Heart,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -394,7 +394,7 @@ function buildCopyText(platform, data) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function TextStudio() {
-  const { addIdea } = useStore()
+  const { addIdea, addFavorite, removeFavorite, favorites } = useStore()
   const navigate = useNavigate()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 
@@ -494,6 +494,22 @@ export default function TextStudio() {
       source: 'Text Studio',
     })
     setSavedVersions(prev => new Set([...prev, platform]))
+  }
+
+  const isTextFavorited = (platform) => {
+    const platformLabel = PLATFORMS.find(p => p.id === platform)?.label || platform
+    return favorites.some(f => f.type === 'text' && f.title === `${platformLabel} - ${niche || sourceType}`)
+  }
+  const toggleTextFav = (platform) => {
+    const platformLabel = PLATFORMS.find(p => p.id === platform)?.label || platform
+    const title = `${platformLabel} - ${niche || sourceType}`
+    const existing = favorites.find(f => f.type === 'text' && f.title === title)
+    if (existing) {
+      removeFavorite(existing.id)
+    } else {
+      const data = result?.versions?.[platform]
+      addFavorite({ type: 'text', title, content: buildCopyText(platform, data), source: 'Text Studio' })
+    }
   }
 
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length
@@ -689,6 +705,13 @@ export default function TextStudio() {
                         className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-300 transition-all"
                       >
                         {copied === activeTab ? <><Check size={12} className="text-emerald-500" /> Copiado!</> : <><Copy size={12} /> Copiar</>}
+                      </button>
+                      <button
+                        onClick={() => toggleTextFav(activeTab)}
+                        className={`p-1.5 rounded-lg transition-colors ${isTextFavorited(activeTab) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+                        title={isTextFavorited(activeTab) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                      >
+                        <Heart size={14} className={isTextFavorited(activeTab) ? 'fill-current' : ''} />
                       </button>
                     </div>
                   </div>

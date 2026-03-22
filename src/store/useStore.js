@@ -18,6 +18,16 @@ const useStore = create(
       thoughtCaptures: [],
       tasks: [],
       ads: [],
+      favorites: [],
+
+      // ── Favoritos ─────────────────────────────────────────────
+      addFavorite: (fav) =>
+        set((s) => ({
+          favorites: [...s.favorites, { id: uuidv4(), created_at: new Date().toISOString(), ...fav }],
+        })),
+
+      removeFavorite: (id) =>
+        set((s) => ({ favorites: s.favorites.filter((f) => f.id !== id) })),
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -277,6 +287,7 @@ const useStore = create(
           leads: [],
           archetypes: [],
           hybridArchetypes: [],
+          favorites: [],
         }),
     }),
     {
@@ -296,6 +307,7 @@ const useStore = create(
         leads: s.leads,
         archetypes: s.archetypes,
         hybridArchetypes: s.hybridArchetypes,
+        favorites: s.favorites,
       }),
     }
   )

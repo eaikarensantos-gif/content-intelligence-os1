@@ -4,7 +4,7 @@ import {
   Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
   Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
   Flame, Eye, MessageCircle, Layers, ArrowRight, Save, Star,
-  Lightbulb, ExternalLink, Wand2, Mic, ArrowLeft,
+  Lightbulb, ExternalLink, Wand2, Mic, ArrowLeft, Heart,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -183,7 +183,7 @@ async function generateIdeas(apiKey, params) {
 }
 
 // ── Idea Card ─────────────────────────────────────────────────────────────────
-function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub }) {
+function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav, onToggleFav }) {
   const [expanded, setExpanded] = useState(false)
   const [showSavedFlash, setShowSavedFlash] = useState(false)
 
@@ -329,6 +329,13 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub }) {
           >
             {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
           </button>
+          <button
+            onClick={onToggleFav}
+            className={`p-2 rounded-xl transition-colors ${isFav ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+            title={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          >
+            <Heart size={13} className={isFav ? 'fill-current' : ''} />
+          </button>
         </div>
       </div>
     </div>
@@ -337,7 +344,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function IdeaGenerator() {
-  const { addIdea } = useStore()
+  const { addIdea, addFavorite, removeFavorite, favorites } = useStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
@@ -475,6 +482,17 @@ export default function IdeaGenerator() {
     navigator.clipboard.writeText(text)
     setCopiedId(idea._id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const isIdeaFavorited = (idea) => favorites.some(f => f.type === 'idea' && f.title === idea.title)
+  const toggleIdeaFav = (idea) => {
+    const existing = favorites.find(f => f.type === 'idea' && f.title === idea.title)
+    if (existing) {
+      removeFavorite(existing.id)
+    } else {
+      const content = [idea.title, `Gancho: "${idea.hook}"`, idea.core_argument, idea.why_now ? `Por que agora: ${idea.why_now}` : ''].filter(Boolean).join('\n\n')
+      addFavorite({ type: 'idea', title: idea.title, content, source: 'Gerador de Ideias' })
+    }
   }
 
   return (
@@ -730,6 +748,8 @@ export default function IdeaGenerator() {
                       onCopy={handleCopy}
                       copied={copiedId === idea._id}
                       onOpenHub={() => navigate('/ideas')}
+                      isFav={isIdeaFavorited(idea)}
+                      onToggleFav={() => toggleIdeaFav(idea)}
                     />
                   ))}
                 </div>

@@ -290,6 +290,19 @@ function useCopy() {
   return { copiedKey, copy }
 }
 
+// ─── Favorite button ─────────────────────────────────────────────────────────
+function FavBtn({ isFav, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`p-1.5 rounded-lg transition-colors ${isFav ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+      title={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+    >
+      <Heart size={13} className={isFav ? 'fill-current' : ''} />
+    </button>
+  )
+}
+
 // ─── Save button ──────────────────────────────────────────────────────────────
 function SaveBtn({ saved, onClick, color, onOpenHub }) {
   const c = COLOR_MAP[color]
@@ -316,7 +329,7 @@ function SaveBtn({ saved, onClick, color, onOpenHub }) {
 }
 
 // ─── Format 1: Reflection Post ────────────────────────────────────────────────
-function ReflectionCard({ data, onSave, saved, onOpenHub }) {
+function ReflectionCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.indigo
   return (
@@ -327,9 +340,12 @@ function ReflectionCard({ data, onSave, saved, onOpenHub }) {
           <span className="text-sm font-semibold text-gray-800">Post Reflexivo</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
         </div>
-        <button onClick={() => copy(data.text, 'post')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'post' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(data.text, 'post')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'post' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-3">
         <div className={`rounded-xl p-3 border ${c.border} bg-indigo-50/30`}>
@@ -348,7 +364,7 @@ function ReflectionCard({ data, onSave, saved, onOpenHub }) {
 }
 
 // ─── Format 2: Video Talking Point ───────────────────────────────────────────
-function VideoCard({ data, onSave, saved, onOpenHub }) {
+function VideoCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.violet
   const script = [`HOOK: ${data.hook}`, '', ...(data.talking_points || []).map((p, i) => `${i + 1}. ${p}`), '', `ENCERRAMENTO: ${data.closing}`].join('\n')
@@ -361,9 +377,12 @@ function VideoCard({ data, onSave, saved, onOpenHub }) {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{data.estimated_duration}</span>
         </div>
-        <button onClick={() => copy(script, 'video')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'video' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(script, 'video')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'video' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-3">
         <div className="rounded-xl p-3.5 bg-violet-50 border border-violet-200">
@@ -389,7 +408,7 @@ function VideoCard({ data, onSave, saved, onOpenHub }) {
 }
 
 // ─── Format 3: Carousel ───────────────────────────────────────────────────────
-function CarouselCard({ data, onSave, saved, onOpenHub }) {
+function CarouselCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.purple
   const allSlides = [`SLIDE 1 (CAPA): ${data.slide_1}`, ...(data.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`), `\nSLIDE FINAL:\n${data.final_slide}`].join('\n')
@@ -401,9 +420,12 @@ function CarouselCard({ data, onSave, saved, onOpenHub }) {
           <span className="text-sm font-semibold text-gray-800">Carrossel</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{(data.slides?.length || 0) + 2} slides</span>
         </div>
-        <button onClick={() => copy(allSlides, 'carousel')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'carousel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(allSlides, 'carousel')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'carousel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-2">
         <div className="rounded-xl p-3.5 bg-purple-50 border border-purple-200">
@@ -432,7 +454,7 @@ function CarouselCard({ data, onSave, saved, onOpenHub }) {
 }
 
 // ─── Format 4: Storytelling ───────────────────────────────────────────────────
-function StorytellingCard({ data, onSave, saved, onOpenHub }) {
+function StorytellingCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.fuchsia
   const STEPS = [
@@ -450,9 +472,12 @@ function StorytellingCard({ data, onSave, saved, onOpenHub }) {
           <span className="text-sm font-semibold text-gray-800">Arco Narrativo</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>4 partes</span>
         </div>
-        <button onClick={() => copy(fullStory, 'story')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'story' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(fullStory, 'story')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'story' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-2.5">
         {STEPS.map((step) => (
@@ -471,7 +496,7 @@ function StorytellingCard({ data, onSave, saved, onOpenHub }) {
 }
 
 // ─── Format 5: Reels Script ───────────────────────────────────────────────────
-function ReelCard({ data, onSave, saved, onOpenHub }) {
+function ReelCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.rose
   const script = [
@@ -495,9 +520,12 @@ function ReelCard({ data, onSave, saved, onOpenHub }) {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>Instagram</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">~{data.suggested_duration_sec}s</span>
         </div>
-        <button onClick={() => copy(script, 'reel')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'reel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(script, 'reel')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'reel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-3">
         {/* Hook */}
@@ -567,7 +595,7 @@ const INTERACTIVE_ICONS = {
   nenhum:    '',
 }
 
-function StoriesCard({ data, onSave, saved, onOpenHub }) {
+function StoriesCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.pink
   const script = [`ABERTURA: ${data.opening_slide}`, '', ...(data.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`), '', `INTERATIVIDADE: ${data.interactive_tip}`, `CTA FINAL: ${data.closing_cta}`].join('\n')
@@ -580,9 +608,12 @@ function StoriesCard({ data, onSave, saved, onOpenHub }) {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>Instagram</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{data.slides?.length || 0} slides</span>
         </div>
-        <button onClick={() => copy(script, 'stories')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'stories' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(script, 'stories')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'stories' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-3">
         {/* Opening slide */}
@@ -623,7 +654,7 @@ function StoriesCard({ data, onSave, saved, onOpenHub }) {
 }
 
 // ─── Format 7: TikTok Script ──────────────────────────────────────────────────
-function TikTokCard({ data, onSave, saved, onOpenHub }) {
+function TikTokCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.zinc
   const script = [
@@ -647,9 +678,12 @@ function TikTokCard({ data, onSave, saved, onOpenHub }) {
           <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-zinc-100 text-zinc-700 border-zinc-300">TikTok</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">~{data.suggested_duration_sec}s</span>
         </div>
-        <button onClick={() => copy(script, 'tiktok')} className="btn-secondary text-xs py-1 px-2.5">
-          {copiedKey === 'tiktok' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-        </button>
+        <div className="flex items-center gap-1">
+          <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={() => copy(script, 'tiktok')} className="btn-secondary text-xs py-1 px-2.5">
+            {copiedKey === 'tiktok' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+          </button>
+        </div>
       </div>
       <div className="px-5 py-4 space-y-3">
         {/* Hooks */}
@@ -900,7 +934,7 @@ const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', '
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
-  const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea } = useStore()
+  const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea, addFavorite, removeFavorite, favorites } = useStore()
   const navigate = useNavigate()
 
   const [thought, setThought] = useState('')
@@ -993,6 +1027,16 @@ export default function ThoughtCapture() {
   }
 
   const goToHub = () => navigate('/ideas')
+
+  const isFavorited = (title) => favorites.some(f => f.type === 'thought' && f.title === title)
+  const toggleFav = (title, content) => {
+    const existing = favorites.find(f => f.type === 'thought' && f.title === title)
+    if (existing) {
+      removeFavorite(existing.id)
+    } else {
+      addFavorite({ type: 'thought', title, content, source: 'Thought Capture' })
+    }
+  }
 
   const charCount = thought.length
   const isReady = charCount >= 10
@@ -1142,16 +1186,16 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {result.reflection_post && (
-                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} />
+                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} isFav={isFavorited('Post Reflexivo')} onToggleFav={() => toggleFav('Post Reflexivo', result.reflection_post.text)} />
                 )}
                 {result.video_talking_point && (
-                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} />
+                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} isFav={isFavorited('Roteiro de Video')} onToggleFav={() => toggleFav('Roteiro de Video', [`HOOK: ${result.video_talking_point.hook}`, ...(result.video_talking_point.talking_points || []).map((p, i) => `${i + 1}. ${p}`), `ENCERRAMENTO: ${result.video_talking_point.closing}`].join('\n'))} />
                 )}
                 {result.carousel && (
-                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} />
+                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} isFav={isFavorited('Carrossel')} onToggleFav={() => toggleFav('Carrossel', [`SLIDE 1: ${result.carousel.slide_1}`, ...(result.carousel.slides || []).map((s, i) => `SLIDE ${i + 2}: ${s.headline} - ${s.body}`), `FINAL: ${result.carousel.final_slide}`].join('\n'))} />
                 )}
                 {result.storytelling && (
-                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} />
+                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} isFav={isFavorited('Arco Narrativo')} onToggleFav={() => toggleFav('Arco Narrativo', [result.storytelling.situation, result.storytelling.tension, result.storytelling.turning_point, result.storytelling.resolution].filter(Boolean).join('\n\n'))} />
                 )}
               </div>
             </div>
@@ -1165,13 +1209,13 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 {result.reel_script && (
-                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} />
+                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} isFav={isFavorited('Reels Script')} onToggleFav={() => toggleFav('Reels Script', [`HOOK: ${result.reel_script.hook_spoken}`, ...(result.reel_script.beats || []).map(b => b.content), `CTA: ${result.reel_script.cta}`].filter(Boolean).join('\n'))} />
                 )}
                 {result.stories_sequence && (
-                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} />
+                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} isFav={isFavorited('Stories Sequence')} onToggleFav={() => toggleFav('Stories Sequence', [`ABERTURA: ${result.stories_sequence.opening_slide}`, ...(result.stories_sequence.slides || []).map(s => `Slide ${s.number}: ${s.content}`), `CTA: ${result.stories_sequence.closing_cta}`].filter(Boolean).join('\n'))} />
                 )}
                 {result.tiktok_script && (
-                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} />
+                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} isFav={isFavorited('TikTok Script')} onToggleFav={() => toggleFav('TikTok Script', [`HOOK: ${result.tiktok_script.hook_line}`, ...(result.tiktok_script.beats || []).map(b => b.content), `LOOP: ${result.tiktok_script.loop_moment}`, `CTA: ${result.tiktok_script.comment_bait}`].filter(Boolean).join('\n'))} />
                 )}
               </div>
             </div>

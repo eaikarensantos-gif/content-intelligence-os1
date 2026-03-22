@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { useLocation, Link } from 'react-router-dom'
-import { Bell, Search, Menu, ChevronRight } from 'lucide-react'
+import { Heart, Search, Menu, ChevronRight } from 'lucide-react'
+import useStore from '../../store/useStore'
+import FavoritesPanel from '../favorites/FavoritesPanel'
 
 const TITLES = {
   '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
@@ -25,6 +28,8 @@ export default function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const info = TITLES[pathname] || TITLES['/']
   const isCreateChild = CREATE_ROUTES.has(pathname)
+  const { favorites } = useStore()
+  const [showFavorites, setShowFavorites] = useState(false)
 
   return (
     <header className="h-14 sm:h-16 px-4 sm:px-6 flex items-center justify-between border-b border-gray-200 bg-white/95 backdrop-blur-sm sticky top-0 z-20 shrink-0">
@@ -55,11 +60,20 @@ export default function Header({ onMenuClick }) {
         <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
           <Search size={15} />
         </button>
-        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors relative">
-          <Bell size={15} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+        <button
+          onClick={() => setShowFavorites(true)}
+          className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-colors relative"
+        >
+          <Heart size={15} className={favorites.length > 0 ? 'fill-red-500 text-red-500' : ''} />
+          {favorites.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center px-1 text-[9px] font-bold bg-red-500 text-white rounded-full">
+              {favorites.length}
+            </span>
+          )}
         </button>
       </div>
+
+      {showFavorites && <FavoritesPanel onClose={() => setShowFavorites(false)} />}
     </header>
   )
 }
