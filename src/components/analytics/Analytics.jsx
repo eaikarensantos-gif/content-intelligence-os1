@@ -338,8 +338,10 @@ export default function Analytics() {
 
   const handleGenerateSimilar = (m) => {
     // Navigate to idea generator with context
+    const engRate = typeof m.engagement_rate === 'number' ? (m.engagement_rate * 100).toFixed(1) : 'N/A'
+    const desc = (m.description || m.title || 'post sem descrição').slice(0, 300)
     const context = encodeURIComponent(
-      `Gere conteúdo similar a este post de alto desempenho:\n"${(m.description || '').slice(0, 200)}"\nFormato: ${m.post_type || 'post'}\nTaxa de engajamento: ${(m.engagement_rate * 100).toFixed(1)}%`
+      `Gere conteúdo similar a este post de alto desempenho:\n"${desc}"\nFormato: ${m.post_type || 'post'}\nTaxa de engajamento: ${engRate}%`
     )
     navigate(`/generate?context=${context}`)
   }

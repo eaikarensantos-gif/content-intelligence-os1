@@ -350,7 +350,11 @@ export default function IdeaGenerator() {
   useEffect(() => {
     const ctx = searchParams.get('context')
     if (ctx) {
-      setTopic(decodeURIComponent(ctx))
+      try {
+        setTopic(decodeURIComponent(ctx))
+      } catch {
+        setTopic(ctx) // searchParams.get already decodes, fallback to raw
+      }
     }
   }, [])
   const [tone, setTone] = useState('reflexivo')
