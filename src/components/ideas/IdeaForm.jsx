@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { X } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { X, Tag } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 
@@ -52,6 +52,18 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [form, setForm] = useState(EMPTY)
   const [tagInput, setTagInput] = useState('')
   const tagRef = useRef(null)
+  // All unique tags from existing ideas (history)
+  const allIdeas = useStore((s) => s.ideas)
+  const tagHistory = useMemo(() => {
+    const counts = {}
+    ;(allIdeas || []).forEach((idea) => {
+      ;(idea.tags || []).forEach((t) => { counts[t] = (counts[t] || 0) + 1 })
+    })
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag]) => tag)
+  }, [allIdeas])
+
   const descRef = useRef(null)
   const autoResizeDesc = useCallback((el) => {
     if (!el) return
@@ -293,6 +305,26 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               onBlur={() => { if (tagInput.trim()) addTag(tagInput) }}
             />
           </div>
+          {/* Tag suggestions from history */}
+          {tagHistory.filter((t) => !(form.tags || []).includes(t)).length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              <span className="text-[10px] text-gray-400 flex items-center gap-0.5 mr-0.5"><Tag size={9} /> Usadas:</span>
+              {tagHistory
+                .filter((t) => !(form.tags || []).includes(t))
+                .filter((t) => !tagInput || t.includes(tagInput.toLowerCase()))
+                .slice(0, 12)
+                .map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => addTag(t)}
+                    className="text-[10px] text-gray-500 hover:text-orange-700 bg-gray-50 hover:bg-orange-50 border border-gray-200 hover:border-orange-200 px-1.5 py-0.5 rounded-full transition-all"
+                  >
+                    #{t}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
 
         {/* Ações */}
