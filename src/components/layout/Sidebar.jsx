@@ -54,8 +54,6 @@ const STORE_KEY = 'content-intelligence-os-v3'
 const API_KEYS = ['cio-anthropic-key', 'cio-groq-key']
 
 export default function Sidebar({ isOpen, onClose }) {
-  const ideas = useStore((s) => s.ideas)
-  const readyCount = ideas.filter((i) => i.status === 'ready').length
   const location = useLocation()
   const importRef = useRef(null)
   const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
@@ -164,11 +162,6 @@ export default function Sidebar({ isOpen, onClose }) {
             <>
               <Icon size={16} className={active ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
               <span className="flex-1">{label}</span>
-              {label === 'Hub de Ideias' && readyCount > 0 && (
-                <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                  {readyCount}
-                </span>
-              )}
               {active && <ChevronRight size={12} className="text-orange-500" />}
             </>
           )
