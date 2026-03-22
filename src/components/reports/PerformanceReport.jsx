@@ -595,10 +595,50 @@ function DashboardView({ data, platformId }) {
   )
 }
 
+// ── PERSISTENCE ───────────────────────────────────────────────────────────────
+const REPORTS_LS_KEY = 'cio-performance-reports'
+
+function saveReportsToLS(reports) {
+  try {
+    const serializable = {}
+    for (const [pid, { posts }] of Object.entries(reports)) {
+      serializable[pid] = {
+        posts: posts.map(p => ({ ...p, date: p.date.toISOString() })),
+        savedAt: new Date().toISOString(),
+      }
+    }
+    localStorage.setItem(REPORTS_LS_KEY, JSON.stringify(serializable))
+  } catch { /* quota exceeded — silent fail */ }
+}
+
+function loadReportsFromLS() {
+  try {
+    const raw = localStorage.getItem(REPORTS_LS_KEY)
+    if (!raw) return { reports: {}, active: null }
+    const parsed = JSON.parse(raw)
+    const reports = {}
+    let active = null
+    for (const [pid, { posts: savedPosts }] of Object.entries(parsed)) {
+      const posts = savedPosts.map(p => ({ ...p, date: new Date(p.date) }))
+      if (posts.length > 0) {
+        reports[pid] = { posts, data: analyze(posts) }
+        if (!active) active = pid
+      }
+    }
+    return { reports, active }
+  } catch { return { reports: {}, active: null } }
+}
+
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function PerformanceReport() {
-  const [reports, setReports] = useState({}) // { instagram: { posts, data }, linkedin: ..., tiktok: ... }
-  const [activePlatform, setActivePlatform] = useState(null)
+  const [reports, setReports] = useState(() => {
+    const { reports } = loadReportsFromLS()
+    return reports
+  })
+  const [activePlatform, setActivePlatform] = useState(() => {
+    const { active } = loadReportsFromLS()
+    return active
+  })
   const [uploading, setUploading] = useState(null) // platform id being uploaded
   const [error, setError] = useState(null)
 
@@ -636,7 +676,11 @@ export default function PerformanceReport() {
       if (!posts || posts.length === 0) throw new Error('Nenhum post válido encontrado. Verifique se o arquivo é o relatório correto da plataforma.')
 
       const data = analyze(posts)
-      setReports(prev => ({ ...prev, [platformId]: { posts, data } }))
+      setReports(prev => {
+        const next = { ...prev, [platformId]: { posts, data } }
+        saveReportsToLS(next)
+        return next
+      })
       setActivePlatform(platformId)
     } catch (e) {
       setError(e.message)
