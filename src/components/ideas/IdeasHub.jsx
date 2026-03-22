@@ -5,7 +5,7 @@ import {
   GripVertical, Kanban, Zap, RefreshCw, Sparkles, Radar, Loader2,
   Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
   ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound, Trash2,
-  TrendingUp, ArrowRight, Flame, Minus,
+  TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
@@ -976,6 +976,7 @@ export default function IdeasHub() {
   const [filterStatus, setFilterStatus]     = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
   const [filterTag, setFilterTag]           = useState(null)  // tag selecionável
+  const [showFilters, setShowFilters]       = useState(false)
 
   // Todas as plataformas únicas (suporta arrays e strings)
   const allPlatforms = ['all', ...new Set(
@@ -1045,64 +1046,90 @@ export default function IdeasHub() {
             </button>
           ))}
         </div>
-        <button onClick={() => openNew()} className="btn-primary shrink-0 text-xs sm:text-sm px-3 sm:px-4">
-          <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>
-        </button>
+        {ideas.length > 0 && (
+          <button onClick={() => openNew()} className="btn-primary shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+            <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>
+          </button>
+        )}
       </div>
 
       {/* Filtros */}
-      {(tab === 'kanban' || tab === 'calendar') && (
+      {(tab === 'kanban' || tab === 'calendar') && (() => {
+        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
+        return (
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
             <div className="relative flex-1 sm:max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className="input pl-8" placeholder="Buscar ideias..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
-                {allPlatforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Plataforma' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-              </select>
-              <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                {['all','idea','draft','ready','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
-              </select>
-              <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-                {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
-              </select>
-            </div>
+            <button
+              onClick={() => setShowFilters((f) => !f)}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border transition-all ${
+                showFilters || activeFilterCount > 0
+                  ? 'bg-orange-50 text-orange-700 border-orange-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <SlidersHorizontal size={13} />
+              Filtros
+              {activeFilterCount > 0 && (
+                <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
             <p className="text-[11px] text-gray-400 sm:ml-auto">{filtered.length} de {ideas.length} ideias</p>
           </div>
 
-          {/* Tags selecionáveis */}
-          {allTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-[10px] text-gray-400 uppercase tracking-wide font-medium flex items-center gap-1">
-                <Tag size={10} /> Tags:
-              </span>
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => handleTagClick(tag)}
-                  className={`text-[11px] px-2 py-0.5 rounded-full border font-medium transition-all ${
-                    filterTag === tag
-                      ? 'bg-orange-500 text-white border-orange-500'
-                      : 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
-              {filterTag && (
-                <button
-                  onClick={() => setFilterTag(null)}
-                  className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 ml-1"
-                >
-                  <X size={10} /> limpar
-                </button>
+          {showFilters && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap animate-fade-in">
+              <div className="flex gap-2 flex-wrap">
+                <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
+                  {allPlatforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Plataforma' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                </select>
+                <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                  {['all','idea','draft','ready','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
+                </select>
+                <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+                  {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
+                </select>
+              </div>
+
+              {/* Tags selecionáveis */}
+              {allTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide font-medium flex items-center gap-1">
+                    <Tag size={10} /> Tags:
+                  </span>
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => handleTagClick(tag)}
+                      className={`text-[11px] px-2 py-0.5 rounded-full border font-medium transition-all ${
+                        filterTag === tag
+                          ? 'bg-orange-500 text-white border-orange-500'
+                          : 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100'
+                      }`}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                  {filterTag && (
+                    <button
+                      onClick={() => setFilterTag(null)}
+                      className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 ml-1"
+                    >
+                      <X size={10} /> limpar
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* Visualização Kanban */}
       {tab === 'kanban' && (

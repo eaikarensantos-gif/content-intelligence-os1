@@ -203,7 +203,7 @@ export default function LoginGate({ children }) {
           </div>
           <h1 className="text-2xl font-bold text-white">Content Intelligence OS</h1>
           <p className="text-gray-400 text-sm mt-1">
-            {mode === 'setup' ? 'Configure seu acesso' : 'Acesso restrito'}
+            {mode === 'setup' ? 'Configure seu primeiro acesso' : 'Bem-vindo de volta'}
           </p>
         </div>
 
@@ -303,7 +303,11 @@ export default function LoginGate({ children }) {
             <button
               type="submit"
               disabled={loading || lockout}
-              className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-200 text-sm"
+              className={`w-full py-3 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm ${
+                mode === 'setup'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-200'
+                  : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-orange-200'
+              }`}
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

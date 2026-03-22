@@ -546,27 +546,21 @@ export default function TextStudio() {
           />
 
           {/* Source type + niche */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <p className="text-[11px] text-gray-400 font-medium mb-2 uppercase tracking-wide">Tipo de conteúdo original</p>
-              <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 sm:max-w-[200px]">
+              <p className="text-[11px] text-gray-400 font-medium mb-1.5 uppercase tracking-wide">Tipo de conteúdo</p>
+              <select
+                className="select text-xs w-full"
+                value={sourceType}
+                onChange={(e) => setSourceType(e.target.value)}
+              >
                 {SOURCE_TYPES.map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setSourceType(id)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                      sourceType === id
-                        ? 'bg-violet-600 text-white border-violet-600'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                  >
-                    {label}
-                  </button>
+                  <option key={id} value={id}>{label}</option>
                 ))}
-              </div>
+              </select>
             </div>
-            <div className="sm:w-52">
-              <p className="text-[11px] text-gray-400 font-medium mb-2 uppercase tracking-wide">Nicho (opcional)</p>
+            <div className="flex-1 sm:max-w-[200px]">
+              <p className="text-[11px] text-gray-400 font-medium mb-1.5 uppercase tracking-wide">Nicho (opcional)</p>
               <input
                 className="input text-xs"
                 placeholder="ex: Marketing, IA, Finanças..."
@@ -578,18 +572,18 @@ export default function TextStudio() {
 
           {/* Platform selection */}
           <div>
-            <p className="text-[11px] text-gray-400 font-medium mb-2 uppercase tracking-wide">Gerar versões para</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-[11px] text-gray-400 font-medium mb-1.5 uppercase tracking-wide">Gerar versões para</p>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
               {PLATFORMS.map(({ id, label, color, activeColor }) => {
                 const active = selectedPlatforms.includes(id)
                 return (
                   <button
                     key={id}
                     onClick={() => togglePlatform(id)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 ${active ? activeColor : color}`}
+                    className={`text-[11px] px-2.5 py-1 rounded-full border font-medium transition-all flex items-center gap-1 whitespace-nowrap shrink-0 ${active ? activeColor : color}`}
                   >
                     {label}
-                    {active && <Check size={11} />}
+                    {active && <Check size={10} />}
                   </button>
                 )
               })}

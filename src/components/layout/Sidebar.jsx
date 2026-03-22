@@ -2,26 +2,52 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, Video, Wand2, X, PenTool,
+  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 
-const NAV = [
+// ── Grouped navigation structure ─────────────────────────────────────────────
+const TOP_NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Criar Conteúdo' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
-  { to: '/dna', icon: Dna, label: 'Content DNA' },
-  { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
-  { to: '/reports', icon: FileText, label: 'Relatórios' },
-  { to: '/ads', icon: DollarSign, label: 'Publicidade' },
-  { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
-  { to: '/archetypes', icon: Shapes, label: 'Arquétipos' },
-  { to: '/trends', icon: Radar, label: 'Creator Insights' },
-  { to: '/security', icon: Shield, label: 'Segurança' },
 ]
+
+const NAV_GROUPS = [
+  {
+    id: 'inteligencia',
+    label: 'Inteligência',
+    children: [
+      { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+      { to: '/dna', icon: Dna, label: 'Content DNA' },
+      { to: '/trends', icon: Radar, label: 'Creator Insights' },
+    ],
+  },
+  {
+    id: 'ferramentas',
+    label: 'Ferramentas',
+    children: [
+      { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
+      { to: '/ads', icon: DollarSign, label: 'Publicidade' },
+      { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
+      { to: '/archetypes', icon: Shapes, label: 'Arquétipos' },
+    ],
+  },
+]
+
+const BOTTOM_NAV = [
+  { to: '/security', icon: Shield, label: 'Registro de Acessos' },
+]
+
+// Helper: find which group contains a given path
+function findGroupForPath(pathname) {
+  for (const g of NAV_GROUPS) {
+    if (g.children.some((c) => c.to === pathname)) return g.id
+  }
+  return null
+}
 
 const STORE_KEY = 'content-intelligence-os-v3'
 const API_KEYS = ['cio-anthropic-key', 'cio-groq-key']
@@ -33,10 +59,23 @@ export default function Sidebar({ isOpen, onClose }) {
   const importRef = useRef(null)
   const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
 
+  // Track which group is open — auto-expand the one containing current route
+  const [openGroup, setOpenGroup] = useState(() => findGroupForPath(location.pathname))
+
+  // Auto-expand group when route changes
+  useEffect(() => {
+    const g = findGroupForPath(location.pathname)
+    if (g) setOpenGroup(g)
+  }, [location.pathname])
+
   // Close sidebar on route change (mobile)
   useEffect(() => {
     onClose?.()
   }, [location.pathname])
+
+  const toggleGroup = (id) => {
+    setOpenGroup((prev) => (prev === id ? null : id))
+  }
 
   // ── Export all data as JSON ──────────────────────────────────────────────────
   const handleExport = () => {
@@ -96,6 +135,47 @@ export default function Sidebar({ isOpen, onClose }) {
     e.target.value = '' // reset input
   }
 
+  // Shared NavLink renderer
+  const renderNavItem = ({ to, icon: Icon, label }, indent = false) => {
+    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation']
+    const isCreateGroup = to === '/create'
+    const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
+
+    return (
+      <NavLink
+        key={to}
+        to={to}
+        end={to === '/' || isCreateGroup}
+        className={({ isActive }) => {
+          const active = isActive || forceActive
+          return clsx(
+            'flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative',
+            indent ? 'px-3 pl-10' : 'px-3',
+            active
+              ? 'bg-orange-100 text-orange-800 border border-orange-200'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-white'
+          )
+        }}
+      >
+        {({ isActive }) => {
+          const active = isActive || forceActive
+          return (
+            <>
+              <Icon size={16} className={active ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
+              <span className="flex-1">{label}</span>
+              {label === 'Hub de Ideias' && readyCount > 0 && (
+                <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                  {readyCount}
+                </span>
+              )}
+              {active && <ChevronRight size={12} className="text-orange-500" />}
+            </>
+          )
+        }}
+      </NavLink>
+    )
+  }
+
   return (
     <aside
       className={clsx(
@@ -129,45 +209,37 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ to, icon: Icon, label }) => {
-          // "Criar Conteúdo" also highlights on its sub-routes
-          const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation']
-          const isCreateGroup = to === '/create'
-          const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
+        {/* Top-level items */}
+        {TOP_NAV.map((item) => renderNavItem(item))}
 
+        {/* Collapsible groups */}
+        {NAV_GROUPS.map((group) => {
+          const isGroupOpen = openGroup === group.id
           return (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/' || isCreateGroup}
-              className={({ isActive }) => {
-                const active = isActive || forceActive
-                return clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative',
-                  active
-                    ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-white'
-                )
-              }}
-            >
-              {({ isActive }) => {
-                const active = isActive || forceActive
-                return (
-                  <>
-                    <Icon size={16} className={active ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
-                    <span className="flex-1">{label}</span>
-                    {label === 'Hub de Ideias' && readyCount > 0 && (
-                      <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                        {readyCount}
-                      </span>
-                    )}
-                    {active && <ChevronRight size={12} className="text-orange-500" />}
-                  </>
-                )
-              }}
-            </NavLink>
+            <div key={group.id} className="mt-3">
+              <button
+                onClick={() => toggleGroup(group.id)}
+                className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors"
+              >
+                {isGroupOpen
+                  ? <ChevronDown size={12} className="text-gray-400" />
+                  : <ChevronRight size={12} className="text-gray-400" />
+                }
+                {group.label}
+              </button>
+              {isGroupOpen && (
+                <div className="space-y-0.5">
+                  {group.children.map((item) => renderNavItem(item, true))}
+                </div>
+              )}
+            </div>
           )
         })}
+
+        {/* Bottom items */}
+        <div className="mt-3 pt-3 border-t border-orange-100">
+          {BOTTOM_NAV.map((item) => renderNavItem(item))}
+        </div>
       </nav>
 
       {/* Footer — Sync + User */}

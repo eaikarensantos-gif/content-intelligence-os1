@@ -14,7 +14,6 @@ import IdeaGenerator from './components/generate/IdeaGenerator'
 import CreateContent from './components/create/CreateContent'
 import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
-import ClientReports from './components/reports/ClientReports'
 import AccessLog from './components/auth/AccessLog'
 import TaskBoard from './components/tasks/TaskBoard'
 import AdManager from './components/ads/AdManager'
@@ -62,7 +61,6 @@ export default function App() {
             <Route path="/generate" element={<IdeaGenerator />} />
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
-            <Route path="/reports" element={<ClientReports />} />
             <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/ads" element={<AdManager />} />
             <Route path="/archetypes" element={<ContentArchetypes />} />

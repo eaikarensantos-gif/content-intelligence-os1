@@ -356,6 +356,7 @@ export default function IdeaGenerator() {
   const [tone, setTone] = useState('reflexivo')
   const [narrativeStyle, setNarrativeStyle] = useState('observacao')
   const [intensity, setIntensity] = useState('equilibrado')
+  const [creativeOpen, setCreativeOpen] = useState(false)
 
   // State
   const [loading, setLoading] = useState(false)
@@ -527,69 +528,100 @@ export default function IdeaGenerator() {
                 />
               </div>
 
-              {/* Tone */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1 uppercase tracking-wide">
-                  <MessageCircle size={11} /> Tom
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {TONES.map(({ id, label, desc, emoji }) => (
-                    <button
-                      key={id}
-                      onClick={() => setTone(id)}
-                      className={`text-left p-2 rounded-lg border transition-all text-xs ${
-                        tone === id
-                          ? 'border-orange-400 bg-orange-50 text-orange-800'
-                          : 'border-gray-150 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="font-medium">{emoji} {label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Ajustes Criativos — collapsible */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setCreativeOpen(!creativeOpen)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                    <Sliders size={11} /> Ajustes Criativos
+                  </span>
+                  {creativeOpen
+                    ? <ChevronUp size={12} className="text-gray-400" />
+                    : <ChevronDown size={12} className="text-gray-400" />
+                  }
+                </button>
 
-              {/* Narrative style */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1 uppercase tracking-wide">
-                  <BookOpen size={11} /> Estilo Narrativo
-                </label>
-                <div className="space-y-1.5">
-                  {NARRATIVE_STYLES.map(({ id, label, desc }) => (
-                    <button
-                      key={id}
-                      onClick={() => setNarrativeStyle(id)}
-                      className={`w-full text-left p-2.5 rounded-lg border transition-all ${
-                        narrativeStyle === id
-                          ? 'border-orange-400 bg-orange-50'
-                          : 'border-gray-150 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <p className={`text-xs font-medium ${narrativeStyle === id ? 'text-orange-800' : 'text-gray-700'}`}>{label}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                {/* Collapsed summary chips */}
+                {!creativeOpen && (
+                  <div className="px-3 py-2 flex items-center gap-1.5 flex-wrap text-[10px] text-gray-500 border-t border-gray-100">
+                    <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200 font-medium">
+                      {TONES.find(t => t.id === tone)?.emoji} {TONES.find(t => t.id === tone)?.label}
+                    </span>
+                    <span className="text-gray-300">&middot;</span>
+                    <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200 font-medium">
+                      {NARRATIVE_STYLES.find(s => s.id === narrativeStyle)?.label}
+                    </span>
+                    <span className="text-gray-300">&middot;</span>
+                    <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200 font-medium">
+                      {INTENSITIES.find(i => i.id === intensity)?.label}
+                    </span>
+                  </div>
+                )}
 
-              {/* Intensity */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1 uppercase tracking-wide">
-                  <Sliders size={11} /> Intensidade
-                </label>
-                <div className="flex gap-2">
-                  {INTENSITIES.map(({ id, label, color }) => (
-                    <button
-                      key={id}
-                      onClick={() => setIntensity(id)}
-                      className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${
-                        intensity === id ? color : 'border-gray-200 text-gray-400 hover:border-gray-300'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                {/* Expanded controls */}
+                {creativeOpen && (
+                  <div className="px-3 py-3 space-y-4 border-t border-gray-100">
+                    {/* Tone — horizontal scrollable chips */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                        <MessageCircle size={11} /> Tom
+                      </label>
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+                        {TONES.map(({ id, label, emoji }) => (
+                          <button
+                            key={id}
+                            onClick={() => setTone(id)}
+                            className={`shrink-0 px-2.5 py-1.5 rounded-full border text-[11px] font-medium transition-all whitespace-nowrap ${
+                              tone === id
+                                ? 'border-orange-400 bg-orange-50 text-orange-800'
+                                : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {emoji} {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Narrative style — compact select dropdown */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                        <BookOpen size={11} /> Estilo Narrativo
+                      </label>
+                      <select
+                        value={narrativeStyle}
+                        onChange={(e) => setNarrativeStyle(e.target.value)}
+                        className="w-full input text-xs py-2"
+                      >
+                        {NARRATIVE_STYLES.map(({ id, label, desc }) => (
+                          <option key={id} value={id}>{label} — {desc}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Intensity — keep as-is */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                        <Sliders size={11} /> Intensidade
+                      </label>
+                      <div className="flex gap-2">
+                        {INTENSITIES.map(({ id, label, color }) => (
+                          <button
+                            key={id}
+                            onClick={() => setIntensity(id)}
+                            className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${
+                              intensity === id ? color : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Generate button */}

@@ -39,7 +39,7 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function MiniStat({ icon: Icon, label, value, color = 'orange', sub }) {
+function MiniStat({ icon: Icon, label, value, color = 'orange', sub, trend }) {
   const c = { orange: 'text-orange-500', blue: 'text-blue-500', emerald: 'text-emerald-600', amber: 'text-amber-500', pink: 'text-pink-500', sky: 'text-sky-500' }
   const bg = { orange: 'bg-orange-100', blue: 'bg-blue-100', emerald: 'bg-emerald-100', amber: 'bg-amber-100', pink: 'bg-pink-100', sky: 'bg-sky-100' }
   return (
@@ -47,9 +47,21 @@ function MiniStat({ icon: Icon, label, value, color = 'orange', sub }) {
       <div className={`p-2 rounded-lg ${bg[color]} ${c[color]}`}>
         <Icon size={15} />
       </div>
-      <div>
+      <div className="flex-1 min-w-0">
         <p className="text-[11px] text-gray-400">{label}</p>
-        <p className="text-sm font-bold text-gray-900">{value}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-bold text-gray-900">{value}</p>
+          {trend && (
+            <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${
+              trend.dir === 'up' ? 'text-emerald-600' : trend.dir === 'down' ? 'text-red-500' : 'text-gray-400'
+            }`}>
+              {trend.dir === 'up' && <ArrowUpRight size={10} />}
+              {trend.dir === 'down' && <ArrowDownRight size={10} />}
+              {trend.dir === 'stable' && <Minus size={10} />}
+              {trend.pct > 0 && `${trend.pct}%`}
+            </span>
+          )}
+        </div>
         {sub && <p className="text-[10px] text-gray-400">{sub}</p>}
       </div>
     </div>
@@ -332,18 +344,31 @@ export default function Analytics() {
     navigate(`/generate?context=${context}`)
   }
 
-  // ── Performance trend ───────────────────────────────────────────────────────
-  const getTrend = () => {
+  // ── Performance trends (split first half vs second half) ────────────────────
+  const computeMetricTrend = (getter) => {
     if (enriched.length < 4) return null
     const sorted = [...enriched].sort((a, b) => new Date(a.date) - new Date(b.date))
     const half = Math.floor(sorted.length / 2)
-    const first = sorted.slice(0, half).reduce((s, m) => s + m.engagement_rate, 0) / half
-    const second = sorted.slice(half).reduce((s, m) => s + m.engagement_rate, 0) / (sorted.length - half)
-    if (second > first * 1.1) return { dir: 'up', label: 'Crescendo', pct: Math.round((second / first - 1) * 100) }
-    if (second < first * 0.9) return { dir: 'down', label: 'Caindo', pct: Math.round((1 - second / first) * 100) }
-    return { dir: 'stable', label: 'Estável', pct: 0 }
+    const firstAvg = sorted.slice(0, half).reduce((s, m) => s + getter(m), 0) / half
+    const secondAvg = sorted.slice(half).reduce((s, m) => s + getter(m), 0) / (sorted.length - half)
+    if (firstAvg === 0 && secondAvg === 0) return { dir: 'stable', pct: 0 }
+    if (firstAvg === 0) return { dir: 'up', pct: 100 }
+    const change = (secondAvg - firstAvg) / firstAvg
+    if (change > 0.1) return { dir: 'up', pct: Math.round(change * 100) }
+    if (change < -0.1) return { dir: 'down', pct: Math.round(Math.abs(change) * 100) }
+    return { dir: 'stable', pct: 0 }
   }
-  const trend = getTrend()
+
+  const trendImpressions = computeMetricTrend(m => m.impressions)
+  const trendER = computeMetricTrend(m => m.engagement_rate)
+  const trendLikes = computeMetricTrend(m => m.likes || 0)
+  const trendShares = computeMetricTrend(m => m.shares || 0)
+  const trendSaves = computeMetricTrend(m => m.saves || 0)
+  const trendFollows = computeMetricTrend(m => m.follows || 0)
+  const trendAuthority = computeMetricTrend(m => m.authority_score)
+
+  // Legacy trend for sub text
+  const trend = trendER
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
@@ -372,19 +397,20 @@ export default function Analytics() {
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <MiniStat icon={Eye} label="Impressões" value={totalImpressions.toLocaleString()} color="orange" />
+            <MiniStat icon={Eye} label="Impressões" value={totalImpressions.toLocaleString()} color="orange" trend={trendImpressions} />
             <MiniStat
               icon={TrendingUp}
               label="Eng. Médio"
               value={`${avgER}%`}
               color="emerald"
-              sub={trend ? `${trend.dir === 'up' ? '↑' : trend.dir === 'down' ? '↓' : '→'} ${trend.label}${trend.pct ? ` ${trend.pct}%` : ''}` : null}
+              trend={trendER}
+              sub={trend ? `${trend.dir === 'up' ? '↑' : trend.dir === 'down' ? '↓' : '→'} ${trend.dir === 'up' ? 'Crescendo' : trend.dir === 'down' ? 'Caindo' : 'Estável'}${trend.pct ? ` ${trend.pct}%` : ''}` : null}
             />
-            <MiniStat icon={Heart} label="Total Curtidas" value={enriched.reduce((s, m) => s + (m.likes || 0), 0).toLocaleString()} color="pink" />
-            <MiniStat icon={Share2} label="Compartilhamentos" value={totalShares.toLocaleString()} color="blue" />
-            <MiniStat icon={Bookmark} label="Salvamentos" value={totalSaves.toLocaleString()} color="amber" />
-            <MiniStat icon={UserPlus} label="Seguimentos" value={totalFollows.toLocaleString()} color="sky" />
-            <MiniStat icon={Trophy} label="Score Autoridade" value={totalAuthority.toLocaleString()} color="orange" />
+            <MiniStat icon={Heart} label="Total Curtidas" value={enriched.reduce((s, m) => s + (m.likes || 0), 0).toLocaleString()} color="pink" trend={trendLikes} />
+            <MiniStat icon={Share2} label="Compartilhamentos" value={totalShares.toLocaleString()} color="blue" trend={trendShares} />
+            <MiniStat icon={Bookmark} label="Salvamentos" value={totalSaves.toLocaleString()} color="amber" trend={trendSaves} />
+            <MiniStat icon={UserPlus} label="Seguimentos" value={totalFollows.toLocaleString()} color="sky" trend={trendFollows} />
+            <MiniStat icon={Trophy} label="Score Autoridade" value={totalAuthority.toLocaleString()} color="orange" trend={trendAuthority} />
           </div>
 
           {/* Charts row 1 */}
