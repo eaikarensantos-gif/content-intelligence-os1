@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import { Heart, Search, Menu, ChevronRight } from 'lucide-react'
 import useStore from '../../store/useStore'
-import FavoritesPanel from '../favorites/FavoritesPanel'
 
 const TITLES = {
   '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
@@ -29,13 +27,12 @@ export default function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const info = TITLES[pathname] || TITLES['/']
   const isCreateChild = CREATE_ROUTES.has(pathname)
-  const { favorites } = useStore()
-  const [showFavorites, setShowFavorites] = useState(false)
+  const favorites = useStore((s) => s.favorites)
+  const toggleFavorites = useStore((s) => s.toggleFavorites)
 
   return (
     <header className="h-14 sm:h-16 px-4 sm:px-6 flex items-center justify-between border-b border-gray-200 bg-white/95 backdrop-blur-sm sticky top-0 z-20 shrink-0">
       <div className="flex items-center gap-3 min-w-0">
-        {/* Hamburger — mobile only */}
         <button
           onClick={onMenuClick}
           className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors shrink-0"
@@ -62,8 +59,9 @@ export default function Header({ onMenuClick }) {
           <Search size={15} />
         </button>
         <button
-          onClick={() => setShowFavorites(true)}
+          onClick={toggleFavorites}
           className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-colors relative"
+          aria-label="Abrir favoritos"
         >
           <Heart size={15} className={favorites.length > 0 ? 'fill-red-500 text-red-500' : ''} />
           {favorites.length > 0 && (
@@ -73,8 +71,6 @@ export default function Header({ onMenuClick }) {
           )}
         </button>
       </div>
-
-      {showFavorites && <FavoritesPanel onClose={() => setShowFavorites(false)} />}
     </header>
   )
 }

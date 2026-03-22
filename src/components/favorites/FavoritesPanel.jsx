@@ -1,17 +1,37 @@
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Heart, X, Copy, Check } from 'lucide-react'
-import { useState } from 'react'
 import useStore from '../../store/useStore'
 
 const TYPE_STYLES = {
-  thought:      { label: 'Pensamento',    bg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-200' },
-  idea:         { label: 'Ideia',         bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
-  text:         { label: 'Texto',         bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
+  thought:      { label: 'Pensamento',   bg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-200' },
+  idea:         { label: 'Ideia',        bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+  text:         { label: 'Texto',        bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
   presentation: { label: 'Apresentacao', bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200' },
 }
 
-export default function FavoritesPanel({ onClose }) {
-  const { favorites, removeFavorite } = useStore()
+export default function FavoritesDrawer() {
+  const favoritesOpen = useStore((s) => s.favoritesOpen)
+  const closeFavorites = useStore((s) => s.closeFavorites)
+  const favorites = useStore((s) => s.favorites)
+  const removeFavorite = useStore((s) => s.removeFavorite)
   const [copiedId, setCopiedId] = useState(null)
+  const [visible, setVisible] = useState(false)
+
+  // Animate in/out
+  useEffect(() => {
+    if (favoritesOpen) {
+      // Small delay so the transition triggers
+      requestAnimationFrame(() => setVisible(true))
+    } else {
+      setVisible(false)
+    }
+  }, [favoritesOpen])
+
+  const handleClose = () => {
+    setVisible(false)
+    setTimeout(closeFavorites, 250) // wait for animation
+  }
 
   const handleCopy = (fav) => {
     navigator.clipboard.writeText(fav.content || '')
@@ -19,16 +39,25 @@ export default function FavoritesPanel({ onClose }) {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  return (
+  if (!favoritesOpen) return null
+
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]"
-        onClick={onClose}
+        onClick={handleClose}
+        style={{ opacity: visible ? 1 : 0, transition: 'opacity 250ms ease' }}
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm"
       />
 
-      {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 w-80 sm:w-96 bg-white shadow-2xl z-[101] flex flex-col animate-slide-in-right">
+      {/* Drawer */}
+      <div
+        style={{
+          transform: visible ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 250ms ease',
+        }}
+        className="fixed right-0 top-0 bottom-0 w-80 sm:w-96 bg-white shadow-2xl flex flex-col"
+      >
         {/* Header */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
@@ -37,11 +66,13 @@ export default function FavoritesPanel({ onClose }) {
             </div>
             <div>
               <p className="text-sm font-bold text-gray-900">Favoritos</p>
-              <p className="text-[10px] text-gray-400">{favorites.length} {favorites.length === 1 ? 'item salvo' : 'itens salvos'}</p>
+              <p className="text-[10px] text-gray-400">
+                {favorites.length} {favorites.length === 1 ? 'item salvo' : 'itens salvos'}
+              </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X size={16} />
@@ -55,7 +86,7 @@ export default function FavoritesPanel({ onClose }) {
               <Heart size={32} className="text-gray-200 mb-3" />
               <p className="text-sm font-medium text-gray-500 mb-1">Nenhum favorito ainda</p>
               <p className="text-xs text-gray-400">
-                Use o icone de coracao nos modulos de criacao para salvar conteudos aqui.
+                Use o ícone de coração nos módulos de criação para salvar conteúdos aqui.
               </p>
             </div>
           ) : (
@@ -67,7 +98,6 @@ export default function FavoritesPanel({ onClose }) {
                     key={fav.id}
                     className="rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-all p-3.5 space-y-2 shadow-sm"
                   >
-                    {/* Type badge + date */}
                     <div className="flex items-center justify-between gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${style.bg} ${style.text} ${style.border}`}>
                         {style.label}
@@ -77,30 +107,29 @@ export default function FavoritesPanel({ onClose }) {
                       </span>
                     </div>
 
-                    {/* Title */}
                     <p className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2">
                       {fav.title}
                     </p>
 
-                    {/* Content preview */}
                     {fav.content && (
                       <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3">
                         {fav.content.slice(0, 100)}{fav.content.length > 100 ? '...' : ''}
                       </p>
                     )}
 
-                    {/* Source */}
                     {fav.source && (
                       <p className="text-[10px] text-gray-400 italic">{fav.source}</p>
                     )}
 
-                    {/* Actions */}
                     <div className="flex items-center gap-1.5 pt-1">
                       <button
                         onClick={() => handleCopy(fav)}
                         className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
                       >
-                        {copiedId === fav.id ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                        {copiedId === fav.id
+                          ? <><Check size={11} className="text-emerald-500" /> Copiado</>
+                          : <><Copy size={11} /> Copiar</>
+                        }
                       </button>
                       <button
                         onClick={() => removeFavorite(fav.id)}
@@ -116,6 +145,7 @@ export default function FavoritesPanel({ onClose }) {
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }

@@ -19,8 +19,12 @@ const useStore = create(
       tasks: [],
       ads: [],
       favorites: [],
+      favoritesOpen: false,
 
       // ── Favoritos ─────────────────────────────────────────────
+      toggleFavorites: () => set((s) => ({ favoritesOpen: !s.favoritesOpen })),
+      closeFavorites: () => set({ favoritesOpen: false }),
+
       addFavorite: (fav) =>
         set((s) => ({
           favorites: [...s.favorites, { id: uuidv4(), created_at: new Date().toISOString(), ...fav }],

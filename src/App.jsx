@@ -19,6 +19,7 @@ import TaskBoard from './components/tasks/TaskBoard'
 import AdManager from './components/ads/AdManager'
 import ContentArchetypes from './components/archetypes/ContentArchetypes'
 import PerformanceReport from './components/reports/PerformanceReport'
+import FavoritesDrawer from './components/favorites/FavoritesPanel'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -49,6 +50,7 @@ export default function App() {
   return (
     <LoginGate>
       <BrowserRouter>
+        <FavoritesDrawer />
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
