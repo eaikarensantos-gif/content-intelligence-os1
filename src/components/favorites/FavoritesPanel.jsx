@@ -23,12 +23,12 @@ export default function FavoritesPanel({ onClose }) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]"
         onClick={onClose}
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 w-80 sm:w-96 bg-white shadow-2xl z-50 flex flex-col animate-slide-in-right">
+      <div className="fixed right-0 top-0 bottom-0 w-80 sm:w-96 bg-white shadow-2xl z-[101] flex flex-col animate-slide-in-right">
         {/* Header */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
