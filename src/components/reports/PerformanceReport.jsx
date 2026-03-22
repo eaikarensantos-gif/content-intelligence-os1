@@ -9,12 +9,13 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   Legend, Cell,
 } from 'recharts'
+import * as XLSX from 'xlsx'
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────────
 const PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', icon: Instagram, color: '#E1306C', accept: '.csv' },
-  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: '#0A66C2', accept: '.csv,.xlsx' },
-  { id: 'tiktok', label: 'TikTok', icon: Music2, color: '#00f2ea', accept: '.csv' },
+  { id: 'instagram', label: 'Instagram', icon: Instagram, color: '#E1306C', accept: '.csv,.xlsx,.xls' },
+  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: '#0A66C2', accept: '.csv,.xlsx,.xls' },
+  { id: 'tiktok', label: 'TikTok', icon: Music2, color: '#00f2ea', accept: '.csv,.xlsx,.xls' },
 ]
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -137,6 +138,104 @@ function parseLinkedIn(rows) {
 
     posts.push({ date: dt, format, theme, desc: desc.slice(0, 120), views, reach, likes, shares, comments, saves, engagement, engPct, link: '' })
   }
+  return posts
+}
+
+function parseLinkedInXlsx(buffer) {
+  const wb = XLSX.read(buffer, { type: 'array' })
+  const posts = []
+
+  // Sheet "Publicações mais em alta" has the post-level data
+  const postsSheet = wb.Sheets['Publicações mais em alta'] || wb.Sheets['Top posts'] || wb.Sheets['Top Posts']
+  if (postsSheet) {
+    const raw = XLSX.utils.sheet_to_json(postsSheet, { header: 1 })
+    // Row 0 is a title row, row 1 has the actual headers
+    // Find the header row that contains "Data de publicação" or "URL da publicação"
+    let headerIdx = -1
+    for (let i = 0; i < Math.min(raw.length, 5); i++) {
+      const row = (raw[i] || []).map(c => String(c || ''))
+      if (row.some(c => c.includes('Data de publicação') || c.includes('Published date') || c.includes('URL da publicação'))) {
+        headerIdx = i; break
+      }
+    }
+    if (headerIdx >= 0) {
+      const headers = (raw[headerIdx] || []).map(c => String(c || '').trim())
+      // Map columns — the sheet has two tables side by side: "By engagement" and "By impressions"
+      // We use the first set (by engagement): URL, Date, Engagement
+      // And grab impressions from the second set at same row
+      const urlIdx = headers.indexOf('URL da publicação') >= 0 ? headers.indexOf('URL da publicação') : headers.findIndex(h => h.toLowerCase().includes('url'))
+      const dateIdx = headers.indexOf('Data de publicação') >= 0 ? headers.indexOf('Data de publicação') : headers.findIndex(h => h.toLowerCase().includes('date') || h.toLowerCase().includes('data'))
+      const engIdx = headers.indexOf('Engajamento') >= 0 ? headers.indexOf('Engajamento') : headers.findIndex(h => h.toLowerCase().includes('engagement') || h.toLowerCase().includes('engajamento'))
+
+      // Find impressions column (second table, usually column index 5)
+      const impIdx = headers.lastIndexOf('Impressões') >= 0 ? headers.lastIndexOf('Impressões') : headers.findIndex(h => h.toLowerCase().includes('impressions') || h.toLowerCase().includes('impressões'))
+
+      const seen = new Set()
+      for (let i = headerIdx + 1; i < raw.length; i++) {
+        const row = raw[i]
+        if (!row || row.length < 2) continue
+        const url = String(row[urlIdx] || '')
+        if (!url || seen.has(url)) continue
+        seen.add(url)
+
+        const dateStr = String(row[dateIdx] || '')
+        const m = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+        if (!m) continue
+        const dt = new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]))
+        if (isNaN(dt.getTime())) continue
+
+        const engagement = num(row[engIdx])
+        const impressions = num(row[impIdx >= 0 ? impIdx : engIdx])
+
+        const engPct = impressions > 0 ? (engagement / impressions) * 100 : 0
+
+        posts.push({
+          date: dt, format: 'Post', theme: 'Outro', desc: url.slice(0, 120),
+          views: impressions, reach: impressions,
+          likes: 0, shares: 0, comments: 0, saves: 0,
+          engagement, engPct, link: url,
+        })
+      }
+    }
+  }
+
+  // Also extract summary data from "Engajamento" sheet for daily totals
+  const engSheet = wb.Sheets['Engajamento'] || wb.Sheets['Engagement']
+  if (engSheet && posts.length === 0) {
+    const rows = XLSX.utils.sheet_to_json(engSheet)
+    for (const row of rows) {
+      const dateStr = String(row['Data'] || row['Date'] || '')
+      const m = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+      if (!m) continue
+      const dt = new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]))
+      if (isNaN(dt.getTime())) continue
+      const impressions = num(row['Impressões'] || row['Impressions'] || 0)
+      const engagement = num(row['Engajamento'] || row['Engagement'] || 0)
+      const engPct = impressions > 0 ? (engagement / impressions) * 100 : 0
+      posts.push({
+        date: dt, format: 'Post', theme: 'Outro', desc: `LinkedIn ${dateStr}`,
+        views: impressions, reach: impressions,
+        likes: 0, shares: 0, comments: 0, saves: 0,
+        engagement, engPct, link: '',
+      })
+    }
+  }
+
+  // Extract follower info from "Seguidores" sheet
+  const segSheet = wb.Sheets['Seguidores'] || wb.Sheets['Followers']
+  let totalFollowers = null
+  if (segSheet) {
+    const raw = XLSX.utils.sheet_to_json(segSheet, { header: 1 })
+    if (raw[0]) {
+      const firstCell = String(raw[0][1] || '')
+      if (firstCell.includes('Total de seguidores')) {
+        totalFollowers = num(raw[0][0])
+      } else {
+        totalFollowers = num(raw[0][0])
+      }
+    }
+  }
+
   return posts
 }
 
@@ -507,16 +606,34 @@ export default function PerformanceReport() {
     setUploading(platformId)
     setError(null)
     try {
-      const text = await file.text()
-      const { rows, headers } = parseCSV(text)
-      if (rows.length === 0) throw new Error('Arquivo vazio ou formato não reconhecido')
-
+      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
       let posts
-      if (platformId === 'instagram') posts = parseInstagram(rows)
-      else if (platformId === 'linkedin') posts = parseLinkedIn(rows)
-      else posts = parseTikTok(rows)
 
-      if (posts.length === 0) throw new Error(`Nenhum post válido encontrado. Colunas detectadas: ${headers.slice(0, 5).join(', ')}...`)
+      if (isXlsx) {
+        // Parse xlsx with SheetJS
+        const buffer = await file.arrayBuffer()
+        if (platformId === 'linkedin') {
+          posts = parseLinkedInXlsx(buffer)
+        } else {
+          // Generic xlsx: convert first sheet to rows and use platform parser
+          const wb = XLSX.read(buffer, { type: 'array' })
+          const ws = wb.Sheets[wb.SheetNames[0]]
+          const rows = XLSX.utils.sheet_to_json(ws)
+          if (rows.length === 0) throw new Error('Arquivo vazio ou formato não reconhecido')
+          if (platformId === 'instagram') posts = parseInstagram(rows)
+          else posts = parseTikTok(rows)
+        }
+      } else {
+        // CSV parsing
+        const text = await file.text()
+        const { rows, headers } = parseCSV(text)
+        if (rows.length === 0) throw new Error('Arquivo vazio ou formato não reconhecido')
+        if (platformId === 'instagram') posts = parseInstagram(rows)
+        else if (platformId === 'linkedin') posts = parseLinkedIn(rows)
+        else posts = parseTikTok(rows)
+      }
+
+      if (!posts || posts.length === 0) throw new Error('Nenhum post válido encontrado. Verifique se o arquivo é o relatório correto da plataforma.')
 
       const data = analyze(posts)
       setReports(prev => ({ ...prev, [platformId]: { posts, data } }))
@@ -539,7 +656,7 @@ export default function PerformanceReport() {
               <BarChart2 size={24} className="text-white" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Relatórios de Performance</h2>
-            <p className="text-sm text-gray-400">Faça upload dos CSVs exportados do Meta Business Suite, LinkedIn ou TikTok</p>
+            <p className="text-sm text-gray-400">Faça upload dos relatórios exportados (CSV ou XLSX) do Meta, LinkedIn ou TikTok</p>
           </div>
         )}
 
@@ -570,7 +687,7 @@ export default function PerformanceReport() {
                       {hasReport && <Check size={12} className="text-emerald-500" />}
                     </div>
                     <p className="text-[10px] text-gray-400">
-                      {hasReport ? `${reports[plat.id].data.organic.length} posts analisados` : isUploading ? 'Processando...' : 'Clique para upload CSV'}
+                      {hasReport ? `${reports[plat.id].data.organic.length} posts analisados` : isUploading ? 'Processando...' : 'Clique para upload CSV/XLSX'}
                     </p>
                   </div>
                   <Upload size={14} className="text-gray-300 shrink-0" />
