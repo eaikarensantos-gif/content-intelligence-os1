@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wand2, Copy, Check, RefreshCw,
   AlignLeft, X, Zap, Save, ExternalLink,
+  Sparkles, Mic, ArrowLeft,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -719,6 +720,20 @@ export default function TextStudio() {
                   </button>
                 )
               })}
+            </div>
+
+            {/* Next step navigation */}
+            <div className="flex items-center gap-2 flex-wrap mt-6 pt-4 border-t border-gray-100">
+              <span className="text-xs text-gray-400 mr-1">{`Pr\u00f3ximo passo:`}</span>
+              <button onClick={() => navigate('/presentation')} className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg border border-rose-200 transition-all flex items-center gap-1">
+                <Mic size={11} /> {`Preparar apresenta\u00e7\u00e3o`}
+              </button>
+              <button onClick={() => navigate('/generate')} className="text-xs text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg border border-orange-200 transition-all flex items-center gap-1">
+                <Sparkles size={11} /> Explorar ideias
+              </button>
+              <button onClick={() => navigate('/create')} className="text-xs text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition-all flex items-center gap-1">
+                <ArrowLeft size={11} /> Voltar
+              </button>
             </div>
           </div>
         )}

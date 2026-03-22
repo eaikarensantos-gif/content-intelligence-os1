@@ -5,6 +5,7 @@ import {
   Sparkles, MessageCircle, Zap, Target, BookOpen,
   Users, ArrowRight, RefreshCw, Save, Plus, ExternalLink,
   Play, Pause, X, Minus as MinusIcon, PlusCircle, Monitor,
+  Wand2, ArrowLeft,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -788,6 +789,20 @@ export default function PresentationMode() {
               <div className="flex justify-center pt-2">
                 <button onClick={handleGenerate} disabled={loading} className="btn-secondary text-xs px-4 py-2">
                   <RefreshCw size={12} /> Gerar novamente
+                </button>
+              </div>
+
+              {/* Next step navigation */}
+              <div className="flex items-center gap-2 flex-wrap mt-6 pt-4 border-t border-gray-100">
+                <span className="text-xs text-gray-400 mr-1">{`Pr\u00f3ximo passo:`}</span>
+                <button onClick={() => navigate('/text')} className="text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-all flex items-center gap-1">
+                  <Wand2 size={11} /> {`Escrever conte\u00fado`}
+                </button>
+                <button onClick={() => navigate('/generate')} className="text-xs text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg border border-orange-200 transition-all flex items-center gap-1">
+                  <Sparkles size={11} /> Explorar ideias
+                </button>
+                <button onClick={() => navigate('/create')} className="text-xs text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition-all flex items-center gap-1">
+                  <ArrowLeft size={11} /> Voltar
                 </button>
               </div>
             </div>

@@ -4,7 +4,7 @@ import {
   Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
   Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
   Flame, Eye, MessageCircle, Layers, ArrowRight, Save, Star,
-  Lightbulb, ExternalLink,
+  Lightbulb, ExternalLink, Wand2, Mic, ArrowLeft,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -728,6 +728,20 @@ export default function IdeaGenerator() {
                       onOpenHub={() => navigate('/ideas')}
                     />
                   ))}
+                </div>
+
+                {/* Next step navigation */}
+                <div className="flex items-center gap-2 flex-wrap mt-6 pt-4 border-t border-gray-100">
+                  <span className="text-xs text-gray-400 mr-1">{`Pr\u00f3ximo passo:`}</span>
+                  <button onClick={() => navigate('/text')} className="text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-all flex items-center gap-1">
+                    <Wand2 size={11} /> {`Escrever conte\u00fado`}
+                  </button>
+                  <button onClick={() => navigate('/presentation')} className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg border border-rose-200 transition-all flex items-center gap-1">
+                    <Mic size={11} /> {`Preparar apresenta\u00e7\u00e3o`}
+                  </button>
+                  <button onClick={() => navigate('/create')} className="text-xs text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition-all flex items-center gap-1">
+                    <ArrowLeft size={11} /> Voltar
+                  </button>
                 </div>
               </div>
             )}
