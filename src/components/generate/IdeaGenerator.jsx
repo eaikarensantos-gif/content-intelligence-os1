@@ -19,6 +19,7 @@ const TONES = [
   { id: 'inspirador', label: 'Inspirador', desc: 'Que acende algo, sem ser motivacional vazio', emoji: '✨' },
   { id: 'provocativo', label: 'Provocativo', desc: 'Desconfortável no bom sentido, que cutuca', emoji: '🔥' },
   { id: 'contrarian', label: 'Contrarian', desc: 'Vai contra o consenso, desafia o óbvio', emoji: '⚡' },
+  { id: 'humor', label: 'Humor', desc: 'Leve, espirituoso, que arranca sorrisos', emoji: '😄' },
 ]
 
 const NARRATIVE_STYLES = [

@@ -17,6 +17,7 @@ async function captureThought(apiKey, { thought, niche, tone }) {
     provocador:  'Tom que questiona o status quo, que incomoda no bom sentido.',
     íntimo:      'Tom de confissão, diário, como se fosse escrito às 2 da manhã.',
     analítico:   'Tom racional e perspicaz, mas ainda humano e não acadêmico.',
+    humor:       'Tom leve, espirituoso e com sacadas inteligentes — humor que conecta sem forçar.',
   }[tone] || ''
 
   const prompt = `Você é um ghostwriter especialista em conteúdo autêntico para criadores digitais brasileiros. Você conhece profundamente o que performa bem em cada plataforma. Seu estilo é observacional, reflexivo e humano — como alguém que realmente pensa antes de escrever.
@@ -928,6 +929,7 @@ const TONE_OPTIONS = [
   { value: 'provocador', label: 'Provocador', emoji: '⚡' },
   { value: 'íntimo', label: 'Íntimo', emoji: '🌙' },
   { value: 'analítico', label: 'Analítico', emoji: '🔍' },
+  { value: 'humor', label: 'Humor', emoji: '😄' },
 ]
 
 const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', 'storytelling', 'reel_script', 'stories_sequence', 'tiktok_script']

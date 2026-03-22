@@ -5,7 +5,7 @@ import {
   GripVertical, Kanban, Zap, RefreshCw, Sparkles, Radar, Loader2,
   Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
   ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound, Trash2,
-  TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal,
+  TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal, ListOrdered,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
@@ -954,8 +954,116 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
 const TABS = [
   { id: 'kanban',   label: 'Quadro',    icon: Kanban },
   { id: 'calendar', label: 'Calendário', icon: Calendar },
+  { id: 'order',    label: 'Ordem',     icon: ListOrdered },
   { id: 'generate', label: 'Gerar',     icon: Zap },
 ]
+
+// ─── Visualização Ordem de Criação ────────────────────────────────────────────
+function OrderView({ ideas, updateIdea, onCardClick }) {
+  // Sort by creation_order (nulls at end), then by priority
+  const sorted = [...ideas]
+    .filter((i) => i.status !== 'published')
+    .sort((a, b) => {
+      const oa = a.creation_order ?? 9999
+      const ob = b.creation_order ?? 9999
+      if (oa !== ob) return oa - ob
+      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+    })
+
+  const onDragEnd = ({ source, destination }) => {
+    if (!destination || source.index === destination.index) return
+    const reordered = [...sorted]
+    const [moved] = reordered.splice(source.index, 1)
+    reordered.splice(destination.index, 0, moved)
+    reordered.forEach((idea, idx) => {
+      updateIdea(idea.id, { creation_order: idx + 1 })
+    })
+  }
+
+  const resetOrder = () => {
+    sorted.forEach((idea) => updateIdea(idea.id, { creation_order: null }))
+  }
+
+  if (sorted.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <ListOrdered size={28} className="text-gray-300 mb-3" />
+        <p className="text-gray-500 font-medium">Nenhuma ideia pendente</p>
+        <p className="text-gray-400 text-xs mt-1">Ideias publicadas não aparecem aqui</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500">
+          Arraste para definir a ordem de criação e postagem. {sorted.filter(i => i.creation_order).length}/{sorted.length} ordenadas.
+        </p>
+        <button onClick={resetOrder} className="text-[10px] text-gray-400 hover:text-gray-600 flex items-center gap-1">
+          <RefreshCw size={10} /> Resetar ordem
+        </button>
+      </div>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="order-list">
+          {(provided) => (
+            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
+              {sorted.map((idea, idx) => {
+                const platforms = getPlatforms(idea)
+                return (
+                  <Draggable key={idea.id} draggableId={idea.id} index={idx}>
+                    {(prov, snap) => (
+                      <div
+                        ref={prov.innerRef}
+                        {...prov.draggableProps}
+                        className={`flex items-center gap-3 bg-white border rounded-xl p-3 transition-all ${
+                          snap.isDragging ? 'border-orange-400 shadow-lg shadow-orange-100/50' : 'border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        <span
+                          {...prov.dragHandleProps}
+                          className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0"
+                        >
+                          <GripVertical size={14} />
+                        </span>
+                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                          idea.creation_order ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-gray-100 text-gray-400 border border-gray-200'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onCardClick(idea)}>
+                          <p className="text-xs font-medium text-gray-800 truncate">{idea.title}</p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
+                            <FormatBadge format={idea.format} />
+                            <PriorityBadge priority={idea.priority} />
+                            {idea.scheduled_date && (
+                              <span className="flex items-center gap-0.5 text-[9px] text-gray-400">
+                                <Calendar size={9} /> {idea.scheduled_date}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium ${
+                          idea.status === 'idea' ? 'bg-orange-100 text-orange-600' :
+                          idea.status === 'draft' ? 'bg-blue-100 text-blue-600' :
+                          'bg-emerald-100 text-emerald-600'
+                        }`}>
+                          {idea.status === 'idea' ? 'Ideia' : idea.status === 'draft' ? 'Rascunho' : 'Pronto'}
+                        </span>
+                      </div>
+                    )}
+                  </Draggable>
+                )
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
+  )
+}
 
 const STATUS_LABELS_FILTER   = { all: 'Todos Status',      idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
 const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium: 'Média',   low: 'Baixa' }
@@ -1054,7 +1162,7 @@ export default function IdeasHub() {
       </div>
 
       {/* Filtros */}
-      {(tab === 'kanban' || tab === 'calendar') && (() => {
+      {(tab === 'kanban' || tab === 'calendar' || tab === 'order') && (() => {
         const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
         return (
         <div className="space-y-2">
@@ -1150,6 +1258,11 @@ export default function IdeasHub() {
       {/* Visualização Calendário */}
       {tab === 'calendar' && (
         <CalendarView ideas={filtered} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} onAddGap={handleAddGap} />
+      )}
+
+      {/* Visualização Ordem */}
+      {tab === 'order' && (
+        <OrderView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} />
       )}
 
       {/* Visualização Gerar */}

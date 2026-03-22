@@ -6,7 +6,7 @@ import {
   Mic, Film, Zap, Target, TrendingUp, Star,
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
-  Upload, AlignLeft, Info, Bookmark, BookMarked,
+  Upload, AlignLeft, Info, Bookmark, BookMarked, Pencil,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
@@ -605,6 +605,8 @@ export default function VideoAnalyzer() {
   const [activeTab, setActiveTab] = useState('estrutura')
   const [copied, setCopied] = useState(false)
   const [savedIdeas, setSavedIdeas] = useState(new Set())
+  const [editingIdeaIdx, setEditingIdeaIdx] = useState(null)
+  const [editedIdeas, setEditedIdeas] = useState({})
   const [showHistory, setShowHistory] = useState(false)
   const [savedAnalysis, setSavedAnalysis] = useState(false)
   const [error, setError] = useState('')
@@ -1854,38 +1856,67 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                 <p className="text-xs text-gray-400">Salve direto no Hub de Ideias</p>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {(analysis.content_ideas || []).map((idea, i) => (
-                  <div key={i} className="card p-4 space-y-3 hover:border-orange-300 transition-colors relative overflow-hidden">
-                    {savedIdeas.has(idea.title) && (
-                      <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 rounded-full">
-                        <Check size={10} className="text-emerald-600" />
-                        <span className="text-[10px] font-semibold text-emerald-700">Salvo</span>
+                {(analysis.content_ideas || []).map((idea, i) => {
+                  const isEditing = editingIdeaIdx === i
+                  const current = editedIdeas[i] || idea
+                  return (
+                    <div key={i} className="card p-4 space-y-3 hover:border-orange-300 transition-colors relative overflow-hidden">
+                      {savedIdeas.has(idea.title) && (
+                        <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 rounded-full">
+                          <Check size={10} className="text-emerald-600" />
+                          <span className="text-[10px] font-semibold text-emerald-700">Salvo</span>
+                        </div>
+                      )}
+                      <div className="flex items-start justify-between gap-2">
+                        {isEditing ? (
+                          <input className="input text-xs font-semibold flex-1" value={current.title} onChange={(e) => setEditedIdeas(p => ({ ...p, [i]: { ...current, title: e.target.value } }))} />
+                        ) : (
+                          <p className="text-xs font-semibold text-gray-800 leading-snug">{current.title}</p>
+                        )}
+                        <span className="text-[10px] text-gray-300 shrink-0">#{i + 1}</span>
                       </div>
-                    )}
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs font-semibold text-gray-800 leading-snug">{idea.title}</p>
-                      <span className="text-[10px] text-gray-300 shrink-0">#{i + 1}</span>
-                    </div>
-                    {idea.hook && (
-                      <div className="bg-orange-50 rounded-lg p-2.5 border border-orange-100">
-                        <p className="text-[10px] text-orange-500 font-medium mb-0.5">GANCHO SUGERIDO:</p>
-                        <p className="text-[11px] text-gray-700 italic">"{idea.hook}"</p>
+                      {current.hook && (
+                        <div className="bg-orange-50 rounded-lg p-2.5 border border-orange-100">
+                          <p className="text-[10px] text-orange-500 font-medium mb-0.5">GANCHO SUGERIDO:</p>
+                          {isEditing ? (
+                            <textarea className="input text-[11px] resize-none min-h-[40px]" value={current.hook} onChange={(e) => setEditedIdeas(p => ({ ...p, [i]: { ...current, hook: e.target.value } }))} />
+                          ) : (
+                            <p className="text-[11px] text-gray-700 italic">"{current.hook}"</p>
+                          )}
+                        </div>
+                      )}
+                      {isEditing && (
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-medium mb-0.5">ÂNGULO:</p>
+                          <input className="input text-[11px]" value={current.angle || ''} onChange={(e) => setEditedIdeas(p => ({ ...p, [i]: { ...current, angle: e.target.value } }))} />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="chip bg-gray-100 text-gray-600 border border-gray-200 text-[10px]">{current.platform}</span>
+                        <span className="chip bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px]">{current.format}</span>
+                        <span className="chip bg-amber-100 text-amber-700 border border-amber-200 text-[10px]">{current.hook_type}</span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="chip bg-gray-100 text-gray-600 border border-gray-200 text-[10px]">{idea.platform}</span>
-                      <span className="chip bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px]">{idea.format}</span>
-                      <span className="chip bg-amber-100 text-amber-700 border border-amber-200 text-[10px]">{idea.hook_type}</span>
+                      {!isEditing && <p className="text-[11px] text-gray-400 italic">{current.angle}</p>}
+                      {current.why_now && (
+                        <p className="text-[10px] text-emerald-600 font-medium">⚡ {current.why_now}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isEditing) { setEditingIdeaIdx(null) } else { if (!editedIdeas[i]) setEditedIdeas(p => ({ ...p, [i]: { ...idea } })); setEditingIdeaIdx(i) }
+                          }}
+                          className="btn-secondary text-xs py-1.5 flex-1"
+                        >
+                          {isEditing ? <><Check size={12} /> Pronto</> : <><Pencil size={12} /> Editar</>}
+                        </button>
+                        <button onClick={() => handleSaveIdea(editedIdeas[i] || idea)} className="btn-primary text-xs py-1.5 flex-1">
+                          <Plus size={12} /> Salvar no Hub
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 italic">{idea.angle}</p>
-                    {idea.why_now && (
-                      <p className="text-[10px] text-emerald-600 font-medium">⚡ {idea.why_now}</p>
-                    )}
-                    <button onClick={() => handleSaveIdea(idea)} className="btn-primary text-xs py-1.5 w-full">
-                      <Plus size={12} /> Salvar no Hub de Ideias
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

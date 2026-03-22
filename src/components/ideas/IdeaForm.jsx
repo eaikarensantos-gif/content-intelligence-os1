@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2 } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
+
+const LS_KEY = 'cio-anthropic-key'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const PLATFORMS = ['instagram', 'linkedin', 'twitter', 'youtube', 'tiktok']
@@ -45,12 +47,60 @@ const EMPTY = {
   tags: [],                   // array de strings
   scheduled_date: '',
   content_type: 'organic',
+  script: '',                 // roteiro do conteúdo
+  caption: '',                // legenda
+  cta: '',                    // call to action
+  creation_order: null,       // ordem de criação/postagem
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
+async function generateWithAI(apiKey, type, context) {
+  const prompts = {
+    caption: `Você é um copywriter expert em redes sociais brasileiras. Gere UMA legenda engajadora para o seguinte conteúdo. A legenda deve ser natural, conversacional e adequada para ${context.platforms?.join(', ') || 'Instagram'}.
+
+Título: ${context.title}
+${context.description ? `Descrição: ${context.description}` : ''}
+${context.topic ? `Nicho: ${context.topic}` : ''}
+Formato: ${context.format}
+
+Regras:
+- Máximo 2200 caracteres
+- Use quebras de linha estratégicas
+- Tom humano e autêntico, NUNCA genérico
+- Inclua emojis com moderação
+- Termine com uma pergunta ou reflexão que gere comentários
+
+Responda APENAS com a legenda, sem explicações.`,
+    cta: `Você é especialista em CTAs (Call to Action) para redes sociais brasileiras. Gere UM CTA altamente engajador para o seguinte conteúdo.
+
+Título: ${context.title}
+${context.description ? `Descrição: ${context.description}` : ''}
+Plataforma: ${context.platforms?.join(', ') || 'Instagram'}
+Formato: ${context.format}
+
+Regras:
+- CTA direto, curto e irresistível
+- Gere urgência ou curiosidade
+- Adequado para a plataforma
+- Pode incluir emoji
+- Exemplos de bons CTAs: "Salva pra quando precisar", "Marca alguém que precisa ver isso", "Comenta SIM que eu mando o link"
+
+Responda APENAS com o CTA, sem explicações.`,
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, messages: [{ role: 'user', content: prompts[type] }] }),
+  })
+  const data = await res.json()
+  return data.content?.[0]?.text || ''
+}
+
 export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [form, setForm] = useState(EMPTY)
   const [tagInput, setTagInput] = useState('')
+  const [generatingCaption, setGeneratingCaption] = useState(false)
+  const [generatingCta, setGeneratingCta] = useState(false)
   const tagRef = useRef(null)
   // All unique tags from existing ideas (history)
   const allIdeas = useStore((s) => s.ideas)
@@ -126,6 +176,20 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   }
 
   const removeTag = (tag) => set('tags', form.tags.filter((t) => t !== tag))
+
+  // ── AI generation ─────────────────────────────────────────────────────────
+  const handleGenerateAI = async (type) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
+    if (!form.title.trim()) { alert('Preencha o título antes de gerar.'); return }
+    const setter = type === 'caption' ? setGeneratingCaption : setGeneratingCta
+    setter(true)
+    try {
+      const result = await generateWithAI(apiKey, type, form)
+      set(type === 'caption' ? 'caption' : 'cta', result)
+    } catch { /* silent */ }
+    setter(false)
+  }
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = (e) => {
@@ -271,6 +335,61 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Roteiro */}
+        <div>
+          <label className="label">Roteiro</label>
+          <textarea
+            className="input resize-none min-h-[80px]"
+            placeholder="Escreva o roteiro completo do conteúdo aqui..."
+            value={form.script || ''}
+            onChange={(e) => set('script', e.target.value)}
+          />
+        </div>
+
+        {/* Legenda + AI */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">Legenda</label>
+            <button
+              type="button"
+              onClick={() => handleGenerateAI('caption')}
+              disabled={generatingCaption}
+              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50"
+            >
+              {generatingCaption ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+              {generatingCaption ? 'Gerando...' : 'Gerar com IA'}
+            </button>
+          </div>
+          <textarea
+            className="input resize-none min-h-[60px]"
+            placeholder="Legenda para o post... ou clique em 'Gerar com IA'"
+            value={form.caption || ''}
+            onChange={(e) => set('caption', e.target.value)}
+          />
+        </div>
+
+        {/* CTA + AI */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">CTA (Call to Action)</label>
+            <button
+              type="button"
+              onClick={() => handleGenerateAI('cta')}
+              disabled={generatingCta}
+              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50"
+            >
+              {generatingCta ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+              {generatingCta ? 'Gerando...' : 'Gerar com IA'}
+            </button>
+          </div>
+          <input
+            className="input"
+            placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
+            value={form.cta || ''}
+            onChange={(e) => set('cta', e.target.value)}
+          />
         </div>
 
         {/* Tags — chip input */}
