@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import {
   Loader2, Sparkles, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
@@ -139,6 +139,136 @@ REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitad
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
   const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
   return JSON.parse(sanitized)
+}
+
+// ─── Slide image generator (Canvas API) ──────────────────────────────────────
+const SLIDE_W = 1080
+const SLIDE_H = 1350 // 4:5 ratio for Instagram
+
+function wrapText(ctx, text, maxWidth, fontSize) {
+  const words = text.split(' ')
+  const lines = []
+  let currentLine = ''
+  ctx.font = `bold ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
+  for (const word of words) {
+    const test = currentLine ? `${currentLine} ${word}` : word
+    if (ctx.measureText(test).width > maxWidth && currentLine) {
+      lines.push(currentLine)
+      currentLine = word
+    } else {
+      currentLine = test
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+  return lines
+}
+
+function renderSlideToCanvas(canvas, slide, index, total) {
+  const ctx = canvas.getContext('2d')
+  canvas.width = SLIDE_W
+  canvas.height = SLIDE_H
+
+  // Alternate light/dark like Karen's style
+  const isDark = index === 0 || index % 2 === 1
+
+  // Background
+  if (isDark) {
+    ctx.fillStyle = '#1a1a1a'
+    ctx.fillRect(0, 0, SLIDE_W, SLIDE_H)
+  } else {
+    ctx.fillStyle = '#f5f5f5'
+    ctx.fillRect(0, 0, SLIDE_W, SLIDE_H)
+  }
+
+  const textColor = isDark ? '#ffffff' : '#1a1a1a'
+  const subColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'
+  const metaColor = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'
+
+  // Slide counter (top right)
+  ctx.fillStyle = metaColor
+  ctx.font = '28px "SF Mono", "Fira Code", monospace'
+  ctx.textAlign = 'right'
+  ctx.fillText(`${index + 1}/${total}`, SLIDE_W - 60, 70)
+
+  // Cover badge
+  if (index === 0) {
+    ctx.fillStyle = isDark ? 'rgba(249,115,22,0.2)' : 'rgba(249,115,22,0.15)'
+    const badgeW = 120, badgeH = 36
+    ctx.beginPath()
+    ctx.roundRect(60, 45, badgeW, badgeH, 18)
+    ctx.fill()
+    ctx.fillStyle = isDark ? '#fb923c' : '#ea580c'
+    ctx.font = 'bold 18px "Inter", system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('CAPA', 60 + badgeW / 2, 70)
+  }
+
+  // Main headline
+  ctx.textAlign = 'left'
+  const headline = slide.headline || ''
+  const fontSize = headline.length > 80 ? 52 : headline.length > 50 ? 60 : 72
+  const headlineLines = wrapText(ctx, headline, SLIDE_W - 160, fontSize)
+  const lineHeight = fontSize * 1.25
+
+  // Calculate vertical center
+  const subtextLines = slide.subtext ? slide.subtext.split('\n').filter(Boolean) : []
+  const totalTextHeight = (headlineLines.length * lineHeight) + (subtextLines.length > 0 ? 40 + subtextLines.length * 42 : 0)
+  let startY = (SLIDE_H - totalTextHeight) / 2
+
+  // Draw headline
+  ctx.fillStyle = textColor
+  ctx.font = `bold ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
+  headlineLines.forEach((line, i) => {
+    // If last line of cover, make it extra bold/different
+    if (index === 0 && i === headlineLines.length - 1 && headlineLines.length > 1) {
+      ctx.font = `900 ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
+    }
+    ctx.fillText(line, 80, startY + i * lineHeight)
+  })
+
+  // Draw subtext (bullet points)
+  if (subtextLines.length > 0) {
+    const subStartY = startY + headlineLines.length * lineHeight + 40
+    ctx.fillStyle = subColor
+    ctx.font = '32px "Inter", system-ui, sans-serif'
+    subtextLines.forEach((line, i) => {
+      const cleanLine = line.replace(/^[\s•\-·]+/, '').trim()
+      ctx.fillText(`•  ${cleanLine}`, 90, subStartY + i * 42)
+    })
+  }
+
+  // Visual suggestion hint at bottom
+  if (slide.visual_suggestion) {
+    ctx.fillStyle = metaColor
+    ctx.font = '22px "Inter", system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    const hint = `🎨 ${slide.visual_suggestion}`
+    ctx.fillText(hint.length > 60 ? hint.slice(0, 60) + '...' : hint, SLIDE_W / 2, SLIDE_H - 50)
+  }
+
+  return canvas
+}
+
+async function generateAllSlideImages(slides) {
+  const canvas = document.createElement('canvas')
+  const images = []
+  for (let i = 0; i < slides.length; i++) {
+    renderSlideToCanvas(canvas, slides[i], i, slides.length)
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+    const url = URL.createObjectURL(blob)
+    images.push({ url, blob, name: `slide-${String(i + 1).padStart(2, '0')}.png` })
+  }
+  return images
+}
+
+async function downloadAllSlides(images, title) {
+  for (const img of images) {
+    const a = document.createElement('a')
+    a.href = img.url
+    a.download = img.name
+    a.click()
+    await new Promise((r) => setTimeout(r, 300)) // small delay between downloads
+  }
 }
 
 // ─── Slide editor card ───────────────────────────────────────────────────────
@@ -598,76 +728,43 @@ export default function CarouselStudio() {
     navigator.clipboard.writeText(text)
   }
 
-  const [canvaStatus, setCanvaStatus] = useState(null) // null | 'generating' | 'done' | 'error'
-  const [canvaUrl, setCanvaUrl] = useState(null)
-  const [canvaError, setCanvaError] = useState(null)
+  const [slideImages, setSlideImages] = useState([]) // generated PNG URLs
+  const [generatingImages, setGeneratingImages] = useState(false)
+  const [imageError, setImageError] = useState(null)
 
-  const handleCreateInCanva = async () => {
+  const handleGenerateImages = async () => {
     if (!result?.slides?.length) return
-    setCanvaStatus('generating')
-    setCanvaError(null)
-
+    setGeneratingImages(true)
+    setImageError(null)
     try {
-      // Build a detailed query for Canva AI to generate the carousel
-      const slidesText = result.slides.map((s, i) =>
-        `Slide ${i + 1} (${s.type || 'content'}): "${s.headline}"${s.subtext ? ` — ${s.subtext}` : ''}`
-      ).join('\n')
-
-      const query = `Create an Instagram carousel post with ${result.slides.length} slides.
-Style: Ultra-clean minimalist design, bold typography as the main element, minimal decorative icons.
-Theme: ${result.title}
-Target: ${creatorProfile?.targetAudience || 'professionals'}
-
-Slides content:
-${slidesText}
-
-Design rules:
-- Alternate between light backgrounds (white/light gray) and dark backgrounds (dark overlay on photo)
-- Large bold text as the main visual element
-- Short impactful phrases, maximum 3 lines per slide
-- First slide (cover) should have the most impactful hook phrase
-- Professional and modern feel, career/tech niche
-- Use emojis as visual anchors where indicated in the content`
-
-      // Dispatch custom event for parent app to handle Canva integration
-      const canvaEvent = new CustomEvent('canva-generate-carousel', {
-        detail: { query, slidesCount: result.slides.length, title: result.title }
-      })
-      window.dispatchEvent(canvaEvent)
-
-      // Store the carousel data for Canva in localStorage so it can be accessed externally
-      const canvaData = {
-        query,
-        slides: result.slides,
-        title: result.title,
-        caption: result.caption,
-        createdAt: new Date().toISOString(),
-        brandKitId: 'kAGmtEkCTv4',
-      }
-      localStorage.setItem('cio-canva-carousel-pending', JSON.stringify(canvaData))
-
-      // Open Canva with the carousel concept
-      // Since we can't call MCP from browser, we'll generate a copyable prompt
-      const canvaPrompt = `Crie um carrossel Instagram com ${result.slides.length} slides.\n\nTítulo: ${result.title}\n\n${slidesText}\n\nEstilo: Minimalista, tipografia bold grande, fundos alternando claro/escuro, clean e profissional.`
-
-      await navigator.clipboard.writeText(canvaPrompt)
-
-      // Open Canva directly
-      window.open('https://www.canva.com/design/create?type=instagram_post', '_blank')
-
-      setCanvaStatus('done')
-      setCanvaUrl('https://www.canva.com')
+      // Clean up old URLs
+      slideImages.forEach((img) => URL.revokeObjectURL(img.url))
+      const images = await generateAllSlideImages(result.slides)
+      setSlideImages(images)
     } catch (e) {
-      setCanvaError(e.message || 'Erro ao preparar design para o Canva')
-      setCanvaStatus('error')
+      setImageError(e.message || 'Erro ao gerar imagens')
+    } finally {
+      setGeneratingImages(false)
     }
+  }
+
+  const handleDownloadAll = async () => {
+    if (!slideImages.length) return
+    await downloadAllSlides(slideImages, result.title)
+  }
+
+  const handleDownloadSingle = (img) => {
+    const a = document.createElement('a')
+    a.href = img.url
+    a.download = img.name
+    a.click()
   }
 
   const handleRegenerate = () => {
     setResult(null)
     setSavedToHub(false)
-    setCanvaStatus(null)
-    setCanvaUrl(null)
+    slideImages.forEach((img) => URL.revokeObjectURL(img.url))
+    setSlideImages([])
     setStep('config')
   }
 
@@ -924,43 +1021,78 @@ Design rules:
               {savedToHub ? <><Check size={12} /> No Hub</> : <><Plus size={12} /> Hub de Ideias</>}
             </button>
             <button
-              onClick={handleCreateInCanva}
-              disabled={canvaStatus === 'generating'}
+              onClick={handleGenerateImages}
+              disabled={generatingImages}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 transition-all shadow-sm"
             >
-              {canvaStatus === 'generating' ? (
-                <><Loader2 size={12} className="animate-spin" /> Preparando...</>
-              ) : canvaStatus === 'done' ? (
-                <><Check size={12} /> Canva</>
+              {generatingImages ? (
+                <><Loader2 size={12} className="animate-spin" /> Gerando...</>
+              ) : slideImages.length > 0 ? (
+                <><Check size={12} /> Imagens Prontas</>
               ) : (
-                <><ExternalLink size={12} /> Criar no Canva</>
+                <><ImageIcon size={12} /> Gerar Imagens</>
               )}
             </button>
+            {slideImages.length > 0 && (
+              <button
+                onClick={handleDownloadAll}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-300 text-purple-700 hover:bg-purple-50 transition-all"
+              >
+                <Download size={12} /> Baixar Todas
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Canva status banner */}
-        {canvaStatus === 'done' && (
-          <div className="p-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Check size={14} className="text-purple-600" />
-              <div>
-                <p className="text-xs font-semibold text-purple-800">Roteiro copiado para a area de transferencia!</p>
-                <p className="text-[10px] text-purple-500">O Canva foi aberto. Cole o roteiro no campo de prompt para gerar o design.</p>
+        {/* Generated images gallery */}
+        {slideImages.length > 0 && (
+          <div className="card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <ImageIcon size={14} className="text-purple-500" /> Imagens Geradas ({slideImages.length} slides)
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleGenerateImages}
+                  className="flex items-center gap-1 text-[10px] font-medium text-gray-500 hover:text-gray-700"
+                >
+                  <RotateCcw size={10} /> Regenerar
+                </button>
+                <button
+                  onClick={handleDownloadAll}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-100 transition-all"
+                >
+                  <Download size={10} /> Baixar Todas PNG
+                </button>
               </div>
             </div>
-            <button
-              onClick={() => window.open('https://www.canva.com/design/create?type=instagram_post', '_blank')}
-              className="flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-white border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-50 transition-all"
-            >
-              <ExternalLink size={10} /> Abrir Canva
-            </button>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+              {slideImages.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleDownloadSingle(img)}
+                  className="group relative aspect-[4/5] rounded-lg overflow-hidden border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all"
+                  title={`Baixar slide ${i + 1}`}
+                >
+                  <img src={img.url} alt={`Slide ${i + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                    <Download size={16} className="text-white opacity-0 group-hover:opacity-100 transition-all" />
+                  </div>
+                  <span className="absolute top-1 left-1 text-[9px] font-bold text-white bg-black/40 px-1.5 py-0.5 rounded">
+                    {i + 1}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 text-center">
+              Clique em qualquer slide para baixar individualmente · 1080x1350px (Instagram 4:5)
+            </p>
           </div>
         )}
-        {canvaError && (
+        {imageError && (
           <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2">
             <AlertCircle size={14} className="text-red-500" />
-            <p className="text-xs text-red-600">{canvaError}</p>
+            <p className="text-xs text-red-600">{imageError}</p>
           </div>
         )}
 
