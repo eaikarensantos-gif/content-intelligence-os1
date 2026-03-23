@@ -41,42 +41,48 @@ async function generateCarouselWithAI(apiKey, { type, topic, tone, topCarousels,
     ? `\n\nTENDÊNCIAS E PADRÕES DETECTADOS NO NICHO:\n${trendContext}`
     : ''
 
-  const prompt = `Você é o maior especialista em carrosseis virais do Instagram e LinkedIn no Brasil. Crie um roteiro COMPLETO de carrossel com POTENCIAL VIRAL.
+  const prompt = `Você é um especialista em carrosseis virais do Instagram e LinkedIn no Brasil.
 
-CONTEXTO:
-- Tipo: ${CAROUSEL_TYPES.find(t => t.id === type)?.label || type}
-- Tema: ${topic}
-- Tom: ${tone}
-- Nicho do criador: ${niche || 'não especificado'}
-${nicheContext ? `\nPERFIL COMPLETO DO CRIADOR:\n${nicheContext}` : ''}
-${customInstructions ? `- Instruções extras: ${customInstructions}` : ''}
+⚠️ REGRA ABSOLUTA — FIDELIDADE AO TEMA:
+O tema solicitado é: "${topic}"
+- TODO o conteúdo do carrossel DEVE ser 100% sobre esse tema e NADA MAIS.
+- NÃO misture, NÃO adicione, NÃO cruze com outros assuntos, mesmo que o nicho do criador seja diferente.
+- Se o tema é "resenha do livro X", TODOS os slides devem falar EXCLUSIVAMENTE sobre o livro X, seu conteúdo real, seus capítulos, suas ideias reais.
+- Se o tema é sobre um livro, produto, ferramenta ou método específico, pesquise e use APENAS informações REAIS e VERIFICÁVEIS. NUNCA invente dados, citações, números ou conteúdo que não existe.
+- O nicho do criador serve APENAS para definir o TOM e o ESTILO VISUAL, NUNCA para contaminar o conteúdo.
+- Se você não tem certeza sobre um dado específico, escreva algo genérico verdadeiro em vez de inventar.
+
+TEMA DO CARROSSEL: ${topic}
+TIPO: ${CAROUSEL_TYPES.find(t => t.id === type)?.label || type}
+TOM: ${tone}
+${customInstructions ? `INSTRUÇÕES EXTRAS: ${customInstructions}` : ''}
+
+CONTEXTO DO CRIADOR (use APENAS para tom e estilo, NÃO para conteúdo):
+- Nicho: ${niche || 'não especificado'}
+${nicheContext ? nicheContext : ''}
 ${carouselInspo}
 ${trendInspo}
 
-ESTILO VISUAL E NARRATIVO DO CRIADOR (use como referência obrigatória):
+ESTILO VISUAL (referência obrigatória):
 - Design ultra-clean e minimalista, sem poluição visual
-- Tipografia grande como elemento principal — pouco ou nenhum ícone decorativo
+- Tipografia grande como elemento principal
 - Frases curtas e impactantes por slide (máximo 2-3 linhas)
-- Usa frameworks com metáforas visuais (ex: jardim = plantar/regar/podar para representar fases de planejamento)
-- Bullet points objetivos com perguntas reflexivas que geram auto-análise
-- Mix de fundos claros (cinza/branco) e escuros (fotos com overlay) alternando entre slides
-- Tom: autoridade com empatia, nunca agressivo, sempre provocativo-reflexivo
-- Capa com frase provocativa curta que quebra expectativa (ex: "planejar não é fazer mais. é escolher melhor.")
-- Slides internos com emoji + palavra-chave bold + sub-bullets explicativos
-- Estilo pessoal e confessional nas capas (ex: "eu divido minhas intenções em três movimentos simples")
-- Conteúdo voltado a: carreira, produtividade, autogestão, marca pessoal, liderança, tech
+- Frameworks com metáforas visuais quando fizer sentido para o tema
+- Bullet points objetivos
+- Mix de fundos claros e escuros alternando entre slides
+- Capa com frase provocativa curta que quebra expectativa
+- Slides internos com emoji + palavra-chave + sub-bullets
 
-REGRAS CRÍTICAS:
-1. O SLIDE 1 (capa) é O MAIS IMPORTANTE — deve ter um hook IRRESISTÍVEL que gere salvamento e compartilhamento
-2. Use técnicas comprovadas de retenção: loops abertos, micro-cliffhangers entre slides, padrão de interrupção
-3. Cada slide deve ter um PROPÓSITO claro e progredir a narrativa
-4. O penúltimo slide deve criar URGÊNCIA/ESCASSEZ/FOMO
-5. O último slide deve ter CTA forte com call-to-action duplo (salvar + compartilhar)
-6. Adapte ao ${tone} sem perder autoridade
-7. Use dados, números e exemplos específicos — evite genérico
-8. Cada slide: máximo 3-4 linhas de texto principal + 1 linha de subtexto
-9. Indique elementos visuais sugeridos para cada slide (ícone, imagem, cor destaque)
-10. Tudo em português brasileiro coloquial e profissional
+REGRAS DE CONTEÚDO:
+1. O SLIDE 1 (capa) deve ter um hook IRRESISTÍVEL relacionado DIRETAMENTE ao tema "${topic}"
+2. Cada slide deve conter informações REAIS e VERIFICÁVEIS sobre o tema
+3. Progrida a narrativa slide a slide com propósito claro
+4. Use dados e exemplos REAIS — NUNCA invente estatísticas, citações ou fatos
+5. Penúltimo slide: urgência/escassez/FOMO
+6. Último slide: CTA forte (salvar + compartilhar)
+7. Máximo 3-4 linhas de texto principal por slide + 1 de subtexto
+8. Tudo em PORTUGUÊS BRASILEIRO coloquial e profissional
+9. Adapte ao tom ${tone} sem perder autoridade
 
 Responda APENAS com JSON válido:
 {
@@ -115,7 +121,9 @@ Responda APENAS com JSON válido:
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 6000,
-      system: 'Você é um expert em carrosseis virais. Responda APENAS com JSON válido, sem markdown, sem code blocks.',
+      system: `Você é um expert em carrosseis virais para Instagram e LinkedIn. Responda APENAS com JSON válido, sem markdown, sem code blocks.
+
+REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitado. NUNCA misture temas. NUNCA invente dados, citações, estatísticas ou fatos. Se o tema é sobre um livro, fale APENAS sobre o livro real. Se é sobre uma ferramenta, fale APENAS sobre a ferramenta real. O nicho do criador define APENAS o tom e estilo visual, NUNCA o conteúdo dos slides.`,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
