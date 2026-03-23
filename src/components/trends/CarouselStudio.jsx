@@ -760,6 +760,28 @@ export default function CarouselStudio() {
     a.click()
   }
 
+  const [canvaCopied, setCanvaCopied] = useState(false)
+
+  const handleOpenInCanva = async () => {
+    if (!result?.slides?.length) return
+    const slidesText = result.slides.map((s, i) =>
+      `Slide ${i + 1}: "${s.headline}"${s.subtext ? `\n${s.subtext}` : ''}`
+    ).join('\n\n')
+
+    const canvaPrompt = `Crie um carrossel para Instagram com ${result.slides.length} slides em PORTUGUÊS BRASILEIRO.
+
+Título: ${result.title}
+
+${slidesText}
+
+Estilo: Design minimalista e limpo. Tipografia bold grande como elemento principal. Fundos alternando entre claro (#f5f5f5) e escuro (#1a1a1a). Sem ícones decorativos. Profissional e moderno. Frases curtas e impactantes.`
+
+    await navigator.clipboard.writeText(canvaPrompt)
+    setCanvaCopied(true)
+    window.open('https://www.canva.com/design/create?type=instagram_post', '_blank')
+    setTimeout(() => setCanvaCopied(false), 5000)
+  }
+
   const handleRegenerate = () => {
     setResult(null)
     setSavedToHub(false)
@@ -1041,6 +1063,12 @@ export default function CarouselStudio() {
                 <Download size={12} /> Baixar Todas
               </button>
             )}
+            <button
+              onClick={handleOpenInCanva}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 transition-all shadow-sm"
+            >
+              {canvaCopied ? <><Check size={12} /> Copiado!</> : <><ExternalLink size={12} /> Abrir no Canva</>}
+            </button>
           </div>
         </div>
 
