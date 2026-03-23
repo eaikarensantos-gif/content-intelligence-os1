@@ -21,6 +21,19 @@ const useStore = create(
       favorites: [],
       favoritesOpen: false,
 
+      // ── Perfil do Criador ────────────────────────────────
+      creatorProfile: {
+        niche: '',
+        subNiches: [],
+        targetAudience: '',
+        tone: '',
+        platforms: [],
+        description: '',
+      },
+
+      setCreatorProfile: (profile) =>
+        set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
+
       // ── Favoritos ─────────────────────────────────────────────
       toggleFavorites: () => set((s) => ({ favoritesOpen: !s.favoritesOpen })),
       closeFavorites: () => set({ favoritesOpen: false }),
@@ -312,6 +325,7 @@ const useStore = create(
         archetypes: s.archetypes,
         hybridArchetypes: s.hybridArchetypes,
         favorites: s.favorites,
+        creatorProfile: s.creatorProfile,
       }),
     }
   )

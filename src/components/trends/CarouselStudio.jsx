@@ -3,7 +3,7 @@ import {
   Loader2, Sparkles, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
   Share2, Bookmark, ArrowRight, RotateCcw, Wand2, FileText, Layers,
-  Target, Brain, AlertCircle, Check, Image as ImageIcon, Type,
+  Target, Brain, AlertCircle, Check, Image as ImageIcon, Type, User, Settings,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -31,7 +31,7 @@ const TONES = [
 ]
 
 // ─── AI call ─────────────────────────────────────────────────────────────────
-async function generateCarouselWithAI(apiKey, { type, topic, tone, topCarousels, trendContext, niche, customInstructions }) {
+async function generateCarouselWithAI(apiKey, { type, topic, tone, topCarousels, trendContext, niche, nicheContext, customInstructions }) {
   const carouselInspo = topCarousels?.length
     ? `\n\nCARROSSÉIS DE ALTA PERFORMANCE DO CRIADOR (use como inspiração de estrutura e abordagem):\n${topCarousels.map((c, i) => `${i + 1}. "${c.description?.slice(0, 120)}..." — Eng: ${c.engagement_rate ? (c.engagement_rate * 100).toFixed(1) + '%' : 'N/A'}, Saves: ${c.saves || 0}, Shares: ${c.shares || 0}`).join('\n')}`
     : ''
@@ -47,6 +47,7 @@ CONTEXTO:
 - Tema: ${topic}
 - Tom: ${tone}
 - Nicho do criador: ${niche || 'não especificado'}
+${nicheContext ? `\nPERFIL COMPLETO DO CRIADOR:\n${nicheContext}` : ''}
 ${customInstructions ? `- Instruções extras: ${customInstructions}` : ''}
 ${carouselInspo}
 ${trendInspo}
@@ -247,10 +248,142 @@ function SlidePreview({ slides }) {
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
+// ─── Profile setup component ─────────────────────────────────────────────────
+function ProfileSetup({ profile, onSave }) {
+  const [form, setForm] = useState({
+    niche: profile.niche || '',
+    subNiches: profile.subNiches?.join(', ') || '',
+    targetAudience: profile.targetAudience || '',
+    tone: profile.tone || '',
+    platforms: profile.platforms || [],
+    description: profile.description || '',
+  })
+
+  const PLATFORM_OPTIONS = ['Instagram', 'LinkedIn', 'TikTok', 'YouTube', 'Twitter/X']
+
+  const togglePlatform = (p) => {
+    setForm((prev) => ({
+      ...prev,
+      platforms: prev.platforms.includes(p)
+        ? prev.platforms.filter((x) => x !== p)
+        : [...prev.platforms, p],
+    }))
+  }
+
+  const handleSubmit = () => {
+    if (!form.niche.trim()) return
+    onSave({
+      niche: form.niche.trim(),
+      subNiches: form.subNiches.split(',').map((s) => s.trim()).filter(Boolean),
+      targetAudience: form.targetAudience.trim(),
+      tone: form.tone.trim(),
+      platforms: form.platforms,
+      description: form.description.trim(),
+    })
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 shadow-md shadow-orange-200">
+          <User size={20} className="text-white" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-gray-900">Configure seu Perfil de Criador</h2>
+          <p className="text-xs text-gray-400">Isso calibra toda a inteligencia do Carousel Studio para o SEU nicho</p>
+        </div>
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <div>
+          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Nicho principal *</label>
+          <input
+            value={form.niche}
+            onChange={(e) => setForm((f) => ({ ...f, niche: e.target.value }))}
+            placeholder='Ex: "Carreira em Tecnologia", "Marketing Digital", "Fitness para mulheres 30+"'
+            className="input w-full"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Sub-nichos <span className="font-normal text-gray-400">(separados por virgula)</span></label>
+          <input
+            value={form.subNiches}
+            onChange={(e) => setForm((f) => ({ ...f, subNiches: e.target.value }))}
+            placeholder='Ex: "lideranca feminina, transicao de carreira, marca pessoal, IA no trabalho"'
+            className="input w-full"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Publico-alvo</label>
+          <input
+            value={form.targetAudience}
+            onChange={(e) => setForm((f) => ({ ...f, targetAudience: e.target.value }))}
+            placeholder='Ex: "Profissionais de tech 25-40, buscando crescer na carreira"'
+            className="input w-full"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Tom de voz predominante</label>
+          <input
+            value={form.tone}
+            onChange={(e) => setForm((f) => ({ ...f, tone: e.target.value }))}
+            placeholder='Ex: "Autoridade com empatia, direto ao ponto, leve mas profissional"'
+            className="input w-full"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Plataformas</label>
+          <div className="flex flex-wrap gap-2">
+            {PLATFORM_OPTIONS.map((p) => (
+              <button
+                key={p}
+                onClick={() => togglePlatform(p)}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
+                  form.platforms.includes(p)
+                    ? 'border-orange-300 bg-orange-50 text-orange-700 font-semibold'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Descricao do posicionamento <span className="font-normal text-gray-400">(opcional)</span></label>
+          <textarea
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            placeholder='Ex: "Ajudo profissionais de tecnologia a crescerem na carreira com estrategias praticas de marca pessoal e lideranca"'
+            className="input w-full text-sm min-h-[70px]"
+            rows={2}
+          />
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={!form.niche.trim()}
+          className="btn-primary w-full py-3 text-sm justify-center"
+        >
+          <Check size={16} /> Salvar Perfil e Comecar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 export default function CarouselStudio() {
   const metrics = useStore((s) => s.metrics)
   const trendResults = useStore((s) => s.trendResults)
   const addIdea = useStore((s) => s.addIdea)
+  const creatorProfile = useStore((s) => s.creatorProfile)
+  const setCreatorProfile = useStore((s) => s.setCreatorProfile)
 
   const [step, setStep] = useState('config') // config | generating | editor
   const [carouselType, setCarouselType] = useState('')
@@ -262,7 +395,11 @@ export default function CarouselStudio() {
   const [error, setError] = useState(null)
   const [savedToHub, setSavedToHub] = useState(false)
   const [editCaption, setEditCaption] = useState(false)
-  const [history, setHistory] = useState([]) // saved carousel roteiros
+  const [history, setHistory] = useState([])
+  const [editingProfile, setEditingProfile] = useState(false)
+
+  // Show profile setup if no niche configured
+  const hasProfile = creatorProfile?.niche?.trim()
 
   // Get top-performing carousels from analytics
   const topCarousels = useMemo(() => {
@@ -272,7 +409,7 @@ export default function CarouselStudio() {
       .slice(0, 5)
   }, [metrics])
 
-  // Build trend context from trendResults
+  // Build trend context from trendResults (only if same niche)
   const trendContext = useMemo(() => {
     if (!trendResults) return ''
     const parts = []
@@ -291,7 +428,31 @@ export default function CarouselStudio() {
     return parts.join('\n')
   }, [trendResults])
 
-  const niche = trendResults?.topic || ''
+  // Use creatorProfile as niche source, fallback to trendResults
+  const niche = creatorProfile?.niche || trendResults?.topic || ''
+  const nicheContext = useMemo(() => {
+    if (!creatorProfile?.niche) return ''
+    const parts = [`Nicho: ${creatorProfile.niche}`]
+    if (creatorProfile.subNiches?.length) parts.push(`Sub-nichos: ${creatorProfile.subNiches.join(', ')}`)
+    if (creatorProfile.targetAudience) parts.push(`Publico-alvo: ${creatorProfile.targetAudience}`)
+    if (creatorProfile.tone) parts.push(`Tom de voz: ${creatorProfile.tone}`)
+    if (creatorProfile.description) parts.push(`Posicionamento: ${creatorProfile.description}`)
+    if (creatorProfile.platforms?.length) parts.push(`Plataformas: ${creatorProfile.platforms.join(', ')}`)
+    return parts.join('\n')
+  }, [creatorProfile])
+
+  // Profile setup or editing
+  if (!hasProfile || editingProfile) {
+    return (
+      <ProfileSetup
+        profile={creatorProfile || {}}
+        onSave={(p) => {
+          setCreatorProfile(p)
+          setEditingProfile(false)
+        }}
+      />
+    )
+  }
 
   const handleGenerate = async () => {
     if (!topic.trim() || !carouselType) return
@@ -310,6 +471,7 @@ export default function CarouselStudio() {
         topCarousels,
         trendContext,
         niche,
+        nicheContext,
         customInstructions: customInstructions.trim(),
       })
       setResult(data)
@@ -414,16 +576,49 @@ export default function CarouselStudio() {
             <h2 className="text-base font-bold text-gray-900">Carousel Studio</h2>
             <p className="text-xs text-gray-400">Roteiros de carrossel com potencial viral — inspirados nos seus dados + tendências</p>
           </div>
-          {hasApiKey ? (
-            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
-              <Brain size={9} /> IA Ativa
-            </span>
-          ) : (
-            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
-              <AlertCircle size={9} /> Chave necessária
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setEditingProfile(true)}
+              className="flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-all"
+              title="Editar perfil do criador"
+            >
+              <Settings size={9} /> {creatorProfile.niche}
+            </button>
+            {hasApiKey ? (
+              <span className="flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <Brain size={9} /> IA Ativa
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
+                <AlertCircle size={9} /> Chave necessária
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Creator profile banner */}
+        {creatorProfile?.niche && (
+          <div className="p-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 space-y-1">
+            <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+              <User size={13} className="text-orange-500" /> Perfil calibrado
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[10px] px-2 py-1 rounded-lg bg-white border border-orange-100 text-orange-700 font-medium">
+                {creatorProfile.niche}
+              </span>
+              {creatorProfile.subNiches?.map((s, i) => (
+                <span key={i} className="text-[10px] px-2 py-1 rounded-lg bg-white border border-gray-100 text-gray-600 font-medium">
+                  {s}
+                </span>
+              ))}
+              {creatorProfile.targetAudience && (
+                <span className="text-[10px] px-2 py-1 rounded-lg bg-white border border-blue-100 text-blue-600 font-medium">
+                  {creatorProfile.targetAudience}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Data insights banner */}
         {(topCarousels.length > 0 || trendResults) && (
