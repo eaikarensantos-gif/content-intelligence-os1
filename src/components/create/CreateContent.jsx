@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Brain, Sparkles, Wand2, Mic, ArrowRight, Lightbulb, PenTool } from 'lucide-react'
+import { Brain, Sparkles, Wand2, Mic, ArrowRight, Lightbulb, PenTool, Layers } from 'lucide-react'
 import clsx from 'clsx'
 
 const SECTIONS = [
@@ -42,6 +42,20 @@ const SECTIONS = [
     subtitle: 'Adapte e transforme conteúdo para publicar',
     options: [
       {
+        id: 'carousel',
+        to: '/carousel',
+        icon: Layers,
+        title: 'Quero criar um carrossel',
+        description: 'Roteiros de carrossel com potencial viral — inspirados nos seus dados de performance, tendências e no seu estilo visual.',
+        output: '→ Receba: roteiro slide a slide, legenda, CTA, hooks alternativos e preview visual',
+        color: 'from-orange-500 to-pink-600',
+        bg: 'bg-orange-50',
+        border: 'border-orange-200 hover:border-orange-300',
+        iconColor: 'text-orange-600',
+        outputColor: 'text-orange-600',
+        tag: 'Carousel Studio',
+      },
+      {
         id: 'write',
         to: '/text',
         icon: Wand2,
@@ -82,7 +96,7 @@ export default function CreateContent() {
       <div className="text-center mb-10 sm:mb-14 max-w-lg">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium mb-5">
           <PenTool size={12} />
-          Criar Conteúdo
+          Studio de Criação
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
           Como você quer começar?

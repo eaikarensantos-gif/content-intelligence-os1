@@ -11,7 +11,7 @@ import useStore from '../../store/useStore'
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/create', icon: PenTool, label: 'Criar Conteúdo' },
+  { to: '/create', icon: PenTool, label: 'Studio de Criação' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
 ]
 
@@ -136,7 +136,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   // Shared NavLink renderer
   const renderNavItem = ({ to, icon: Icon, label }, indent = false) => {
-    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation']
+    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation', '/carousel']
     const isCreateGroup = to === '/create'
     const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
 

@@ -52,6 +52,19 @@ ${customInstructions ? `- Instruções extras: ${customInstructions}` : ''}
 ${carouselInspo}
 ${trendInspo}
 
+ESTILO VISUAL E NARRATIVO DO CRIADOR (use como referência obrigatória):
+- Design ultra-clean e minimalista, sem poluição visual
+- Tipografia grande como elemento principal — pouco ou nenhum ícone decorativo
+- Frases curtas e impactantes por slide (máximo 2-3 linhas)
+- Usa frameworks com metáforas visuais (ex: jardim = plantar/regar/podar para representar fases de planejamento)
+- Bullet points objetivos com perguntas reflexivas que geram auto-análise
+- Mix de fundos claros (cinza/branco) e escuros (fotos com overlay) alternando entre slides
+- Tom: autoridade com empatia, nunca agressivo, sempre provocativo-reflexivo
+- Capa com frase provocativa curta que quebra expectativa (ex: "planejar não é fazer mais. é escolher melhor.")
+- Slides internos com emoji + palavra-chave bold + sub-bullets explicativos
+- Estilo pessoal e confessional nas capas (ex: "eu divido minhas intenções em três movimentos simples")
+- Conteúdo voltado a: carreira, produtividade, autogestão, marca pessoal, liderança, tech
+
 REGRAS CRÍTICAS:
 1. O SLIDE 1 (capa) é O MAIS IMPORTANTE — deve ter um hook IRRESISTÍVEL que gere salvamento e compartilhamento
 2. Use técnicas comprovadas de retenção: loops abertos, micro-cliffhangers entre slides, padrão de interrupção

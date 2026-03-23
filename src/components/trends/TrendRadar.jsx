@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
-import CarouselStudio from './CarouselStudio'
+// CarouselStudio moved to /carousel route (Studio de Criação)
 
 // ─── Suggested topics ─────────────────────────────────────────────────────────
 const SUGGESTED = [
@@ -500,7 +500,6 @@ function IdeaCard({ idea, onSave, saved }) {
 // ─── Tabs config ───────────────────────────────────────────────────────────────
 const RESULT_TABS = [
   { id: 'overview',      label: 'Visão Geral',         icon: BarChart2 },
-  { id: 'carousel',      label: 'Carousel Studio',     icon: Layers },
   { id: 'creators',      label: 'Criadores',           icon: Users },
   { id: 'posts',         label: 'Posts',               icon: FileText },
   { id: 'patterns',      label: 'Padrões',             icon: TrendingUp },
@@ -589,35 +588,11 @@ export default function TrendRadar() {
     })
   }
 
-  const isCarouselMode = activeTab === 'carousel' && !trendResults
-
   return (
     <div className="p-6 space-y-6 animate-fade-in">
 
-      {/* ── Top mode switcher ──────────────────────────────────────────────── */}
-      {!trendResults && (
-        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg transition-all ${
-              activeTab !== 'carousel' ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Radar size={13} /> Radar de Tendências
-          </button>
-          <button
-            onClick={() => setActiveTab('carousel')}
-            className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg transition-all ${
-              activeTab === 'carousel' ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Layers size={13} /> Carousel Studio
-          </button>
-        </div>
-      )}
-
       {/* ── Search card ─────────────────────────────────────────────────────── */}
-      <div className={`card p-6 space-y-4 ${isCarouselMode ? 'hidden' : ''}`}>
+      <div className="card p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-md shadow-orange-200">
             <Radar size={18} className="text-white" />
@@ -809,9 +784,6 @@ export default function TrendRadar() {
               )}
             </div>
           )}
-
-          {/* ── Tab: Carousel Studio ──────────────────────────────────────────── */}
-          {activeTab === 'carousel' && <CarouselStudio />}
 
           {/* ── Tab: Criadores ───────────────────────────────────────────────── */}
           {activeTab === 'creators' && (() => {
@@ -1067,9 +1039,8 @@ export default function TrendRadar() {
         </div>
       )}
 
-      {/* ── Empty state / Carousel Studio standalone ───────────────────────── */}
-      {!loading && !error && !trendResults && activeTab === 'carousel' && <CarouselStudio />}
-      {!loading && !error && !trendResults && activeTab !== 'carousel' && (
+      {/* ── Empty state ───────────────────────────────────────────────────── */}
+      {!loading && !error && !trendResults && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 border border-orange-200 flex items-center justify-center mb-5 shadow-sm">
             <Radar size={32} className="text-orange-500" />
@@ -1078,14 +1049,6 @@ export default function TrendRadar() {
           <p className="text-gray-400 text-sm max-w-md leading-relaxed">
             O Creator Insights vai descobrir criadores relevantes, padrões de conteúdo, lacunas estratégicas e gerar ideias prontas para executar — tudo em segundos com IA.
           </p>
-
-          {/* Carousel Studio quick access */}
-          <button
-            onClick={() => setActiveTab('carousel')}
-            className="mt-5 flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold text-sm shadow-lg shadow-orange-200 hover:shadow-xl hover:shadow-orange-300 transition-all"
-          >
-            <Layers size={16} /> Abrir Carousel Studio
-          </button>
 
           <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl">
             {[

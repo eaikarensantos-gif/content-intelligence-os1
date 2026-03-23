@@ -14,14 +14,15 @@ const TITLES = {
   '/archetypes': { title: 'Arquétipos de Conteúdo', sub: 'Extraia padrões de criadores e gere conteúdo baseado em arquétipos' },
   '/reports': { title: 'Relatórios de Performance', sub: 'Analise dados exportados do Instagram, LinkedIn e TikTok' },
   '/security': { title: 'Registro de Acessos', sub: 'Histórico completo de logins e tentativas' },
-  '/create': { title: 'Criar Conteúdo', sub: 'Escolha como quer começar sua criação' },
+  '/create': { title: 'Studio de Criação', sub: 'Escolha como quer começar sua criação' },
+  '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
   '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo', parent: '/create' },
   '/presentation': { title: 'Modo Apresentação', sub: 'Transforme ideias em talks com roteiro em linguagem falada', parent: '/create' },
 }
 
-const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation'])
+const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])
 
 export default function Header({ onMenuClick }) {
   const { pathname } = useLocation()
