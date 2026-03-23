@@ -778,7 +778,7 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
 
     await navigator.clipboard.writeText(canvaPrompt)
     setCanvaCopied(true)
-    window.open('https://www.canva.com/create/instagram-posts/', '_blank')
+    window.open('https://www.canva.com/', '_blank')
     setTimeout(() => setCanvaCopied(false), 5000)
   }
 
