@@ -4,6 +4,7 @@ import {
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
   Share2, Bookmark, ArrowRight, RotateCcw, Wand2, FileText, Layers,
   Target, Brain, AlertCircle, Check, Image as ImageIcon, Type, User, Settings,
+  ExternalLink, Download,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -220,21 +221,42 @@ function SlideCard({ slide, index, total, onUpdate, onDelete, onMoveUp, onMoveDo
   )
 }
 
-// ─── Mini preview ────────────────────────────────────────────────────────────
+// ─── Mini preview (matches Karen's visual style) ─────────────────────────────
 function SlidePreview({ slides }) {
   const [current, setCurrent] = useState(0)
   const slide = slides[current]
   if (!slide) return null
 
+  // Alternate light/dark backgrounds like Karen's style
+  const isDark = current === 0 || current % 2 === 1
+  const bgClass = isDark
+    ? 'bg-gradient-to-br from-gray-900 to-gray-800'
+    : 'bg-[#f5f5f5]'
+  const textClass = isDark ? 'text-white' : 'text-gray-900'
+  const subClass = isDark ? 'text-white/50' : 'text-gray-400'
+  const metaClass = isDark ? 'text-white/30' : 'text-gray-300'
+
   return (
     <div className="space-y-3">
-      <div className="aspect-[4/5] max-w-[280px] mx-auto bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 flex flex-col justify-center items-center text-center relative overflow-hidden shadow-xl">
-        <div className="absolute top-3 right-3 text-[10px] text-white/40 font-mono">{current + 1}/{slides.length}</div>
-        {current === 0 && <div className="absolute top-3 left-3 text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-bold">CAPA</div>}
-        <p className="text-white font-bold text-base leading-snug mb-2">{slide.headline || 'Texto do slide...'}</p>
-        {slide.subtext && <p className="text-white/60 text-xs">{slide.subtext}</p>}
+      <div className={`aspect-[4/5] max-w-[280px] mx-auto ${bgClass} rounded-2xl p-6 flex flex-col justify-center items-start text-left relative overflow-hidden shadow-xl transition-all duration-300`}>
+        <div className={`absolute top-3 right-3 text-[10px] ${metaClass} font-mono`}>{current + 1}/{slides.length}</div>
+        {current === 0 && <div className="absolute top-3 left-3 text-[9px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-bold uppercase tracking-wider">Capa</div>}
+
+        {/* Slide content — mimics Karen's bold typography style */}
+        <p className={`${textClass} font-bold ${current === 0 ? 'text-lg' : 'text-base'} leading-snug mb-2`} style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          {slide.headline || 'Texto do slide...'}
+        </p>
+        {slide.subtext && (
+          <div className="mt-2">
+            {slide.subtext.split('\n').map((line, li) => (
+              <p key={li} className={`${subClass} text-xs leading-relaxed`}>
+                {line.trim().startsWith('•') || line.trim().startsWith('-') ? line : `• ${line}`}
+              </p>
+            ))}
+          </div>
+        )}
         {slide.visual_suggestion && (
-          <div className="absolute bottom-3 left-3 right-3 text-[9px] text-white/30 text-center truncate">
+          <div className={`absolute bottom-3 left-4 right-4 text-[9px] ${metaClass} truncate`}>
             🎨 {slide.visual_suggestion}
           </div>
         )}
@@ -568,9 +590,76 @@ export default function CarouselStudio() {
     navigator.clipboard.writeText(text)
   }
 
+  const [canvaStatus, setCanvaStatus] = useState(null) // null | 'generating' | 'done' | 'error'
+  const [canvaUrl, setCanvaUrl] = useState(null)
+  const [canvaError, setCanvaError] = useState(null)
+
+  const handleCreateInCanva = async () => {
+    if (!result?.slides?.length) return
+    setCanvaStatus('generating')
+    setCanvaError(null)
+
+    try {
+      // Build a detailed query for Canva AI to generate the carousel
+      const slidesText = result.slides.map((s, i) =>
+        `Slide ${i + 1} (${s.type || 'content'}): "${s.headline}"${s.subtext ? ` — ${s.subtext}` : ''}`
+      ).join('\n')
+
+      const query = `Create an Instagram carousel post with ${result.slides.length} slides.
+Style: Ultra-clean minimalist design, bold typography as the main element, minimal decorative icons.
+Theme: ${result.title}
+Target: ${creatorProfile?.targetAudience || 'professionals'}
+
+Slides content:
+${slidesText}
+
+Design rules:
+- Alternate between light backgrounds (white/light gray) and dark backgrounds (dark overlay on photo)
+- Large bold text as the main visual element
+- Short impactful phrases, maximum 3 lines per slide
+- First slide (cover) should have the most impactful hook phrase
+- Professional and modern feel, career/tech niche
+- Use emojis as visual anchors where indicated in the content`
+
+      // Dispatch custom event for parent app to handle Canva integration
+      const canvaEvent = new CustomEvent('canva-generate-carousel', {
+        detail: { query, slidesCount: result.slides.length, title: result.title }
+      })
+      window.dispatchEvent(canvaEvent)
+
+      // Store the carousel data for Canva in localStorage so it can be accessed externally
+      const canvaData = {
+        query,
+        slides: result.slides,
+        title: result.title,
+        caption: result.caption,
+        createdAt: new Date().toISOString(),
+        brandKitId: 'kAGmtEkCTv4',
+      }
+      localStorage.setItem('cio-canva-carousel-pending', JSON.stringify(canvaData))
+
+      // Open Canva with the carousel concept
+      // Since we can't call MCP from browser, we'll generate a copyable prompt
+      const canvaPrompt = `Crie um carrossel Instagram com ${result.slides.length} slides.\n\nTítulo: ${result.title}\n\n${slidesText}\n\nEstilo: Minimalista, tipografia bold grande, fundos alternando claro/escuro, clean e profissional.`
+
+      await navigator.clipboard.writeText(canvaPrompt)
+
+      // Open Canva directly
+      window.open('https://www.canva.com/design/create?type=instagram_post', '_blank')
+
+      setCanvaStatus('done')
+      setCanvaUrl('https://www.canva.com')
+    } catch (e) {
+      setCanvaError(e.message || 'Erro ao preparar design para o Canva')
+      setCanvaStatus('error')
+    }
+  }
+
   const handleRegenerate = () => {
     setResult(null)
     setSavedToHub(false)
+    setCanvaStatus(null)
+    setCanvaUrl(null)
     setStep('config')
   }
 
@@ -812,7 +901,7 @@ export default function CarouselStudio() {
               <p className="text-xs text-gray-400">{result.slides?.length} slides · {result.target_audience}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button onClick={handleCopyScript} className="btn-ghost text-xs border border-gray-200">
               <Copy size={12} /> Copiar
             </button>
@@ -826,8 +915,46 @@ export default function CarouselStudio() {
             >
               {savedToHub ? <><Check size={12} /> No Hub</> : <><Plus size={12} /> Hub de Ideias</>}
             </button>
+            <button
+              onClick={handleCreateInCanva}
+              disabled={canvaStatus === 'generating'}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 transition-all shadow-sm"
+            >
+              {canvaStatus === 'generating' ? (
+                <><Loader2 size={12} className="animate-spin" /> Preparando...</>
+              ) : canvaStatus === 'done' ? (
+                <><Check size={12} /> Canva</>
+              ) : (
+                <><ExternalLink size={12} /> Criar no Canva</>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Canva status banner */}
+        {canvaStatus === 'done' && (
+          <div className="p-3 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Check size={14} className="text-purple-600" />
+              <div>
+                <p className="text-xs font-semibold text-purple-800">Roteiro copiado para a area de transferencia!</p>
+                <p className="text-[10px] text-purple-500">O Canva foi aberto. Cole o roteiro no campo de prompt para gerar o design.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open('https://www.canva.com/design/create?type=instagram_post', '_blank')}
+              className="flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-white border border-purple-200 px-2.5 py-1 rounded-lg hover:bg-purple-50 transition-all"
+            >
+              <ExternalLink size={10} /> Abrir Canva
+            </button>
+          </div>
+        )}
+        {canvaError && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2">
+            <AlertCircle size={14} className="text-red-500" />
+            <p className="text-xs text-red-600">{canvaError}</p>
+          </div>
+        )}
 
         {/* Metrics cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
