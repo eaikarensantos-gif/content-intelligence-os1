@@ -34,6 +34,10 @@ const useStore = create(
       setCreatorProfile: (profile) =>
         set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
 
+      // ── Brand Voice (Master Prompt) ─────────────────────────
+      brandVoice: null,
+      setBrandVoice: (voice) => set({ brandVoice: voice }),
+
       // ── Favoritos ─────────────────────────────────────────────
       toggleFavorites: () => set((s) => ({ favoritesOpen: !s.favoritesOpen })),
       closeFavorites: () => set({ favoritesOpen: false }),

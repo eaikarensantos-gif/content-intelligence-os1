@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
+  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -39,6 +39,7 @@ const NAV_GROUPS = [
 ]
 
 const BOTTOM_NAV = [
+  { to: '/brand-voice', icon: Mic, label: 'Minha Voz' },
   { to: '/security', icon: Shield, label: 'Registro de Acessos' },
 ]
 

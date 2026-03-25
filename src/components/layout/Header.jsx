@@ -20,6 +20,7 @@ const TITLES = {
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
   '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo', parent: '/create' },
   '/presentation': { title: 'Modo Apresentação', sub: 'Transforme ideias em talks com roteiro em linguagem falada', parent: '/create' },
+  '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade de conteúdo' },
 }
 
 const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])

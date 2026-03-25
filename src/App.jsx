@@ -21,6 +21,7 @@ import ContentArchetypes from './components/archetypes/ContentArchetypes'
 import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
+import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/archetypes" element={<ContentArchetypes />} />
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/reports" element={<PerformanceReport />} />
+            <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
           </Routes>
         </Layout>
