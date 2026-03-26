@@ -769,6 +769,7 @@ export default function IdeaGenerator() {
                       onToggleFav={() => toggleIdeaFav(idea)}
                       onDislike={(idea) => {
                         addDislike({ title: idea.title, hook: idea.hook, reason: 'desalinhado com meu tom' })
+                        setResults(prev => prev.filter(r => r._id !== idea._id))
                       }}
                     />
                   ))}

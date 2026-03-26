@@ -722,7 +722,19 @@ export default function TextStudio() {
                         <Heart size={14} className={isTextFavorited(activeTab) ? 'fill-current' : ''} />
                       </button>
                       <button
-                        onClick={() => addDislike({ title: result.core_message || 'Texto', hook: '', reason: 'desalinhado com meu tom' })}
+                        onClick={() => {
+                          const data = result?.versions?.[activeTab]
+                          addDislike({ title: result.core_message || 'Texto', hook: data?.hook || data?.first_line || '', reason: 'desalinhado com meu tom' })
+                          const newVersions = { ...result.versions }
+                          delete newVersions[activeTab]
+                          const remaining = Object.keys(newVersions)
+                          if (remaining.length > 0) {
+                            setResult({ ...result, versions: newVersions })
+                            setActiveTab(remaining[0])
+                          } else {
+                            setResult(null)
+                          }
+                        }}
                         className="p-1.5 rounded-lg transition-colors text-gray-400 hover:text-orange-500"
                         title="Não gostei desta versão"
                       >

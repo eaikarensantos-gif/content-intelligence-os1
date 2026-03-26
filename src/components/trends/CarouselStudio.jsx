@@ -1061,7 +1061,10 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
               {savedToHub ? <><Check size={12} /> No Hub</> : <><Plus size={12} /> Hub de Ideias</>}
             </button>
             <button
-              onClick={() => addDislike({ title: result.title || result.hook, hook: result.hook, reason: 'desalinhado com meu tom' })}
+              onClick={() => {
+                addDislike({ title: result.title || result.hook, hook: result.hook, reason: 'desalinhado com meu tom' })
+                setResult(null)
+              }}
               className="btn-ghost text-xs border border-red-200 text-red-600 hover:bg-red-50"
             >
               <ThumbsDown size={12} /> Dislike

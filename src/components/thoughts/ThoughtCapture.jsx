@@ -764,7 +764,11 @@ const HOOK_FORMAT_STYLES = {
 
 function ViralPhrasesCard({ data, onDislike }) {
   const { copiedKey, copy } = useCopy()
-  const allPhrases = (data.phrases || []).map(p => `"${p.text}"`).join('\n\n')
+  const [dismissedPhrases, setDismissedPhrases] = useState(new Set())
+  const [dismissedHooks, setDismissedHooks] = useState(new Set())
+  const visiblePhrases = (data.phrases || []).filter((_, i) => !dismissedPhrases.has(i))
+  const visibleHooks = (data.top_hooks || []).filter((_, i) => !dismissedHooks.has(i))
+  const allPhrases = visiblePhrases.map(p => `"${p.text}"`).join('\n\n')
 
   return (
     <div className="rounded-2xl border border-orange-200 bg-white overflow-hidden shadow-sm">
@@ -804,10 +808,12 @@ function ViralPhrasesCard({ data, onDislike }) {
         )}
 
         {/* Phrases */}
+        {visiblePhrases.length > 0 && (
         <div className="space-y-2">
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Frases de impacto</p>
           <div className="space-y-2">
             {(data.phrases || []).map((p, i) => {
+              if (dismissedPhrases.has(i)) return null
               const style = PHRASE_TYPE_STYLES[p.type] || PHRASE_TYPE_STYLES.observacional
               return (
                 <div key={i} className={`rounded-xl p-3.5 ${style.bg} border ${style.border} flex items-start gap-3 group`}>
@@ -824,7 +830,10 @@ function ViralPhrasesCard({ data, onDislike }) {
                     </button>
                     {onDislike && (
                       <button
-                        onClick={() => onDislike({ title: p.text, hook: p.text, reason: 'frase desalinhada com meu tom' })}
+                        onClick={() => {
+                          onDislike({ title: p.text, hook: p.text, reason: 'frase desalinhada com meu tom' })
+                          setDismissedPhrases(prev => new Set([...prev, i]))
+                        }}
                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
                         title="Não gostei desta frase"
                       >
@@ -837,16 +846,18 @@ function ViralPhrasesCard({ data, onDislike }) {
             })}
           </div>
         </div>
+        )}
 
         {/* Top Hooks */}
-        {data.top_hooks?.length > 0 && (
+        {visibleHooks.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Target size={12} className="text-orange-500" />
               <p className="text-[10px] text-orange-600 font-bold uppercase tracking-wide">Melhores hooks para conteúdo</p>
             </div>
             <div className="space-y-2">
-              {data.top_hooks.map((hook, i) => {
+              {(data.top_hooks || []).map((hook, i) => {
+                if (dismissedHooks.has(i)) return null
                 const fmt = HOOK_FORMAT_STYLES[hook.format] || HOOK_FORMAT_STYLES.post
                 const HookIcon = fmt.icon
                 return (
@@ -865,7 +876,10 @@ function ViralPhrasesCard({ data, onDislike }) {
                         </button>
                         {onDislike && (
                           <button
-                            onClick={() => onDislike({ title: hook.phrase, hook: hook.phrase, reason: 'hook desalinhado com meu tom' })}
+                            onClick={() => {
+                              onDislike({ title: hook.phrase, hook: hook.phrase, reason: 'hook desalinhado com meu tom' })
+                              setDismissedHooks(prev => new Set([...prev, i]))
+                            }}
                             className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
                             title="Não gostei deste hook"
                           >
@@ -1306,16 +1320,16 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {result.reflection_post && (
-                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} isFav={isFavorited('Post Reflexivo')} onToggleFav={() => toggleFav('Post Reflexivo', result.reflection_post.text)} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} isFav={isFavorited('Post Reflexivo')} onToggleFav={() => toggleFav('Post Reflexivo', result.reflection_post.text)} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'post reflexivo desalinhado' }); setResult(r => ({ ...r, reflection_post: null })) }} />
                 )}
                 {result.video_talking_point && (
-                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} isFav={isFavorited('Roteiro de Video')} onToggleFav={() => toggleFav('Roteiro de Video', [`HOOK: ${result.video_talking_point.hook}`, ...(result.video_talking_point.talking_points || []).map((p, i) => `${i + 1}. ${p}`), `ENCERRAMENTO: ${result.video_talking_point.closing}`].join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} isFav={isFavorited('Roteiro de Video')} onToggleFav={() => toggleFav('Roteiro de Video', [`HOOK: ${result.video_talking_point.hook}`, ...(result.video_talking_point.talking_points || []).map((p, i) => `${i + 1}. ${p}`), `ENCERRAMENTO: ${result.video_talking_point.closing}`].join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.video_talking_point.hook, reason: 'roteiro vídeo desalinhado' }); setResult(r => ({ ...r, video_talking_point: null })) }} />
                 )}
                 {result.carousel && (
-                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} isFav={isFavorited('Carrossel')} onToggleFav={() => toggleFav('Carrossel', [`SLIDE 1: ${result.carousel.slide_1}`, ...(result.carousel.slides || []).map((s, i) => `SLIDE ${i + 2}: ${s.headline} - ${s.body}`), `FINAL: ${result.carousel.final_slide}`].join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} isFav={isFavorited('Carrossel')} onToggleFav={() => toggleFav('Carrossel', [`SLIDE 1: ${result.carousel.slide_1}`, ...(result.carousel.slides || []).map((s, i) => `SLIDE ${i + 2}: ${s.headline} - ${s.body}`), `FINAL: ${result.carousel.final_slide}`].join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.carousel.slide_1, reason: 'carrossel desalinhado' }); setResult(r => ({ ...r, carousel: null })) }} />
                 )}
                 {result.storytelling && (
-                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} isFav={isFavorited('Arco Narrativo')} onToggleFav={() => toggleFav('Arco Narrativo', [result.storytelling.situation, result.storytelling.tension, result.storytelling.turning_point, result.storytelling.resolution].filter(Boolean).join('\n\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} isFav={isFavorited('Arco Narrativo')} onToggleFav={() => toggleFav('Arco Narrativo', [result.storytelling.situation, result.storytelling.tension, result.storytelling.turning_point, result.storytelling.resolution].filter(Boolean).join('\n\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.storytelling.situation, reason: 'storytelling desalinhado' }); setResult(r => ({ ...r, storytelling: null })) }} />
                 )}
               </div>
             </div>
@@ -1329,13 +1343,13 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 {result.reel_script && (
-                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} isFav={isFavorited('Reels Script')} onToggleFav={() => toggleFav('Reels Script', [`HOOK: ${result.reel_script.hook_spoken}`, ...(result.reel_script.beats || []).map(b => b.content), `CTA: ${result.reel_script.cta}`].filter(Boolean).join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} isFav={isFavorited('Reels Script')} onToggleFav={() => toggleFav('Reels Script', [`HOOK: ${result.reel_script.hook_spoken}`, ...(result.reel_script.beats || []).map(b => b.content), `CTA: ${result.reel_script.cta}`].filter(Boolean).join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.reel_script.hook_spoken, reason: 'reels desalinhado' }); setResult(r => ({ ...r, reel_script: null })) }} />
                 )}
                 {result.stories_sequence && (
-                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} isFav={isFavorited('Stories Sequence')} onToggleFav={() => toggleFav('Stories Sequence', [`ABERTURA: ${result.stories_sequence.opening_slide}`, ...(result.stories_sequence.slides || []).map(s => `Slide ${s.number}: ${s.content}`), `CTA: ${result.stories_sequence.closing_cta}`].filter(Boolean).join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} isFav={isFavorited('Stories Sequence')} onToggleFav={() => toggleFav('Stories Sequence', [`ABERTURA: ${result.stories_sequence.opening_slide}`, ...(result.stories_sequence.slides || []).map(s => `Slide ${s.number}: ${s.content}`), `CTA: ${result.stories_sequence.closing_cta}`].filter(Boolean).join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.stories_sequence.opening_slide, reason: 'stories desalinhado' }); setResult(r => ({ ...r, stories_sequence: null })) }} />
                 )}
                 {result.tiktok_script && (
-                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} isFav={isFavorited('TikTok Script')} onToggleFav={() => toggleFav('TikTok Script', [`HOOK: ${result.tiktok_script.hook_line}`, ...(result.tiktok_script.beats || []).map(b => b.content), `LOOP: ${result.tiktok_script.loop_moment}`, `CTA: ${result.tiktok_script.comment_bait}`].filter(Boolean).join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
+                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} isFav={isFavorited('TikTok Script')} onToggleFav={() => toggleFav('TikTok Script', [`HOOK: ${result.tiktok_script.hook_line}`, ...(result.tiktok_script.beats || []).map(b => b.content), `LOOP: ${result.tiktok_script.loop_moment}`, `CTA: ${result.tiktok_script.comment_bait}`].filter(Boolean).join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.tiktok_script.hook_line, reason: 'tiktok desalinhado' }); setResult(r => ({ ...r, tiktok_script: null })) }} />
                 )}
               </div>
             </div>
