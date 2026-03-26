@@ -1013,11 +1013,94 @@ export default function ThoughtCapture() {
     reel_script: 'reel', stories_sequence: 'stories', tiktok_script: 'video',
   }
 
+  const buildFullDescription = (key) => {
+    const d = result?.[key]
+    if (!d) return result?.save_as_idea?.description || ''
+
+    switch (key) {
+      case 'reflection_post':
+        return [
+          `ABERTURA: "${d.opening_line}"`,
+          '',
+          d.text,
+          '',
+          `ENCERRAMENTO: "${d.closing_line}"`,
+        ].join('\n')
+
+      case 'video_talking_point':
+        return [
+          `HOOK: ${d.hook}`,
+          '',
+          ...(d.talking_points || []).map((p, i) => `${i + 1}. ${p}`),
+          '',
+          `ENCERRAMENTO: ${d.closing}`,
+        ].join('\n')
+
+      case 'carousel':
+        return [
+          `SLIDE 1 (CAPA): ${d.slide_1}`,
+          ...(d.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`),
+          `\nSLIDE FINAL:\n${d.final_slide}`,
+        ].join('\n')
+
+      case 'storytelling': {
+        const steps = [
+          { key: 'situation', label: 'Situação' },
+          { key: 'tension', label: 'Tensão' },
+          { key: 'turning_point', label: 'Virada' },
+          { key: 'resolution', label: 'Resolução' },
+        ]
+        return steps.map(s => `${s.label.toUpperCase()}:\n${d[s.key]}`).join('\n\n')
+      }
+
+      case 'reel_script':
+        return [
+          `HOOK VISUAL: ${d.hook_visual}`,
+          `HOOK FALADO: "${d.hook_spoken}"`,
+          '',
+          ...(d.beats || []).map((b, i) => `BEAT ${i + 1} (~${b.duration_sec}s): ${b.content}`),
+          '',
+          `LOOP: ${d.loop_element}`,
+          `TEXTO NA TELA: "${d.text_overlay}"`,
+          `ÁUDIO: ${d.audio_strategy}`,
+          `CTA: ${d.cta}`,
+          `DURAÇÃO: ${d.suggested_duration_sec}s`,
+        ].join('\n')
+
+      case 'stories_sequence':
+        return [
+          `ABERTURA: ${d.opening_slide}`,
+          '',
+          ...(d.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`),
+          '',
+          `INTERATIVIDADE: ${d.interactive_tip}`,
+          `CTA FINAL: ${d.closing_cta}`,
+        ].join('\n')
+
+      case 'tiktok_script':
+        return [
+          `HOOK (fala): "${d.hook_line}"`,
+          `HOOK (visual): ${d.hook_visual}`,
+          `INTERRUPÇÃO DE PADRÃO: ${d.pattern_interrupt}`,
+          '',
+          ...(d.beats || []).map((b, i) => `BEAT ${i + 1} [${b.retention_technique}]: ${b.content}`),
+          '',
+          `LOOP: ${d.loop_moment}`,
+          `ÁUDIO: ${d.sound_strategy}`,
+          `ISCA DE COMENTÁRIO: "${d.comment_bait}"`,
+          `DURAÇÃO: ${d.suggested_duration_sec}s`,
+        ].join('\n')
+
+      default:
+        return result?.save_as_idea?.description || ''
+    }
+  }
+
   const handleSaveFormat = (key) => {
     if (!result?.save_as_idea) return
     addIdea({
       title: result.save_as_idea.title,
-      description: `${result.save_as_idea.description} [${FORMAT_LABELS[key]}]`,
+      description: buildFullDescription(key),
       platform: FORMAT_PLATFORMS[key] || result.save_as_idea.platform || 'Instagram',
       format: FORMAT_FORMATS[key] || 'post',
       status: 'draft',
