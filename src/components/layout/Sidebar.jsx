@@ -207,29 +207,17 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Top-level items */}
         {TOP_NAV.map((item) => renderNavItem(item))}
 
-        {/* Collapsible groups */}
-        {NAV_GROUPS.map((group) => {
-          const isGroupOpen = openGroup === group.id
-          return (
-            <div key={group.id} className="mt-3">
-              <button
-                onClick={() => toggleGroup(group.id)}
-                className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors"
-              >
-                {isGroupOpen
-                  ? <ChevronDown size={12} className="text-gray-400" />
-                  : <ChevronRight size={12} className="text-gray-400" />
-                }
-                {group.label}
-              </button>
-              {isGroupOpen && (
-                <div className="space-y-0.5">
-                  {group.children.map((item) => renderNavItem(item, true))}
-                </div>
-              )}
+        {/* Always-open groups */}
+        {NAV_GROUPS.map((group) => (
+          <div key={group.id} className="mt-3">
+            <div className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              {group.label}
             </div>
-          )
-        })}
+            <div className="space-y-0.5">
+              {group.children.map((item) => renderNavItem(item, true))}
+            </div>
+          </div>
+        ))}
 
         {/* Bottom items */}
         <div className="mt-3 pt-3 border-t border-orange-100">
