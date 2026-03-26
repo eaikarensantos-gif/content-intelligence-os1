@@ -762,7 +762,7 @@ const HOOK_FORMAT_STYLES = {
   short: { icon: Film, label: 'Curto (Reels/Stories)', color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200' },
 }
 
-function ViralPhrasesCard({ data }) {
+function ViralPhrasesCard({ data, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const allPhrases = (data.phrases || []).map(p => `"${p.text}"`).join('\n\n')
 
@@ -815,12 +815,23 @@ function ViralPhrasesCard({ data }) {
                     <p className="text-[13px] font-semibold text-gray-800 leading-snug">"{p.text}"</p>
                     <span className={`text-[9px] font-semibold mt-1.5 inline-block ${style.text}`}>{style.label}</span>
                   </div>
-                  <button
-                    onClick={() => copy(p.text, `phrase-${i}`)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all shrink-0"
-                  >
-                    {copiedKey === `phrase-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                  </button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => copy(p.text, `phrase-${i}`)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all"
+                    >
+                      {copiedKey === `phrase-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    </button>
+                    {onDislike && (
+                      <button
+                        onClick={() => onDislike({ title: p.text, hook: p.text, reason: 'frase desalinhada com meu tom' })}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
+                        title="Não gostei desta frase"
+                      >
+                        <ThumbsDown size={12} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -845,12 +856,23 @@ function ViralPhrasesCard({ data }) {
                         <HookIcon size={13} className={fmt.color} />
                         <span className={`text-[10px] font-bold uppercase tracking-wide ${fmt.color}`}>{fmt.label}</span>
                       </div>
-                      <button
-                        onClick={() => copy(hook.phrase, `hook-${i}`)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all"
-                      >
-                        {copiedKey === `hook-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                      </button>
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => copy(hook.phrase, `hook-${i}`)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all"
+                        >
+                          {copiedKey === `hook-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        </button>
+                        {onDislike && (
+                          <button
+                            onClick={() => onDislike({ title: hook.phrase, hook: hook.phrase, reason: 'hook desalinhado com meu tom' })}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
+                            title="Não gostei deste hook"
+                          >
+                            <ThumbsDown size={12} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm font-bold text-gray-900 leading-snug">"{hook.phrase}"</p>
                     <p className="text-[10px] text-gray-500 italic">{hook.context}</p>
@@ -1271,7 +1293,7 @@ export default function ThoughtCapture() {
                   </span>
                   <div className="h-px flex-1 bg-orange-100" />
                 </div>
-                <ViralPhrasesCard data={result.viral_phrases} />
+                <ViralPhrasesCard data={result.viral_phrases} onDislike={(item) => addDislike(item)} />
               </div>
             )}
 

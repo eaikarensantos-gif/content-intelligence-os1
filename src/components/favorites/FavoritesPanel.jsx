@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Heart, X, Copy, Check } from 'lucide-react'
+import { Heart, X, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TYPE_STYLES = {
@@ -16,6 +16,7 @@ export default function FavoritesDrawer() {
   const favorites = useStore((s) => s.favorites)
   const removeFavorite = useStore((s) => s.removeFavorite)
   const [copiedId, setCopiedId] = useState(null)
+  const [expandedId, setExpandedId] = useState(null)
   const [visible, setVisible] = useState(false)
 
   // Animate in/out
@@ -96,24 +97,37 @@ export default function FavoritesDrawer() {
                 return (
                   <div
                     key={fav.id}
-                    className="rounded-xl border border-gray-100 bg-white hover:border-gray-200 transition-all p-3.5 space-y-2 shadow-sm"
+                    onClick={() => setExpandedId(expandedId === fav.id ? null : fav.id)}
+                    className="rounded-xl border border-gray-100 bg-white hover:border-orange-200 hover:shadow-md transition-all p-3.5 space-y-2 shadow-sm cursor-pointer"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${style.bg} ${style.text} ${style.border}`}>
                         {style.label}
                       </span>
-                      <span className="text-[10px] text-gray-400">
-                        {new Date(fav.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(fav.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                        </span>
+                        {expandedId === fav.id
+                          ? <ChevronUp size={12} className="text-gray-400" />
+                          : <ChevronDown size={12} className="text-gray-400" />
+                        }
+                      </div>
                     </div>
 
                     <p className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2">
                       {fav.title}
                     </p>
 
-                    {fav.content && (
+                    {fav.content && expandedId !== fav.id && (
                       <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3">
                         {fav.content.slice(0, 100)}{fav.content.length > 100 ? '...' : ''}
+                      </p>
+                    )}
+
+                    {fav.content && expandedId === fav.id && (
+                      <p className="text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-lg p-3 border border-gray-100 max-h-64 overflow-y-auto">
+                        {fav.content}
                       </p>
                     )}
 
@@ -123,7 +137,7 @@ export default function FavoritesDrawer() {
 
                     <div className="flex items-center gap-1.5 pt-1">
                       <button
-                        onClick={() => handleCopy(fav)}
+                        onClick={(e) => { e.stopPropagation(); handleCopy(fav) }}
                         className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         {copiedId === fav.id
@@ -132,7 +146,7 @@ export default function FavoritesDrawer() {
                         }
                       </button>
                       <button
-                        onClick={() => removeFavorite(fav.id)}
+                        onClick={(e) => { e.stopPropagation(); removeFavorite(fav.id) }}
                         className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors ml-auto"
                       >
                         <Heart size={11} className="fill-current" /> Remover
