@@ -38,6 +38,17 @@ const useStore = create(
       brandVoice: null,
       setBrandVoice: (voice) => set({ brandVoice: voice }),
 
+      // ── Dislike Feedback (melhoria contínua) ────────────────
+      dislikedContent: [],
+      addDislike: (item) =>
+        set((s) => ({
+          dislikedContent: [...s.dislikedContent.slice(-49), {
+            id: uuidv4(),
+            created_at: new Date().toISOString(),
+            ...item,
+          }],
+        })),
+
       // ── Favoritos ─────────────────────────────────────────────
       toggleFavorites: () => set((s) => ({ favoritesOpen: !s.favoritesOpen })),
       closeFavorites: () => set({ favoritesOpen: false }),

@@ -6,12 +6,13 @@ import {
   RefreshCw, LayoutGrid, Mic, Instagram, Music2,
   Play, Repeat2, MessageCircle, Heart, ChevronRight,
   Film, Smartphone, ExternalLink, Quote, Target,
-  Wand2, ArrowLeft,
+  Wand2, ArrowLeft, ThumbsDown,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 
 // ─── Claude call ─────────────────────────────────────────────────────────────
-async function captureThought(apiKey, { thought, niche, tone }) {
+async function captureThought(apiKey, { thought, niche, tone, voiceContext, regenInstruction }) {
   const toneInstruction = {
     reflexivo:   'Tom suave, introspectivo e pessoal.',
     provocador:  'Tom que questiona o status quo, que incomoda no bom sentido.',
@@ -123,6 +124,7 @@ TikTok performa quando os primeiros 2 segundos são absurdamente específicos, h
 - Duração sugerida: X-Y segundos
 
 ─────────────────────────────────────────────────────
+${voiceContext || ''}${regenInstruction || ''}
 Responda APENAS com JSON válido, sem texto antes ou depois:
 {
   "core_insight": "a essência do pensamento em 1 frase poderosa",
@@ -330,7 +332,7 @@ function SaveBtn({ saved, onClick, color, onOpenHub }) {
 }
 
 // ─── Format 1: Reflection Post ────────────────────────────────────────────────
-function ReflectionCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function ReflectionCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.indigo
   return (
@@ -343,6 +345,7 @@ function ReflectionCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) 
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(data.text, 'post')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'post' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -365,7 +368,7 @@ function ReflectionCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) 
 }
 
 // ─── Format 2: Video Talking Point ───────────────────────────────────────────
-function VideoCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function VideoCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.violet
   const script = [`HOOK: ${data.hook}`, '', ...(data.talking_points || []).map((p, i) => `${i + 1}. ${p}`), '', `ENCERRAMENTO: ${data.closing}`].join('\n')
@@ -380,6 +383,7 @@ function VideoCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(script, 'video')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'video' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -409,7 +413,7 @@ function VideoCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
 }
 
 // ─── Format 3: Carousel ───────────────────────────────────────────────────────
-function CarouselCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function CarouselCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.purple
   const allSlides = [`SLIDE 1 (CAPA): ${data.slide_1}`, ...(data.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`), `\nSLIDE FINAL:\n${data.final_slide}`].join('\n')
@@ -423,6 +427,7 @@ function CarouselCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(allSlides, 'carousel')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'carousel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -455,7 +460,7 @@ function CarouselCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
 }
 
 // ─── Format 4: Storytelling ───────────────────────────────────────────────────
-function StorytellingCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function StorytellingCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.fuchsia
   const STEPS = [
@@ -475,6 +480,7 @@ function StorytellingCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(fullStory, 'story')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'story' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -497,7 +503,7 @@ function StorytellingCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }
 }
 
 // ─── Format 5: Reels Script ───────────────────────────────────────────────────
-function ReelCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function ReelCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.rose
   const script = [
@@ -523,6 +529,7 @@ function ReelCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(script, 'reel')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'reel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -596,7 +603,7 @@ const INTERACTIVE_ICONS = {
   nenhum:    '',
 }
 
-function StoriesCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function StoriesCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.pink
   const script = [`ABERTURA: ${data.opening_slide}`, '', ...(data.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`), '', `INTERATIVIDADE: ${data.interactive_tip}`, `CTA FINAL: ${data.closing_cta}`].join('\n')
@@ -611,6 +618,7 @@ function StoriesCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(script, 'stories')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'stories' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -655,7 +663,7 @@ function StoriesCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
 }
 
 // ─── Format 7: TikTok Script ──────────────────────────────────────────────────
-function TikTokCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
+function TikTokCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
   const { copiedKey, copy } = useCopy()
   const c = COLOR_MAP.zinc
   const script = [
@@ -681,6 +689,7 @@ function TikTokCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav }) {
         </div>
         <div className="flex items-center gap-1">
           <FavBtn isFav={isFav} onToggle={onToggleFav} />
+          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
           <button onClick={() => copy(script, 'tiktok')} className="btn-secondary text-xs py-1 px-2.5">
             {copiedKey === 'tiktok' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
           </button>
@@ -936,7 +945,7 @@ const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', '
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
-  const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea, addFavorite, removeFavorite, favorites } = useStore()
+  const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
   const navigate = useNavigate()
 
   const [thought, setThought] = useState('')
@@ -948,6 +957,7 @@ export default function ThoughtCapture() {
   const [result, setResult] = useState(null)
   const [currentThought, setCurrentThought] = useState('')
   const [savedFormats, setSavedFormats] = useState(new Set())
+  const [regenAttempt, setRegenAttempt] = useState(0)
 
   const phaseRef = useRef(null)
   const resultsRef = useRef(null)
@@ -970,8 +980,11 @@ export default function ThoughtCapture() {
     setError(''); setLoading(true); setResult(null); setSavedFormats(new Set()); setCurrentThought(thought)
     startPhases()
     try {
-      const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone })
+      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+      const regenInstr = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
+      const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone, voiceContext: voiceCtx, regenInstruction: regenInstr })
       setResult(data)
+      setRegenAttempt(c => c + 1)
       addThoughtCapture({ thought: thought.trim(), niche, tone, result: data })
       // Auto-save draft to Hub
       if (data.save_as_idea) {
@@ -1271,16 +1284,16 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {result.reflection_post && (
-                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} isFav={isFavorited('Post Reflexivo')} onToggleFav={() => toggleFav('Post Reflexivo', result.reflection_post.text)} />
+                  <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} isFav={isFavorited('Post Reflexivo')} onToggleFav={() => toggleFav('Post Reflexivo', result.reflection_post.text)} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
                 {result.video_talking_point && (
-                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} isFav={isFavorited('Roteiro de Video')} onToggleFav={() => toggleFav('Roteiro de Video', [`HOOK: ${result.video_talking_point.hook}`, ...(result.video_talking_point.talking_points || []).map((p, i) => `${i + 1}. ${p}`), `ENCERRAMENTO: ${result.video_talking_point.closing}`].join('\n'))} />
+                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} isFav={isFavorited('Roteiro de Video')} onToggleFav={() => toggleFav('Roteiro de Video', [`HOOK: ${result.video_talking_point.hook}`, ...(result.video_talking_point.talking_points || []).map((p, i) => `${i + 1}. ${p}`), `ENCERRAMENTO: ${result.video_talking_point.closing}`].join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
                 {result.carousel && (
-                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} isFav={isFavorited('Carrossel')} onToggleFav={() => toggleFav('Carrossel', [`SLIDE 1: ${result.carousel.slide_1}`, ...(result.carousel.slides || []).map((s, i) => `SLIDE ${i + 2}: ${s.headline} - ${s.body}`), `FINAL: ${result.carousel.final_slide}`].join('\n'))} />
+                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} isFav={isFavorited('Carrossel')} onToggleFav={() => toggleFav('Carrossel', [`SLIDE 1: ${result.carousel.slide_1}`, ...(result.carousel.slides || []).map((s, i) => `SLIDE ${i + 2}: ${s.headline} - ${s.body}`), `FINAL: ${result.carousel.final_slide}`].join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
                 {result.storytelling && (
-                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} isFav={isFavorited('Arco Narrativo')} onToggleFav={() => toggleFav('Arco Narrativo', [result.storytelling.situation, result.storytelling.tension, result.storytelling.turning_point, result.storytelling.resolution].filter(Boolean).join('\n\n'))} />
+                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} isFav={isFavorited('Arco Narrativo')} onToggleFav={() => toggleFav('Arco Narrativo', [result.storytelling.situation, result.storytelling.tension, result.storytelling.turning_point, result.storytelling.resolution].filter(Boolean).join('\n\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
               </div>
             </div>
@@ -1294,13 +1307,13 @@ export default function ThoughtCapture() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 {result.reel_script && (
-                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} isFav={isFavorited('Reels Script')} onToggleFav={() => toggleFav('Reels Script', [`HOOK: ${result.reel_script.hook_spoken}`, ...(result.reel_script.beats || []).map(b => b.content), `CTA: ${result.reel_script.cta}`].filter(Boolean).join('\n'))} />
+                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} isFav={isFavorited('Reels Script')} onToggleFav={() => toggleFav('Reels Script', [`HOOK: ${result.reel_script.hook_spoken}`, ...(result.reel_script.beats || []).map(b => b.content), `CTA: ${result.reel_script.cta}`].filter(Boolean).join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
                 {result.stories_sequence && (
-                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} isFav={isFavorited('Stories Sequence')} onToggleFav={() => toggleFav('Stories Sequence', [`ABERTURA: ${result.stories_sequence.opening_slide}`, ...(result.stories_sequence.slides || []).map(s => `Slide ${s.number}: ${s.content}`), `CTA: ${result.stories_sequence.closing_cta}`].filter(Boolean).join('\n'))} />
+                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} isFav={isFavorited('Stories Sequence')} onToggleFav={() => toggleFav('Stories Sequence', [`ABERTURA: ${result.stories_sequence.opening_slide}`, ...(result.stories_sequence.slides || []).map(s => `Slide ${s.number}: ${s.content}`), `CTA: ${result.stories_sequence.closing_cta}`].filter(Boolean).join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
                 {result.tiktok_script && (
-                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} isFav={isFavorited('TikTok Script')} onToggleFav={() => toggleFav('TikTok Script', [`HOOK: ${result.tiktok_script.hook_line}`, ...(result.tiktok_script.beats || []).map(b => b.content), `LOOP: ${result.tiktok_script.loop_moment}`, `CTA: ${result.tiktok_script.comment_bait}`].filter(Boolean).join('\n'))} />
+                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} isFav={isFavorited('TikTok Script')} onToggleFav={() => toggleFav('TikTok Script', [`HOOK: ${result.tiktok_script.hook_line}`, ...(result.tiktok_script.beats || []).map(b => b.content), `LOOP: ${result.tiktok_script.loop_moment}`, `CTA: ${result.tiktok_script.comment_bait}`].filter(Boolean).join('\n'))} onDislike={() => addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'desalinhado com meu tom' })} />
                 )}
               </div>
             </div>

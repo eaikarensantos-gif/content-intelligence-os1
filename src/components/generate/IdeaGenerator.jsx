@@ -4,9 +4,10 @@ import {
   Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
   Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
   Flame, Eye, MessageCircle, Layers, ArrowRight, Save, Star,
-  Lightbulb, ExternalLink, Wand2, Mic, ArrowLeft, Heart,
+  Lightbulb, ExternalLink, Wand2, Mic, ArrowLeft, Heart, ThumbsDown,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -41,7 +42,7 @@ const FORMATS = ['Carrossel', 'Reels/TikTok', 'Thread', 'Vídeo longo', 'Post re
 const PLATFORMS = ['Instagram', 'LinkedIn', 'TikTok', 'Twitter/X', 'YouTube']
 
 // ── Claude prompt ─────────────────────────────────────────────────────────────
-function buildPrompt({ topic, audience, tone, narrativeStyle, intensity, previousTitles }) {
+function buildPrompt({ topic, audience, tone, narrativeStyle, intensity, previousTitles, voiceContext, regenInstruction }) {
   const toneMap = {
     reflexivo: 'Reflexivo — introspectivo, pausado, pessoal. Como alguém pensando em voz alta.',
     analitico: 'Analítico — racional, perspicaz, encontra padrões que outros não veem. Sem ser acadêmico.',
@@ -148,7 +149,8 @@ Responda SOMENTE com JSON válido (sem markdown, sem texto antes/depois):
       "why_now": "O gatilho cultural ou de timing — por que essa conversa está acontecendo agora"
     }
   ]
-}`
+}
+${voiceContext || ''}${regenInstruction || ''}`
 }
 
 async function generateIdeas(apiKey, params) {
@@ -184,7 +186,7 @@ async function generateIdeas(apiKey, params) {
 }
 
 // ── Idea Card ─────────────────────────────────────────────────────────────────
-function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav, onToggleFav }) {
+function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav, onToggleFav, onDislike }) {
   const [expanded, setExpanded] = useState(false)
   const [showSavedFlash, setShowSavedFlash] = useState(false)
 
@@ -331,6 +333,13 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
             {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
           </button>
           <button
+            onClick={() => onDislike(idea)}
+            className="p-2 rounded-xl text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+            title="Não gostei — melhorar sugestões futuras"
+          >
+            <ThumbsDown size={13} />
+          </button>
+          <button
             onClick={onToggleFav}
             className={`p-2 rounded-xl transition-colors ${isFav ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
             title={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
@@ -345,7 +354,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function IdeaGenerator() {
-  const { addIdea, addFavorite, removeFavorite, favorites } = useStore()
+  const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
@@ -379,6 +388,7 @@ export default function IdeaGenerator() {
   const [copiedId, setCopiedId] = useState(null)
   const [allPreviousTitles, setAllPreviousTitles] = useState([])
   const [genCount, setGenCount] = useState(0)
+  const [regenAttempt, setRegenAttempt] = useState(0)
 
   const handleGenerate = async () => {
     if (!topic.trim()) { setError('Defina o tópico.'); return }
@@ -399,9 +409,14 @@ export default function IdeaGenerator() {
     const interval = setInterval(() => { i = (i + 1) % msgs.length; setLoadingMsg(msgs[i]) }, 2200)
 
     try {
+      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+      const regenInstruction = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
+
       const data = await generateIdeas(apiKey, {
         topic, audience, tone, narrativeStyle, intensity,
         previousTitles: allPreviousTitles,
+        voiceContext: voiceCtx,
+        regenInstruction,
       })
 
       const ideas = (data.ideas || []).map((idea, idx) => ({
@@ -412,6 +427,7 @@ export default function IdeaGenerator() {
       setResults(ideas)
       setAllPreviousTitles(prev => [...prev, ...ideas.map(i => i.title)])
       setGenCount(c => c + 1)
+      setRegenAttempt(c => c + 1)
       setSavedIds(new Set())
     } catch (e) {
       setError(e.message)
@@ -751,6 +767,9 @@ export default function IdeaGenerator() {
                       onOpenHub={() => navigate('/ideas')}
                       isFav={isIdeaFavorited(idea)}
                       onToggleFav={() => toggleIdeaFav(idea)}
+                      onDislike={(idea) => {
+                        addDislike({ title: idea.title, hook: idea.hook, reason: 'desalinhado com meu tom' })
+                      }}
                     />
                   ))}
                 </div>

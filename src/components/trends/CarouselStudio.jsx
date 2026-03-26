@@ -4,9 +4,10 @@ import {
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
   Share2, Bookmark, ArrowRight, RotateCcw, Wand2, FileText, Layers,
   Target, Brain, AlertCircle, Check, Image as ImageIcon, Type, User, Settings,
-  ExternalLink, Download,
+  ExternalLink, Download, ThumbsDown,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -32,7 +33,7 @@ const TONES = [
 ]
 
 // ─── AI call ─────────────────────────────────────────────────────────────────
-async function generateCarouselWithAI(apiKey, { type, topic, tone, topCarousels, trendContext, niche, nicheContext, customInstructions }) {
+async function generateCarouselWithAI(apiKey, { type, topic, tone, topCarousels, trendContext, niche, nicheContext, customInstructions, voiceContext, regenInstruction }) {
   const carouselInspo = topCarousels?.length
     ? `\n\nCARROSSÉIS DE ALTA PERFORMANCE DO CRIADOR (use como inspiração de estrutura e abordagem):\n${topCarousels.map((c, i) => `${i + 1}. "${c.description?.slice(0, 120)}..." — Eng: ${c.engagement_rate ? (c.engagement_rate * 100).toFixed(1) + '%' : 'N/A'}, Saves: ${c.saves || 0}, Shares: ${c.shares || 0}`).join('\n')}`
     : ''
@@ -84,6 +85,7 @@ REGRAS DE CONTEÚDO:
 8. Tudo em PORTUGUÊS BRASILEIRO coloquial e profissional
 9. Adapte ao tom ${tone} sem perder autoridade
 
+${voiceContext || ''}${regenInstruction || ''}
 Responda APENAS com JSON válido:
 {
   "title": "título do carrossel",
@@ -557,6 +559,9 @@ export default function CarouselStudio() {
   const addIdea = useStore((s) => s.addIdea)
   const creatorProfile = useStore((s) => s.creatorProfile)
   const setCreatorProfile = useStore((s) => s.setCreatorProfile)
+  const brandVoice = useStore((s) => s.brandVoice)
+  const dislikedContent = useStore((s) => s.dislikedContent)
+  const addDislike = useStore((s) => s.addDislike)
 
   const [step, setStep] = useState('config') // config | generating | editor
   const [carouselType, setCarouselType] = useState('')
@@ -570,6 +575,7 @@ export default function CarouselStudio() {
   const [editCaption, setEditCaption] = useState(false)
   const [history, setHistory] = useState([])
   const [editingProfile, setEditingProfile] = useState(false)
+  const [regenAttempt, setRegenAttempt] = useState(0)
 
   // Show profile setup if no niche configured
   const hasProfile = creatorProfile?.niche?.trim()
@@ -637,6 +643,8 @@ export default function CarouselStudio() {
     setStep('generating')
 
     try {
+      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+      const regenInstruction = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
       const data = await generateCarouselWithAI(apiKey, {
         type: carouselType,
         topic: topic.trim(),
@@ -646,8 +654,11 @@ export default function CarouselStudio() {
         niche,
         nicheContext,
         customInstructions: customInstructions.trim(),
+        voiceContext: voiceCtx,
+        regenInstruction,
       })
       setResult(data)
+      setRegenAttempt(c => c + 1)
       setStep('editor')
     } catch (e) {
       setError(e.message || 'Erro ao gerar carrossel')
@@ -1048,6 +1059,12 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
               className={savedToHub ? 'flex items-center gap-1.5 text-xs text-emerald-600 font-medium px-3 py-1.5' : 'btn-primary text-xs'}
             >
               {savedToHub ? <><Check size={12} /> No Hub</> : <><Plus size={12} /> Hub de Ideias</>}
+            </button>
+            <button
+              onClick={() => addDislike({ title: result.title || result.hook, hook: result.hook, reason: 'desalinhado com meu tom' })}
+              className="btn-ghost text-xs border border-red-200 text-red-600 hover:bg-red-50"
+            >
+              <ThumbsDown size={12} /> Dislike
             </button>
             <button
               onClick={handleGenerateImages}

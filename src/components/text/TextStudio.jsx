@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wand2, Copy, Check, RefreshCw,
   AlignLeft, X, Zap, Save, ExternalLink,
-  Sparkles, Mic, ArrowLeft, Heart,
+  Sparkles, Mic, ArrowLeft, Heart, ThumbsDown,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -28,7 +29,7 @@ const PLATFORMS = [
   { id: 'youtube', label: 'YouTube', color: 'bg-red-100 text-red-700 border-red-300', activeColor: 'bg-red-600 text-white border-red-600' },
 ]
 
-async function generateTextVersions(apiKey, { text, sourceType, platforms, niche }) {
+async function generateTextVersions(apiKey, { text, sourceType, platforms, niche, voiceContext, regenInstruction }) {
   const platformInstructions = {
     linkedin: `LINKEDIN POST:
 - Gancho poderoso nas primeiras 2 linhas (antes do "ver mais") — ESSENCIAL
@@ -123,6 +124,7 @@ OBRIGATÓRIO: Conteúdo que soa como um ser humano de verdade escreveu, com opin
 
 ${selectedInstructions}
 
+${voiceContext || ''}${regenInstruction || ''}
 Responda SOMENTE com um JSON válido neste formato:
 {
   "core_message": "a mensagem central mais poderosa em 1 frase",
@@ -394,7 +396,7 @@ function buildCopyText(platform, data) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function TextStudio() {
-  const { addIdea, addFavorite, removeFavorite, favorites } = useStore()
+  const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
   const navigate = useNavigate()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 
@@ -409,6 +411,7 @@ export default function TextStudio() {
   const [copied, setCopied] = useState(null)
   const [error, setError] = useState('')
   const [savedVersions, setSavedVersions] = useState(new Set())
+  const [regenAttempt, setRegenAttempt] = useState(0)
 
   const textRef = useRef(null)
 
@@ -456,12 +459,17 @@ export default function TextStudio() {
       setLoadingMsg(msgs[i])
     }, 2000)
 
+    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+    const regenInstruction = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
+
     try {
       const data = await generateTextVersions(apiKey, {
         text, sourceType, platforms: selectedPlatforms, niche,
+        voiceContext: voiceCtx, regenInstruction,
       })
       setResult(data)
       setActiveTab(selectedPlatforms[0])
+      setRegenAttempt(c => c + 1)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -712,6 +720,13 @@ export default function TextStudio() {
                         title={isTextFavorited(activeTab) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                       >
                         <Heart size={14} className={isTextFavorited(activeTab) ? 'fill-current' : ''} />
+                      </button>
+                      <button
+                        onClick={() => addDislike({ title: result.core_message || 'Texto', hook: '', reason: 'desalinhado com meu tom' })}
+                        className="p-1.5 rounded-lg transition-colors text-gray-400 hover:text-orange-500"
+                        title="Não gostei desta versão"
+                      >
+                        <ThumbsDown size={14} />
                       </button>
                     </div>
                   </div>
