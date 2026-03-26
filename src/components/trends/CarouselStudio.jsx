@@ -698,16 +698,23 @@ export default function CarouselStudio() {
 
   const handleSaveToHub = () => {
     if (!result) return
+    const fullScript = result.slides.map((s, i) => `[Slide ${i + 1} — ${s.type || 'conteúdo'}]\n${s.headline}${s.subtext ? '\n' + s.subtext : ''}`).join('\n\n')
+    const fullDesc = [
+      result.concept,
+      `\n\n--- ROTEIRO COMPLETO ---\n\n${fullScript}`,
+      result.caption ? `\n\n--- LEGENDA ---\n${result.caption}` : '',
+      result.cta_comment ? `\n\n--- CTA ---\n${result.cta_comment}` : '',
+    ].filter(Boolean).join('')
     addIdea({
       title: result.title,
-      description: result.concept,
+      description: fullDesc,
       format: 'carousel',
       platform: 'instagram',
       hook_type: result.slides?.[0]?.technique || 'curiosity',
       priority: result.estimated_saves === 'viral' ? 'high' : 'medium',
       status: 'ready',
       tags: ['carrossel', 'roteiro-completo'],
-      script: result.slides.map((s, i) => `[Slide ${i + 1} — ${s.type || 'conteúdo'}]\n${s.headline}${s.subtext ? '\n' + s.subtext : ''}`).join('\n\n'),
+      script: fullScript,
       caption: result.caption || '',
       cta: result.cta_comment || '',
     })

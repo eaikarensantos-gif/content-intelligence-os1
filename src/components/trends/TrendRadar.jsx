@@ -553,9 +553,15 @@ export default function TrendRadar() {
   }
 
   const handleSaveOpp = (opp) => {
+    const parts = [
+      opp.description,
+      opp.hook_example ? `\n\nGancho: ${opp.hook_example}` : '',
+      opp.content_gap ? `\nLacuna: ${opp.content_gap}` : '',
+      opp.why_now ? `\nPor que agora: ${opp.why_now}` : '',
+    ]
     addIdea({
       title: opp.title,
-      description: opp.description,
+      description: parts.filter(Boolean).join(''),
       topic: trendResults?.topic,
       format: opp.format,
       hook_type: opp.hook?.toLowerCase(),
@@ -568,9 +574,15 @@ export default function TrendRadar() {
   }
 
   const handleSaveIdea = (idea) => {
+    const parts = [
+      idea.angle ? `Ângulo: ${idea.angle}` : '',
+      idea.hook_suggestion ? `\n\nGancho sugerido: ${idea.hook_suggestion}` : '',
+      idea.format ? `\nFormato: ${idea.format}` : '',
+      idea.platform ? `\nPlataforma: ${idea.platform}` : '',
+    ]
     addIdea({
       title: idea.title,
-      description: idea.angle || idea.hook_suggestion || '',
+      description: parts.filter(Boolean).join(''),
       topic: trendResults?.topic,
       format: idea.format,
       hook_type: idea.hook,
