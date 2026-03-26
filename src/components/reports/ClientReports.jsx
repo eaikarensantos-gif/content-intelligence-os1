@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FileText, Calendar, Users, Loader2, Sparkles, TrendingUp,
   Eye, Heart, Share2, Bookmark, Trophy, AlertCircle, Printer,
   ChevronRight, BarChart2, CheckCircle, ArrowUpRight, ArrowDownRight,
   Minus, Plus, X, ExternalLink, Download, Link2, UserPlus,
-  Film, Play, Layers, Image, Clock, Copy, Check,
+  Film, Play, Layers, Image, Clock, Copy, Check, Upload,
 } from 'lucide-react'
 import Papa from 'papaparse'
 import useStore from '../../store/useStore'
@@ -247,7 +247,9 @@ td{padding:.5rem;border-bottom:1px solid #f9fafb;color:#4b5563}tr:hover{backgrou
 // ── Main Component ──────────────────────────────────────────────────────────
 export default function ClientReports() {
   const metrics = useStore((s) => s.metrics)
+  const addMetric = useStore((s) => s.addMetric)
   const navigate = useNavigate()
+  const csvRef = useRef(null)
 
   const enriched = useMemo(() => metrics.map(enrichMetric), [metrics])
 
@@ -280,6 +282,98 @@ export default function ClientReports() {
       hashtagMap: tagMap,
     }
   }, [enriched])
+
+  // ── Quick CSV import (reuses same column mapping as MetricsForm) ────────
+  const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const COL_MAP = {
+    'post_id': 'post_id', 'post id': 'post_id',
+    'data': 'date', 'date': 'date', 'publish time': 'date', 'horario de publicacao': 'date',
+    'data de publicacao': 'date', 'published at': 'date', 'data do post': 'date',
+    'plataforma': 'platform', 'platform': 'platform',
+    'post type': 'post_type', 'tipo de post': 'post_type', 'tipo': 'post_type', 'post_type': 'post_type',
+    'description': 'description', 'descricao': 'description', 'legenda': 'description',
+    'permalink': 'link', 'link permanente': 'link', 'link': 'link', 'url': 'link',
+    'duracao (s)': 'duration_sec', 'duracao': 'duration_sec', 'duration': 'duration_sec',
+    'visualizacoes': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions', 'views': 'impressions',
+    'alcance': 'reach', 'reach': 'reach',
+    'curtidas': 'likes', 'likes': 'likes',
+    'coment.': 'comments', 'comentarios': 'comments', 'comments': 'comments', 'replies': 'comments',
+    'compart.': 'shares', 'compartilhamentos': 'shares', 'shares': 'shares',
+    'seguimentos': 'follows', 'follows': 'follows', 'seguidores': 'follows', 'new followers': 'follows', 'novos seguidores': 'follows',
+    'salvam.': 'saves', 'salvamentos': 'saves', 'saves': 'saves', 'sticker taps': 'saves',
+    'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks',
+    'cliente': 'client', 'client': 'client', 'projeto': 'client', 'marca': 'client', 'brand': 'client',
+  }
+  const toNum = (v = '') => Number(String(v).replace(/[^0-9]/g, '')) || 0
+  const normalizeDate = (raw = '') => {
+    const s = raw.trim()
+    if (!s) return ''
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+    const ptMonth = { 'jan':'01','fev':'02','mar':'03','abr':'04','mai':'05','jun':'06','jul':'07','ago':'08','set':'09','out':'10','nov':'11','dez':'12' }
+    const brLong = s.match(/(\d{1,2})\s+de?\s*(\w{3})\.?\s+(\d{4})/)
+    if (brLong) { const m = ptMonth[brLong[2].toLowerCase().replace('.', '')] || '01'; return `${brLong[3]}-${m}-${brLong[1].padStart(2, '0')}` }
+    const slash = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/)
+    if (slash) {
+      if (Number(slash[1]) > 12) return `${slash[3]}-${slash[2].padStart(2,'0')}-${slash[1].padStart(2,'0')}`
+      return `${slash[3]}-${slash[1].padStart(2,'0')}-${slash[2].padStart(2,'0')}`
+    }
+    const d = new Date(s)
+    return !isNaN(d) ? d.toISOString().split('T')[0] : ''
+  }
+  const normalizePostType = (raw = '') => {
+    const v = raw.toLowerCase().trim()
+    if (v.includes('story') || v.includes('storie')) return 'story'
+    if (v.includes('reel')) return 'reel'
+    if (v.includes('carousel') || v.includes('carrossel')) return 'carousel'
+    if (v.includes('video')) return 'video'
+    if (v.includes('image') || v.includes('photo') || v.includes('foto')) return 'image'
+    return v || ''
+  }
+
+  const [importCount, setImportCount] = useState(null)
+  const handleCSVImport = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: ({ data }) => {
+        let count = 0
+        data.forEach(raw => {
+          const row = {}
+          for (const [key, val] of Object.entries(raw)) {
+            const clean = stripAccents(key.toLowerCase().trim())
+            const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
+            if (mapped) row[mapped] = val
+          }
+          if (!row.impressions && !row.likes && !row.description) return // skip empty rows
+          addMetric({
+            post_id: row.post_id || '',
+            platform: row.platform || 'instagram',
+            date: normalizeDate(row.date || ''),
+            impressions: toNum(row.impressions),
+            reach: toNum(row.reach),
+            likes: toNum(row.likes),
+            comments: toNum(row.comments),
+            shares: toNum(row.shares),
+            saves: toNum(row.saves),
+            follows: toNum(row.follows),
+            link_clicks: toNum(row.link_clicks),
+            duration_sec: toNum(row.duration_sec),
+            description: (row.description || '').trim(),
+            link: (row.link || '').trim(),
+            post_type: normalizePostType(row.post_type),
+            client: (row.client || '').trim(),
+          })
+          count++
+        })
+        setImportCount(count)
+        setTimeout(() => setImportCount(null), 4000)
+      },
+    })
+    e.target.value = ''
+  }
 
   // Form state
   const [selectedClient, setSelectedClient] = useState('')
@@ -481,6 +575,62 @@ export default function ClientReports() {
 
           {/* Form */}
           <div className="card p-6 space-y-5">
+            {/* Import CSV */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+              <Upload size={16} className="text-blue-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-700">Importar dados de posts</p>
+                <p className="text-[10px] text-gray-400">CSV do Instagram, LinkedIn ou TikTok com legenda/descrição para extrair hashtags e clientes</p>
+              </div>
+              <button
+                onClick={() => csvRef.current?.click()}
+                className="btn-secondary text-xs shrink-0"
+              >
+                <Upload size={12} /> Upload CSV
+              </button>
+              <input ref={csvRef} type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
+            </div>
+            {importCount !== null && (
+              <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+                <Check size={12} /> {importCount} posts importados com sucesso!
+              </div>
+            )}
+
+            {/* Data diagnostic */}
+            {enriched.length > 0 && (
+              <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 space-y-2">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Dados disponíveis</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600">
+                    {enriched.length} posts no total
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600">
+                    {enriched.filter(m => m.description).length} com legenda
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600">
+                    {enriched.filter(m => m.client).length} com cliente
+                  </span>
+                </div>
+                {existingClients.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-[10px] text-gray-400 mr-1">Hashtags/clientes detectados:</span>
+                    {existingClients.slice(0, 20).map(c => (
+                      <span key={c} className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${
+                        c.startsWith('#') ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-blue-50 text-blue-600 border-blue-200'
+                      }`}>
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {existingClients.length === 0 && enriched.length > 0 && (
+                  <p className="text-[10px] text-amber-500 flex items-center gap-1">
+                    <AlertCircle size={10} /> Nenhuma hashtag detectada nas legendas. Importe um CSV que inclua a coluna "Descrição" ou "Legenda" com as # dos posts.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Client selector */}
             <div>
               <label className="label">Cliente / Projeto / Hashtag</label>
@@ -595,7 +745,7 @@ export default function ClientReports() {
             <div className="card p-8 text-center">
               <BarChart2 size={36} className="text-gray-200 mx-auto mb-3" />
               <h3 className="text-sm font-semibold text-gray-700 mb-1">Sem dados de métricas</h3>
-              <p className="text-xs text-gray-400 mb-4">Importe métricas no Analytics para gerar relatórios de clientes.</p>
+              <p className="text-xs text-gray-400 mb-4">Use o botão "Upload CSV" acima para importar os dados do Instagram/LinkedIn/TikTok, ou importe via Analytics.</p>
               <button onClick={() => navigate('/analytics')} className="btn-primary mx-auto">
                 Ir para Analytics
               </button>
