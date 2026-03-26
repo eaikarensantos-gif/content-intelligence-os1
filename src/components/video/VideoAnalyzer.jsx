@@ -2033,10 +2033,18 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {/* ── ANALISADOR DE COMENTÁRIOS ─────────────────────────────────── */}
-          {activeTab === 'comentarios' && (
-            <CommentAnalyzer />
-          )}
+        </div>
+      )}
+
+      {/* ── ANALISADOR DE COMENTÁRIOS (sempre acessível) ────────────────── */}
+      {!loading && !analysis && (
+        <div className="mt-6">
+          <CommentAnalyzer />
+        </div>
+      )}
+      {analysis && !loading && activeTab === 'comentarios' && (
+        <div className="mt-4">
+          <CommentAnalyzer />
         </div>
       )}
     </div>
