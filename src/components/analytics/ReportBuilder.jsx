@@ -4,7 +4,9 @@ import {
   TrendingUp, Eye, Heart, Share2, Bookmark, Trophy,
   AlertCircle, Printer, ChevronRight, BarChart2,
   CheckCircle, ArrowUpRight, ArrowDownRight, Minus,
+  Hash, X, Filter, Upload, Key, Check,
 } from 'lucide-react'
+import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
 
@@ -249,21 +251,154 @@ function ReportPreview({ report, clientName, periodLabel, metrics, enriched }) {
   )
 }
 
+// ── CSV normalizer (same logic as MetricsForm) ──
+const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+const COL_MAP = {
+  'post_id': 'post_id', 'post id': 'post_id',
+  'data': 'date', 'date': 'date', 'publish time': 'date', 'horario de publicacao': 'date',
+  'publish_time': 'date', 'data de publicacao': 'date', 'published at': 'date',
+  'plataforma': 'platform', 'platform': 'platform',
+  'post type': 'post_type', 'tipo de post': 'post_type', 'tipo': 'post_type', 'post_type': 'post_type',
+  'description': 'description', 'descricao': 'description', 'legenda': 'description',
+  'permalink': 'link', 'link permanente': 'link', 'link': 'link', 'url': 'link',
+  'duracao (s)': 'duration_sec', 'duracao': 'duration_sec', 'duration': 'duration_sec', 'duration (s)': 'duration_sec',
+  'visualizacoes': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions', 'views': 'impressions',
+  'alcance': 'reach', 'reach': 'reach',
+  'curtidas': 'likes', 'likes': 'likes',
+  'coment.': 'comments', 'comentarios': 'comments', 'comments': 'comments', 'replies': 'comments', 'respostas': 'comments',
+  'compart.': 'shares', 'compartilhamentos': 'shares', 'shares': 'shares',
+  'seguimentos': 'follows', 'follows': 'follows', 'seguidores': 'follows',
+  'salvam.': 'saves', 'salvamentos': 'saves', 'saves': 'saves',
+  'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks',
+  'cliente': 'client', 'client': 'client', 'projeto': 'client', 'marca': 'client',
+  'navegacao': 'navigation', 'visitas ao perfil': 'profile_visits', 'toques em figurinhas': 'sticker_taps',
+  'comentario de dados': 'data_comment',
+}
+const toNum = (v = '') => Number(String(v).replace(/[^0-9]/g, '')) || 0
+const normalizePostType = (raw = '') => {
+  const v = raw.toLowerCase().trim()
+  if (v.includes('story') || v.includes('storie')) return 'story'
+  if (v.includes('reel')) return 'reel'
+  if (v.includes('carousel') || v.includes('carrossel')) return 'carousel'
+  if (v.includes('video')) return 'video'
+  return v || ''
+}
+const normalizeDate = (raw = '') => {
+  const s = raw.trim()
+  if (!s) return ''
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  const slash = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/)
+  if (slash) {
+    if (Number(slash[1]) > 12) return `${slash[3]}-${slash[2].padStart(2,'0')}-${slash[1].padStart(2,'0')}`
+    return `${slash[3]}-${slash[1].padStart(2,'0')}-${slash[2].padStart(2,'0')}`
+  }
+  const d = new Date(s)
+  if (!isNaN(d)) return d.toISOString().split('T')[0]
+  return ''
+}
+const normalizeRow = (raw) => {
+  const row = {}
+  for (const [key, val] of Object.entries(raw)) {
+    const clean = stripAccents(key.toLowerCase().trim())
+    const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
+    if (!mapped) continue
+    // Don't let "Data" = "Total" overwrite a good date from "Horário de publicação"
+    if (mapped === 'date' && row.date && !normalizeDate(val)) continue
+    row[mapped] = val
+  }
+  return {
+    post_id: row.post_id || '', platform: row.platform ? row.platform.toLowerCase() : 'instagram',
+    date: normalizeDate(row.date || ''), impressions: toNum(row.impressions), reach: toNum(row.reach),
+    likes: toNum(row.likes), comments: toNum(row.comments), shares: toNum(row.shares),
+    saves: toNum(row.saves), follows: toNum(row.follows), link_clicks: toNum(row.link_clicks),
+    duration_sec: toNum(row.duration_sec), description: (row.description || '').trim(),
+    link: (row.link || '').trim(), post_type: normalizePostType(row.post_type),
+    client: (row.client || '').trim(),
+  }
+}
+
 export default function ReportBuilder() {
   const metrics = useStore((s) => s.metrics)
+  const addMetric = useStore((s) => s.addMetric)
   const clients = useStore((s) => s.clients)
   const enriched = metrics.map(enrichMetric)
+  const csvRef = useRef(null)
 
   const [clientName, setClientName] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [selectedTags, setSelectedTags] = useState([])
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-anthropic-key') || '')
+  const [showKeyInput, setShowKeyInput] = useState(false)
+
+  // Extrair hashtags e @ menções das descrições
+  const { allHashtags, allMentions } = (() => {
+    const tagCount = {}
+    const mentionCount = {}
+    enriched.forEach(m => {
+      const desc = m.description || ''
+      // Hashtags
+      const tags = desc.match(/#[\w\u00C0-\u024Façãõéêíóôú]+/gi) || []
+      tags.forEach(t => {
+        const lower = t.toLowerCase()
+        tagCount[lower] = (tagCount[lower] || 0) + 1
+      })
+      // @ menções
+      const mentions = desc.match(/@[\w._]+/gi) || []
+      mentions.forEach(m2 => {
+        const lower = m2.toLowerCase()
+        mentionCount[lower] = (mentionCount[lower] || 0) + 1
+      })
+    })
+    return {
+      allHashtags: Object.entries(tagCount)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([tag, count]) => ({ tag, count })),
+      allMentions: Object.entries(mentionCount)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([mention, count]) => ({ mention, count })),
+    }
+  })()
+
+  // Extrair clientes únicos do campo client
+  const allClients = (() => {
+    const clientCount = {}
+    enriched.forEach(m => {
+      const c = (m.client || '').trim()
+      if (c) clientCount[c] = (clientCount[c] || 0) + 1
+    })
+    return Object.entries(clientCount)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }))
+  })()
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    )
+  }
 
   const filtered = enriched.filter(m => {
     if (dateFrom && m.date < dateFrom) return false
     if (dateTo && m.date > dateTo) return false
+    // Filtrar por cliente digitado
+    if (clientName.trim()) {
+      const search = clientName.trim().toLowerCase()
+      const matchClient = (m.client || '').toLowerCase().includes(search)
+      const matchDesc = (m.description || '').toLowerCase().includes(search)
+      const matchTag = (m.description || '').toLowerCase().includes('#' + search)
+      if (!matchClient && !matchDesc && !matchTag) return false
+    }
+    // Filtrar por hashtags selecionadas
+    if (selectedTags.length > 0) {
+      const desc = (m.description || '').toLowerCase()
+      const hasAny = selectedTags.some(tag => desc.includes(tag))
+      if (!hasAny) return false
+    }
     return true
   })
 
@@ -282,8 +417,7 @@ export default function ReportBuilder() {
     setReport(null)
 
     try {
-      const apiKey = localStorage.getItem('cio-anthropic-key')
-      if (!apiKey) throw new Error('Configure sua API key nas configurações.')
+      if (!apiKey) throw new Error('Configure sua API key clicando no ícone de chave acima.')
 
       const totalImpressions = filtered.reduce((s, m) => s + m.impressions, 0)
       const totalEngagement = filtered.reduce((s, m) => s + m.engagement, 0)
@@ -353,24 +487,121 @@ export default function ReportBuilder() {
       {/* Config panel */}
       {!report && (
         <div className="card p-6 space-y-5">
-          <div className="flex items-center gap-3 mb-1">
-            <FileText size={18} className="text-orange-500" />
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">Gerador de Relatório</h3>
-              <p className="text-xs text-gray-400">Crie relatórios visuais prontos para compartilhar com clientes ou equipe</p>
+          <div className="flex items-center justify-between gap-3 mb-1">
+            <div className="flex items-center gap-3">
+              <FileText size={18} className="text-orange-500" />
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">Gerador de Relatório</h3>
+                <p className="text-xs text-gray-400">Crie relatórios visuais prontos para compartilhar com clientes ou equipe</p>
+              </div>
             </div>
+            <div>
+              <input type="file" ref={csvRef} accept=".csv" className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  Papa.parse(file, {
+                    header: true, skipEmptyLines: true,
+                    complete: ({ data }) => {
+                      const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                      rows.forEach(row => addMetric(row))
+                    },
+                  })
+                  e.target.value = ''
+                }}
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowKeyInput(!showKeyInput)}
+                  className={`p-2 rounded-xl border transition-colors ${apiKey ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-red-200 bg-red-50 text-red-500'}`}
+                  title={apiKey ? 'API Key configurada' : 'Configurar API Key'}
+                >
+                  <Key size={14} />
+                </button>
+                <button
+                  onClick={() => csvRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm"
+                >
+                  <Upload size={14} /> Importar CSV
+                </button>
+              </div>
+            </div>
+            {showKeyInput && (
+              <div className="flex items-center gap-2 mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <Key size={14} className="text-gray-400 shrink-0" />
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-ant-api03-..."
+                  className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-orange-300"
+                />
+                <button
+                  onClick={() => {
+                    localStorage.setItem('cio-anthropic-key', apiKey)
+                    setShowKeyInput(false)
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"
+                >
+                  <Check size={12} /> Salvar
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-3">
-              <label className="label">Cliente / Projeto</label>
-              <input
-                type="text"
-                className="input"
-                placeholder="Nome do cliente ou projeto..."
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-              />
+              <label className="label">Cliente / Projeto (filtra por nome, descrição ou hashtag)</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Digite nome do cliente, hashtag ou palavra-chave..."
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                />
+                {clientName && (
+                  <button
+                    onClick={() => setClientName('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="label">Período Rápido</label>
+              <div className="flex gap-1.5">
+                {[
+                  { label: '28d', days: 28 },
+                  { label: '60d', days: 60 },
+                  { label: '90d', days: 90 },
+                ].map(({ label, days }) => {
+                  const to = new Date()
+                  const from = new Date()
+                  from.setDate(from.getDate() - days)
+                  const fromStr = from.toISOString().slice(0, 10)
+                  const toStr = to.toISOString().slice(0, 10)
+                  const isActive = dateFrom === fromStr && dateTo === toStr
+                  return (
+                    <button
+                      key={days}
+                      onClick={() => {
+                        if (isActive) { setDateFrom(''); setDateTo('') }
+                        else { setDateFrom(fromStr); setDateTo(toStr) }
+                      }}
+                      className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                        isActive
+                          ? 'bg-orange-500 text-white border-orange-500'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <div>
               <label className="label">Data Inicial</label>
@@ -388,6 +619,161 @@ export default function ReportBuilder() {
             </div>
           </div>
 
+          {/* @ Menções detectadas (marcas/clientes) */}
+          {allMentions.length > 0 && (
+            <div className="space-y-2">
+              <label className="label flex items-center gap-1.5">
+                <User size={12} className="text-blue-500" />
+                Marcações detectadas — clique para filtrar
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 rounded-xl bg-gray-50 border border-gray-100">
+                {allMentions.map(({ mention, count }) => (
+                  <button
+                    key={mention}
+                    onClick={() => toggleTag(mention)}
+                    className={`text-[11px] px-2 py-1 rounded-full border transition-all ${
+                      selectedTags.includes(mention)
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    {mention} <span className="opacity-60">({count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Hashtags detectadas */}
+          {allHashtags.length > 0 && (
+            <div className="space-y-2">
+              <label className="label flex items-center gap-1.5">
+                <Hash size={12} className="text-orange-500" />
+                Hashtags detectadas — clique para filtrar
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 rounded-xl bg-gray-50 border border-gray-100">
+                {allHashtags.map(({ tag, count }) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className={`text-[11px] px-2 py-1 rounded-full border transition-all ${
+                      selectedTags.includes(tag)
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    {tag} <span className="opacity-60">({count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Filtros ativos */}
+          {selectedTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider">Filtros ativos:</span>
+              {selectedTags.map(tag => (
+                <span key={tag} className={`text-[11px] px-2 py-1 rounded-full flex items-center gap-1 ${
+                  tag.startsWith('@') ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                }`}>
+                  {tag}
+                  <button onClick={() => toggleTag(tag)} className="hover:opacity-60"><X size={10} /></button>
+                </span>
+              ))}
+              <button
+                onClick={() => setSelectedTags([])}
+                className="text-[10px] text-gray-400 hover:text-gray-600 underline"
+              >
+                Limpar todos
+              </button>
+            </div>
+          )}
+
+          {/* Clientes cadastrados (de Publicidade) */}
+          {clients.length > 0 && (
+            <div className="space-y-2">
+              <label className="label flex items-center gap-1.5">
+                <User size={12} className="text-blue-500" />
+                Seus Clientes (cadastrados em Publicidade)
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map(c => {
+                  const isActive = clientName.trim().toLowerCase() === c.name.toLowerCase()
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        setClientName(isActive ? '' : c.name)
+                        // Também ativa as hashtags associadas ao cliente
+                        if (!isActive && c.hashtags) {
+                          const tags = c.hashtags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
+                          setSelectedTags(tags)
+                        } else {
+                          setSelectedTags([])
+                        }
+                      }}
+                      className={`text-[11px] px-2.5 py-1.5 rounded-full border transition-all flex items-center gap-1.5 ${
+                        isActive
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                        style={{ backgroundColor: c.color || '#3b82f6' }}>
+                        {c.name.charAt(0).toUpperCase()}
+                      </span>
+                      {c.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Clientes do campo client dos dados */}
+          {allClients.length > 0 && (
+            <div className="space-y-2">
+              <label className="label flex items-center gap-1.5">
+                <User size={12} className="text-emerald-500" />
+                Clientes (detectados nos dados)
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {allClients.map(({ name, count }) => (
+                  <button
+                    key={name}
+                    onClick={() => setClientName(name)}
+                    className={`text-[11px] px-2 py-1 rounded-full border transition-all ${
+                      clientName.trim().toLowerCase() === name.toLowerCase()
+                        ? 'bg-emerald-500 text-white border-emerald-500'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-300'
+                    }`}
+                  >
+                    {name} <span className="opacity-60">({count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dica se não tem hashtags nem menções */}
+          {allHashtags.length === 0 && allMentions.length === 0 && allClients.length === 0 && enriched.length > 0 && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-xs text-amber-700 flex items-start gap-2">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Nenhuma hashtag, menção ou cliente detectado</p>
+                <p className="text-amber-600 mt-0.5">Certifique-se de que seus dados CSV incluem a coluna de descrição/legenda com hashtags e @menções.</p>
+              </div>
+            </div>
+          )}
+
+          {enriched.length === 0 && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-xs text-amber-700 flex items-start gap-2">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <p>Nenhum dado importado. Use o botão <strong>"Importar CSV"</strong> acima para subir seus dados do Instagram/Meta.</p>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
             <button
               onClick={handleGenerate}
@@ -403,6 +789,11 @@ export default function ReportBuilder() {
             {!canGenerate && (
               <span className="text-xs text-amber-500 flex items-center gap-1">
                 <AlertCircle size={12} /> Mínimo 2 posts no período selecionado
+              </span>
+            )}
+            {selectedTags.length > 0 && (
+              <span className="text-xs text-orange-500 flex items-center gap-1">
+                <Filter size={12} /> {selectedTags.length} filtro(s) ativo(s)
               </span>
             )}
           </div>

@@ -252,7 +252,7 @@ Responda APENAS com JSON válido:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
       system: 'You are a world-class Brazilian content strategist. Analyze content performance data and extract actionable patterns. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
       messages: [{ role: 'user', content: prompt }],

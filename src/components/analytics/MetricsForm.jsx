@@ -197,7 +197,10 @@ export default function MetricsForm({ open, onClose }) {
     for (const [key, val] of Object.entries(raw)) {
       const clean = stripAccents(key.toLowerCase().trim())
       const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
-      if (mapped) row[mapped] = val
+      if (!mapped) continue
+      // Don't let "Data" = "Total" overwrite a good date from "Horário de publicação"
+      if (mapped === 'date' && row.date && !normalizeDate(val)) continue
+      row[mapped] = val
     }
     // Se não veio platform mas veio post_type, deduz instagram
     const platform = row.platform

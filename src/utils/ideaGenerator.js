@@ -128,7 +128,7 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 6000,
       system: 'You are a sharp, curious Brazilian content creator who observes real cultural patterns. Write in natural, observational Brazilian Portuguese. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. NEVER use clickbait like "isso vai mudar tudo" or "ninguém te conta isso". PREFER: "Tenho notado uma coisa curiosa...", "A parte boa é que...", "Isso me surpreendeu...", "Descobri sem querer...". Respond ONLY with a valid JSON object. No markdown, no code blocks.',
       messages: [{ role: 'user', content: prompt }],
@@ -221,7 +221,7 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 5000,
       system: 'You are a sharp, curious Brazilian content creator. Write in natural, observational Brazilian Portuguese. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. NEVER use clickbait like "isso vai mudar tudo" or "ninguém te conta isso". PREFER: "Tenho notado...", "A parte boa é que...", "Isso me surpreendeu...", "O mais interessante é...". Respond ONLY with a valid JSON array. No markdown, no code blocks, no explanation text before or after.',
       messages: [{ role: 'user', content: prompt }],

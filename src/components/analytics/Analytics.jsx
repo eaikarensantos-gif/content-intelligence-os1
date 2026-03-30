@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -9,14 +9,15 @@ import {
   Trophy, Trash2, Download, AlertTriangle, ExternalLink, Film,
   Image, Play, Layers, ChevronUp, ChevronDown, ChevronsUpDown,
   UserPlus, Zap, Target, Copy, Wand2, ArrowUpRight, ArrowDownRight,
-  Minus, Crown, AlertCircle, CheckCircle, Search, Filter, X,
+  Minus, Crown, AlertCircle, CheckCircle, Search, Filter, X, Upload, RefreshCw,
 } from 'lucide-react'
 import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
-import ReportBuilder from './ReportBuilder'
+import WeeklyPlanner from './WeeklyPlanner'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
+import { normalizeRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 
 const COLORS = ['#f97316', '#fb923c', '#2563eb', '#0891b2', '#059669', '#d97706']
@@ -135,7 +136,7 @@ const TABS = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
   { id: 'insights', label: 'Insights IA' },
-  { id: 'exportar', label: 'Relatório' },
+  { id: 'planner', label: 'Próxima Semana' },
 ]
 
 // ── Post Card for the new Posts tab ─────────────────────────────────────────
@@ -278,10 +279,12 @@ function ZoneHeader({ icon: Icon, title, count, color, description, collapsed, o
 export default function Analytics() {
   const metrics = useStore((s) => s.metrics)
   const posts = useStore((s) => s.posts)
+  const addMetric = useStore((s) => s.addMetric)
   const deleteMetric = useStore((s) => s.deleteMetric)
   const addIdea = useStore((s) => s.addIdea)
   const clearMetrics = useStore((s) => s.clearMetrics)
   const navigate = useNavigate()
+  const csvRef = useRef(null)
 
   const [confirmClear, setConfirmClear] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
@@ -831,6 +834,36 @@ export default function Analytics() {
                   </button>
                 )}
                 <span className="text-xs text-gray-400 ml-auto">{totalFiltered} resultado{totalFiltered !== 1 ? 's' : ''}</span>
+                <input type="file" ref={csvRef} accept=".csv" className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    Papa.parse(file, {
+                      header: true, skipEmptyLines: true,
+                      complete: ({ data }) => {
+                        const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                        rows.forEach(row => addMetric(row))
+                      },
+                    })
+                    e.target.value = ''
+                  }}
+                />
+                <button
+                  onClick={() => csvRef.current?.click()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  <Upload size={12} /> Importar CSV
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm('Isso vai limpar todos os dados atuais e permitir reimportar. Continuar?')) {
+                      clearMetrics()
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <RefreshCw size={12} /> Atualizar Dados
+                </button>
               </div>
             </div>
 
@@ -940,8 +973,8 @@ export default function Analytics() {
       {/* ===== INSIGHTS IA ===== */}
       {tab === 'insights' && <AIInsights />}
 
-      {/* ===== RELATÓRIO ===== */}
-      {tab === 'exportar' && <ReportBuilder />}
+      {/* ===== PLANEJADOR SEMANAL ===== */}
+      {tab === 'planner' && <WeeklyPlanner />}
 
       <MetricsForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>

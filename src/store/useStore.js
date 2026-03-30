@@ -18,6 +18,8 @@ const useStore = create(
       thoughtCaptures: [],
       tasks: [],
       ads: [],
+      pricingProducts: [],
+      proposals: [],
       favorites: [],
       favoritesOpen: false,
 
@@ -261,6 +263,15 @@ const useStore = create(
       deleteAd: (id) =>
         set((s) => ({ ads: s.ads.filter((a) => a.id !== id) })),
 
+      // ── Pricing / Propostas ─────────────────────────────────
+      setPricingProducts: (products) => set({ pricingProducts: products }),
+      addProposal: (proposal) =>
+        set((s) => ({
+          proposals: [...s.proposals, { id: uuidv4(), created_at: new Date().toISOString(), ...proposal }],
+        })),
+      deleteProposal: (id) =>
+        set((s) => ({ proposals: s.proposals.filter((p) => p.id !== id) })),
+
       // ── Leads ────────────────────────────────────────────────
       leads: [],
 
@@ -340,6 +351,8 @@ const useStore = create(
         archetypes: s.archetypes,
         hybridArchetypes: s.hybridArchetypes,
         favorites: s.favorites,
+        pricingProducts: s.pricingProducts,
+        proposals: s.proposals,
         creatorProfile: s.creatorProfile,
       }),
     }

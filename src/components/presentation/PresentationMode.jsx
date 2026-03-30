@@ -124,7 +124,7 @@ Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
       system: 'You are a Brazilian content and presentation coach. You write in natural spoken Portuguese. Everything must sound like someone TALKING naturally. Your tone adapts to the goal: brand content = enthusiastic and genuine, reflective content = curious and intelligent (never pessimistic), educational = clear and practical. You NEVER default to melancholic or defeatist tone. Respond ONLY with valid JSON.',
       messages: [{ role: 'user', content: prompt }],

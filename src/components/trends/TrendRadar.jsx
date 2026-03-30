@@ -212,7 +212,7 @@ Respond with ONLY a valid JSON object, no markdown, no code blocks:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
       system: 'You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.',
       messages: [{ role: 'user', content: prompt }],

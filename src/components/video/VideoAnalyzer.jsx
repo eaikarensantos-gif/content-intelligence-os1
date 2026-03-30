@@ -149,7 +149,7 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 6000,
       system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown. STRICT RULE: When given a real transcript, every quote in hook.text, promise.text, cta.text, patterns[].example, retention[].example must be an EXACT verbatim quote from that transcript — never paraphrase, never invent. When given video frames, describe only what you actually see in the images. NEVER fabricate quotes, invented sentences, or fictional examples. If a field requires a quote and you cannot find one in the data, use null. Your response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content }],
@@ -349,7 +349,7 @@ Return ONLY this JSON:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
       system: 'You are a scriptwriting API. Respond with valid JSON only. Start with { end with }.',
       messages: [{ role: 'user', content: prompt }],

@@ -32,6 +32,7 @@ const NAV_GROUPS = [
     children: [
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade' },
+      { to: '/pricing', icon: FileText, label: 'Precificacao' },
       { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
       { to: '/archetypes', icon: Shapes, label: 'Arquétipos' },
     ],

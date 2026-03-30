@@ -4,10 +4,11 @@ import {
   Trash2, X, Check, Filter, Search, Eye, Target, Users,
   ArrowUpRight, ArrowDownRight, Minus, Clock, CheckCircle2,
   AlertCircle, ChevronDown, ExternalLink, UserPlus, Phone,
-  MessageSquare, Star, XCircle, ArrowRight, Mail,
+  MessageSquare, Star, XCircle, ArrowRight, Mail, Building2, Hash, FileText,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
+import ReportBuilder from '../analytics/ReportBuilder'
 
 /* ── Constants ──────────────────────────────────────────── */
 const STATUSES = [
@@ -522,7 +523,12 @@ export default function AdManager() {
   const updateLead = useStore(s => s.updateLead)
   const deleteLead = useStore(s => s.deleteLead)
 
-  const [tab, setTab] = useState('campaigns') // 'campaigns' | 'leads'
+  const clients = useStore(s => s.clients) || []
+  const addClient = useStore(s => s.addClient)
+  const updateClient = useStore(s => s.updateClient)
+  const deleteClient = useStore(s => s.deleteClient)
+
+  const [tab, setTab] = useState('campaigns') // 'campaigns' | 'leads' | 'clients' | 'reports'
   const [showForm, setShowForm] = useState(false)
   const [editingAd, setEditingAd] = useState(null)
   const [showLeadForm, setShowLeadForm] = useState(false)
@@ -531,6 +537,9 @@ export default function AdManager() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterPlatform, setFilterPlatform] = useState('all')
   const [filterStage, setFilterStage] = useState('all')
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientHashtags, setNewClientHashtags] = useState('')
+  const [editingClient, setEditingClient] = useState(null)
 
   // ── Campaign handlers ──
   const handleSaveAd = (data) => {
@@ -583,7 +592,7 @@ export default function AdManager() {
   return (
     <div className="p-4 sm:p-6 space-y-5">
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-md">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-lg">
         <button onClick={() => setTab('campaigns')}
           className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
             tab === 'campaigns' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
@@ -596,6 +605,19 @@ export default function AdManager() {
           {activeLeads > 0 && (
             <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{activeLeads}</span>
           )}
+        </button>
+        <button onClick={() => setTab('clients')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            tab === 'clients' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+          <Building2 size={14} /> Clientes
+          {clients.length > 0 && (
+            <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{clients.length}</span>
+          )}
+        </button>
+        <button onClick={() => setTab('reports')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            tab === 'reports' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+          <FileText size={14} /> Relatórios
         </button>
       </div>
 
@@ -751,6 +773,136 @@ export default function AdManager() {
           )}
         </>
       )}
+
+      {/* ════════════════ CLIENTS TAB ════════════════ */}
+      {tab === 'clients' && (
+        <>
+          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Building2 size={16} className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">Cadastro de Clientes</h3>
+                <p className="text-xs text-gray-400">Cadastre seus clientes e hashtags associadas. Eles aparecerão automaticamente no Gerador de Relatório.</p>
+              </div>
+            </div>
+
+            {/* Add client form */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome do Cliente</label>
+                <input
+                  type="text"
+                  value={editingClient ? editingClient.name : newClientName}
+                  onChange={e => editingClient ? setEditingClient({ ...editingClient, name: e.target.value }) : setNewClientName(e.target.value)}
+                  placeholder="Ex: FIAP, Samsung, Glamour..."
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags / @ (separar por vírgula)</label>
+                <input
+                  type="text"
+                  value={editingClient ? editingClient.hashtags : newClientHashtags}
+                  onChange={e => editingClient ? setEditingClient({ ...editingClient, hashtags: e.target.value }) : setNewClientHashtags(e.target.value)}
+                  placeholder="Ex: #publi, @fiapoficial, #Fiap"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300"
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                {editingClient ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (editingClient.name.trim()) {
+                          updateClient(editingClient.id, { name: editingClient.name.trim(), hashtags: editingClient.hashtags.trim() })
+                          setEditingClient(null)
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+                    >
+                      <Check size={14} /> Salvar
+                    </button>
+                    <button
+                      onClick={() => setEditingClient(null)}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (newClientName.trim()) {
+                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim() })
+                        setNewClientName('')
+                        setNewClientHashtags('')
+                      }
+                    }}
+                    disabled={!newClientName.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Plus size={14} /> Adicionar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Client list */}
+          {clients.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <Building2 size={28} className="text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-500">Nenhum cliente cadastrado</p>
+              <p className="text-xs text-gray-400 mt-1">Adicione seus clientes acima para facilitar a geração de relatórios</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map(client => (
+                <div key={client.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-start justify-between gap-3 group hover:border-blue-200 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
+                        style={{ backgroundColor: client.color || '#3b82f6' }}>
+                        {client.name.charAt(0).toUpperCase()}
+                      </div>
+                      <p className="text-sm font-bold text-gray-900 truncate">{client.name}</p>
+                    </div>
+                    {client.hashtags && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {client.hashtags.split(',').map((tag, i) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                            {tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-300 mt-2">
+                      Criado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={() => setEditingClient({ id: client.id, name: client.name, hashtags: client.hashtags || '' })}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                      <Edit3 size={13} />
+                    </button>
+                    <button onClick={() => { if (confirm(`Remover ${client.name}?`)) deleteClient(client.id) }}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ════════════════ REPORTS TAB ════════════════ */}
+      {tab === 'reports' && <ReportBuilder />}
 
       {/* Form modals */}
       {showForm && (

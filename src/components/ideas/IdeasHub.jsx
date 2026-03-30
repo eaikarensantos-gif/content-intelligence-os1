@@ -52,10 +52,52 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
   const tags = idea.tags || []
 
   return (
-    <div className="space-y-0">
-      {/* Tags FORA do card — aparecem acima da borda */}
+    <div
+      className={`bg-white border rounded-xl p-3 space-y-2 transition-all cursor-pointer relative group ${
+        isDragging
+          ? 'border-orange-400 shadow-lg shadow-orange-200/50 rotate-1 scale-105'
+          : 'border-gray-200 hover:border-orange-300'
+      }`}
+      onClick={onClick}
+    >
+      {/* Delete button — hover only */}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(idea.id) }}
+          className="absolute top-1.5 right-1.5 p-1 rounded-md opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all z-10"
+          title="Excluir ideia"
+        >
+          <Trash2 size={compact ? 10 : 11} />
+        </button>
+      )}
+
+      <div className="flex items-start gap-2">
+        {dragHandleProps && (
+          <span
+            {...dragHandleProps}
+            className="mt-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={13} />
+          </span>
+        )}
+        <p className={`text-xs font-medium text-gray-800 leading-snug flex-1 line-clamp-2 ${onDelete && !compact ? 'pr-5' : ''}`}>{idea.title}</p>
+      </div>
+
+      <div className={`flex flex-wrap gap-1 ${dragHandleProps ? 'ml-5' : ''}`}>
+        {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
+        <FormatBadge format={idea.format} />
+        {idea.content_type && idea.content_type !== 'organic' && CONTENT_TYPE_LABELS[idea.content_type] && (
+          <span className={`chip border text-[9px] ${CONTENT_TYPE_COLORS[idea.content_type]}`}>
+            {CONTENT_TYPE_LABELS[idea.content_type]}
+          </span>
+        )}
+      </div>
+
+      {/* Tags dentro do card */}
       {!compact && tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-1 pb-1">
+        <div className={`flex flex-wrap gap-1 ${dragHandleProps ? 'ml-5' : ''}`}>
           {tags.slice(0, 4).map((tag) => (
             <button
               key={tag}
@@ -70,60 +112,14 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
         </div>
       )}
 
-      {/* Card */}
-      <div
-        className={`bg-white border rounded-xl p-3 space-y-2 transition-all cursor-pointer relative group ${
-          isDragging
-            ? 'border-orange-400 shadow-lg shadow-orange-200/50 rotate-1 scale-105'
-            : 'border-gray-200 hover:border-orange-300'
-        }`}
-        onClick={onClick}
-      >
-        {/* Delete button — hover only */}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(idea.id) }}
-            className="absolute top-1.5 right-1.5 p-1 rounded-md opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all z-10"
-            title="Excluir ideia"
-          >
-            <Trash2 size={compact ? 10 : 11} />
-          </button>
+      <div className={`flex items-center justify-between ${dragHandleProps ? 'ml-5' : ''}`}>
+        <PriorityBadge priority={idea.priority} />
+        {idea.scheduled_date && (
+          <span className="flex items-center gap-1 text-[10px] text-gray-400">
+            <Calendar size={10} />
+            {idea.scheduled_date}
+          </span>
         )}
-
-        <div className="flex items-start gap-2">
-          {dragHandleProps && (
-            <span
-              {...dragHandleProps}
-              className="mt-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <GripVertical size={13} />
-            </span>
-          )}
-          <p className={`text-xs font-medium text-gray-800 leading-snug flex-1 line-clamp-2 ${onDelete && !compact ? 'pr-5' : ''}`}>{idea.title}</p>
-        </div>
-
-        <div className={`flex flex-wrap gap-1 ${dragHandleProps ? 'ml-5' : ''}`}>
-          {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
-          <FormatBadge format={idea.format} />
-          {/* Tipo de conteúdo (só mostra se não for orgânico) */}
-          {idea.content_type && idea.content_type !== 'organic' && CONTENT_TYPE_LABELS[idea.content_type] && (
-            <span className={`chip border text-[9px] ${CONTENT_TYPE_COLORS[idea.content_type]}`}>
-              {CONTENT_TYPE_LABELS[idea.content_type]}
-            </span>
-          )}
-        </div>
-
-        <div className={`flex items-center justify-between ${dragHandleProps ? 'ml-5' : ''}`}>
-          <PriorityBadge priority={idea.priority} />
-          {idea.scheduled_date && (
-            <span className="flex items-center gap-1 text-[10px] text-gray-400">
-              <Calendar size={10} />
-              {idea.scheduled_date}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   )
@@ -1106,7 +1102,14 @@ export default function IdeasHub() {
           !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-    .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+    .sort((a, b) => {
+      const dateA = a.scheduled_date || ''
+      const dateB = b.scheduled_date || ''
+      if (dateA && dateB) return dateA.localeCompare(dateB)
+      if (dateA) return -1
+      if (dateB) return 1
+      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+    })
 
   const handleSave = (data) => {
     if (editTarget?.id) updateIdea(editTarget.id, data)

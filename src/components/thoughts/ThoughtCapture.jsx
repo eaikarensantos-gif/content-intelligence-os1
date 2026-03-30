@@ -242,7 +242,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
       system: 'You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks.',
       messages: [{ role: 'user', content: prompt }],
