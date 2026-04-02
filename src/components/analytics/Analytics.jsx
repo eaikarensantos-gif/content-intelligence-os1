@@ -297,7 +297,7 @@ export default function Analytics() {
   const clearMetrics = useStore((s) => s.clearMetrics)
   const navigate = useNavigate()
   const csvRef = useRef(null)
-  const linkedinRef = useRef(null)
+  const linkedinRef = useRef(null) // LinkedIn CSV file input reference
 
   const [confirmClear, setConfirmClear] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
