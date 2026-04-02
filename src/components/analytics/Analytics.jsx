@@ -11,7 +11,7 @@ import {
   Image, Play, Layers, ChevronUp, ChevronDown, ChevronsUpDown,
   UserPlus, Zap, Target, Copy, Wand2, ArrowUpRight, ArrowDownRight,
   Minus, Crown, AlertCircle, CheckCircle, Search, Filter, X, Upload, RefreshCw,
-  MessageSquare, FileText, Calendar, Printer, ClipboardCopy,
+  MessageSquare, FileText, Calendar, Printer, ClipboardCopy, BarChart2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
@@ -1347,7 +1347,7 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                   {/* Performance por Plataforma */}
                   <div className="card p-4">
                     <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <BarChart3 size={14} className="text-blue-500" />
+                      <BarChart2 size={14} className="text-blue-500" />
                       Performance por Plataforma
                     </h4>
                     {(() => {
