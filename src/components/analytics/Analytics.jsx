@@ -138,6 +138,7 @@ const TABS = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
   { id: 'publi', label: 'Publi' },
+  { id: 'linkedin', label: 'LinkedIn' },
   { id: 'insights', label: 'Insights IA' },
   { id: 'planner', label: 'Próxima Semana' },
 ]
@@ -330,6 +331,17 @@ export default function Analytics() {
   const [publiClientLoading, setPubliClientLoading] = useState(false)
   const [publiWhatsapp, setPubliWhatsapp] = useState('')
   const [publiNotes, setPubliNotes] = useState('')
+
+  // LinkedIn tab state
+  const [linkedinData, setLinkedinData] = useState(null)
+  const [linkedinMonth, setLinkedinMonth] = useState(() => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    return `${year}-${month}`
+  })
+  const [linkedinLoading, setLinkedinLoading] = useState(false)
+  const [linkedinError, setLinkedinError] = useState(null)
 
   const enriched = metrics.map(enrichMetric)
   const timeline = timelineData(metrics)
@@ -1731,6 +1743,243 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ===== LINKEDIN ANALYTICS ===== */}
+      {tab === 'linkedin' && (() => {
+        const parseLinkedinCSV = (file) => {
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            try {
+              setLinkedinLoading(true)
+              setLinkedinError(null)
+              const text = e.target.result
+              const lines = text.split('\n').filter(l => l.trim())
+              const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+
+              const data = {
+                period: { start: null, end: null },
+                metrics: {
+                  reach: 0,
+                  impressions: 0,
+                  newFollowers: 0,
+                  totalFollowers: 0,
+                  engagementRate: 0,
+                  clicks: 0,
+                },
+                topJobs: [],
+                seniorityBreakdown: {},
+                companySize: {},
+                rawData: lines.slice(1).map(line => {
+                  const values = line.split(',').map(v => v.trim())
+                  return headers.reduce((obj, h, i) => {
+                    obj[h] = values[i] || ''
+                    return obj
+                  }, {})
+                })
+              }
+
+              // Parse metrics
+              data.rawData.forEach(row => {
+                if (row.reach) data.metrics.reach += parseInt(row.reach) || 0
+                if (row.impressions) data.metrics.impressions += parseInt(row.impressions) || 0
+                if (row['new followers']) data.metrics.newFollowers += parseInt(row['new followers']) || 0
+                if (row['total followers']) data.metrics.totalFollowers = parseInt(row['total followers']) || 0
+                if (row['engagement rate']) {
+                  const er = parseFloat(row['engagement rate'].replace('%', '')) || 0
+                  data.metrics.engagementRate = Math.max(data.metrics.engagementRate, er)
+                }
+                if (row['clicks']) data.metrics.clicks += parseInt(row['clicks']) || 0
+              })
+
+              // Parse jobs and seniority
+              const jobsMap = {}
+              const seniorityMap = {}
+              const companySizeMap = {}
+
+              data.rawData.forEach(row => {
+                if (row['job title']) {
+                  jobsMap[row['job title']] = (jobsMap[row['job title']] || 0) + 1
+                }
+                if (row['seniority level']) {
+                  seniorityMap[row['seniority level']] = (seniorityMap[row['seniority level']] || 0) + 1
+                }
+                if (row['company size']) {
+                  companySizeMap[row['company size']] = (companySizeMap[row['company size']] || 0) + 1
+                }
+              })
+
+              data.topJobs = Object.entries(jobsMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([job, count]) => ({ job, count }))
+              data.seniorityBreakdown = seniorityMap
+              data.companySize = companySizeMap
+
+              setLinkedinData(data)
+              setLinkedinLoading(false)
+            } catch (err) {
+              setLinkedinError(err.message)
+              setLinkedinLoading(false)
+            }
+          }
+          reader.readAsText(file)
+        }
+
+        const linkedinRef = useRef(null)
+        const qualifiedAudienceCount = linkedinData?.rawData?.filter(r =>
+          (r['seniority level']?.toLowerCase().includes('senior') ||
+           r['seniority level']?.toLowerCase().includes('manager') ||
+           r['job title']?.toLowerCase().includes('director') ||
+           r['job title']?.toLowerCase().includes('ceo') ||
+           r['job title']?.toLowerCase().includes('vp') ||
+           r['job title']?.toLowerCase().includes('chief'))
+        ).length || 0
+
+        const qualifiedPercentage = linkedinData?.rawData?.length ? ((qualifiedAudienceCount / linkedinData.rawData.length) * 100).toFixed(1) : 0
+
+        return (
+          <div className="space-y-4">
+            {/* Header com Upload */}
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">📊 Performance LinkedIn</h3>
+                <button
+                  onClick={() => linkedinRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  <Upload size={14} />
+                  Importar CSV
+                </button>
+              </div>
+              <input
+                ref={linkedinRef}
+                type="file"
+                accept=".csv"
+                onChange={(e) => e.target.files?.[0] && parseLinkedinCSV(e.target.files[0])}
+                className="hidden"
+              />
+              {linkedinError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                  Erro ao processar arquivo: {linkedinError}
+                </div>
+              )}
+            </div>
+
+            {linkedinData ? (
+              <>
+                {/* Métricas Principais */}
+                <div className="card p-6">
+                  <h4 className="text-sm font-bold text-gray-900 mb-4">Métricas Principais</h4>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Métrica</th>
+                        <th className="text-right py-2 px-3 font-semibold text-gray-600">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-2.5 px-3 text-gray-700">Alcance</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-blue-600">{linkedinData.metrics.reach.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-2.5 px-3 text-gray-700">Impressões</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-orange-600">{linkedinData.metrics.impressions.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-2.5 px-3 text-gray-700">Novos Seguidores</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-emerald-600">{linkedinData.metrics.newFollowers.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-2.5 px-3 text-gray-700">Total de Seguidores</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-purple-600">{linkedinData.metrics.totalFollowers.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-2.5 px-3 text-gray-700">Taxa de Engajamento</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-amber-600">{linkedinData.metrics.engagementRate.toFixed(2)}%</td>
+                      </tr>
+                      <tr className="hover:bg-gray-50">
+                        <td className="py-2.5 px-3 text-gray-700">Cliques</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-sky-600">{linkedinData.metrics.clicks.toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Perfil da Audiência */}
+                <div className="card p-6">
+                  <h4 className="text-sm font-bold text-gray-900 mb-4">👥 Perfil da Audiência (Qualificação)</h4>
+
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs text-gray-600 font-semibold uppercase mb-2">Top 3 Cargos</p>
+                      <div className="space-y-1.5">
+                        {linkedinData.topJobs.length ? (
+                          linkedinData.topJobs.map((job, i) => (
+                            <div key={i} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700">{job.job}</span>
+                              <span className="text-gray-500 font-medium">{job.count} {job.count === 1 ? 'perfil' : 'perfis'}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500">—</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="text-xs text-gray-600 font-semibold uppercase mb-2">Senioridade Dominante</p>
+                      <div className="space-y-1.5">
+                        {Object.entries(linkedinData.seniorityBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([seniority, count]) => {
+                          const pct = ((count / linkedinData.rawData.length) * 100).toFixed(1)
+                          return (
+                            <div key={seniority} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700">{seniority}</span>
+                              <span className="text-gray-500 font-medium">{pct}%</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="text-xs text-gray-600 font-semibold uppercase mb-2">Público Qualificado (Sênior + C-Level)</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="bg-emerald-600 h-2.5 rounded-full"
+                            style={{ width: `${Math.min(qualifiedPercentage, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold text-emerald-600">{qualifiedPercentage}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Insights Estratégicos */}
+                <div className="card p-6">
+                  <h4 className="text-sm font-bold text-gray-900 mb-4">💡 Insight Estratégico</h4>
+                  <div className="space-y-3 text-sm text-gray-700">
+                    <p>
+                      • Alcance de <span className="font-semibold">{linkedinData.metrics.reach.toLocaleString()}</span> usuários com <span className="font-semibold">{linkedinData.metrics.newFollowers}</span> novos seguidores indica crescimento de <span className="font-semibold">{((linkedinData.metrics.newFollowers / linkedinData.metrics.totalFollowers) * 100).toFixed(2)}%</span>.
+                    </p>
+                    <p>
+                      • Taxa de engajamento de <span className="font-semibold">{linkedinData.metrics.engagementRate.toFixed(2)}%</span> com {qualifiedPercentage}% de audiência qualificada (Sênior + C-Level).
+                    </p>
+                    <p>
+                      • Foco em <span className="font-semibold">{linkedinData.topJobs[0]?.job || '—'}</span> como público-alvo primário. Continuar alinhando conteúdo com demandas profissionais de cargos sênior.
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="card p-12 text-center">
+                <AlertTriangle size={32} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-gray-600 font-medium">Nenhum arquivo importado ainda</p>
+                <p className="text-sm text-gray-400 mt-1">Clique em "Importar CSV" para carregar dados do LinkedIn</p>
+              </div>
             )}
           </div>
         )
