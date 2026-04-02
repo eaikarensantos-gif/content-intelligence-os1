@@ -658,6 +658,151 @@ export default function Analytics() {
                 return 0
               })
 
+            const exportRawDataPDF = () => {
+              const doc = new jsPDF({ orientation: 'landscape' })
+              const pw = doc.internal.pageSize.getWidth()
+              const ph = doc.internal.pageSize.getHeight()
+              const today = new Date()
+              const dateStr = today.toLocaleDateString('pt-BR')
+              const timeStr = today.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+              // ── Cabeçalho ──
+              doc.setFillColor(234, 88, 12)
+              doc.rect(0, 0, pw, 24, 'F')
+              doc.setFillColor(180, 50, 0)
+              doc.rect(0, 20, pw, 4, 'F')
+
+              doc.setFontSize(15)
+              doc.setFont(undefined, 'bold')
+              doc.setTextColor(255, 255, 255)
+              doc.text('Dados Brutos — Relatório de Métricas', 14, 13)
+
+              doc.setFontSize(7.5)
+              doc.setFont(undefined, 'normal')
+              doc.setTextColor(255, 220, 190)
+              doc.text(`Gerado em ${dateStr} às ${timeStr}   •   ${sorted.length} ${sorted.length === 1 ? 'registro' : 'registros'}`, pw - 14, 13, { align: 'right' })
+
+              // ── Cards de resumo ──
+              const totalImp = sorted.reduce((s, m) => s + (m.impressions || 0), 0)
+              const totalEng = sorted.reduce((s, m) => s + (m.engagement || 0), 0)
+              const avgER = sorted.length ? sorted.reduce((s, m) => s + (m.engagement_rate || 0), 0) / sorted.length * 100 : 0
+              const totalLikes = sorted.reduce((s, m) => s + (m.likes || 0), 0)
+              const totalSavesSum = sorted.reduce((s, m) => s + (m.saves || 0), 0)
+
+              const cards = [
+                { label: 'Publicações', value: sorted.length.toString() },
+                { label: 'Impressões totais', value: totalImp.toLocaleString('pt-BR') },
+                { label: 'Engajamento total', value: totalEng.toLocaleString('pt-BR') },
+                { label: 'Taxa de eng. média', value: avgER.toFixed(2) + '%' },
+                { label: 'Curtidas totais', value: totalLikes.toLocaleString('pt-BR') },
+                { label: 'Salvamentos totais', value: totalSavesSum.toLocaleString('pt-BR') },
+              ]
+
+              const cardW = (pw - 28) / cards.length
+              const cardY = 28
+              const cardH = 16
+
+              cards.forEach((card, i) => {
+                const cx = 14 + i * cardW
+                doc.setFillColor(255, 248, 243)
+                doc.setDrawColor(234, 88, 12)
+                doc.setLineWidth(0.15)
+                doc.rect(cx, cardY, cardW - 3, cardH, 'FD')
+                doc.setFontSize(6.5)
+                doc.setFont(undefined, 'normal')
+                doc.setTextColor(160, 100, 60)
+                doc.text(card.label.toUpperCase(), cx + (cardW - 3) / 2, cardY + 5.5, { align: 'center' })
+                doc.setFontSize(10)
+                doc.setFont(undefined, 'bold')
+                doc.setTextColor(180, 55, 0)
+                doc.text(card.value, cx + (cardW - 3) / 2, cardY + 12, { align: 'center' })
+              })
+
+              // ── Tabela ──
+              const colDefs = [
+                { label: 'Data', w: 30, fmt: m => (m.date || '—').replace('T', ' ').slice(0, 16) },
+                { label: 'Tipo', w: 18, fmt: m => m.post_type || '—' },
+                { label: 'Plataforma', w: 22, fmt: m => m.platform || '—' },
+                { label: 'Descrição', w: 62, fmt: m => ((m.description || '—').length > 48 ? (m.description || '').slice(0, 48) + '…' : (m.description || '—')) },
+                { label: 'Impressões', w: 24, fmt: m => (m.impressions || 0).toLocaleString('pt-BR') },
+                { label: 'Alcance', w: 20, fmt: m => (m.reach || 0).toLocaleString('pt-BR') },
+                { label: 'Curtidas', w: 18, fmt: m => (m.likes || 0).toLocaleString('pt-BR') },
+                { label: 'Coment.', w: 16, fmt: m => (m.comments || 0).toString() },
+                { label: 'Compart.', w: 17, fmt: m => (m.shares || 0).toString() },
+                { label: 'Salvam.', w: 17, fmt: m => (m.saves || 0).toString() },
+                { label: 'Engaj.', w: 19, fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
+                { label: 'Taxa Eng.', w: 20, fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
+              ]
+
+              const headerH = 7
+              const rowH = 6
+              let y = cardY + cardH + 5
+
+              const drawTableHeader = () => {
+                let x = 14
+                doc.setFillColor(45, 45, 55)
+                doc.rect(14, y, pw - 28, headerH, 'F')
+                doc.setFontSize(6.5)
+                doc.setFont(undefined, 'bold')
+                doc.setTextColor(255, 255, 255)
+                colDefs.forEach(col => { doc.text(col.label, x + 2, y + 4.8); x += col.w })
+                y += headerH
+              }
+
+              drawTableHeader()
+
+              sorted.forEach((m, idx) => {
+                if (y > ph - 12) {
+                  doc.addPage()
+                  y = 14
+                  drawTableHeader()
+                }
+
+                if (idx % 2 === 0) {
+                  doc.setFillColor(250, 250, 252)
+                  doc.rect(14, y - 0.5, pw - 28, rowH, 'F')
+                }
+                if ((m.engagement_rate || 0) > 0.04) {
+                  doc.setFillColor(236, 253, 245)
+                  doc.rect(14, y - 0.5, pw - 28, rowH, 'F')
+                }
+
+                let x = 14
+                doc.setFontSize(6.5)
+                doc.setFont(undefined, 'normal')
+                colDefs.forEach(col => {
+                  if (col.key === 'er') {
+                    const er = m.engagement_rate || 0
+                    doc.setTextColor(er > 0.04 ? 5 : er > 0.02 ? 160 : 130, er > 0.04 ? 150 : er > 0.02 ? 100 : 130, er > 0.04 ? 80 : er > 0.02 ? 0 : 140)
+                  } else {
+                    doc.setTextColor(50, 50, 60)
+                  }
+                  doc.text(col.fmt(m), x + 2, y + 3.8)
+                  x += col.w
+                })
+                y += rowH
+              })
+
+              // ── Rodapé em todas as páginas ──
+              const totalPages = doc.internal.getNumberOfPages()
+              for (let p = 1; p <= totalPages; p++) {
+                doc.setPage(p)
+                doc.setFillColor(248, 248, 250)
+                doc.rect(0, ph - 9, pw, 9, 'F')
+                doc.setDrawColor(220, 220, 225)
+                doc.setLineWidth(0.2)
+                doc.line(0, ph - 9, pw, ph - 9)
+                doc.setFontSize(6.5)
+                doc.setFont(undefined, 'normal')
+                doc.setTextColor(150, 150, 160)
+                doc.text('Content Intelligence OS', 14, ph - 3.5)
+                doc.text(`Página ${p} de ${totalPages}`, pw / 2, ph - 3.5, { align: 'center' })
+                doc.text(`Exportado em ${dateStr}`, pw - 14, ph - 3.5, { align: 'right' })
+              }
+
+              doc.save(`dados_brutos_${today.toISOString().slice(0, 10)}.pdf`)
+            }
+
             return (
               <div className="card p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -699,6 +844,15 @@ export default function Analytics() {
                           title={`Exportar ${sorted.length} entradas como CSV`}
                         >
                           <Download size={12} /> Exportar CSV
+                        </button>
+                      )}
+                      {sorted.length > 0 && (
+                        <button
+                          onClick={exportRawDataPDF}
+                          className="flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 px-2 py-1 rounded hover:bg-orange-50 transition-colors"
+                          title={`Exportar ${sorted.length} entradas como PDF`}
+                        >
+                          <FileText size={12} /> Exportar PDF
                         </button>
                       )}
                       {confirmClear ? (
