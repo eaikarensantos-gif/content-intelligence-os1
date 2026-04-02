@@ -315,7 +315,7 @@ export default function Analytics() {
   const [collapsedZones, setCollapsedZones] = useState({})
   const [savedTemplates, setSavedTemplates] = useState({})
 
-  // Publi tab state
+  // Publi tab state - analytics dashboard
   const [publiMonth, setPubliMonth] = useState(() => {
     const today = new Date()
     const year = today.getFullYear()
