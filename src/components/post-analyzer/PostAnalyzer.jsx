@@ -21,7 +21,29 @@ export default function PostAnalyzer() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const jsonData = XLSX.utils.sheet_to_json(sheet)
 
-      const [year, month] = period.split('-')
+      // Extract all unique periods from data
+      const periodsMap = {}
+      jsonData.forEach(row => {
+        const rowDate = row['Data'] || row['Date']
+        if (rowDate) {
+          try {
+            const pDate = new Date(rowDate)
+            const periodKey = `${pDate.getFullYear()}-${String(pDate.getMonth() + 1).padStart(2, '0')}`
+            periodsMap[periodKey] = (periodsMap[periodKey] || 0) + 1
+          } catch {}
+        }
+      })
+
+      const availablePeriods = Object.keys(periodsMap).sort()
+      let activePeriod = period
+
+      // If selected period has no data, use the first available period
+      if (availablePeriods.length > 0 && !periodsMap[period]) {
+        activePeriod = availablePeriods[0]
+        setPeriod(activePeriod)
+      }
+
+      const [year, month] = activePeriod.split('-')
       const currentPeriod = new Date(`${year}-${month}-01`)
 
       // Parse Instagram data
@@ -69,7 +91,7 @@ export default function PostAnalyzer() {
 
       return {
         platform: 'instagram',
-        period: period,
+        period: activePeriod,
         posts: posts,
         maxER: posts.length > 0 ? Math.max(...posts.map(p => p.er)) : 0
       }
@@ -83,7 +105,29 @@ export default function PostAnalyzer() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const jsonData = XLSX.utils.sheet_to_json(sheet)
 
-      const [year, month] = period.split('-')
+      // Extract all unique periods from data
+      const periodsMap = {}
+      jsonData.forEach(row => {
+        const rowDate = row['Data de publicação']
+        if (rowDate) {
+          try {
+            const pDate = new Date(rowDate)
+            const periodKey = `${pDate.getFullYear()}-${String(pDate.getMonth() + 1).padStart(2, '0')}`
+            periodsMap[periodKey] = (periodsMap[periodKey] || 0) + 1
+          } catch {}
+        }
+      })
+
+      const availablePeriods = Object.keys(periodsMap).sort()
+      let activePeriod = period
+
+      // If selected period has no data, use the first available period
+      if (availablePeriods.length > 0 && !periodsMap[period]) {
+        activePeriod = availablePeriods[0]
+        setPeriod(activePeriod)
+      }
+
+      const [year, month] = activePeriod.split('-')
       const currentPeriod = new Date(`${year}-${month}-01`)
 
       // Parse LinkedIn data
@@ -121,7 +165,7 @@ export default function PostAnalyzer() {
 
       return {
         platform: 'linkedin',
-        period: period,
+        period: activePeriod,
         posts: posts,
         maxER: posts.length > 0 ? Math.max(...posts.map(p => p.er)) : 0
       }
