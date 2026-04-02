@@ -297,6 +297,7 @@ export default function Analytics() {
   const clearMetrics = useStore((s) => s.clearMetrics)
   const navigate = useNavigate()
   const csvRef = useRef(null)
+  const linkedinRef = useRef(null)
 
   const [confirmClear, setConfirmClear] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
@@ -1826,7 +1827,6 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
           reader.readAsText(file)
         }
 
-        const linkedinRef = useRef(null)
         const qualifiedAudienceCount = linkedinData?.rawData?.filter(r =>
           (r['seniority level']?.toLowerCase().includes('senior') ||
            r['seniority level']?.toLowerCase().includes('manager') ||
