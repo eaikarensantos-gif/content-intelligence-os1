@@ -6,9 +6,9 @@ import {
   ExternalLink, ChevronDown, ChevronUp, Eye, Heart, Share2,
   Bookmark, Users, Award, X,
 } from 'lucide-react'
-import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
+import { parseFile } from '../../utils/csvNormalizer'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -345,17 +345,17 @@ export default function ContentDNA() {
 
   const activeData = dataSource === 'csv' && csvData ? csvData : metrics
 
-  const handleCSV = (e) => {
+  const handleCSV = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: ({ data }) => {
-        setCsvData(data.map(parseCSVRow))
-        setDataSource('csv')
-      },
-    })
+    try {
+      const { data } = await parseFile(file)
+      setCsvData(data.map(parseCSVRow))
+      setDataSource('csv')
+    } catch (err) {
+      console.error(err)
+      setError('Erro ao ler arquivo: ' + err.message)
+    }
   }
 
   const startPhases = () => {
@@ -481,8 +481,8 @@ export default function ContentDNA() {
                 Colunas aceitas: Descrição, Duração (s), Horário de publicação, Tipo de post, Data, Visualizações, Alcance, Curtidas, Compartilhamentos, Seguimentos, Comentários, Salvamentos
               </p>
               <label className="btn-primary cursor-pointer inline-flex">
-                <FileText size={14} /> Escolher CSV
-                <input type="file" accept=".csv" className="hidden" onChange={handleCSV} />
+                <FileText size={14} /> Escolher arquivo
+                <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleCSV} />
               </label>
             </div>
           )}

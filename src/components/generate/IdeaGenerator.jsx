@@ -355,6 +355,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function IdeaGenerator() {
   const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
+  const bannedWords = useStore(s => s.bannedWords) || []
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
@@ -409,7 +410,7 @@ export default function IdeaGenerator() {
     const interval = setInterval(() => { i = (i + 1) % msgs.length; setLoadingMsg(msgs[i]) }, 2200)
 
     try {
-      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords)
       const regenInstruction = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
 
       const data = await generateIdeas(apiKey, {

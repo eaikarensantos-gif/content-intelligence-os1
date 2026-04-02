@@ -6,9 +6,9 @@ import {
   CheckCircle, ArrowUpRight, ArrowDownRight, Minus,
   Hash, X, Filter, Upload, Key, Check,
 } from 'lucide-react'
-import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
+import { parseFile } from '../../utils/csvNormalizer'
 
 function buildReportPrompt(data) {
   const { enriched, clientName, periodLabel, totalImpressions, avgER, totalEngagement, top5, bottom3, formatBreakdown } = data
@@ -251,75 +251,14 @@ function ReportPreview({ report, clientName, periodLabel, metrics, enriched }) {
   )
 }
 
-// ── CSV normalizer (same logic as MetricsForm) ──
-const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-const COL_MAP = {
-  'post_id': 'post_id', 'post id': 'post_id',
-  'data': 'date', 'date': 'date', 'publish time': 'date', 'horario de publicacao': 'date',
-  'publish_time': 'date', 'data de publicacao': 'date', 'published at': 'date',
-  'plataforma': 'platform', 'platform': 'platform',
-  'post type': 'post_type', 'tipo de post': 'post_type', 'tipo': 'post_type', 'post_type': 'post_type',
-  'description': 'description', 'descricao': 'description', 'legenda': 'description',
-  'permalink': 'link', 'link permanente': 'link', 'link': 'link', 'url': 'link',
-  'duracao (s)': 'duration_sec', 'duracao': 'duration_sec', 'duration': 'duration_sec', 'duration (s)': 'duration_sec',
-  'visualizacoes': 'impressions', 'impressoes': 'impressions', 'impressions': 'impressions', 'views': 'impressions',
-  'alcance': 'reach', 'reach': 'reach',
-  'curtidas': 'likes', 'likes': 'likes',
-  'coment.': 'comments', 'comentarios': 'comments', 'comments': 'comments', 'replies': 'comments', 'respostas': 'comments',
-  'compart.': 'shares', 'compartilhamentos': 'shares', 'shares': 'shares',
-  'seguimentos': 'follows', 'follows': 'follows', 'seguidores': 'follows',
-  'salvam.': 'saves', 'salvamentos': 'saves', 'saves': 'saves',
-  'cliques no link': 'link_clicks', 'link_clicks': 'link_clicks',
-  'cliente': 'client', 'client': 'client', 'projeto': 'client', 'marca': 'client',
-  'navegacao': 'navigation', 'visitas ao perfil': 'profile_visits', 'toques em figurinhas': 'sticker_taps',
-  'comentario de dados': 'data_comment',
-}
-const toNum = (v = '') => Number(String(v).replace(/[^0-9]/g, '')) || 0
-const normalizePostType = (raw = '') => {
-  const v = raw.toLowerCase().trim()
-  if (v.includes('story') || v.includes('storie')) return 'story'
-  if (v.includes('reel')) return 'reel'
-  if (v.includes('carousel') || v.includes('carrossel')) return 'carousel'
-  if (v.includes('video')) return 'video'
-  return v || ''
-}
-const normalizeDate = (raw = '') => {
-  const s = raw.trim()
-  if (!s) return ''
-  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
-  const slash = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/)
-  if (slash) {
-    if (Number(slash[1]) > 12) return `${slash[3]}-${slash[2].padStart(2,'0')}-${slash[1].padStart(2,'0')}`
-    return `${slash[3]}-${slash[1].padStart(2,'0')}-${slash[2].padStart(2,'0')}`
-  }
-  const d = new Date(s)
-  if (!isNaN(d)) return d.toISOString().split('T')[0]
-  return ''
-}
-const normalizeRow = (raw) => {
-  const row = {}
-  for (const [key, val] of Object.entries(raw)) {
-    const clean = stripAccents(key.toLowerCase().trim())
-    const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
-    if (!mapped) continue
-    // Don't let "Data" = "Total" overwrite a good date from "Horário de publicação"
-    if (mapped === 'date' && row.date && !normalizeDate(val)) continue
-    row[mapped] = val
-  }
-  return {
-    post_id: row.post_id || '', platform: row.platform ? row.platform.toLowerCase() : 'instagram',
-    date: normalizeDate(row.date || ''), impressions: toNum(row.impressions), reach: toNum(row.reach),
-    likes: toNum(row.likes), comments: toNum(row.comments), shares: toNum(row.shares),
-    saves: toNum(row.saves), follows: toNum(row.follows), link_clicks: toNum(row.link_clicks),
-    duration_sec: toNum(row.duration_sec), description: (row.description || '').trim(),
-    link: (row.link || '').trim(), post_type: normalizePostType(row.post_type),
-    client: (row.client || '').trim(),
-  }
-}
+import { normalizeRow } from '../../utils/csvNormalizer'
 
 export default function ReportBuilder() {
   const metrics = useStore((s) => s.metrics)
+  const hiddenReportTags = useStore((s) => s.hiddenReportTags)
+  const addHiddenReportTag = useStore((s) => s.addHiddenReportTag)
+  const removeHiddenReportTag = useStore((s) => s.removeHiddenReportTag)
+  const clearHiddenReportTags = useStore((s) => s.clearHiddenReportTags)
   const addMetric = useStore((s) => s.addMetric)
   const clients = useStore((s) => s.clients)
   const enriched = metrics.map(enrichMetric)
@@ -329,6 +268,7 @@ export default function ReportBuilder() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [selectedTags, setSelectedTags] = useState([])
+  const hiddenTags = hiddenReportTags
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -496,17 +436,17 @@ export default function ReportBuilder() {
               </div>
             </div>
             <div>
-              <input type="file" ref={csvRef} accept=".csv" className="hidden"
-                onChange={(e) => {
+              <input type="file" ref={csvRef} accept=".csv,.xlsx,.xls" className="hidden"
+                onChange={async (e) => {
                   const file = e.target.files?.[0]
                   if (!file) return
-                  Papa.parse(file, {
-                    header: true, skipEmptyLines: true,
-                    complete: ({ data }) => {
-                      const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
-                      rows.forEach(row => addMetric(row))
-                    },
-                  })
+                  try {
+                    const { data } = await parseFile(file)
+                    const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                    rows.forEach(row => addMetric(row))
+                  } catch (err) {
+                    console.error(err)
+                  }
                   e.target.value = ''
                 }}
               />
@@ -522,7 +462,7 @@ export default function ReportBuilder() {
                   onClick={() => csvRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm"
                 >
-                  <Upload size={14} /> Importar CSV
+                  <Upload size={14} /> Importar arquivo
                 </button>
               </div>
             </div>
@@ -627,18 +567,26 @@ export default function ReportBuilder() {
                 Marcações detectadas — clique para filtrar
               </label>
               <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 rounded-xl bg-gray-50 border border-gray-100">
-                {allMentions.map(({ mention, count }) => (
-                  <button
-                    key={mention}
-                    onClick={() => toggleTag(mention)}
-                    className={`text-[11px] px-2 py-1 rounded-full border transition-all ${
-                      selectedTags.includes(mention)
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                    }`}
-                  >
-                    {mention} <span className="opacity-60">({count})</span>
-                  </button>
+                {allMentions.filter(m => !hiddenTags.includes(m.mention)).map(({ mention, count }) => (
+                  <div key={mention} className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => toggleTag(mention)}
+                      className={`text-[11px] px-2 py-1 rounded-l-full border transition-all ${
+                        selectedTags.includes(mention)
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {mention} <span className="opacity-60">({count})</span>
+                    </button>
+                    <button
+                      onClick={() => { addHiddenReportTag(mention); setSelectedTags(prev => prev.filter(t => t !== mention)) }}
+                      className="text-[10px] px-1 py-1 rounded-r-full border border-l-0 border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Remover tag"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -652,18 +600,26 @@ export default function ReportBuilder() {
                 Hashtags detectadas — clique para filtrar
               </label>
               <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 rounded-xl bg-gray-50 border border-gray-100">
-                {allHashtags.map(({ tag, count }) => (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    className={`text-[11px] px-2 py-1 rounded-full border transition-all ${
-                      selectedTags.includes(tag)
-                        ? 'bg-orange-500 text-white border-orange-500'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
-                    }`}
-                  >
-                    {tag} <span className="opacity-60">({count})</span>
-                  </button>
+                {allHashtags.filter(h => !hiddenTags.includes(h.tag)).map(({ tag, count }) => (
+                  <div key={tag} className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => toggleTag(tag)}
+                      className={`text-[11px] px-2 py-1 rounded-l-full border transition-all ${
+                        selectedTags.includes(tag)
+                          ? 'bg-orange-500 text-white border-orange-500'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      {tag} <span className="opacity-60">({count})</span>
+                    </button>
+                    <button
+                      onClick={() => { addHiddenReportTag(tag); setSelectedTags(prev => prev.filter(t => t !== tag)) }}
+                      className="text-[10px] px-1 py-1 rounded-r-full border border-l-0 border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Remover tag"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -689,6 +645,7 @@ export default function ReportBuilder() {
               </button>
             </div>
           )}
+
 
           {/* Clientes cadastrados (de Publicidade) */}
           {clients.length > 0 && (

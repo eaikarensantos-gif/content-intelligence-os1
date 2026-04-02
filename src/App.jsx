@@ -12,6 +12,7 @@ import ThoughtCapture from './components/thoughts/ThoughtCapture'
 import TextStudio from './components/text/TextStudio'
 import IdeaGenerator from './components/generate/IdeaGenerator'
 import CreateContent from './components/create/CreateContent'
+import UnifiedCreator from './components/create/UnifiedCreator'
 import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
 import AccessLog from './components/auth/AccessLog'
@@ -22,7 +23,8 @@ import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
-import PricingManager from './components/pricing/PricingManager'
+import BriefingStudio from './components/brand/BriefingStudio'
+// PricingManager is embedded inside AdManager
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -61,7 +63,8 @@ export default function App() {
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/video" element={<VideoAnalyzer />} />
-            <Route path="/create" element={<CreateContent />} />
+            <Route path="/create" element={<UnifiedCreator />} />
+            <Route path="/create-legacy" element={<CreateContent />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />
             <Route path="/text" element={<TextStudio />} />
             <Route path="/generate" element={<IdeaGenerator />} />
@@ -72,7 +75,7 @@ export default function App() {
             <Route path="/archetypes" element={<ContentArchetypes />} />
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/reports" element={<PerformanceReport />} />
-            <Route path="/pricing" element={<PricingManager />} />
+            <Route path="/briefing" element={<BriefingStudio />} />
             <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
           </Routes>

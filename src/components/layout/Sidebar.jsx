@@ -3,13 +3,14 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
+  { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
@@ -23,7 +24,6 @@ const NAV_GROUPS = [
       { to: '/analytics', icon: BarChart2, label: 'Analytics' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
       { to: '/trends', icon: Radar, label: 'Creator Insights' },
-      { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
     ],
   },
   {
@@ -32,9 +32,8 @@ const NAV_GROUPS = [
     children: [
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade' },
-      { to: '/pricing', icon: FileText, label: 'Precificacao' },
-      { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
       { to: '/archetypes', icon: Shapes, label: 'Arquétipos' },
+      { to: '/briefing', icon: Megaphone, label: 'Briefing Studio' },
     ],
   },
 ]

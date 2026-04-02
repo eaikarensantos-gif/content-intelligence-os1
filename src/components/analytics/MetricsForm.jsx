@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Upload, Plus, FileText, ExternalLink } from 'lucide-react'
-import Papa from 'papaparse'
+import { parseFile } from '../../utils/csvNormalizer'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 
@@ -230,16 +230,15 @@ export default function MetricsForm({ open, onClose }) {
     }
   }
 
-  const handleCSV = (e) => {
+  const handleCSV = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: ({ data }) => {
-        setCsvResult(data.map(normalizeRow))
-      },
-    })
+    try {
+      const { data } = await parseFile(file)
+      setCsvResult(data.map(normalizeRow))
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const importCSV = () => {
@@ -373,13 +372,13 @@ export default function MetricsForm({ open, onClose }) {
         <div className="space-y-4">
           <div className="p-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 text-center">
             <Upload size={24} className="text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-700 mb-1">Faça upload de um arquivo CSV</p>
+            <p className="text-sm text-gray-700 mb-1">Faça upload de um arquivo CSV ou Excel</p>
             <p className="text-xs text-gray-400 mb-3">
               Aceita colunas em português: <span className="text-gray-500">Descrição, Duração (s), Horário de publicação, Link permanente, Tipo de post, Comentário de dados, Data, Visualizações, Alcance, Curtidas, Compartilhamentos, Seguimentos, Comentários, Salvamentos</span>
             </p>
             <label className="btn-primary cursor-pointer inline-flex">
-              <FileText size={14} /> Escolher CSV
-              <input type="file" accept=".csv" className="hidden" onChange={handleCSV} />
+              <FileText size={14} /> Escolher arquivo
+              <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleCSV} />
             </label>
           </div>
 

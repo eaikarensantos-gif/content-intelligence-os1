@@ -436,8 +436,13 @@ function KanbanColumn({ column, tasks, onAdd, onUpdate, onDelete, onEdit, onMove
       <div className="flex-1 p-2.5 space-y-2 overflow-y-auto max-h-[calc(100vh-260px)]">
         {tasks.map(task => (
           <div key={task.id} draggable
-            onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
+            onDragStart={(e) => { e.dataTransfer.setData('taskId', task.id); e.dataTransfer.effectAllowed = 'move'; e.currentTarget.style.opacity = '0.4' }}
+            onDragEnd={(e) => { e.currentTarget.style.opacity = '1' }}
+            className="relative group/drag"
           >
+            <div className="absolute left-0 top-0 bottom-0 w-5 flex items-center justify-center opacity-0 group-hover/drag:opacity-100 cursor-grab active:cursor-grabbing z-10">
+              <GripVertical size={12} className="text-gray-300" />
+            </div>
             <TaskCard task={task} onUpdate={onUpdate} onDelete={onDelete} onEdit={onEdit} onMove={onMove} />
           </div>
         ))}
@@ -519,6 +524,7 @@ export default function TaskBoard() {
   const [filterPriority, setFilterPriority] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [sortBy, setSortBy] = useState('priority') // priority | created | due
 
   // Filter tasks
   const filtered = tasks.filter(t => {
@@ -528,11 +534,18 @@ export default function TaskBoard() {
     return true
   })
 
-  // Sort by priority then date
+  // Sort
   const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 }
   const sorted = [...filtered].sort((a, b) => {
     if (a.status === 'done' && b.status !== 'done') return 1
     if (a.status !== 'done' && b.status === 'done') return -1
+    if (sortBy === 'created') return (b.created_at || '').localeCompare(a.created_at || '')
+    if (sortBy === 'due') {
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+      return a.due_date.localeCompare(b.due_date)
+    }
     return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2)
   })
 
@@ -628,6 +641,16 @@ export default function TaskBoard() {
                 className={clsx('px-2.5 py-1 text-[10px] font-medium rounded-lg border transition-all',
                   filterPriority === p.id ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                 )}>{p.label}</button>
+            ))}
+          </div>
+          <div className="w-px bg-gray-200 mx-1" />
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold text-gray-500 uppercase">Ordenar:</span>
+            {[{ id: 'priority', label: 'Prioridade' }, { id: 'created', label: 'Criação' }, { id: 'due', label: 'Prazo' }].map(s => (
+              <button key={s.id} onClick={() => setSortBy(s.id)}
+                className={clsx('px-2.5 py-1 text-[10px] font-medium rounded-lg border transition-all',
+                  sortBy === s.id ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                )}>{s.label}</button>
             ))}
           </div>
           <div className="w-px bg-gray-200 mx-1" />

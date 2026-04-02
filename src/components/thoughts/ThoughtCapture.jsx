@@ -982,6 +982,7 @@ const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', '
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
   const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
+  const bannedWords = useStore(s => s.bannedWords) || []
   const navigate = useNavigate()
 
   const [thought, setThought] = useState('')
@@ -1016,7 +1017,7 @@ export default function ThoughtCapture() {
     setError(''); setLoading(true); setResult(null); setSavedFormats(new Set()); setCurrentThought(thought)
     startPhases()
     try {
-      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords)
       const regenInstr = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
       const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone, voiceContext: voiceCtx, regenInstruction: regenInstr })
       setResult(data)

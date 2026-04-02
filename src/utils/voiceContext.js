@@ -3,11 +3,27 @@
  * Used by all content generators for consistent, improving output.
  */
 
-export function buildVoiceContext(brandVoice, dislikedContent = []) {
+export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = []) {
   let ctx = ''
+
+  if (bannedWords?.length > 0) {
+    ctx += `\n\nPALAVRAS/EXPRESSÕES PROIBIDAS (NUNCA use estas palavras ou variações delas no conteúdo gerado):\n${bannedWords.map(w => `- "${w}"`).join('\n')}\nEsta é uma regra ABSOLUTA. O criador baniu essas palavras permanentemente.\n`
+  }
 
   if (brandVoice?.prompt) {
     ctx += `\n\nIDENTIDADE E VOZ DO CRIADOR:\n${brandVoice.prompt}\n`
+  }
+
+  if (brandVoice?.calibration) {
+    const c = brandVoice.calibration
+    ctx += `\nCALIBRAÇÃO DE VOZ (extraída de posts reais do criador):\n`
+    if (c.abertura_padrao) ctx += `- Padrão de abertura: ${c.abertura_padrao}\n`
+    if (c.estrutura_narrativa) ctx += `- Estrutura narrativa: ${c.estrutura_narrativa}\n`
+    if (c.tom_linguistico) ctx += `- Tom: ${c.tom_linguistico}\n`
+    if (c.padrao_cta) ctx += `- CTA/Fechamento: ${c.padrao_cta}\n`
+    if (c.elementos_transversais?.length) ctx += `- Elementos-chave: ${c.elementos_transversais.join(', ')}\n`
+    if (c.palavras_frequentes?.length) ctx += `- Vocabulário frequente: ${c.palavras_frequentes.join(', ')}\n`
+    ctx += `\nUse estes padrões para manter autenticidade na voz.\n`
   }
 
   if (dislikedContent.length > 0) {

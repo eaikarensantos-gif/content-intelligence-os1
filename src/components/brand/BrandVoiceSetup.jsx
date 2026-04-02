@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { ChevronRight, ChevronLeft, Sparkles, Check, RotateCcw } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Sparkles, Check, RotateCcw, Loader2, Eye, Copy, Zap } from 'lucide-react'
 import useStore from '../../store/useStore'
+
+const LS_KEY = 'cio-anthropic-key'
 
 /* ── Questionário ──────────────────────────────────────────── */
 const STEPS = [
@@ -237,6 +239,169 @@ REGRAS FUNDAMENTAIS:
   }
 }
 
+/* ── Calibrador de Voz com Exemplos Reais ── */
+function VoiceCalibrator() {
+  const setBrandVoice = useStore(s => s.setBrandVoice)
+  const brandVoice = useStore(s => s.brandVoice)
+  const [examples, setExamples] = useState(['', '', ''])
+  const [loading, setLoading] = useState(false)
+  const [analysis, setAnalysis] = useState(brandVoice?.calibration || null)
+  const [error, setError] = useState(null)
+
+  const apiKey = localStorage.getItem(LS_KEY) || ''
+
+  const handleAnalyze = async () => {
+    const filled = examples.filter(e => e.trim().length > 20)
+    if (filled.length < 2) { setError('Cole pelo menos 2 posts completos'); return }
+    if (!apiKey) { setError('Configure sua API key em Analytics'); return }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content: `Analise estes posts reais de um criador de conteúdo e extraia padrões de voz:
+
+POST 1:
+"""${examples[0]}"""
+
+POST 2:
+"""${examples[1]}"""
+
+${examples[2]?.trim() ? `POST 3:\n"""${examples[2]}"""` : ''}
+
+Analise e retorne EXCLUSIVAMENTE JSON:
+{
+  "abertura_padrao": "como o criador tipicamente começa (padrão identificado)",
+  "estrutura_narrativa": "como organiza o conteúdo (começo, meio, fim)",
+  "tom_linguistico": "tom predominante e variações",
+  "elementos_transversais": ["elemento 1", "elemento 2", "elemento 3"],
+  "palavras_frequentes": ["palavra1", "palavra2", "palavra3"],
+  "padrao_cta": "como tipicamente fecha/engaja",
+  "ponto_forte": "o que mais se destaca no conteúdo",
+  "sugestao_melhoria": "uma sugestão estratégica para evolução"
+}` }],
+        }),
+      })
+
+      if (!res.ok) throw new Error(`Erro ${res.status}`)
+
+      const data = await res.json()
+      const text = data.content?.[0]?.text || ''
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) throw new Error('Resposta inválida')
+
+      const parsed = JSON.parse(jsonMatch[0])
+      setAnalysis(parsed)
+
+      // Salvar calibração no brandVoice
+      if (brandVoice) {
+        setBrandVoice({ ...brandVoice, calibration: parsed })
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 mt-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <Eye size={18} className="text-orange-500" />
+        <div>
+          <h3 className="text-sm font-bold text-gray-900">Calibrar com Exemplos Reais</h3>
+          <p className="text-xs text-gray-400">Cole seus melhores posts para a IA detectar seus padrões de voz</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {examples.map((ex, i) => (
+          <div key={i}>
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">
+              Post {i + 1} {i < 2 ? '*' : '(opcional)'}
+            </label>
+            <textarea
+              value={ex}
+              onChange={e => { const n = [...examples]; n[i] = e.target.value; setExamples(n) }}
+              rows={3}
+              placeholder="Cole aqui um post real que representa bem sua voz..."
+              className="w-full text-sm border border-gray-200 rounded-xl p-3 outline-none focus:border-orange-300 resize-none placeholder:text-gray-300"
+            />
+          </div>
+        ))}
+      </div>
+
+      <button onClick={handleAnalyze} disabled={loading}
+        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-40">
+        {loading ? <><Loader2 size={14} className="animate-spin" /> Analisando...</> : <><Zap size={14} /> Analisar Padrões de Voz</>}
+      </button>
+
+      {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg p-2 border border-red-200">{error}</p>}
+
+      {analysis && (
+        <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border border-orange-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-orange-700 uppercase">Padrões Detectados</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white rounded-lg p-3 border border-orange-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Padrão de Abertura</p>
+              <p className="text-xs text-gray-700">{analysis.abertura_padrao}</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-orange-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Estrutura Narrativa</p>
+              <p className="text-xs text-gray-700">{analysis.estrutura_narrativa}</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-orange-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Tom Linguístico</p>
+              <p className="text-xs text-gray-700">{analysis.tom_linguistico}</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-orange-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">CTA / Fechamento</p>
+              <p className="text-xs text-gray-700">{analysis.padrao_cta}</p>
+            </div>
+          </div>
+
+          {analysis.elementos_transversais?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[10px] text-gray-400 mr-1">Elementos:</span>
+              {analysis.elementos_transversais.map((el, i) => (
+                <span key={i} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200">{el}</span>
+              ))}
+            </div>
+          )}
+
+          {analysis.palavras_frequentes?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[10px] text-gray-400 mr-1">Palavras-chave:</span>
+              {analysis.palavras_frequentes.map((w, i) => (
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded-md bg-white text-gray-600 border border-gray-200">{w}</span>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg p-3 border border-orange-100">
+            <p className="text-[10px] font-semibold text-emerald-600 uppercase mb-1">Ponto Forte</p>
+            <p className="text-xs text-gray-700">{analysis.ponto_forte}</p>
+          </div>
+
+          <div className="bg-white rounded-lg p-3 border border-amber-200">
+            <p className="text-[10px] font-semibold text-amber-600 uppercase mb-1">Sugestão de Evolução</p>
+            <p className="text-xs text-gray-700">{analysis.sugestao_melhoria}</p>
+          </div>
+
+          <p className="text-[10px] text-gray-400 italic">Estes padrões são usados automaticamente em todas as gerações de conteúdo.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Componente Principal ─────────────────────────────────── */
 export default function BrandVoiceSetup() {
   const brandVoice = useStore(s => s.brandVoice)
@@ -350,6 +515,9 @@ export default function BrandVoiceSetup() {
             </p>
           </div>
         </div>
+
+        {/* ── Análise de Exemplos Reais ── */}
+        <VoiceCalibrator />
       </div>
     )
   }

@@ -7,9 +7,9 @@ import {
   Minus, Plus, X, ExternalLink, Download, Link2, UserPlus,
   Film, Play, Layers, Image, Clock, Copy, Check, Upload,
 } from 'lucide-react'
-import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
+import { parseFile } from '../../utils/csvNormalizer'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const fmtDate = (d) => {
@@ -332,46 +332,45 @@ export default function ClientReports() {
   }
 
   const [importCount, setImportCount] = useState(null)
-  const handleCSVImport = (e) => {
+  const handleCSVImport = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: ({ data }) => {
-        let count = 0
-        data.forEach(raw => {
-          const row = {}
-          for (const [key, val] of Object.entries(raw)) {
-            const clean = stripAccents(key.toLowerCase().trim())
-            const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
-            if (mapped) row[mapped] = val
-          }
-          if (!row.impressions && !row.likes && !row.description) return // skip empty rows
-          addMetric({
-            post_id: row.post_id || '',
-            platform: row.platform || 'instagram',
-            date: normalizeDate(row.date || ''),
-            impressions: toNum(row.impressions),
-            reach: toNum(row.reach),
-            likes: toNum(row.likes),
-            comments: toNum(row.comments),
-            shares: toNum(row.shares),
-            saves: toNum(row.saves),
-            follows: toNum(row.follows),
-            link_clicks: toNum(row.link_clicks),
-            duration_sec: toNum(row.duration_sec),
-            description: (row.description || '').trim(),
-            link: (row.link || '').trim(),
-            post_type: normalizePostType(row.post_type),
-            client: (row.client || '').trim(),
-          })
-          count++
+    try {
+      const { data } = await parseFile(file)
+      let count = 0
+      data.forEach(raw => {
+        const row = {}
+        for (const [key, val] of Object.entries(raw)) {
+          const clean = stripAccents(key.toLowerCase().trim())
+          const mapped = COL_MAP[clean] || COL_MAP[key.toLowerCase().trim()]
+          if (mapped) row[mapped] = val
+        }
+        if (!row.impressions && !row.likes && !row.description) return // skip empty rows
+        addMetric({
+          post_id: row.post_id || '',
+          platform: row.platform || 'instagram',
+          date: normalizeDate(row.date || ''),
+          impressions: toNum(row.impressions),
+          reach: toNum(row.reach),
+          likes: toNum(row.likes),
+          comments: toNum(row.comments),
+          shares: toNum(row.shares),
+          saves: toNum(row.saves),
+          follows: toNum(row.follows),
+          link_clicks: toNum(row.link_clicks),
+          duration_sec: toNum(row.duration_sec),
+          description: (row.description || '').trim(),
+          link: (row.link || '').trim(),
+          post_type: normalizePostType(row.post_type),
+          client: (row.client || '').trim(),
         })
-        setImportCount(count)
-        setTimeout(() => setImportCount(null), 4000)
-      },
-    })
+        count++
+      })
+      setImportCount(count)
+      setTimeout(() => setImportCount(null), 4000)
+    } catch (err) {
+      console.error(err)
+    }
     e.target.value = ''
   }
 
@@ -586,9 +585,9 @@ export default function ClientReports() {
                 onClick={() => csvRef.current?.click()}
                 className="btn-secondary text-xs shrink-0"
               >
-                <Upload size={12} /> Upload CSV
+                <Upload size={12} /> Upload arquivo
               </button>
-              <input ref={csvRef} type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
+              <input ref={csvRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleCSVImport} />
             </div>
             {importCount !== null && (
               <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-2">

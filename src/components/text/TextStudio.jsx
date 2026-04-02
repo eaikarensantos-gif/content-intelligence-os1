@@ -397,6 +397,7 @@ function buildCopyText(platform, data) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function TextStudio() {
   const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
+  const bannedWords = useStore(s => s.bannedWords) || []
   const navigate = useNavigate()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 
@@ -459,7 +460,7 @@ export default function TextStudio() {
       setLoadingMsg(msgs[i])
     }, 2000)
 
-    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent)
+    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords)
     const regenInstruction = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
 
     try {

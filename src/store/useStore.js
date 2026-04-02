@@ -22,6 +22,8 @@ const useStore = create(
       proposals: [],
       favorites: [],
       favoritesOpen: false,
+      hiddenReportTags: [],
+      bannedWords: [],
 
       // ── Perfil do Criador ────────────────────────────────
       creatorProfile: {
@@ -62,6 +64,25 @@ const useStore = create(
 
       removeFavorite: (id) =>
         set((s) => ({ favorites: s.favorites.filter((f) => f.id !== id) })),
+
+      // ── Tags ocultas do ReportBuilder ─────────────────────
+      addHiddenReportTag: (tag) =>
+        set((s) => ({ hiddenReportTags: s.hiddenReportTags.includes(tag) ? s.hiddenReportTags : [...s.hiddenReportTags, tag] })),
+
+      removeHiddenReportTag: (tag) =>
+        set((s) => ({ hiddenReportTags: s.hiddenReportTags.filter((t) => t !== tag) })),
+
+      clearHiddenReportTags: () => set({ hiddenReportTags: [] }),
+
+      // ── Palavras Proibidas ─────────────────────────────────
+      addBannedWord: (word) =>
+        set((s) => {
+          const w = word.trim().toLowerCase()
+          return s.bannedWords.includes(w) ? s : { bannedWords: [...s.bannedWords, w] }
+        }),
+
+      removeBannedWord: (word) =>
+        set((s) => ({ bannedWords: s.bannedWords.filter((w) => w !== word) })),
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
@@ -353,6 +374,8 @@ const useStore = create(
         favorites: s.favorites,
         pricingProducts: s.pricingProducts,
         proposals: s.proposals,
+        hiddenReportTags: s.hiddenReportTags,
+        bannedWords: s.bannedWords,
         creatorProfile: s.creatorProfile,
       }),
     }

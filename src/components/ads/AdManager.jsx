@@ -1,14 +1,15 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Plus, DollarSign, Calendar, TrendingUp, BarChart2, Edit3,
   Trash2, X, Check, Filter, Search, Eye, Target, Users,
   ArrowUpRight, ArrowDownRight, Minus, Clock, CheckCircle2,
   AlertCircle, ChevronDown, ExternalLink, UserPlus, Phone,
-  MessageSquare, Star, XCircle, ArrowRight, Mail, Building2, Hash, FileText,
+  MessageSquare, Star, XCircle, ArrowRight, Mail, Building2, Hash, FileText, Paperclip, Download,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
-import ReportBuilder from '../analytics/ReportBuilder'
+import PricingManager from '../pricing/PricingManager'
 
 /* ── Constants ──────────────────────────────────────────── */
 const STATUSES = [
@@ -415,7 +416,8 @@ function AdCard({ ad, onEdit, onDelete }) {
 function LeadCard({ lead, onEdit, onDelete, onStageChange }) {
   const stage = LEAD_STAGES.find(s => s.id === lead.stage) || LEAD_STAGES[0]
   const days = daysAgo(lead.created_at)
-  const fupDays = lead.next_followup ? daysAgo(lead.next_followup) : null
+  const isTerminal = lead.stage === 'won' || lead.stage === 'lost'
+  const fupDays = !isTerminal && lead.next_followup ? daysAgo(lead.next_followup) : null
   const isOverdue = fupDays !== null && fupDays > 0
   const isFupToday = fupDays === 0
 
@@ -514,6 +516,7 @@ function LeadCard({ lead, onEdit, onDelete, onStageChange }) {
 
 /* ── Main Component ─────────────────────────────────────── */
 export default function AdManager() {
+  const navigate = useNavigate()
   const ads = useStore(s => s.ads)
   const addAd = useStore(s => s.addAd)
   const updateAd = useStore(s => s.updateAd)
@@ -528,7 +531,7 @@ export default function AdManager() {
   const updateClient = useStore(s => s.updateClient)
   const deleteClient = useStore(s => s.deleteClient)
 
-  const [tab, setTab] = useState('campaigns') // 'campaigns' | 'leads' | 'clients' | 'reports'
+  const [tab, setTab] = useState('leads') // 'leads' | 'clients' | 'reports' | 'pricing'
   const [showForm, setShowForm] = useState(false)
   const [editingAd, setEditingAd] = useState(null)
   const [showLeadForm, setShowLeadForm] = useState(false)
@@ -559,7 +562,30 @@ export default function AdManager() {
 
   const handleEditLead = (lead) => { setEditingLead(lead); setShowLeadForm(true) }
 
-  const handleStageChange = (id, stage) => updateLead(id, { stage })
+  const handleStageChange = (id, stage) => {
+    if (stage === 'won') {
+      const lead = leads.find(l => l.id === id)
+      if (lead) {
+        const alreadyClient = clients.some(c => c.name.toLowerCase() === (lead.name || '').toLowerCase())
+        if (!alreadyClient && lead.name) {
+          addClient({
+            name: lead.name,
+            hashtags: '',
+            company: lead.company || '',
+            contact: lead.contact || '',
+            email: lead.email || '',
+            value: lead.value || '',
+            service: lead.service || '',
+            notes: lead.notes || '',
+            source: lead.source || '',
+          })
+        }
+        deleteLead(id)
+      }
+    } else {
+      updateLead(id, { stage })
+    }
+  }
 
   // ── Filtered data ──
   const filteredAds = (ads || []).filter(ad => {
@@ -593,11 +619,6 @@ export default function AdManager() {
     <div className="p-4 sm:p-6 space-y-5">
       {/* Tab switcher */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-lg">
-        <button onClick={() => setTab('campaigns')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            tab === 'campaigns' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-          <DollarSign size={14} /> Campanhas
-        </button>
         <button onClick={() => setTab('leads')}
           className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
             tab === 'leads' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
@@ -614,78 +635,12 @@ export default function AdManager() {
             <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{clients.length}</span>
           )}
         </button>
-        <button onClick={() => setTab('reports')}
+        <button onClick={() => setTab('pricing')}
           className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            tab === 'reports' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-          <FileText size={14} /> Relatórios
+            tab === 'pricing' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+          <DollarSign size={14} /> Preços
         </button>
       </div>
-
-      {/* ════════════════ CAMPAIGNS TAB ════════════════ */}
-      {tab === 'campaigns' && (
-        <>
-          {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><DollarSign size={16} className="text-orange-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalBudget)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Orçamento Total</div></div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center"><TrendingUp size={16} className="text-red-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalSpent)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Total Gasto</div></div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><DollarSign size={16} className="text-emerald-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalRevenue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Receita Total</div></div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center"><BarChart2 size={16} className="text-blue-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{activeCount}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Campanhas Ativas</div></div>
-            </div>
-          </div>
-
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="relative flex-1 w-full sm:max-w-xs">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar campanhas..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-300" />
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
-                <option value="all">Todos Status</option>
-                {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
-              <select value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg px-2.5 py-2 outline-none focus:border-orange-300">
-                <option value="all">Todas Plataformas</option>
-                {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-              </select>
-              <button onClick={() => { setEditingAd(null); setShowForm(true) }}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm">
-                <Plus size={14} /> Nova Campanha
-              </button>
-            </div>
-          </div>
-
-          {filteredAds.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <DollarSign size={28} className="text-gray-300" />
-              </div>
-              <p className="text-sm text-gray-500">Nenhuma campanha encontrada</p>
-              <p className="text-xs text-gray-400 mt-1">Clique em "Nova Campanha" para registrar publis, impulsionamentos e parcerias</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredAds.map(ad => (
-                <AdCard key={ad.id} ad={ad} onEdit={handleEditAd} onDelete={deleteAd} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
 
       {/* ════════════════ LEADS TAB ════════════════ */}
       {tab === 'leads' && (
@@ -771,12 +726,72 @@ export default function AdManager() {
               ))}
             </div>
           )}
+
+          {/* Campanhas (sub-seção dentro de Leads) */}
+          <div className="pt-4 border-t border-gray-200 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <DollarSign size={16} className="text-orange-500" /> Campanhas
+                {activeCount > 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700">{activeCount} ativas</span>}
+              </h3>
+              <div className="flex items-center gap-2">
+                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                  className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-orange-300">
+                  <option value="all">Todos Status</option>
+                  {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+                <select value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}
+                  className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-orange-300">
+                  <option value="all">Todas Plataformas</option>
+                  {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+                <button onClick={() => { setEditingAd(null); setShowForm(true) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors">
+                  <Plus size={12} /> Nova Campanha
+                </button>
+              </div>
+            </div>
+            {filteredAds.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-6">Nenhuma campanha encontrada</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {filteredAds.map(ad => (
+                  <AdCard key={ad.id} ad={ad} onEdit={handleEditAd} onDelete={deleteAd} />
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
 
       {/* ════════════════ CLIENTS TAB ════════════════ */}
       {tab === 'clients' && (
         <>
+          {/* Stats espelhados de Leads */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><UserPlus size={16} className="text-orange-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{activeLeads}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Leads Ativos</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center"><DollarSign size={16} className="text-amber-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(pipelineValue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Pipeline</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><CheckCircle2 size={16} className="text-emerald-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{clients.length}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Clientes</div></div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
+              <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', overdueLeads > 0 ? 'bg-red-50' : 'bg-gray-50')}>
+                <Clock size={16} className={overdueLeads > 0 ? 'text-red-500' : 'text-gray-400'} />
+              </div>
+              <div>
+                <div className={clsx('text-sm font-bold', overdueLeads > 0 ? 'text-red-600' : 'text-gray-900')}>{overdueLeads}</div>
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">FUPs Atrasados</div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -788,50 +803,105 @@ export default function AdManager() {
               </div>
             </div>
 
-            {/* Add client form */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome do Cliente</label>
-                <input
-                  type="text"
-                  value={editingClient ? editingClient.name : newClientName}
-                  onChange={e => editingClient ? setEditingClient({ ...editingClient, name: e.target.value }) : setNewClientName(e.target.value)}
-                  placeholder="Ex: FIAP, Samsung, Glamour..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300"
-                />
+            {/* Add/Edit client form */}
+            {editingClient ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-blue-800">Editando: {editingClient.name}</h4>
+                  <button onClick={() => setEditingClient(null)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome</label>
+                    <input type="text" value={editingClient.name} onChange={e => setEditingClient({ ...editingClient, name: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Empresa</label>
+                    <input type="text" value={editingClient.company || ''} onChange={e => setEditingClient({ ...editingClient, company: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Contato</label>
+                    <input type="text" value={editingClient.contact || ''} onChange={e => setEditingClient({ ...editingClient, contact: e.target.value })}
+                      placeholder="Telefone / WhatsApp"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
+                    <input type="email" value={editingClient.email || ''} onChange={e => setEditingClient({ ...editingClient, email: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Serviço</label>
+                    <input type="text" value={editingClient.service || ''} onChange={e => setEditingClient({ ...editingClient, service: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor (R$)</label>
+                    <input type="text" value={editingClient.value || ''} onChange={e => setEditingClient({ ...editingClient, value: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
+                    <input type="text" value={editingClient.source || ''} onChange={e => setEditingClient({ ...editingClient, source: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags</label>
+                    <input type="text" value={editingClient.hashtags || ''} onChange={e => setEditingClient({ ...editingClient, hashtags: e.target.value })}
+                      placeholder="#publi, @cliente"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
+                  <textarea value={editingClient.notes || ''} onChange={e => setEditingClient({ ...editingClient, notes: e.target.value })}
+                    rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300 resize-none" />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (editingClient.name.trim()) {
+                        updateClient(editingClient.id, {
+                          name: editingClient.name.trim(),
+                          hashtags: (editingClient.hashtags || '').trim(),
+                          company: (editingClient.company || '').trim(),
+                          contact: (editingClient.contact || '').trim(),
+                          email: (editingClient.email || '').trim(),
+                          service: (editingClient.service || '').trim(),
+                          value: (editingClient.value || '').trim(),
+                          source: (editingClient.source || '').trim(),
+                          notes: (editingClient.notes || '').trim(),
+                        })
+                        setEditingClient(null)
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+                  >
+                    <Check size={14} /> Salvar
+                  </button>
+                  <button onClick={() => setEditingClient(null)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50">
+                    Cancelar
+                  </button>
+                </div>
               </div>
-              <div className="flex-1">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags / @ (separar por vírgula)</label>
-                <input
-                  type="text"
-                  value={editingClient ? editingClient.hashtags : newClientHashtags}
-                  onChange={e => editingClient ? setEditingClient({ ...editingClient, hashtags: e.target.value }) : setNewClientHashtags(e.target.value)}
-                  placeholder="Ex: #publi, @fiapoficial, #Fiap"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300"
-                />
-              </div>
-              <div className="flex items-end gap-2">
-                {editingClient ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        if (editingClient.name.trim()) {
-                          updateClient(editingClient.id, { name: editingClient.name.trim(), hashtags: editingClient.hashtags.trim() })
-                          setEditingClient(null)
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-                    >
-                      <Check size={14} /> Salvar
-                    </button>
-                    <button
-                      onClick={() => setEditingClient(null)}
-                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50"
-                    >
-                      <X size={14} />
-                    </button>
-                  </>
-                ) : (
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome do Cliente</label>
+                  <input type="text" value={newClientName} onChange={e => setNewClientName(e.target.value)}
+                    placeholder="Ex: FIAP, Samsung, Glamour..."
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags / @ (separar por vírgula)</label>
+                  <input type="text" value={newClientHashtags} onChange={e => setNewClientHashtags(e.target.value)}
+                    placeholder="Ex: #publi, @fiapoficial, #Fiap"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                </div>
+                <div className="flex items-end">
                   <button
                     onClick={() => {
                       if (newClientName.trim()) {
@@ -845,9 +915,9 @@ export default function AdManager() {
                   >
                     <Plus size={14} /> Adicionar
                   </button>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Client list */}
@@ -862,37 +932,126 @@ export default function AdManager() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map(client => (
-                <div key={client.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-start justify-between gap-3 group hover:border-blue-200 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
-                        style={{ backgroundColor: client.color || '#3b82f6' }}>
-                        {client.name.charAt(0).toUpperCase()}
+                <div key={client.id} className="bg-white rounded-xl border border-gray-200 p-4 group hover:border-blue-200 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
+                          style={{ backgroundColor: client.color || '#3b82f6' }}>
+                          {client.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{client.name}</p>
+                          {client.company && <p className="text-[11px] text-gray-500 truncate">{client.company}</p>}
+                        </div>
                       </div>
-                      <p className="text-sm font-bold text-gray-900 truncate">{client.name}</p>
                     </div>
-                    {client.hashtags && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {client.hashtags.split(',').map((tag, i) => (
-                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-                            {tag.trim()}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button onClick={() => setEditingClient({ id: client.id, name: client.name, hashtags: client.hashtags || '', company: client.company || '', contact: client.contact || '', email: client.email || '', service: client.service || '', value: client.value || '', source: client.source || '', notes: client.notes || '' })}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                        <Edit3 size={13} />
+                      </button>
+                      <button onClick={() => { if (confirm(`Remover ${client.name}?`)) deleteClient(client.id) }}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Detalhes do cliente */}
+                  <div className="mt-2 space-y-1">
+                    {client.contact && (
+                      <p className="text-[11px] text-gray-500"><span className="text-gray-400">Contato:</span> {client.contact}</p>
                     )}
-                    <p className="text-[10px] text-gray-300 mt-2">
+                    {client.email && (
+                      <p className="text-[11px] text-gray-500"><span className="text-gray-400">Email:</span> {client.email}</p>
+                    )}
+                    {client.service && (
+                      <p className="text-[11px] text-gray-500"><span className="text-gray-400">Serviço:</span> {client.service}</p>
+                    )}
+                    {client.value && (
+                      <p className="text-[11px] font-medium text-green-600">R$ {Number(client.value).toLocaleString('pt-BR')}</p>
+                    )}
+                    {client.notes && (
+                      <p className="text-[10px] text-gray-400 italic line-clamp-2">{client.notes}</p>
+                    )}
+                  </div>
+                  {/* Status de pagamento */}
+                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                    {['pago', 'em_aberto', 'emitir_nota'].map(st => {
+                      const active = client.payment_status === st
+                      const cfg = {
+                        pago: { label: 'Pago', style: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                        em_aberto: { label: 'Em Aberto', style: 'bg-red-100 text-red-700 border-red-200' },
+                        emitir_nota: { label: 'Emitir Nota', style: 'bg-amber-100 text-amber-700 border-amber-200' },
+                      }[st]
+                      if (st === 'emitir_nota' && active) {
+                        return (
+                          <a key={st} href="https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2fEmissorNacional" target="_blank" rel="noopener noreferrer"
+                            className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border flex items-center gap-1 transition-all ring-1 ring-offset-1 ring-amber-300', cfg.style)}>
+                            {cfg.label} <ExternalLink size={9} />
+                          </a>
+                        )
+                      }
+                      return (
+                        <button key={st}
+                          onClick={(e) => { e.stopPropagation(); updateClient(client.id, { payment_status: active ? '' : st }) }}
+                          className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border transition-all',
+                            active ? cfg.style + ' ring-1 ring-offset-1' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
+                          )}>
+                          {cfg.label}
+                          {st === 'emitir_nota' && <ExternalLink size={9} className="inline ml-0.5" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {/* Anexo NF */}
+                  <div className="mt-2">
+                    {client.nf_file ? (
+                      <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
+                        <Paperclip size={11} className="text-emerald-600 shrink-0" />
+                        <span className="text-[10px] text-emerald-700 font-medium truncate flex-1">{client.nf_name || 'Nota Fiscal'}</span>
+                        <a href={client.nf_file} download={client.nf_name || 'nota-fiscal'} className="p-0.5 rounded hover:bg-emerald-100 text-emerald-600" title="Baixar">
+                          <Download size={11} />
+                        </a>
+                        <button onClick={() => updateClient(client.id, { nf_file: '', nf_name: '' })}
+                          className="p-0.5 rounded hover:bg-red-100 text-gray-400 hover:text-red-500" title="Remover">
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-orange-500 cursor-pointer transition-colors">
+                        <Paperclip size={11} />
+                        <span>Anexar NF emitida</span>
+                        <input type="file" accept=".pdf,.png,.jpg,.jpeg,.xml" className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            if (file.size > 5 * 1024 * 1024) { alert('Arquivo muito grande (máx 5MB)'); return }
+                            const reader = new FileReader()
+                            reader.onload = () => updateClient(client.id, { nf_file: reader.result, nf_name: file.name })
+                            reader.readAsDataURL(file)
+                            e.target.value = ''
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  {client.hashtags && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {client.hashtags.split(',').map((tag, i) => (
+                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                          {tag.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-[10px] text-gray-300">
                       Criado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
                     </p>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onClick={() => setEditingClient({ id: client.id, name: client.name, hashtags: client.hashtags || '' })}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                      <Edit3 size={13} />
-                    </button>
-                    <button onClick={() => { if (confirm(`Remover ${client.name}?`)) deleteClient(client.id) }}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
-                      <Trash2 size={13} />
-                    </button>
+                    {client.source && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-400">{client.source}</span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -902,7 +1061,9 @@ export default function AdManager() {
       )}
 
       {/* ════════════════ REPORTS TAB ════════════════ */}
-      {tab === 'reports' && <ReportBuilder />}
+
+      {/* ════════════════ PRICING TAB ════════════════ */}
+      {tab === 'pricing' && <PricingManager embedded />}
 
       {/* Form modals */}
       {showForm && (
