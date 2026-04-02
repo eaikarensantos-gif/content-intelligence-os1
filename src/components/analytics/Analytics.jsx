@@ -336,6 +336,7 @@ export default function Analytics() {
   const [publiSearch, setPubliSearch] = useState('')
   const [publiUnifiedLoading, setPubliUnifiedLoading] = useState(false)
   const [publiUnifiedReport, setPubliUnifiedReport] = useState(null)
+  const [rawDataSearch, setRawDataSearch] = useState('')
 
   // LinkedIn tab state
   const [linkedinData, setLinkedinData] = useState(null)
@@ -632,9 +633,20 @@ export default function Analytics() {
 
             const sorted = [...enriched]
               .filter((m) => {
-                if (!filterPostType) return true
-                if (filterPostType === 'story') return m.post_type === 'story'
-                if (filterPostType === 'feed') return m.post_type !== 'story'
+                // Filter by post type
+                if (filterPostType) {
+                  if (filterPostType === 'story' && m.post_type !== 'story') return false
+                  if (filterPostType === 'feed' && m.post_type === 'story') return false
+                }
+                // Filter by search term
+                if (rawDataSearch) {
+                  const searchLower = rawDataSearch.toLowerCase()
+                  const matchDate = m.date && m.date.toLowerCase().includes(searchLower)
+                  const matchPlatform = m.platform && m.platform.toLowerCase().includes(searchLower)
+                  const matchType = m.post_type && m.post_type.toLowerCase().includes(searchLower)
+                  const matchDesc = m.description && m.description.toLowerCase().includes(searchLower)
+                  if (!matchDate && !matchPlatform && !matchType && !matchDesc) return false
+                }
                 return true
               })
               .sort((a, b) => {
@@ -651,7 +663,7 @@ export default function Analytics() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-900">
                     Dados Brutos
-                    <span className="ml-2 text-xs text-gray-400 font-normal">{enriched.length} entradas</span>
+                    <span className="ml-2 text-xs text-gray-400 font-normal">{sorted.length} entradas {rawDataSearch ? `(filtrados de ${enriched.length})` : `de ${enriched.length}`}</span>
                   </h3>
                   {enriched.length > 0 && (
                     confirmClear ? (
@@ -667,6 +679,19 @@ export default function Analytics() {
                     )
                   )}
                 </div>
+
+                {enriched.length > 0 && (
+                  <div className="relative mb-3">
+                    <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por data, plataforma, tipo, descrição..."
+                      value={rawDataSearch}
+                      onChange={(e) => setRawDataSearch(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-orange-500 transition-colors"
+                    />
+                  </div>
+                )}
 
                 {enriched.some((m) => m.post_type) && (
                   <div className="flex gap-1.5 mb-4">
