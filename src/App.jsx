@@ -24,6 +24,7 @@ import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
 import BriefingStudio from './components/brand/BriefingStudio'
+import PostAnalyzer from './components/post-analyzer/PostAnalyzer'
 // PricingManager is embedded inside AdManager
 
 function Layout({ children }) {
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/reports" element={<PerformanceReport />} />
             <Route path="/briefing" element={<BriefingStudio />} />
+            <Route path="/post-analyzer" element={<PostAnalyzer />} />
             <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
           </Routes>
