@@ -1,7 +1,7 @@
 // Build cache buster: 2026-04-02T13:57:00Z
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import jsPDF from 'jspdf'
+import { jsPDF } from 'jspdf'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
