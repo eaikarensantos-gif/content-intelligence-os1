@@ -317,8 +317,10 @@ export default function Analytics() {
 
   // Publi tab state
   const [publiMonth, setPubliMonth] = useState(() => {
-    const dateObj = new Date()
-    return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    return `${year}-${month}`
   })
   const [publiClient, setPubliClient] = useState('')
   const [publiReport, setPubliReport] = useState(null)
