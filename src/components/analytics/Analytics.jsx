@@ -1,6 +1,7 @@
 // Build cache buster: 2026-04-02T13:57:00Z
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import jsPDF from 'jspdf'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -1320,7 +1321,6 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
 
         // ── Gerar PDF Unificado ──
         const generateUnifiedPDF = (data) => {
-          const { jsPDF } = window.jspdf
           const doc = new jsPDF()
           const pageHeight = doc.internal.pageSize.getHeight()
           const pageWidth = doc.internal.pageSize.getWidth()
