@@ -245,103 +245,139 @@ export default function PostAnalyzer() {
     const doc = new jsPDF()
     const pageHeight = doc.internal.pageSize.getHeight()
     const pageWidth = doc.internal.pageSize.getWidth()
-
-    // ===== PÁGINA 1: CAPA =====
-    // Background gradient effect
-    doc.setFillColor(255, 100, 0)
-    doc.rect(0, 0, pageWidth, pageHeight / 3, 'F')
-
-    doc.setFontSize(32)
-    doc.setTextColor(255, 255, 255)
-    doc.setFont(undefined, 'bold')
-    doc.text('ANÁLISE DE PERFORMANCE', 20, 60)
-    doc.text('DE POSTS', 20, 95)
-
-    // Plataforma icon
-    doc.setFontSize(48)
-    doc.setTextColor(255, 255, 255)
-    doc.text(platform === 'instagram' ? '📱' : '🔗', pageWidth - 50, 80)
-
-    // Summary box
-    doc.setFillColor(240, 240, 240)
-    doc.rect(20, 120, pageWidth - 40, 80, 'F')
-
-    doc.setFontSize(10)
-    doc.setTextColor(100, 100, 100)
-    doc.setFont(undefined, 'normal')
-    doc.text(`Plataforma: ${platform.toUpperCase()}`, 30, 135)
-    doc.text(`Data da análise: ${new Date().toLocaleDateString('pt-BR')}`, 30, 150)
-    doc.text(`Total de posts: ${posts.length}`, 30, 165)
-
+    const margin = 20
     const maxER = Math.max(...posts.map(p => p.er))
     const avgER = (posts.reduce((sum, p) => sum + p.er, 0) / posts.length).toFixed(2)
     const totalAlcance = posts.reduce((sum, p) => sum + p.alcance, 0)
 
-    doc.text(`Maior ER: ${maxER.toFixed(2)}%`, 30, 180)
-    doc.text(`ER Médio: ${avgER}% | Alcance Total: ${totalAlcance.toLocaleString()}`, 30, 195)
+    // ===== PÁGINA 1: CAPA MINIMALISTA =====
+    // Fundo branco puro
+    doc.setFillColor(255, 255, 255)
+    doc.rect(0, 0, pageWidth, pageHeight, 'F')
+
+    // Título principal
+    doc.setFontSize(36)
+    doc.setTextColor(30, 30, 30)
+    doc.setFont(undefined, 'bold')
+    doc.text('Relatório LinkedIn', margin, 40)
+
+    // Período de análise em destaque
+    doc.setFontSize(14)
+    doc.setTextColor(80, 80, 80)
+    doc.setFont(undefined, 'normal')
+    doc.text(`Período: ${period}`, margin, 60)
+
+    // Divisor
+    doc.setDrawColor(220, 220, 220)
+    doc.setLineWidth(0.5)
+    doc.line(margin, 70, pageWidth - margin, 70)
+
+    // Métricas principais
+    let currentY = 85
+    doc.setFontSize(11)
+    doc.setTextColor(100, 100, 100)
+    doc.setFont(undefined, 'normal')
+
+    const metricsData = [
+      { label: 'Total de Posts', value: posts.length.toString() },
+      { label: 'Maior ER', value: `${maxER.toFixed(2)}%` },
+      { label: 'ER Médio', value: `${avgER}%` },
+      { label: 'Alcance Total', value: totalAlcance.toLocaleString() },
+      { label: 'Interações Totais', value: posts.reduce((sum, p) => sum + p.interacoes, 0).toLocaleString() }
+    ]
+
+    metricsData.forEach(metric => {
+      doc.setFontSize(10)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`${metric.label}:`, margin, currentY)
+
+      doc.setFontSize(14)
+      doc.setTextColor(30, 30, 30)
+      doc.setFont(undefined, 'bold')
+      doc.text(metric.value, pageWidth - margin - 40, currentY - 3)
+
+      doc.setFont(undefined, 'normal')
+      currentY += 16
+    })
 
     // Footer
-    doc.setFontSize(9)
-    doc.setTextColor(150, 150, 150)
-    doc.text('Relatório gerado automaticamente pelo Content Intelligence OS', 20, pageHeight - 20)
+    doc.setFontSize(8)
+    doc.setTextColor(180, 180, 180)
+    doc.text(
+      `Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+      margin,
+      pageHeight - 15
+    )
 
     // ===== PÁGINA 2+: DETALHES DOS POSTS =====
-    let currentY = 20
-    const margin = 20
-    const contentWidth = pageWidth - 2 * margin
-
     doc.addPage()
+    currentY = margin
 
-    doc.setFontSize(14)
-    doc.setTextColor(0, 0, 0)
+    // Título da seção
+    doc.setFontSize(16)
+    doc.setTextColor(30, 30, 30)
     doc.setFont(undefined, 'bold')
     doc.text('Detalhes dos Posts', margin, currentY)
-    currentY += 15
+    currentY += 12
+
+    // Divisor
+    doc.setDrawColor(220, 220, 220)
+    doc.setLineWidth(0.5)
+    doc.line(margin, currentY, pageWidth - margin, currentY)
+    currentY += 8
 
     // Table header
-    doc.setFillColor(255, 100, 0)
-    doc.setTextColor(255, 255, 255)
+    doc.setFillColor(245, 245, 245)
+    doc.setTextColor(80, 80, 80)
     doc.setFont(undefined, 'bold')
     doc.setFontSize(9)
 
     const cols = [25, 60, 20, 30, 30]
     const colX = [margin, margin + 28, margin + 90, margin + 115, margin + 150]
-    const rowHeight = 7
+    const rowHeight = 8
 
     const headers = ['Data', 'Título', 'ER %', 'Alcance', 'Interações']
+
+    // Background para header
+    doc.rect(margin, currentY - 6, pageWidth - 2 * margin, rowHeight, 'F')
+
     headers.forEach((header, i) => {
       doc.text(header, colX[i], currentY, { maxWidth: cols[i] - 2 })
     })
-
     currentY += rowHeight + 2
 
     // Table body
-    doc.setTextColor(0, 0, 0)
+    doc.setTextColor(50, 50, 50)
     doc.setFont(undefined, 'normal')
     doc.setFontSize(8)
+
+    // Linha divisória
+    doc.setDrawColor(230, 230, 230)
+    doc.setLineWidth(0.3)
+    doc.line(margin, currentY - 1, pageWidth - margin, currentY - 1)
 
     posts.forEach((post, idx) => {
       if (currentY > pageHeight - 25) {
         doc.addPage()
-        currentY = 20
+        currentY = margin
       }
 
-      const isMaxER = post.er === maxER
+      const isBest = post.er === maxER
 
-      // Highlight best ER
-      if (isMaxER) {
-        doc.setFillColor(255, 245, 220)
-        doc.rect(margin, currentY - 5, contentWidth, rowHeight + 1, 'F')
+      // Destaque para melhor ER
+      if (isBest) {
+        doc.setFillColor(250, 250, 250)
+        doc.rect(margin, currentY - 5, pageWidth - 2 * margin, rowHeight, 'F')
       }
 
-      if (isMaxER) {
-        doc.setTextColor(255, 100, 0)
+      if (isBest) {
+        doc.setTextColor(200, 100, 0)
         doc.setFont(undefined, 'bold')
       }
 
       const rowData = [
         post.data || '—',
-        post.titulo.substring(0, 30) + (post.titulo.length > 30 ? '...' : ''),
+        post.titulo.substring(0, 28) + (post.titulo.length > 28 ? '...' : ''),
         `${post.er}%`,
         post.alcance.toLocaleString(),
         post.interacoes.toString()
@@ -352,54 +388,44 @@ export default function PostAnalyzer() {
         doc.text(String(cell), colX[i], currentY, { maxWidth: cols[i] - 2, align })
       })
 
-      if (isMaxER) {
-        doc.setTextColor(0, 0, 0)
+      if (isBest) {
+        doc.setTextColor(50, 50, 50)
         doc.setFont(undefined, 'normal')
       }
 
       currentY += rowHeight + 1
-    })
 
-    // Summary statistics
-    currentY += 8
-    if (currentY > pageHeight - 40) {
-      doc.addPage()
-      currentY = 20
-    }
-
-    doc.setFontSize(11)
-    doc.setFont(undefined, 'bold')
-    doc.setTextColor(0, 0, 0)
-    doc.text('Resumo Executivo', margin, currentY)
-    currentY += 10
-
-    doc.setFontSize(9)
-    doc.setFont(undefined, 'normal')
-    doc.setTextColor(50, 50, 50)
-
-    const stats = [
-      `Total de Posts: ${posts.length}`,
-      `Engajamento Rate Máximo: ${maxER.toFixed(2)}%`,
-      `Engajamento Rate Médio: ${avgER}%`,
-      `Alcance Total: ${totalAlcance.toLocaleString()} usuários`,
-      `Interações Totais: ${posts.reduce((sum, p) => sum + p.interacoes, 0).toLocaleString()}`
-    ]
-
-    stats.forEach(stat => {
-      doc.text(`• ${stat}`, margin + 5, currentY)
-      currentY += 7
+      // Linha divisória sutil
+      if (idx < posts.length - 1) {
+        doc.setDrawColor(240, 240, 240)
+        doc.setLineWidth(0.2)
+        doc.line(margin, currentY - 1, pageWidth - margin, currentY - 1)
+      }
     })
 
     // Final footer
     doc.setFontSize(8)
-    doc.setTextColor(150, 150, 150)
-    doc.text(
-      `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
-      margin,
-      pageHeight - 10
-    )
+    doc.setTextColor(180, 180, 180)
+    doc.text('Content Intelligence OS', margin, pageHeight - 10)
 
-    doc.save(`Relatorio_Performance_${platform}_${new Date().getTime()}.pdf`)
+    return doc
+  }
+
+  const openPDFPreview = () => {
+    if (posts.length === 0) {
+      setError('Nenhum post disponível para gerar PDF')
+      return
+    }
+
+    const doc = generatePDF()
+    const pdfBlob = doc.output('blob')
+    const pdfUrl = URL.createObjectURL(pdfBlob)
+    window.open(pdfUrl, '_blank')
+  }
+
+  const downloadPDF = () => {
+    const doc = generatePDF()
+    doc.save(`Relatorio_LinkedIn_${period}_${new Date().getTime()}.pdf`)
   }
 
   const maxER = posts.length > 0 ? Math.max(...posts.map(p => p.er)) : 0
