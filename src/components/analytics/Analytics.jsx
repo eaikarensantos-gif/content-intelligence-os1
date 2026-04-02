@@ -633,10 +633,15 @@ export default function Analytics() {
 
             const sorted = [...enriched]
               .filter((m) => {
-                // Filter by post type
+                // Filter by post type or platform
                 if (filterPostType) {
-                  if (filterPostType === 'story' && m.post_type !== 'story') return false
-                  if (filterPostType === 'feed' && m.post_type === 'story') return false
+                  if (filterPostType === 'linkedin') {
+                    if (m.platform !== 'linkedin') return false
+                  } else if (filterPostType === 'story') {
+                    if (m.post_type !== 'story') return false
+                  } else if (filterPostType === 'feed') {
+                    if (m.post_type === 'story' || m.platform === 'linkedin') return false
+                  }
                 }
                 // Filter by search term
                 if (rawDataSearch) {
@@ -884,20 +889,25 @@ export default function Analytics() {
                   </div>
                 )}
 
-                {enriched.some((m) => m.post_type) && (
-                  <div className="flex gap-1.5 mb-4">
+                {enriched.length > 0 && (
+                  <div className="flex gap-1.5 mb-4 flex-wrap">
                     {[
                       { id: '', label: 'Todos' },
                       { id: 'story', label: 'Stories' },
                       { id: 'feed', label: 'Feed' },
+                      ...(enriched.some(m => m.platform === 'linkedin') ? [{ id: 'linkedin', label: 'LinkedIn' }] : []),
                     ].map(({ id, label }) => (
                       <button
                         key={id}
                         onClick={() => setFilterPostType(id)}
                         className={`text-xs px-3 py-1 rounded-full border transition-all ${
-                          filterPostType === id
-                            ? 'bg-orange-600 text-white border-orange-600'
-                            : 'bg-white text-gray-500 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                          id === 'linkedin'
+                            ? filterPostType === 'linkedin'
+                              ? 'bg-violet-600 text-white border-violet-600'
+                              : 'bg-white text-violet-500 border-violet-200 hover:border-violet-400 hover:text-violet-700'
+                            : filterPostType === id
+                              ? 'bg-orange-600 text-white border-orange-600'
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-orange-300 hover:text-orange-600'
                         }`}
                       >
                         {label}
