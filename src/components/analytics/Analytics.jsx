@@ -10,14 +10,14 @@ import {
   Image, Play, Layers, ChevronUp, ChevronDown, ChevronsUpDown,
   UserPlus, Zap, Target, Copy, Wand2, ArrowUpRight, ArrowDownRight,
   Minus, Crown, AlertCircle, CheckCircle, Search, Filter, X, Upload, RefreshCw,
+  MessageSquare, FileText, Calendar, Printer, ClipboardCopy,
 } from 'lucide-react'
-import Papa from 'papaparse'
 import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
 import WeeklyPlanner from './WeeklyPlanner'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
-import { normalizeRow } from '../../utils/csvNormalizer'
+import { normalizeRow, parseFile } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 
 const COLORS = ['#f97316', '#fb923c', '#2563eb', '#0891b2', '#059669', '#d97706']
@@ -75,13 +75,14 @@ const POST_TYPE_STYLES = {
   carousel: 'bg-orange-100 text-orange-700 border-orange-200',
   image:    'bg-sky-100 text-sky-700 border-sky-200',
   video:    'bg-blue-100 text-blue-700 border-blue-200',
+  artigo:   'bg-emerald-100 text-emerald-700 border-emerald-200',
 }
-const POST_TYPE_ICONS = { story: Film, reel: Play, carousel: Layers, image: Image, video: Play }
+const POST_TYPE_ICONS = { story: Film, reel: Play, carousel: Layers, image: Image, video: Play, artigo: FileText }
 function PostTypeBadge({ type }) {
   if (!type) return null
   const style = POST_TYPE_STYLES[type] || 'bg-gray-100 text-gray-500 border-gray-200'
   const Icon = POST_TYPE_ICONS[type]
-  const labels = { story: 'Story', reel: 'Reel', carousel: 'Carrossel', image: 'Imagem', video: 'Vídeo' }
+  const labels = { story: 'Story', reel: 'Reel', carousel: 'Carrossel', image: 'Imagem', video: 'Vídeo', artigo: 'Artigo' }
   return (
     <span className={`chip border text-[10px] inline-flex items-center gap-1 capitalize ${style}`}>
       {Icon && <Icon size={9} />}
@@ -135,9 +136,17 @@ function classifyPerformance(enriched) {
 const TABS = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
+  { id: 'publi', label: 'Publi' },
   { id: 'insights', label: 'Insights IA' },
   { id: 'planner', label: 'Próxima Semana' },
 ]
+
+const PUBLI_SIGNALS = ['#publi', '#ad', '#parceria', '#publicidade', '#sponsored', '#parceiro']
+
+function detectBrand(description = '') {
+  const mentions = description.match(/@[\w._]+/gi) || []
+  return mentions.map(m => m.replace('@', '')).join(', ') || '—'
+}
 
 // ── Post Card for the new Posts tab ─────────────────────────────────────────
 function PostCard({ m, onDelete, onTemplate, onGenerate }) {
@@ -279,6 +288,7 @@ function ZoneHeader({ icon: Icon, title, count, color, description, collapsed, o
 export default function Analytics() {
   const metrics = useStore((s) => s.metrics)
   const posts = useStore((s) => s.posts)
+  const clients = useStore((s) => s.clients) || []
   const addMetric = useStore((s) => s.addMetric)
   const deleteMetric = useStore((s) => s.deleteMetric)
   const addIdea = useStore((s) => s.addIdea)
@@ -299,9 +309,24 @@ export default function Analytics() {
   const [postTabType, setPostTabType] = useState('')
   const [postTabDateFrom, setPostTabDateFrom] = useState('')
   const [postTabDateTo, setPostTabDateTo] = useState('')
+  const [postTabClient, setPostTabClient] = useState('')
   const [postTabSort, setPostTabSort] = useState('date')
   const [collapsedZones, setCollapsedZones] = useState({})
   const [savedTemplates, setSavedTemplates] = useState({})
+
+  // Publi tab state
+  const [publiMonth, setPubliMonth] = useState(() => {
+    const currentDate = new Date()
+    return `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+  })
+  const [publiClient, setPubliClient] = useState('')
+  const [publiReport, setPubliReport] = useState(null)
+  const [publiLoading, setPubliLoading] = useState(false)
+  const [publiError, setPubliError] = useState(null)
+  const [publiClientReport, setPubliClientReport] = useState(null)
+  const [publiClientLoading, setPubliClientLoading] = useState(false)
+  const [publiWhatsapp, setPubliWhatsapp] = useState('')
+  const [publiNotes, setPubliNotes] = useState('')
 
   const enriched = metrics.map(enrichMetric)
   const timeline = timelineData(metrics)
@@ -731,6 +756,17 @@ export default function Analytics() {
           if (postTabSearch && !m.description?.toLowerCase().includes(postTabSearch.toLowerCase())) return false
           if (postTabDateFrom && m.date < postTabDateFrom) return false
           if (postTabDateTo && m.date > postTabDateTo) return false
+          if (postTabClient) {
+            const client = clients.find(c => c.id === postTabClient)
+            if (client) {
+              const desc = (m.description || '').toLowerCase()
+              const name = client.name?.toLowerCase() || ''
+              const tags = (client.hashtags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
+              const matchName = desc.includes(name)
+              const matchTag = tags.some(tag => desc.includes(tag))
+              if (!matchName && !matchTag) return false
+            }
+          }
           return true
         }
 
@@ -804,10 +840,18 @@ export default function Analytics() {
                 </select>
                 <select className="select text-xs py-1.5 w-36" value={postTabType} onChange={(e) => setPostTabType(e.target.value)}>
                   <option value="">Todos os tipos</option>
-                  {['story', 'reel', 'carousel', 'image', 'video'].map((t) => (
+                  {['story', 'reel', 'carousel', 'image', 'video', 'artigo'].map((t) => (
                     <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                   ))}
                 </select>
+                {clients.length > 0 && (
+                  <select className="select text-xs py-1.5 w-44" value={postTabClient} onChange={(e) => setPostTabClient(e.target.value)}>
+                    <option value="">Todos os clientes</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="flex gap-2 items-center flex-wrap">
                 <div className="flex items-center gap-1.5">
@@ -825,26 +869,26 @@ export default function Analytics() {
                   <option value="likes">Ordenar: Mais curtidas</option>
                   <option value="engagement_rate">Ordenar: Melhor taxa eng.</option>
                 </select>
-                {(postTabSearch || postTabPlatform || postTabType || postTabDateFrom || postTabDateTo) && (
+                {(postTabSearch || postTabPlatform || postTabType || postTabDateFrom || postTabDateTo || postTabClient) && (
                   <button
-                    onClick={() => { setPostTabSearch(''); setPostTabPlatform(''); setPostTabType(''); setPostTabDateFrom(''); setPostTabDateTo('') }}
+                    onClick={() => { setPostTabSearch(''); setPostTabPlatform(''); setPostTabType(''); setPostTabDateFrom(''); setPostTabDateTo(''); setPostTabClient('') }}
                     className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1"
                   >
                     <X size={10} /> Limpar filtros
                   </button>
                 )}
                 <span className="text-xs text-gray-400 ml-auto">{totalFiltered} resultado{totalFiltered !== 1 ? 's' : ''}</span>
-                <input type="file" ref={csvRef} accept=".csv" className="hidden"
-                  onChange={(e) => {
+                <input type="file" ref={csvRef} accept=".csv,.xlsx,.xls" className="hidden"
+                  onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (!file) return
-                    Papa.parse(file, {
-                      header: true, skipEmptyLines: true,
-                      complete: ({ data }) => {
-                        const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
-                        rows.forEach(row => addMetric(row))
-                      },
-                    })
+                    try {
+                      const { data } = await parseFile(file)
+                      const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                      rows.forEach(row => addMetric(row))
+                    } catch (err) {
+                      console.error(err)
+                    }
                     e.target.value = ''
                   }}
                 />
@@ -852,7 +896,7 @@ export default function Analytics() {
                   onClick={() => csvRef.current?.click()}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                 >
-                  <Upload size={12} /> Importar CSV
+                  <Upload size={12} /> Importar arquivo
                 </button>
                 <button
                   onClick={() => {
@@ -965,6 +1009,614 @@ export default function Analytics() {
                   </div>
                 )}
               </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ===== PUBLI — Relatório de Publicidade ===== */}
+      {tab === 'publi' && (() => {
+        const [year, month] = publiMonth.split('-').map(Number)
+        const firstOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
+        const lastDayNum = new Date(year, month, 0).getDate()
+        const lastDay = `${year}-${String(month).padStart(2, '0')}-${lastDayNum}`
+
+        const monthLabel = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+        // Filtra por mês + sinalizadores publi
+        let publiPosts = enriched.filter(m => {
+          if (m.date < firstOfMonth || m.date > lastDay) return false
+          const desc = (m.description || '').toLowerCase()
+          const hasSignal = PUBLI_SIGNALS.some(s => desc.includes(s))
+          const hasMention = /@[\w._]+/i.test(desc)
+          return hasSignal || hasMention
+        }).sort((a, b) => new Date(b.date) - new Date(a.date))
+
+        // Filtra por cliente selecionado
+        if (publiClient) {
+          const client = clients.find(c => c.id === publiClient)
+          if (client) {
+            const cName = client.name?.toLowerCase() || ''
+            const cTags = (client.hashtags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
+            publiPosts = publiPosts.filter(m => {
+              const desc = (m.description || '').toLowerCase()
+              return desc.includes(cName) || desc.includes('@' + cName) || cTags.some(t => desc.includes(t))
+            })
+          }
+        }
+
+        const fmtDateShort = (d) => {
+          if (!d) return '—'
+          try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) }
+          catch { return d }
+        }
+
+        const selectedClientName = publiClient ? (clients.find(c => c.id === publiClient)?.name || '') : ''
+
+        // Gera meses disponíveis baseado nos dados
+        const availableMonths = (() => {
+          const months = new Set()
+          enriched.forEach(m => {
+            if (m.date) months.add(m.date.slice(0, 7))
+          })
+          // Sempre incluir mês atual
+          const _now = new Date()
+          const cur = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
+          months.add(cur)
+          return [...months].sort().reverse()
+        })()
+
+        // ── Análise de Maturidade (prompt técnico) ──
+        const handlePubliAnalysis = async () => {
+          if (publiPosts.length === 0) return
+          setPubliLoading(true)
+          setPubliError(null)
+          setPubliReport(null)
+
+          const apiKey = localStorage.getItem('cio-anthropic-key') || ''
+          if (!apiKey) { setPubliError('Configure sua API key em Relatórios > ícone de chave.'); setPubliLoading(false); return }
+
+          const tableData = publiPosts.map(m => ({
+            data: fmtDateShort(m.date), marca: detectBrand(m.description),
+            alcance: m.impressions, er: (m.engagement_rate * 100).toFixed(2) + '%',
+            curtidas: m.likes || 0, comentarios: m.comments || 0, compartilhamentos: m.shares || 0,
+            desc: (m.description || '').slice(0, 120),
+          }))
+
+          const prompt = `Atue como um Analista de Dados sênior. Prioridade absoluta: recorte cronológico. Filtre e organize dados de forma técnica e minimalista.
+
+PERÍODO: ${fmtDateShort(firstOfMonth)} a ${fmtDateShort(lastDay)} (${monthLabel})
+${selectedClientName ? `CLIENTE: ${selectedClientName}` : 'TODOS OS CLIENTES'}
+POSTS PUBLI: ${publiPosts.length}
+
+DADOS:
+${tableData.map((r, i) => `${i + 1}. ${r.data} | ${r.marca} | Alcance: ${r.alcance} | ER: ${r.er} | Curtidas: ${r.curtidas} | Coment: ${r.comentarios} | Compart: ${r.compartilhamentos} | "${r.desc}"`).join('\n')}
+
+Retorne EXCLUSIVAMENTE JSON válido:
+{
+  "status_periodo": "ex: 01/04 a 30/04",
+  "ranking_marcas": [{"marca": "...", "posts": 0, "alcance_total": 0, "er_medio": "...", "veredicto": "frase curta"}],
+  "insight_maturidade": "qual publi gerou conversas mais qualificadas. Direto, sem adjetivos.",
+  "recomendacoes": ["...", "...", "..."],
+  "melhor_post": {"marca": "...", "alcance": 0, "er": "...", "motivo": "..."},
+  "pior_post": {"marca": "...", "alcance": 0, "er": "...", "motivo": "..."},
+  "por_formato": [{"formato": "...", "posts": 0, "er_medio": "..."}]
+}`
+
+          try {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+              body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
+            })
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
+            const data = await res.json()
+            const text = data.content?.[0]?.text || ''
+            const jsonMatch = text.match(/\{[\s\S]*\}/)
+            if (!jsonMatch) throw new Error('Resposta inválida da IA')
+            setPubliReport(JSON.parse(jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')))
+          } catch (err) { setPubliError(err.message) }
+          finally { setPubliLoading(false) }
+        }
+
+        // ── Relatório para Cliente (formatado para enviar) ──
+        const handleClientReport = async () => {
+          if (publiPosts.length === 0) return
+          setPubliClientLoading(true)
+          setPubliError(null)
+          setPubliClientReport(null)
+          setPubliWhatsapp('')
+
+          const apiKey = localStorage.getItem('cio-anthropic-key') || ''
+          if (!apiKey) { setPubliError('Configure sua API key em Relatórios > ícone de chave.'); setPubliClientLoading(false); return }
+
+          const clientLabel = selectedClientName || 'Cliente'
+          const totalImp = publiPosts.reduce((s, m) => s + m.impressions, 0)
+          const totalEng = publiPosts.reduce((s, m) => s + m.engagement, 0)
+          const avgER = (publiPosts.reduce((s, m) => s + m.engagement_rate, 0) / publiPosts.length * 100).toFixed(2)
+          const top = [...publiPosts].sort((a, b) => b.engagement_rate - a.engagement_rate)[0]
+          const worst = [...publiPosts].sort((a, b) => a.engagement_rate - b.engagement_rate)[0]
+
+          const totalSaves = publiPosts.reduce((s, m) => s + (m.saves || 0), 0)
+          const totalClicks = publiPosts.reduce((s, m) => s + (m.link_clicks || 0), 0)
+
+          const formatMap = {}
+          publiPosts.forEach(m => {
+            const t = m.post_type || 'outro'
+            if (!formatMap[t]) formatMap[t] = { count: 0, er_sum: 0 }
+            formatMap[t].count++
+            formatMap[t].er_sum += m.engagement_rate
+          })
+
+          // Agrupar por plataforma
+          const platformMap = {}
+          publiPosts.forEach(m => {
+            const p = m.platform || 'instagram'
+            if (!platformMap[p]) platformMap[p] = { count: 0, imp: 0, er_sum: 0 }
+            platformMap[p].count++
+            platformMap[p].imp += m.impressions
+            platformMap[p].er_sum += m.engagement_rate
+          })
+          const platforms = Object.keys(platformMap)
+
+          const hashtagCount = {}
+          publiPosts.forEach(m => {
+            const tags = (m.description || '').match(/#[\w\u00C0-\u024F]+/gi) || []
+            tags.forEach(t => { const l = t.toLowerCase(); hashtagCount[l] = (hashtagCount[l] || 0) + 1 })
+          })
+          const topHashtags = Object.entries(hashtagCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t, c]) => `${t} (${c}x)`)
+
+          // Detalhes de cada post para o prompt
+          const postDetails = publiPosts.map((m, i) => {
+            const parts = [`${i + 1}. ${fmtDateShort(m.date)} [${m.platform || 'instagram'}]`]
+            parts.push(`Marca: ${detectBrand(m.description)}`)
+            parts.push(`Tipo: ${m.post_type || '—'}`)
+            parts.push(`Alcance: ${m.impressions} | ER: ${(m.engagement_rate * 100).toFixed(2)}%`)
+            parts.push(`Curtidas: ${m.likes || 0} | Coment: ${m.comments || 0} | Compart: ${m.shares || 0} | Salv: ${m.saves || 0} | Cliques: ${m.link_clicks || 0}`)
+            if (m.link) parts.push(`Link: ${m.link}`)
+            parts.push(`Legenda: "${(m.description || '').slice(0, 100)}"`)
+            return parts.join(' | ')
+          }).join('\n')
+
+          const prompt = `Você é um analista de conteúdo gerando relatório mensal para enviar ao cliente.
+
+DADOS:
+- Cliente: ${clientLabel}
+- Período: ${monthLabel}
+- Plataformas: ${platforms.join(', ')}
+- Posts: ${publiPosts.length}
+- Impressões totais: ${totalImp.toLocaleString('pt-BR')}
+- Engajamento total: ${totalEng.toLocaleString('pt-BR')}
+- Taxa eng. média: ${avgER}%
+- Salvamentos totais: ${totalSaves}
+- Cliques no link totais: ${totalClicks}
+- Melhor post: "${(top?.description || '').slice(0, 80)}" — ER: ${top ? (top.engagement_rate * 100).toFixed(2) : 0}%
+- Pior post: "${(worst?.description || '').slice(0, 80)}" — ER: ${worst ? (worst.engagement_rate * 100).toFixed(2) : 0}%
+- Hashtags mais usadas: ${topHashtags.join(', ') || 'nenhuma'}
+- Por formato: ${Object.entries(formatMap).map(([f, d]) => `${f}: ${d.count} posts, ER médio ${(d.er_sum / d.count * 100).toFixed(2)}%`).join('; ')}
+${platforms.length > 1 ? `- Por plataforma: ${Object.entries(platformMap).map(([p, d]) => `${p}: ${d.count} posts, ${d.imp.toLocaleString('pt-BR')} imp, ER ${(d.er_sum / d.count * 100).toFixed(2)}%`).join('; ')}` : ''}
+
+DETALHES DOS POSTS:
+${postDetails}
+
+Gere EXCLUSIVAMENTE JSON:
+{
+  "resumo_executivo": "3-4 linhas max. Total de posts, melhor resultado, observação da audiência.",
+  "numeros": {"posts": 0, "impressoes": "...", "er_medio": "...", "salvamentos": "...", "cliques_link": "...", "melhor_post": "...", "pior_post": "...", "hashtags_top": ["..."], "mencoes_top": ["..."]},
+  "por_formato": [{"formato": "...", "posts": 0, "er_medio": "...", "veredicto": "..."}],
+  ${platforms.length > 1 ? '"por_plataforma": [{"plataforma": "...", "posts": 0, "impressoes": "...", "er_medio": "...", "veredicto": "..."}],' : ''}
+  "proximos_passos": ["passo 1", "passo 2", "passo 3"],
+  "whatsapp": "Resumo em 5 linhas para WhatsApp. Tom próximo, direto, número mais importante primeiro. Formato brasileiro. Sem emojis."
+}
+
+REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.234). Se dado falta, use '— dado não disponível'. Foco no essencial.`
+
+          try {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+              body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
+            })
+            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
+            const data = await res.json()
+            const text = data.content?.[0]?.text || ''
+            const jsonMatch = text.match(/\{[\s\S]*\}/)
+            if (!jsonMatch) throw new Error('Resposta inválida da IA')
+            const parsed = JSON.parse(jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+            setPubliClientReport(parsed)
+            setPubliWhatsapp(parsed.whatsapp || '')
+          } catch (err) { setPubliError(err.message) }
+          finally { setPubliClientLoading(false) }
+        }
+
+        const copyToClipboard = (text) => { navigator.clipboard.writeText(text) }
+
+        return (
+          <div className="space-y-4">
+            {/* Header + Filtros */}
+            <div className="card p-5 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <Target size={16} className="text-orange-500" />
+                    Relatório Publi
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sinalizadores: <span className="font-mono text-orange-600">#publi #ad #parceria @marca</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={12} className="text-gray-400" />
+                    <select
+                      className="select text-xs py-1.5 w-44"
+                      value={publiMonth}
+                      onChange={(e) => { setPubliMonth(e.target.value); setPubliReport(null); setPubliClientReport(null) }}
+                    >
+                      {availableMonths.map(m => {
+                        const [y, mo] = m.split('-').map(Number)
+                        const label = new Date(y, mo - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+                        return <option key={m} value={m}>{label}</option>
+                      })}
+                    </select>
+                  </div>
+                  {clients.length > 0 && (
+                    <select
+                      className="select text-xs py-1.5 w-44"
+                      value={publiClient}
+                      onChange={(e) => { setPubliClient(e.target.value); setPubliReport(null); setPubliClientReport(null) }}
+                    >
+                      <option value="">Todos os clientes</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-orange-200/50">
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase">Período</span>
+                  <p className="text-xs font-semibold text-gray-700">{fmtDateShort(firstOfMonth)} a {fmtDateShort(lastDay)}</p>
+                </div>
+                {selectedClientName && (
+                  <div>
+                    <span className="text-[10px] text-gray-400 uppercase">Cliente</span>
+                    <p className="text-xs font-semibold text-blue-600">{selectedClientName}</p>
+                  </div>
+                )}
+                <div className="ml-auto text-right">
+                  <p className="text-2xl font-bold text-orange-600">{publiPosts.length}</p>
+                  <p className="text-[10px] text-gray-400 uppercase">posts detectados</p>
+                </div>
+              </div>
+            </div>
+
+            {publiPosts.length === 0 ? (
+              <div className="card p-8 text-center">
+                <AlertTriangle size={24} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-sm font-medium text-gray-600">Nenhum dado de publicidade detectado em {monthLabel}.</p>
+                <p className="text-xs text-gray-400 mt-1">Certifique-se de que seus posts contêm #publi, #ad, #parceria ou @marca na descrição.</p>
+              </div>
+            ) : (
+              <>
+                {/* Tabela Técnica */}
+                <div className="card overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Data</th>
+                        <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Marca</th>
+                        <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Plat.</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Alcance</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">ER</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Curtidas</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Coment.</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Compart.</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Salv.</th>
+                        <th className="text-right py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Cliques</th>
+                        <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Tipo</th>
+                        <th className="text-center py-2.5 px-3 font-semibold text-gray-500 uppercase tracking-wider text-[10px]">Link</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {publiPosts.map((m, i) => {
+                        const erColor = m.engagement_rate > 0.04 ? 'text-emerald-600 font-bold' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'
+                        return (
+                          <tr key={m.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-orange-50/30 transition-colors`}>
+                            <td className="py-2.5 px-3 text-gray-700 font-medium">{fmtDateShort(m.date)}</td>
+                            <td className="py-2.5 px-3 text-blue-600 font-medium">{detectBrand(m.description)}</td>
+                            <td className="py-2.5 px-3 text-gray-500 capitalize text-[10px]">{m.platform || '—'}</td>
+                            <td className="py-2.5 px-3 text-right text-gray-700 font-medium">{m.impressions.toLocaleString()}</td>
+                            <td className={`py-2.5 px-3 text-right ${erColor}`}>{(m.engagement_rate * 100).toFixed(2)}%</td>
+                            <td className="py-2.5 px-3 text-right text-gray-600">{(m.likes || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right text-gray-600">{(m.comments || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right text-gray-600">{(m.shares || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right text-gray-600">{(m.saves || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-right text-gray-600">{(m.link_clicks || 0).toLocaleString()}</td>
+                            <td className="py-2.5 px-3 capitalize text-gray-500 text-[10px]">{m.post_type || '—'}</td>
+                            <td className="py-2.5 px-3 text-center">
+                              {m.link ? (
+                                <a href={m.link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600"><ExternalLink size={11} /></a>
+                              ) : <span className="text-gray-300">—</span>}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-100 border-t-2 border-gray-300">
+                        <td className="py-2.5 px-3 font-bold text-gray-700" colSpan={3}>TOTAL</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{publiPosts.reduce((s, m) => s + m.impressions, 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{(publiPosts.reduce((s, m) => s + m.engagement_rate, 0) / publiPosts.length * 100).toFixed(2)}%</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{publiPosts.reduce((s, m) => s + (m.likes || 0), 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{publiPosts.reduce((s, m) => s + (m.comments || 0), 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{publiPosts.reduce((s, m) => s + (m.shares || 0), 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{publiPosts.reduce((s, m) => s + (m.saves || 0), 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-gray-800">{publiPosts.reduce((s, m) => s + (m.link_clicks || 0), 0).toLocaleString()}</td>
+                        <td className="py-2.5 px-3" colSpan={2}></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="card p-4 text-center">
+                    <p className="text-lg font-bold text-gray-900">{publiPosts.length}</p>
+                    <p className="text-[10px] text-gray-400 uppercase">Posts Publi</p>
+                  </div>
+                  <div className="card p-4 text-center">
+                    <p className="text-lg font-bold text-gray-900">
+                      {[...new Set(publiPosts.map(m => detectBrand(m.description)).filter(b => b !== '—'))].length}
+                    </p>
+                    <p className="text-[10px] text-gray-400 uppercase">Marcas</p>
+                  </div>
+                  <div className="card p-4 text-center">
+                    <p className="text-lg font-bold text-emerald-600">
+                      {(publiPosts.reduce((s, m) => s + m.engagement_rate, 0) / publiPosts.length * 100).toFixed(2)}%
+                    </p>
+                    <p className="text-[10px] text-gray-400 uppercase">ER Medio Publi</p>
+                  </div>
+                  <div className="card p-4 text-center">
+                    <p className="text-lg font-bold text-blue-600">
+                      {publiPosts.reduce((s, m) => s + m.impressions, 0).toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-gray-400 uppercase">Alcance Total</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Análise Técnica */}
+                  <div className="card p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <Wand2 size={12} className="text-purple-500" /> Analise Tecnica
+                        </h4>
+                        <p className="text-[10px] text-gray-400">Ranking, maturidade, recomendacoes</p>
+                      </div>
+                      <button onClick={handlePubliAnalysis} disabled={publiLoading} className="btn-primary text-xs py-1.5 px-3">
+                        {publiLoading ? <><RefreshCw size={12} className="animate-spin" /> Analisando...</> : <><Wand2 size={12} /> Gerar</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Relatório para Cliente */}
+                  <div className="card p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <FileText size={12} className="text-blue-500" /> Relatorio para Cliente
+                        </h4>
+                        <p className="text-[10px] text-gray-400">Pronto para enviar + resumo WhatsApp</p>
+                      </div>
+                      <button onClick={handleClientReport} disabled={publiClientLoading} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+                        {publiClientLoading ? <><RefreshCw size={12} className="animate-spin" /> Gerando...</> : <><FileText size={12} /> Gerar</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {publiError && (
+                  <div className="card p-4 border-red-200 bg-red-50">
+                    <p className="text-xs text-red-600 flex items-center gap-2"><AlertTriangle size={14} /> {publiError}</p>
+                  </div>
+                )}
+
+                {/* ═══ Análise Técnica Result ═══ */}
+                {publiReport && (
+                  <div className="space-y-4">
+                    <div className="card p-4 bg-gray-50 border-gray-200">
+                      <p className="text-xs text-gray-500"><span className="font-semibold text-gray-700">Status:</span> {publiReport.status_periodo}</p>
+                    </div>
+
+                    {publiReport.ranking_marcas?.length > 0 && (
+                      <div className="card p-5">
+                        <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <Trophy size={14} className="text-orange-500" /> Ranking por Marca
+                        </h4>
+                        <div className="space-y-2">
+                          {publiReport.ranking_marcas.map((r, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                              <span className="text-sm font-bold text-gray-300 w-5 text-center">{i + 1}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-gray-900">{r.marca}</p>
+                                <p className="text-[10px] text-gray-500">{r.veredicto}</p>
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-gray-600 shrink-0">
+                                <span>{r.posts} post{r.posts !== 1 ? 's' : ''}</span>
+                                <span>{(r.alcance_total || 0).toLocaleString()} alcance</span>
+                                <span className="font-semibold text-emerald-600">{r.er_medio}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {publiReport.por_formato?.length > 0 && (
+                      <div className="card p-5">
+                        <h4 className="text-sm font-bold text-gray-900 mb-3">Por Formato</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {publiReport.por_formato.map((f, i) => (
+                            <div key={i} className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                              <p className="text-xs font-bold text-gray-900 capitalize">{f.formato}</p>
+                              <p className="text-[10px] text-gray-500">{f.posts} posts</p>
+                              <p className="text-xs font-semibold text-emerald-600 mt-1">{f.er_medio}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {publiReport.insight_maturidade && (
+                      <div className="card p-5 border-purple-200 bg-purple-50/50">
+                        <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                          <Target size={14} className="text-purple-500" /> Insight de Maturidade
+                        </h4>
+                        <p className="text-xs text-gray-700 leading-relaxed">{publiReport.insight_maturidade}</p>
+                      </div>
+                    )}
+
+                    {publiReport.recomendacoes?.length > 0 && (
+                      <div className="card p-5">
+                        <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <TrendingUp size={14} className="text-blue-500" /> Recomendacoes
+                        </h4>
+                        <div className="space-y-2">
+                          {publiReport.recomendacoes.map((rec, i) => (
+                            <div key={i} className="flex items-start gap-2 text-xs text-gray-700">
+                              <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold shrink-0 text-[10px]">{i + 1}</span>
+                              <p>{rec}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ═══ Relatório para Cliente Result ═══ */}
+                {publiClientReport && (
+                  <div className="space-y-4" id="client-report">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                        <FileText size={14} className="text-blue-500" />
+                        Relatorio — {selectedClientName || 'Cliente'} — {monthLabel}
+                      </h3>
+                      <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                        <Printer size={12} /> Imprimir / PDF
+                      </button>
+                    </div>
+
+                    {/* Resumo Executivo */}
+                    <div className="card p-5 border-blue-200 bg-blue-50/50">
+                      <h4 className="text-xs font-bold text-gray-900 mb-2 uppercase tracking-wider">Resumo Executivo</h4>
+                      <p className="text-xs text-gray-700 leading-relaxed">{publiClientReport.resumo_executivo}</p>
+                    </div>
+
+                    {/* Números do Mês */}
+                    <div className="card p-5">
+                      <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wider">Numeros do Mes</h4>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div><span className="text-gray-400">Posts:</span> <span className="font-semibold text-gray-900">{publiClientReport.numeros?.posts}</span></div>
+                        <div><span className="text-gray-400">Impressoes:</span> <span className="font-semibold text-gray-900">{publiClientReport.numeros?.impressoes}</span></div>
+                        <div><span className="text-gray-400">ER Medio:</span> <span className="font-semibold text-emerald-600">{publiClientReport.numeros?.er_medio}</span></div>
+                        <div><span className="text-gray-400">Salvamentos:</span> <span className="font-semibold text-gray-900">{publiClientReport.numeros?.salvamentos || '—'}</span></div>
+                        <div><span className="text-gray-400">Cliques no link:</span> <span className="font-semibold text-gray-900">{publiClientReport.numeros?.cliques_link || '—'}</span></div>
+                        <div><span className="text-gray-400">Melhor post:</span> <span className="font-semibold text-gray-900">{publiClientReport.numeros?.melhor_post}</span></div>
+                        <div className="col-span-2"><span className="text-gray-400">Pior post:</span> <span className="font-semibold text-gray-900">{publiClientReport.numeros?.pior_post}</span></div>
+                        {publiClientReport.numeros?.hashtags_top?.length > 0 && (
+                          <div className="col-span-2"><span className="text-gray-400">Hashtags top:</span> <span className="font-semibold text-orange-600">{publiClientReport.numeros.hashtags_top.join(', ')}</span></div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Por Formato */}
+                    {publiClientReport.por_formato?.length > 0 && (
+                      <div className="card p-5">
+                        <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wider">Analise por Formato</h4>
+                        <div className="space-y-2">
+                          {publiClientReport.por_formato.map((f, i) => (
+                            <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                              <span className="text-xs font-medium text-gray-900 capitalize">{f.formato}</span>
+                              <span className="text-xs text-gray-500">{f.posts} posts</span>
+                              <span className="text-xs font-semibold text-emerald-600">{f.er_medio}</span>
+                              <span className="text-[10px] text-gray-500 max-w-[200px] truncate">{f.veredicto}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Por Plataforma */}
+                    {publiClientReport.por_plataforma?.length > 0 && (
+                      <div className="card p-5">
+                        <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wider">Por Plataforma</h4>
+                        <div className="space-y-2">
+                          {publiClientReport.por_plataforma.map((p, i) => (
+                            <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                              <span className="text-xs font-medium text-gray-900 capitalize">{p.plataforma}</span>
+                              <span className="text-xs text-gray-500">{p.posts} posts</span>
+                              <span className="text-xs text-gray-500">{p.impressoes} imp.</span>
+                              <span className="text-xs font-semibold text-emerald-600">{p.er_medio}</span>
+                              <span className="text-[10px] text-gray-500 max-w-[200px] truncate">{p.veredicto}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Observações da Consultora */}
+                    <div className="card p-5">
+                      <h4 className="text-xs font-bold text-gray-900 mb-2 uppercase tracking-wider">Observacoes da Consultora</h4>
+                      <textarea
+                        value={publiNotes}
+                        onChange={(e) => setPubliNotes(e.target.value)}
+                        placeholder="Escreva suas observacoes pessoais aqui antes de enviar ao cliente..."
+                        className="w-full text-xs border border-gray-200 rounded-xl p-3 min-h-[80px] outline-none focus:border-orange-300 resize-y"
+                      />
+                    </div>
+
+                    {/* Próximos Passos */}
+                    {publiClientReport.proximos_passos?.length > 0 && (
+                      <div className="card p-5">
+                        <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wider">Proximos Passos</h4>
+                        <div className="space-y-2">
+                          {publiClientReport.proximos_passos.map((p, i) => (
+                            <div key={i} className="flex items-start gap-2 text-xs text-gray-700">
+                              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0 text-[10px]">{i + 1}</span>
+                              <p>{p}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Resumo WhatsApp */}
+                    {publiWhatsapp && (
+                      <div className="card p-5 border-green-200 bg-green-50/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                            <MessageSquare size={12} className="text-green-600" /> Resumo para WhatsApp
+                          </h4>
+                          <button
+                            onClick={() => copyToClipboard(publiWhatsapp)}
+                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                          >
+                            <Copy size={10} /> Copiar
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">{publiWhatsapp}</p>
+                      </div>
+                    )}
+
+                    <div className="text-center py-3 border-t border-gray-100">
+                      <p className="text-[10px] text-gray-300">Relatorio gerado por Content Intelligence OS</p>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )
