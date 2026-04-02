@@ -103,71 +103,83 @@ export default function PostAnalyzer() {
   const parseLinkedInData = (workbook) => {
     try {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json(sheet)
 
-      // Extract all unique periods from data
-      const periodsMap = {}
-      jsonData.forEach(row => {
-        const rowDate = row['Data de publicação']
-        if (rowDate) {
-          try {
-            const pDate = new Date(rowDate)
-            const periodKey = `${pDate.getFullYear()}-${String(pDate.getMonth() + 1).padStart(2, '0')}`
-            periodsMap[periodKey] = (periodsMap[periodKey] || 0) + 1
-          } catch {}
-        }
-      })
-
-      const availablePeriods = Object.keys(periodsMap).sort()
-      let activePeriod = period
-
-      // If selected period has no data, use the first available period
-      if (availablePeriods.length > 0 && !periodsMap[period]) {
-        activePeriod = availablePeriods[0]
-        setPeriod(activePeriod)
+      // LinkedIn individual post report format (one post per file)
+      // Extract values from specific cells
+      const getCell = (addr) => {
+        const cell = sheet[addr]
+        return cell ? cell.v : null
       }
 
-      const [year, month] = activePeriod.split('-')
-      const currentPeriod = new Date(`${year}-${month}-01`)
+      const url = getCell('B1') || 'Link não disponível'
+      const dataText = getCell('B2') // e.g., "10 de mar de 2026"
+      const impressoes = parseInt(getCell('B6')) || 0
+      const alcance = parseInt(getCell('B7')) || 0
+      const reacoes = parseInt(getCell('B10')) || 0
+      const comentarios = parseInt(getCell('B11')) || 0
+      const compartilhamentos = parseInt(getCell('B12')) || 0
+      const salvamentos = parseInt(getCell('B13')) || 0
 
-      // Parse LinkedIn data
-      const posts = jsonData
-        .filter(row => {
-          const rowDate = row['Data de publicação']
-          if (!rowDate) return false
-          try {
-            const pDate = new Date(rowDate)
-            return pDate.getFullYear() === currentPeriod.getFullYear() &&
-                   pDate.getMonth() === currentPeriod.getMonth()
-          } catch {
-            return false
-          }
-        })
-        .map(row => {
-          const engajamento = parseInt(row['Engajamento'] || 0) || 0
-          const impressoes = parseInt(row['Impressões'] || 0) || 0
-          const er = impressoes > 0 ? ((engajamento / impressoes) * 100).toFixed(2) : 0
+      const engajamento = reacoes + comentarios + compartilhamentos + salvamentos
+      const base = alcance > 0 ? alcance : impressoes
+      const er = base > 0 ? ((engajamento / base) * 100).toFixed(2) : 0
 
-          const url = row['URL da publicação'] || 'Link não disponível'
-          const titulo = url !== 'Link não disponível' ? url.substring(0, 50) : 'Post sem URL'
+      // Parse date from "10 de mar de 2026" format
+      const parseLinkedInDate = (dateText) => {
+        if (!dateText) return null
+        const meses = {
+          'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
+          'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
+        }
 
-          return {
-            data: row['Data de publicação'],
-            titulo: titulo,
-            er: parseFloat(er),
-            alcance: impressoes,
-            link: url,
-            interacoes: engajamento,
-            base: impressoes
-          }
-        })
-        .sort((a, b) => b.er - a.er)
+        const match = dateText.match(/(\d+)\s+de\s+(\w+)\s+de\s+(\d+)/)
+        if (!match) return null
+
+        const [, day, monthName, year] = match
+        const month = meses[monthName.toLowerCase()]
+        if (!month) return null
+
+        return new Date(`${year}-${month}-${day}`)
+      }
+
+      const parsedDate = parseLinkedInDate(dataText)
+      if (!parsedDate) throw new Error('Não foi possível extrair a data do arquivo')
+
+      const dataFormatada = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`
+      const periodKey = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
+
+      // Check if date matches selected period
+      const [year, month] = period.split('-')
+      const selectedPeriod = new Date(`${year}-${month}-01`)
+
+      if (parsedDate.getFullYear() !== selectedPeriod.getFullYear() ||
+          parsedDate.getMonth() !== selectedPeriod.getMonth()) {
+        // Auto-update period to match file data
+        setPeriod(periodKey)
+      }
+
+      const post = {
+        data: dataFormatada,
+        titulo: url !== 'Link não disponível' ? url.substring(0, 50) : 'Post sem URL',
+        er: parseFloat(er),
+        alcance: alcance,
+        link: url,
+        interacoes: engajamento,
+        base: base,
+        detalhes: {
+          impressoes,
+          reacoes,
+          comentarios,
+          compartilhamentos,
+          salvamentos
+        }
+      }
 
       return {
         platform: 'linkedin',
-        period: activePeriod,
-        posts: posts,
-        maxER: posts.length > 0 ? Math.max(...posts.map(p => p.er)) : 0
+        period: periodKey,
+        posts: [post],
+        maxER: parseFloat(er)
       }
     } catch (err) {
       throw new Error(`Erro ao processar dados do LinkedIn: ${err.message}`)
