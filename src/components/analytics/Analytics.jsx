@@ -733,14 +733,14 @@ export default function Analytics() {
                                 )}
                               </div>
                             </td>
-                            <td className="py-2 px-2.5 text-gray-700">{m.impressions.toLocaleString()}</td>
-                            <td className="py-2 px-2.5 text-gray-500">{m.reach.toLocaleString()}</td>
-                            <td className="py-2 px-2.5 text-gray-500">{m.likes.toLocaleString()}</td>
-                            <td className="py-2 px-2.5 text-gray-500">{m.comments.toLocaleString()}</td>
-                            <td className="py-2 px-2.5 text-gray-500">{m.shares.toLocaleString()}</td>
-                            <td className="py-2 px-2.5 text-gray-500">{m.saves.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-700">{(m.impressions || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.reach || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.likes || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.comments || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.shares || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.saves || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{(m.follows || 0).toLocaleString()}</td>
-                            <td className="py-2 px-2.5 text-gray-700 font-medium">{m.engagement.toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-700 font-medium">{(m.engagement || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5">
                               <span className={`font-semibold ${m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
                                 {(m.engagement_rate * 100).toFixed(2)}%
@@ -1178,7 +1178,7 @@ Retorne EXCLUSIVAMENTE JSON válido:
             const t = m.post_type || 'outro'
             if (!formatMap[t]) formatMap[t] = { count: 0, er_sum: 0 }
             formatMap[t].count++
-            formatMap[t].er_sum += m.engagement_rate
+            formatMap[t].er_sum += (m.engagement_rate || 0)
           })
 
           // Agrupar por plataforma
@@ -1187,8 +1187,8 @@ Retorne EXCLUSIVAMENTE JSON válido:
             const p = m.platform || 'instagram'
             if (!platformMap[p]) platformMap[p] = { count: 0, imp: 0, er_sum: 0 }
             platformMap[p].count++
-            platformMap[p].imp += m.impressions
-            platformMap[p].er_sum += m.engagement_rate
+            platformMap[p].imp += (m.impressions || 0)
+            platformMap[p].er_sum += (m.engagement_rate || 0)
           })
           const platforms = Object.keys(platformMap)
 
