@@ -148,9 +148,16 @@ export default function PostAnalyzer() {
         parsedData = parseLinkedInData(workbook)
       }
 
+      if (!parsedData || parsedData.posts.length === 0) {
+        setError('Nenhum post encontrado no período selecionado')
+        setLoading(false)
+        return
+      }
+
       setData(parsedData)
     } catch (err) {
-      setError(err.message)
+      console.error('Erro ao processar arquivo:', err)
+      setError(err.message || 'Erro ao processar arquivo')
     } finally {
       setLoading(false)
     }
