@@ -332,6 +332,9 @@ export default function Analytics() {
   const [publiClientLoading, setPubliClientLoading] = useState(false)
   const [publiWhatsapp, setPubliWhatsapp] = useState('')
   const [publiNotes, setPubliNotes] = useState('')
+  const [publiSearch, setPubliSearch] = useState('')
+  const [publiUnifiedLoading, setPubliUnifiedLoading] = useState(false)
+  const [publiUnifiedReport, setPubliUnifiedReport] = useState(null)
 
   // LinkedIn tab state
   const [linkedinData, setLinkedinData] = useState(null)
@@ -1061,6 +1064,20 @@ export default function Analytics() {
           }
         }
 
+        // Aplica filtro de busca
+        if (publiSearch) {
+          const searchLower = publiSearch.toLowerCase()
+          publiPosts = publiPosts.filter(m => {
+            const desc = (m.description || '').toLowerCase()
+            const brand = detectBrand(m.description).toLowerCase()
+            return (
+              desc.includes(searchLower) ||
+              brand.includes(searchLower) ||
+              m.platform?.toLowerCase().includes(searchLower)
+            )
+          })
+        }
+
         const fmtDateShort = (d) => {
           if (!d) return '—'
           try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) }
@@ -1247,6 +1264,186 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
 
         const copyToClipboard = (text) => { navigator.clipboard.writeText(text) }
 
+        // ── Relatório Unificado (Instagram + LinkedIn) ──
+        const handleUnifiedReport = async () => {
+          if (publiPosts.length === 0) return
+
+          setPubliUnifiedLoading(true)
+          setPubliError(null)
+
+          try {
+            // 1. Separar por plataforma
+            const igPosts = publiPosts.filter(p => p.platform === 'instagram')
+            const liPosts = publiPosts.filter(p => p.platform === 'linkedin')
+
+            // 2. Calcular métricas unificadas
+            const totalReach = igPosts.reduce((s, p) => s + p.impressions, 0) +
+                              liPosts.reduce((s, p) => s + p.impressions, 0)
+            const totalEngagement = publiPosts.reduce((s, p) => s + (p.likes || 0) + (p.comments || 0) + (p.shares || 0), 0)
+            const avgER = publiPosts.length > 0
+              ? (publiPosts.reduce((s, p) => s + p.engagement_rate, 0) / publiPosts.length * 100).toFixed(2)
+              : '0.00'
+
+            const unifiedData = {
+              period: `${fmtDateShort(firstOfMonth)} a ${fmtDateShort(lastDay)}`,
+              client: selectedClientName || 'Todos os Clientes',
+              totalPosts: publiPosts.length,
+              totalReach,
+              totalEngagement,
+              avgER,
+              byPlatform: {
+                instagram: {
+                  posts: igPosts.length,
+                  reach: igPosts.reduce((s, p) => s + p.impressions, 0),
+                  engagement: igPosts.reduce((s, p) => s + (p.likes || 0) + (p.comments || 0) + (p.shares || 0), 0),
+                  er: igPosts.length > 0 ? (igPosts.reduce((s, p) => s + p.engagement_rate, 0) / igPosts.length * 100).toFixed(2) : '0'
+                },
+                linkedin: {
+                  posts: liPosts.length,
+                  reach: liPosts.reduce((s, p) => s + p.impressions, 0),
+                  engagement: liPosts.reduce((s, p) => s + (p.likes || 0) + (p.comments || 0) + (p.shares || 0), 0),
+                  er: liPosts.length > 0 ? (liPosts.reduce((s, p) => s + p.engagement_rate, 0) / liPosts.length * 100).toFixed(2) : '0'
+                }
+              },
+              posts: publiPosts.sort((a, b) => b.engagement_rate - a.engagement_rate)
+            }
+
+            // 3. Gerar PDF
+            generateUnifiedPDF(unifiedData)
+            setPubliUnifiedReport(unifiedData)
+          } catch (err) {
+            setPubliError(err.message)
+          } finally {
+            setPubliUnifiedLoading(false)
+          }
+        }
+
+        // ── Gerar PDF Unificado ──
+        const generateUnifiedPDF = (data) => {
+          const { jsPDF } = window.jspdf
+          const doc = new jsPDF()
+          const pageHeight = doc.internal.pageSize.getHeight()
+          const pageWidth = doc.internal.pageSize.getWidth()
+          let currentY = 20
+
+          // PÁGINA 1: CAPA
+          doc.setFillColor(16, 185, 129) // Emerald
+          doc.rect(0, 0, pageWidth, pageHeight / 3, 'F')
+
+          doc.setFontSize(28)
+          doc.setTextColor(255, 255, 255)
+          doc.setFont(undefined, 'bold')
+          doc.text('RELATÓRIO UNIFICADO', 20, 60)
+          doc.text(data.client, 20, 85)
+
+          doc.setFontSize(11)
+          doc.setTextColor(200, 200, 200)
+          doc.setFont(undefined, 'normal')
+          doc.text(`Período: ${data.period}`, 20, 110)
+          doc.text(`Plataformas: Instagram + LinkedIn`, 20, 120)
+
+          // Overview cards
+          doc.setFillColor(240, 240, 240)
+          doc.rect(20, 140, pageWidth - 40, 60, 'F')
+          doc.setFontSize(10)
+          doc.setTextColor(80, 80, 80)
+          doc.text(`Total de Posts: ${data.totalPosts}`, 30, 155)
+          doc.text(`Alcance Total: ${data.totalReach.toLocaleString('pt-BR')}`, 30, 167)
+          doc.text(`Engajamento: ${data.totalEngagement.toLocaleString('pt-BR')} | ER Médio: ${data.avgER}%`, 30, 179)
+
+          // PÁGINA 2: OVERVIEW
+          doc.addPage()
+          currentY = 20
+
+          doc.setFontSize(14)
+          doc.setTextColor(0, 0, 0)
+          doc.setFont(undefined, 'bold')
+          doc.text('Performance por Plataforma', 20, currentY)
+          currentY += 20
+
+          // Instagram
+          doc.setFillColor(245, 245, 245)
+          doc.rect(20, currentY, pageWidth - 40, 35, 'F')
+          doc.setFontSize(10)
+          doc.setFont(undefined, 'bold')
+          doc.text('📷 Instagram', 30, currentY + 8)
+          doc.setFont(undefined, 'normal')
+          doc.setFontSize(9)
+          doc.text(`Posts: ${data.byPlatform.instagram.posts} | Alcance: ${data.byPlatform.instagram.reach.toLocaleString('pt-BR')} | ER: ${data.byPlatform.instagram.er}%`, 30, currentY + 18)
+          doc.text(`Engajamento: ${data.byPlatform.instagram.engagement.toLocaleString('pt-BR')}`, 30, currentY + 27)
+          currentY += 40
+
+          // LinkedIn
+          doc.setFillColor(245, 245, 245)
+          doc.rect(20, currentY, pageWidth - 40, 35, 'F')
+          doc.setFontSize(10)
+          doc.setFont(undefined, 'bold')
+          doc.text('💼 LinkedIn', 30, currentY + 8)
+          doc.setFont(undefined, 'normal')
+          doc.setFontSize(9)
+          doc.text(`Posts: ${data.byPlatform.linkedin.posts} | Alcance: ${data.byPlatform.linkedin.reach.toLocaleString('pt-BR')} | ER: ${data.byPlatform.linkedin.er}%`, 30, currentY + 18)
+          doc.text(`Engajamento: ${data.byPlatform.linkedin.engagement.toLocaleString('pt-BR')}`, 30, currentY + 27)
+          currentY += 45
+
+          // PÁGINA 3: RANKING DE POSTS
+          doc.addPage()
+          currentY = 20
+
+          doc.setFontSize(14)
+          doc.setFont(undefined, 'bold')
+          doc.text('Ranking de Posts (por ER)', 20, currentY)
+          currentY += 15
+
+          // Table header
+          doc.setFillColor(16, 185, 129)
+          doc.setTextColor(255, 255, 255)
+          doc.setFont(undefined, 'bold')
+          doc.setFontSize(8)
+
+          const headers = ['Data', 'Plat.', 'ER %', 'Alcance', 'Engajamento']
+          const colX = [20, 45, 70, 95, 145]
+          const rowHeight = 6
+
+          headers.forEach((h, i) => doc.text(h, colX[i], currentY))
+          currentY += 8
+
+          doc.setTextColor(0, 0, 0)
+          doc.setFont(undefined, 'normal')
+          doc.setFontSize(7)
+
+          data.posts.slice(0, 15).forEach(post => {
+            if (currentY > pageHeight - 20) {
+              doc.addPage()
+              currentY = 20
+            }
+
+            const isBest = post === data.posts[0]
+            if (isBest) {
+              doc.setFillColor(240, 255, 240)
+              doc.rect(20, currentY - 5, pageWidth - 40, rowHeight, 'F')
+            }
+
+            const data_fmt = new Date(post.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+            const platform = post.platform === 'instagram' ? 'IG' : 'LI'
+            const erVal = (post.engagement_rate * 100).toFixed(2)
+            const engVal = (post.likes || 0) + (post.comments || 0) + (post.shares || 0)
+
+            doc.text(data_fmt, colX[0], currentY)
+            doc.text(platform, colX[1], currentY)
+            doc.text(erVal + '%', colX[2], currentY)
+            doc.text(post.impressions.toLocaleString('pt-BR').substring(0, 8), colX[3], currentY)
+            doc.text(engVal.toString(), colX[4], currentY)
+
+            currentY += 7
+          })
+
+          doc.setFontSize(7)
+          doc.setTextColor(150, 150, 150)
+          doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, pageHeight - 10)
+
+          doc.save(`Relatorio_Unificado_${data.client.replace(/ /g, '_')}_${new Date().getTime()}.pdf`)
+        }
+
         return (
           <div className="space-y-4">
             {/* Header + Filtros */}
@@ -1267,7 +1464,7 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                     <select
                       className="select text-xs py-1.5 w-44"
                       value={publiMonth}
-                      onChange={(e) => { setPubliMonth(e.target.value); setPubliReport(null); setPubliClientReport(null) }}
+                      onChange={(e) => { setPubliMonth(e.target.value); setPubliSearch(''); setPubliReport(null); setPubliClientReport(null) }}
                     >
                       {availableMonths.map(m => {
                         const [y, mo] = m.split('-').map(Number)
@@ -1280,12 +1477,21 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                     <select
                       className="select text-xs py-1.5 w-44"
                       value={publiClient}
-                      onChange={(e) => { setPubliClient(e.target.value); setPubliReport(null); setPubliClientReport(null) }}
+                      onChange={(e) => { setPubliClient(e.target.value); setPubliSearch(''); setPubliReport(null); setPubliClientReport(null) }}
                     >
                       <option value="">Todos os clientes</option>
                       {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   )}
+                  <div className="relative flex-1 sm:max-w-xs">
+                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                    <input
+                      className="input text-xs py-1.5 pl-8"
+                      placeholder="Buscar marca, descrição…"
+                      value={publiSearch}
+                      onChange={(e) => setPubliSearch(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-orange-200/50">
@@ -1542,7 +1748,62 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                       </button>
                     </div>
                   </div>
+
+                  {/* Relatório Unificado */}
+                  <div className="card p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <BarChart2 size={12} className="text-emerald-500" /> Relatorio Unificado
+                        </h4>
+                        <p className="text-[10px] text-gray-400">Instagram + LinkedIn consolidado</p>
+                      </div>
+                      <button
+                        onClick={handleUnifiedReport}
+                        disabled={publiPosts.length === 0 || publiUnifiedLoading}
+                        className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        {publiUnifiedLoading ? (
+                          <>
+                            <RefreshCw size={12} className="animate-spin" /> Gerando...
+                          </>
+                        ) : (
+                          <>
+                            <BarChart2 size={12} /> Relatorio Unificado
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Exibição do Relatório Unificado Gerado */}
+                {publiUnifiedReport && (
+                  <div className="card p-6 bg-emerald-50 border border-emerald-200">
+                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <CheckCircle size={16} className="text-emerald-600" />
+                      Relatório Unificado Gerado
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-1">Total Posts</p>
+                        <p className="text-lg font-bold text-gray-900">{publiUnifiedReport.totalPosts}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-1">Alcance Total</p>
+                        <p className="text-lg font-bold text-emerald-600">{(publiUnifiedReport.totalReach / 1000).toFixed(1)}K</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-1">Engajamento</p>
+                        <p className="text-lg font-bold text-blue-600">{publiUnifiedReport.totalEngagement.toLocaleString('pt-BR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-1">ER Médio</p>
+                        <p className="text-lg font-bold text-orange-600">{publiUnifiedReport.avgER}%</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {publiError && (
                   <div className="card p-4 border-red-200 bg-red-50">
