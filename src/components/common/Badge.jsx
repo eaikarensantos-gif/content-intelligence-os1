@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 const PLATFORM_COLORS = {
-  linkedin: 'bg-blue-100 text-blue-700 border-blue-200',
+  linkedin: 'bg-violet-100 text-violet-700 border-violet-200',
   instagram: 'bg-pink-100 text-pink-700 border-pink-200',
   tiktok: 'bg-gray-100 text-gray-700 border-gray-200',
   youtube: 'bg-red-100 text-red-700 border-red-200',

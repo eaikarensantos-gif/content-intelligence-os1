@@ -25,6 +25,91 @@ export const COL_MAP = {
   'comentario de dados': 'data_comment',
 }
 
+// LinkedIn column mapping (colunas em português do export do LinkedIn)
+const LI_COL_MAP = {
+  'url da publicacao': 'link',
+  'data de publicacao': 'date',
+  'tipo': 'post_type',
+  'tipo de publicacao': 'post_type',
+  'impressoes': 'impressions',
+  'visualizacoes': 'reach',         // visualizações únicas
+  'cliques': 'link_clicks',
+  'cliques no link': 'link_clicks',
+  'reacoes': 'likes',
+  'comentarios': 'comments',
+  'compartilhamentos': 'shares',
+  'seguidores ganhos': 'follows',
+  'taxa de engajamento': '_li_er',  // ignorado — recalculamos
+  'engajamento': 'engagement_raw',  // coluna de engajamento total direto
+}
+
+// Detecta se as colunas do arquivo são do LinkedIn
+export const isLinkedinFile = (rows) => {
+  if (!rows || rows.length === 0) return false
+  const firstKeys = Object.keys(rows[0]).map(k => stripAccents(k.toLowerCase().trim()))
+  return firstKeys.some(k =>
+    k === 'url da publicacao' ||
+    k === 'taxa de engajamento' ||
+    k === 'reacoes' ||
+    k === 'seguidores ganhos'
+  )
+}
+
+// Normaliza uma linha de dados do LinkedIn para o formato padrão do app
+export const normalizeLinkedinRow = (raw) => {
+  const row = {}
+  for (const [key, val] of Object.entries(raw)) {
+    const clean = stripAccents(key.toLowerCase().trim())
+    const mapped = LI_COL_MAP[clean]
+    if (!mapped) continue
+    row[mapped] = val
+  }
+
+  const impressions = toNum(row.impressions)
+  const likes       = toNum(row.likes)
+  const comments    = toNum(row.comments)
+  const shares      = toNum(row.shares)
+  const follows     = toNum(row.follows)
+  const linkClicks  = toNum(row.link_clicks)
+  const reach       = toNum(row.reach)
+
+  // Engajamento: prioriza coluna direta, senão soma interações
+  const rawEngStr = String(row.engagement_raw || '').trim()
+  const engagement = rawEngStr && rawEngStr !== '-1'
+    ? toNum(row.engagement_raw)
+    : likes + comments + shares
+
+  // Ignora linhas inválidas (sem data E sem link)
+  const date = normalizeDate(row.date || '')
+  const rawLink = (row.link || '').trim()
+  if (!date && !rawLink) return null
+  // Ignora engajamento = -1 (dado privado no LinkedIn)
+  if (rawEngStr === '-1') return null
+
+  // Extrai ID da publicação da URL como label legível
+  const idMatch = rawLink.match(/(?:activity|ugcPost|share)[:\-](\d+)/i)
+  const description = idMatch ? `Post LinkedIn #${idMatch[1]}` : rawLink
+
+  return {
+    post_id:      '',
+    platform:     'linkedin',
+    date,
+    impressions,
+    reach,
+    likes,
+    comments,
+    shares,
+    saves:        0,
+    follows,
+    link_clicks:  linkClicks,
+    duration_sec: 0,
+    description,
+    link:         rawLink,
+    post_type:    normalizePostType(row.post_type || 'post'),
+    client:       '',
+  }
+}
+
 const toNum = (v = '') => Number(String(v).replace(/[^0-9]/g, '')) || 0
 
 const normalizePostType = (raw = '') => {

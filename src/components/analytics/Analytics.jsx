@@ -19,7 +19,7 @@ import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
 import WeeklyPlanner from './WeeklyPlanner'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
-import { normalizeRow, parseFile } from '../../utils/csvNormalizer'
+import { normalizeRow, parseFile, isLinkedinFile, normalizeLinkedinRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 
 const COLORS = ['#f97316', '#fb923c', '#2563eb', '#0891b2', '#059669', '#d97706']
@@ -645,7 +645,8 @@ export default function Analytics() {
                   const matchPlatform = m.platform && m.platform.toLowerCase().includes(searchLower)
                   const matchType = m.post_type && m.post_type.toLowerCase().includes(searchLower)
                   const matchDesc = m.description && m.description.toLowerCase().includes(searchLower)
-                  if (!matchDate && !matchPlatform && !matchType && !matchDesc) return false
+                  const matchLink = m.link && m.link.toLowerCase().includes(searchLower)
+                  if (!matchDate && !matchPlatform && !matchType && !matchDesc && !matchLink) return false
                 }
                 return true
               })
@@ -935,13 +936,22 @@ export default function Analytics() {
                             <td className="py-2 px-2.5 max-w-[200px]">
                               <div className="flex items-center gap-1.5">
                                 {m.description ? (
-                                  <span className="text-gray-500 truncate block" title={m.description}>
-                                    {m.description.slice(0, 50)}{m.description.length > 50 ? '…' : ''}
-                                  </span>
+                                  m.platform === 'linkedin' && m.link ? (
+                                    <a href={m.link} target="_blank" rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-violet-600 hover:text-violet-800 hover:underline truncate block text-xs"
+                                      title={m.link}>
+                                      {m.description.slice(0, 50)}{m.description.length > 50 ? '…' : ''}
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-500 truncate block" title={m.description}>
+                                      {m.description.slice(0, 50)}{m.description.length > 50 ? '…' : ''}
+                                    </span>
+                                  )
                                 ) : (
                                   <span className="text-gray-300">—</span>
                                 )}
-                                {m.link && (
+                                {m.link && m.platform !== 'linkedin' && (
                                   <a href={m.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                                     className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400 hover:text-blue-600">
                                     <ExternalLink size={11} />
@@ -1119,7 +1129,10 @@ export default function Analytics() {
                     if (!file) return
                     try {
                       const { data } = await parseFile(file)
-                      const rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                      const linkedin = isLinkedinFile(data)
+                      const rows = linkedin
+                        ? data.map(normalizeLinkedinRow).filter(Boolean)
+                        : data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
                       rows.forEach(row => addMetric(row))
                     } catch (err) {
                       console.error(err)
