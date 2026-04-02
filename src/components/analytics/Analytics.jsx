@@ -666,17 +666,53 @@ export default function Analytics() {
                     <span className="ml-2 text-xs text-gray-400 font-normal">{sorted.length} entradas {rawDataSearch ? `(filtrados de ${enriched.length})` : `de ${enriched.length}`}</span>
                   </h3>
                   {enriched.length > 0 && (
-                    confirmClear ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-red-500">Apagar tudo?</span>
-                        <button onClick={() => { clearMetrics(); setConfirmClear(false) }} className="text-xs px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600">Confirmar</button>
-                        <button onClick={() => setConfirmClear(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">Cancelar</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setConfirmClear(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                        <AlertTriangle size={12} /> Limpar todos os dados
-                      </button>
-                    )
+                    <div className="flex items-center gap-2">
+                      {sorted.length > 0 && (
+                        <button
+                          onClick={() => {
+                            const headers = ['Data', 'Tipo', 'Plataforma', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Engajamento', 'Taxa Eng.%']
+                            const rows = sorted.map(m => [
+                              m.date || '',
+                              m.post_type || '',
+                              m.platform || '',
+                              (m.description || '').replace(/"/g, '""'),
+                              m.impressions || 0,
+                              m.reach || 0,
+                              m.likes || 0,
+                              m.comments || 0,
+                              m.shares || 0,
+                              m.saves || 0,
+                              m.follows || 0,
+                              m.engagement || 0,
+                              (m.engagement_rate * 100).toFixed(2),
+                            ])
+                            const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+                            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = `dados_brutos_${new Date().toISOString().slice(0,10)}.csv`
+                            a.click()
+                            URL.revokeObjectURL(url)
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 px-2 py-1 rounded hover:bg-emerald-50 transition-colors"
+                          title={`Exportar ${sorted.length} entradas como CSV`}
+                        >
+                          <Download size={12} /> Exportar CSV
+                        </button>
+                      )}
+                      {confirmClear ? (
+                        <>
+                          <span className="text-xs text-red-500">Apagar tudo?</span>
+                          <button onClick={() => { clearMetrics(); setConfirmClear(false) }} className="text-xs px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600">Confirmar</button>
+                          <button onClick={() => setConfirmClear(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">Cancelar</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmClear(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors">
+                          <AlertTriangle size={12} /> Limpar todos os dados
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
