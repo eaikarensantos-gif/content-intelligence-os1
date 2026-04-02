@@ -1301,6 +1301,117 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
               </div>
             ) : (
               <>
+                {/* ── Resumo de Métricas ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div className="card p-3 text-center">
+                    <p className="text-xs text-gray-400">Total Impressões</p>
+                    <p className="text-lg font-bold text-gray-900">{(publiPosts.reduce((s, m) => s + m.impressions, 0) / 1000).toFixed(1)}K</p>
+                  </div>
+                  <div className="card p-3 text-center">
+                    <p className="text-xs text-gray-400">Total Cliques</p>
+                    <p className="text-lg font-bold text-blue-600">{publiPosts.reduce((s, m) => s + (m.link_clicks || 0), 0).toLocaleString()}</p>
+                  </div>
+                  <div className="card p-3 text-center">
+                    <p className="text-xs text-gray-400">CTR Médio</p>
+                    <p className="text-lg font-bold text-emerald-600">
+                      {publiPosts.length > 0
+                        ? ((publiPosts.reduce((s, m) => s + (m.link_clicks || 0), 0) / publiPosts.reduce((s, m) => s + m.impressions, 0) * 100).toFixed(2) + '%')
+                        : '0%'}
+                    </p>
+                  </div>
+                  <div className="card p-3 text-center">
+                    <p className="text-xs text-gray-400">Engajamento</p>
+                    <p className="text-lg font-bold text-orange-600">{publiPosts.reduce((s, m) => s + (m.likes || 0) + (m.comments || 0) + (m.shares || 0), 0).toLocaleString()}</p>
+                  </div>
+                  <div className="card p-3 text-center">
+                    <p className="text-xs text-gray-400">Conversões</p>
+                    <p className="text-lg font-bold text-purple-600">{publiPosts.reduce((s, m) => s + (m.saves || 0), 0).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {/* ── Gráficos ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Performance por Plataforma */}
+                  <div className="card p-4">
+                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <BarChart3 size={14} className="text-blue-500" />
+                      Performance por Plataforma
+                    </h4>
+                    {(() => {
+                      const platformData = {};
+                      publiPosts.forEach(m => {
+                        const p = m.platform || 'instagram';
+                        if (!platformData[p]) platformData[p] = { impressions: 0, clicks: 0, engagement: 0, posts: 0, er: 0 };
+                        platformData[p].impressions += m.impressions;
+                        platformData[p].clicks += m.link_clicks || 0;
+                        platformData[p].engagement += (m.likes || 0) + (m.comments || 0) + (m.shares || 0);
+                        platformData[p].posts += 1;
+                        platformData[p].er += m.engagement_rate;
+                      });
+                      const data = Object.entries(platformData).map(([name, stats]) => ({
+                        name: name.charAt(0).toUpperCase() + name.slice(1),
+                        impressoes: Math.round(stats.impressions / 1000),
+                        er: parseFloat((stats.er / stats.posts * 100).toFixed(1)),
+                      }));
+                      return (
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                            <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+                            <Tooltip formatter={(v) => v.toFixed(1)} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                            <Bar yAxisId="left" dataKey="impressoes" fill="#3b82f6" name="Impressões (K)" />
+                            <Bar yAxisId="right" dataKey="er" fill="#10b981" name="ER (%)" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
+                  </div>
+
+                  {/* ER por Dia */}
+                  <div className="card p-4">
+                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <TrendingUp size={14} className="text-green-500" />
+                      Engajamento ao Longo do Período
+                    </h4>
+                    {(() => {
+                      const dayData = {};
+                      publiPosts.forEach(m => {
+                        const day = m.date;
+                        if (!dayData[day]) dayData[day] = { date: day, posts: 0, engagement: 0, impressions: 0 };
+                        dayData[day].posts += 1;
+                        dayData[day].engagement += (m.likes || 0) + (m.comments || 0) + (m.shares || 0);
+                        dayData[day].impressions += m.impressions;
+                      });
+                      const data = Object.values(dayData)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date))
+                        .map(d => ({
+                          date: new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                          engajamento: d.engagement,
+                          posts: d.posts,
+                        }));
+                      return (
+                        <ResponsiveContainer width="100%" height={250}>
+                          <AreaChart data={data}>
+                            <defs>
+                              <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} />
+                            <Tooltip formatter={(v) => v} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                            <Area type="monotone" dataKey="engajamento" stroke="#f59e0b" fillOpacity={1} fill="url(#colorEng)" name="Engajamento" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
+                  </div>
+                </div>
+
                 {/* Tabela Técnica */}
                 <div className="card overflow-hidden">
                   <table className="w-full text-xs">
