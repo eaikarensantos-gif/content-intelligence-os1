@@ -671,146 +671,165 @@ export default function Analytics() {
               const doc = new jsPDF({ orientation: 'landscape' })
               const pw = doc.internal.pageSize.getWidth()
               const ph = doc.internal.pageSize.getHeight()
+              const M = 20 // margem mínima 20mm
               const today = new Date()
               const dateStr = today.toLocaleDateString('pt-BR')
               const timeStr = today.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-              // ── Cabeçalho ──
-              doc.setFillColor(234, 88, 12)
-              doc.rect(0, 0, pw, 24, 'F')
-              doc.setFillColor(180, 50, 0)
-              doc.rect(0, 20, pw, 4, 'F')
-
-              doc.setFontSize(15)
-              doc.setFont(undefined, 'bold')
-              doc.setTextColor(255, 255, 255)
-              doc.text('Dados Brutos — Relatório de Métricas', 14, 13)
-
-              doc.setFontSize(7.5)
-              doc.setFont(undefined, 'normal')
-              doc.setTextColor(255, 220, 190)
-              doc.text(`Gerado em ${dateStr} às ${timeStr}   •   ${sorted.length} ${sorted.length === 1 ? 'registro' : 'registros'}`, pw - 14, 13, { align: 'right' })
-
-              // ── Cards de resumo ──
+              // ── Métricas resumo ──
               const totalImp = sorted.reduce((s, m) => s + (m.impressions || 0), 0)
               const totalEng = sorted.reduce((s, m) => s + (m.engagement || 0), 0)
               const avgER = sorted.length ? sorted.reduce((s, m) => s + (m.engagement_rate || 0), 0) / sorted.length * 100 : 0
-              const totalLikes = sorted.reduce((s, m) => s + (m.likes || 0), 0)
-              const totalSavesSum = sorted.reduce((s, m) => s + (m.saves || 0), 0)
 
-              const cards = [
-                { label: 'Publicações', value: sorted.length.toString() },
-                { label: 'Impressões totais', value: totalImp.toLocaleString('pt-BR') },
-                { label: 'Engajamento total', value: totalEng.toLocaleString('pt-BR') },
-                { label: 'Taxa de eng. média', value: avgER.toFixed(2) + '%' },
-                { label: 'Curtidas totais', value: totalLikes.toLocaleString('pt-BR') },
-                { label: 'Salvamentos totais', value: totalSavesSum.toLocaleString('pt-BR') },
+              // ── Determina cliente/período para subtítulo ──
+              const clientNames = [...new Set(sorted.map(m => m.client).filter(Boolean))]
+              const clientLabel = clientNames.length === 1 ? clientNames[0] : clientNames.length > 1 ? clientNames.join(', ') : 'Todos os registros'
+              const dates = sorted.map(m => m.date).filter(Boolean).sort()
+              const periodLabel = dates.length > 0
+                ? (dates[0] === dates[dates.length - 1]
+                  ? new Date(dates[0] + 'T12:00:00').toLocaleDateString('pt-BR')
+                  : `${new Date(dates[0] + 'T12:00:00').toLocaleDateString('pt-BR')} — ${new Date(dates[dates.length - 1] + 'T12:00:00').toLocaleDateString('pt-BR')}`)
+                : ''
+
+              let y = M
+
+              // ── HEADER: branding minimalista ──
+              doc.setFontSize(16)
+              doc.setFont(undefined, 'bold')
+              doc.setTextColor(20, 20, 20)
+              doc.setCharSpace(1)
+              doc.text('RELATORIO DE PERFORMANCE', M, y)
+              doc.setCharSpace(0)
+
+              y += 6
+              doc.setFontSize(9)
+              doc.setFont(undefined, 'normal')
+              doc.setTextColor(102, 102, 102)
+              doc.text(`${clientLabel}   |   ${periodLabel}   |   ${sorted.length} ${sorted.length === 1 ? 'registro' : 'registros'}`, M, y)
+
+              y += 4
+              doc.setDrawColor(220, 220, 220)
+              doc.setLineWidth(0.3)
+              doc.line(M, y, pw - M, y)
+
+              y += 10
+
+              // ── EXECUTIVE SUMMARY: 3 colunas, sem bordas ──
+              const summaryItems = [
+                { label: 'IMPRESSOES TOTAIS', value: totalImp.toLocaleString('pt-BR') },
+                { label: 'ENGAJAMENTO TOTAL', value: totalEng.toLocaleString('pt-BR') },
+                { label: 'ER% MEDIO',         value: avgER.toFixed(2) + '%' },
               ]
+              const colW3 = (pw - 2 * M) / 3
+              summaryItems.forEach((item, i) => {
+                const cx = M + i * colW3
 
-              const cardW = (pw - 28) / cards.length
-              const cardY = 28
-              const cardH = 16
-
-              cards.forEach((card, i) => {
-                const cx = 14 + i * cardW
-                doc.setFillColor(255, 248, 243)
-                doc.setDrawColor(234, 88, 12)
-                doc.setLineWidth(0.15)
-                doc.rect(cx, cardY, cardW - 3, cardH, 'FD')
-                doc.setFontSize(6.5)
-                doc.setFont(undefined, 'normal')
-                doc.setTextColor(160, 100, 60)
-                doc.text(card.label.toUpperCase(), cx + (cardW - 3) / 2, cardY + 5.5, { align: 'center' })
-                doc.setFontSize(10)
+                doc.setFontSize(22)
                 doc.setFont(undefined, 'bold')
-                doc.setTextColor(180, 55, 0)
-                doc.text(card.value, cx + (cardW - 3) / 2, cardY + 12, { align: 'center' })
+                doc.setTextColor(20, 20, 20)
+                doc.text(item.value, cx, y + 10)
+
+                doc.setFontSize(7.5)
+                doc.setFont(undefined, 'normal')
+                doc.setTextColor(102, 102, 102)
+                doc.setCharSpace(0.5)
+                doc.text(item.label, cx, y + 16)
+                doc.setCharSpace(0)
               })
 
-              // ── Tabela ──
+              y += 24
+
+              doc.setDrawColor(220, 220, 220)
+              doc.setLineWidth(0.3)
+              doc.line(M, y, pw - M, y)
+              y += 8
+
+              // ── DATA TABLE ──
               const colDefs = [
-                { label: 'Data', w: 28, fmt: m => (m.date || '—').replace('T', ' ').slice(0, 16) },
-                { label: 'Tipo', w: 16, fmt: m => m.post_type || '—' },
-                { label: 'Plataforma', w: 20, fmt: m => m.platform || '—' },
-                { label: 'Cliente', w: 24, fmt: m => m.client || '—' },
-                { label: 'Descrição', w: 50, fmt: m => ((m.description || '—').length > 38 ? (m.description || '').slice(0, 38) + '…' : (m.description || '—')) },
-                { label: 'Impressões', w: 24, fmt: m => (m.impressions || 0).toLocaleString('pt-BR') },
-                { label: 'Alcance', w: 20, fmt: m => (m.reach || 0).toLocaleString('pt-BR') },
-                { label: 'Curtidas', w: 18, fmt: m => (m.likes || 0).toLocaleString('pt-BR') },
-                { label: 'Coment.', w: 16, fmt: m => (m.comments || 0).toString() },
-                { label: 'Compart.', w: 17, fmt: m => (m.shares || 0).toString() },
-                { label: 'Salvam.', w: 17, fmt: m => (m.saves || 0).toString() },
-                { label: 'Engaj.', w: 19, fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
-                { label: 'Taxa Eng.', w: 20, fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
+                { label: 'DATA',       w: 26, fmt: m => m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—' },
+                { label: 'TIPO',       w: 16, fmt: m => (m.post_type || '—').toUpperCase() },
+                { label: 'PLATAFORMA', w: 22, fmt: m => (m.platform || '—').toUpperCase() },
+                { label: 'CLIENTE',    w: 26, fmt: m => m.client || '—' },
+                { label: 'DESCRICAO',  w: 48, fmt: m => {
+                  const platform = (m.platform || 'post').charAt(0).toUpperCase() + (m.platform || 'post').slice(1)
+                  const date = m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('pt-BR') : ''
+                  return `${platform} - ${date}`
+                }},
+                { label: 'IMPRESSOES', w: 24, align: 'right', fmt: m => (m.impressions || 0).toLocaleString('pt-BR') },
+                { label: 'ALCANCE',    w: 20, align: 'right', fmt: m => (m.reach || 0).toLocaleString('pt-BR') },
+                { label: 'CURTIDAS',   w: 18, align: 'right', fmt: m => (m.likes || 0).toLocaleString('pt-BR') },
+                { label: 'COMENT.',    w: 16, align: 'right', fmt: m => (m.comments || 0).toLocaleString('pt-BR') },
+                { label: 'ENGAJ.',     w: 18, align: 'right', fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
+                { label: 'ER%',        w: 18, align: 'right', fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
               ]
 
-              const headerH = 7
-              const rowH = 6
-              let y = cardY + cardH + 5
+              const rowH = 8
+              const footerH = 12
 
-              const drawTableHeader = () => {
-                let x = 14
-                doc.setFillColor(45, 45, 55)
-                doc.rect(14, y, pw - 28, headerH, 'F')
-                doc.setFontSize(6.5)
+              const drawHeader = () => {
+                let x = M
+                doc.setFontSize(7)
                 doc.setFont(undefined, 'bold')
-                doc.setTextColor(255, 255, 255)
-                colDefs.forEach(col => { doc.text(col.label, x + 2, y + 4.8); x += col.w })
-                y += headerH
+                doc.setTextColor(102, 102, 102)
+                doc.setCharSpace(0.3)
+                colDefs.forEach(col => {
+                  const tx = col.align === 'right' ? x + col.w - 2 : x
+                  doc.text(col.label, tx, y, { align: col.align === 'right' ? 'right' : 'left' })
+                  x += col.w
+                })
+                doc.setCharSpace(0)
+                y += 4
+                doc.setDrawColor(180, 180, 180)
+                doc.setLineWidth(0.4)
+                doc.line(M, y, pw - M, y)
+                y += 5
               }
 
-              drawTableHeader()
+              drawHeader()
 
-              sorted.forEach((m, idx) => {
-                if (y > ph - 12) {
+              sorted.forEach((m) => {
+                if (y > ph - footerH - rowH) {
                   doc.addPage()
-                  y = 14
-                  drawTableHeader()
+                  y = M
+                  drawHeader()
                 }
 
-                if (idx % 2 === 0) {
-                  doc.setFillColor(250, 250, 252)
-                  doc.rect(14, y - 0.5, pw - 28, rowH, 'F')
-                }
-                if ((m.engagement_rate || 0) > 0.04) {
-                  doc.setFillColor(236, 253, 245)
-                  doc.rect(14, y - 0.5, pw - 28, rowH, 'F')
-                }
-
-                let x = 14
-                doc.setFontSize(6.5)
+                let x = M
+                doc.setFontSize(8.5)
                 doc.setFont(undefined, 'normal')
                 colDefs.forEach(col => {
                   if (col.key === 'er') {
                     const er = m.engagement_rate || 0
-                    doc.setTextColor(er > 0.04 ? 5 : er > 0.02 ? 160 : 130, er > 0.04 ? 150 : er > 0.02 ? 100 : 130, er > 0.04 ? 80 : er > 0.02 ? 0 : 140)
+                    doc.setTextColor(er > 0.04 ? 22 : er > 0.02 ? 120 : 102, er > 0.04 ? 163 : er > 0.02 ? 87 : 102, er > 0.04 ? 74 : er > 0.02 ? 0 : 102)
+                    doc.setFont(undefined, 'bold')
                   } else {
-                    doc.setTextColor(50, 50, 60)
+                    doc.setTextColor(40, 40, 40)
+                    doc.setFont(undefined, 'normal')
                   }
-                  doc.text(col.fmt(m), x + 2, y + 3.8)
+                  const tx = col.align === 'right' ? x + col.w - 2 : x
+                  doc.text(col.fmt(m), tx, y, { align: col.align === 'right' ? 'right' : 'left' })
                   x += col.w
                 })
-                y += rowH
+
+                y += rowH - 1
+                doc.setDrawColor(238, 238, 238)
+                doc.setLineWidth(0.2)
+                doc.line(M, y, pw - M, y)
+                y += 1
               })
 
-              // ── Rodapé em todas as páginas ──
+              // ── RODAPÉ em todas as páginas ──
               const totalPages = doc.internal.getNumberOfPages()
               for (let p = 1; p <= totalPages; p++) {
                 doc.setPage(p)
-                doc.setFillColor(248, 248, 250)
-                doc.rect(0, ph - 9, pw, 9, 'F')
-                doc.setDrawColor(220, 220, 225)
-                doc.setLineWidth(0.2)
-                doc.line(0, ph - 9, pw, ph - 9)
-                doc.setFontSize(6.5)
+                doc.setFontSize(7.5)
                 doc.setFont(undefined, 'normal')
-                doc.setTextColor(150, 150, 160)
-                doc.text('Content Intelligence OS', 14, ph - 3.5)
-                doc.text(`Página ${p} de ${totalPages}`, pw / 2, ph - 3.5, { align: 'center' })
-                doc.text(`Exportado em ${dateStr}`, pw - 14, ph - 3.5, { align: 'right' })
+                doc.setTextColor(153, 153, 153)
+                const footerY = ph - 8
+                doc.text(`Content Intelligence OS  |  Gerado em ${dateStr} as ${timeStr}  |  Pagina ${p} de ${totalPages}`, pw / 2, footerY, { align: 'center' })
               }
 
-              doc.save(`dados_brutos_${today.toISOString().slice(0, 10)}.pdf`)
+              doc.save(`relatorio_performance_${today.toISOString().slice(0, 10)}.pdf`)
             }
 
             return (
