@@ -947,18 +947,21 @@ export default function Analytics() {
                             <td className="py-2 px-2.5 text-gray-400 whitespace-nowrap">{fmtDate(m.date, m.publish_time)}</td>
                             <td className="py-2 px-2.5"><PostTypeBadge type={m.post_type} /></td>
                             <td className="py-2 px-2.5"><PlatformBadge platform={m.platform} /></td>
-                            <td className="py-2 px-2.5 min-w-[100px]">
-                              <input
-                                type="text"
-                                defaultValue={m.client || ''}
-                                placeholder="+ cliente"
-                                onBlur={(e) => {
-                                  const val = e.target.value.trim()
-                                  if (val !== (m.client || '')) updateMetric(m.id, { client: val })
-                                }}
-                                onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
-                                className="w-full text-xs text-gray-700 placeholder-gray-300 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-orange-400 focus:outline-none py-0.5 transition-colors"
-                              />
+                            <td className="py-2 px-2.5 min-w-[110px]">
+                              <select
+                                value={m.client || ''}
+                                onChange={(e) => updateMetric(m.id, { client: e.target.value })}
+                                className={`text-xs rounded-full px-2 py-0.5 border font-medium cursor-pointer focus:outline-none transition-colors ${
+                                  m.client
+                                    ? 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100'
+                                    : 'bg-gray-50 text-gray-300 border-gray-200 hover:bg-gray-100 hover:text-gray-500'
+                                }`}
+                              >
+                                <option value="">+ cliente</option>
+                                {clients.map(c => (
+                                  <option key={c.id} value={c.name}>{c.name}</option>
+                                ))}
+                              </select>
                             </td>
                             <td className="py-2 px-2.5 max-w-[200px]">
                               <div className="flex items-center gap-1.5">
