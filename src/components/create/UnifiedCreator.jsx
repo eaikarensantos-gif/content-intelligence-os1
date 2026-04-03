@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import * as pdfjsLib from 'pdfjs-dist'
+import ReferenceExplorer from '../explorer/ReferenceExplorer'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -125,6 +126,7 @@ export default function UnifiedCreator() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [banCandidate, setBanCandidate] = useState(null)
   const [banPosition, setBanPosition] = useState({ x: 0, y: 0 })
+  const [inspiration, setInspiration] = useState(null) // Referência/Inspiração do explorador
   const inputRef = useRef(null)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
@@ -155,6 +157,13 @@ export default function UnifiedCreator() {
     e.target.value = ''
   }
 
+  /* ── Handler para inspiração do explorador ── */
+  const handleGenerateScriptFromReference = (script) => {
+    setInspiration(script)
+    setInput(script)
+    inputRef.current?.focus()
+  }
+
   /* ── Gerar conteúdo ── */
   const generate = async (overrides = {}) => {
     const text = overrides.input || input
@@ -176,6 +185,13 @@ ${regenInstr}
 ${overrides.adjustment ? ADJUSTMENT_PROMPTS[overrides.adjustment] : ''}
 
 ${overrides.adaptFrom ? `CONTEÚDO ORIGINAL PARA ADAPTAR:\n"""\n${overrides.adaptFrom}\n"""\n\nADAPTE o conteúdo acima mantendo a mesma essência, tom e mensagem.` : ''}
+
+${inspiration ? `ROTEIRO DE INSPIRAÇÃO (DE REFERÊNCIA EXTERNA):
+"""
+${inspiration}
+"""
+Use este roteiro como inspiração para gerar o conteúdo. Mantenha os elementos principais mas refine para o DNA da Karen.
+` : ''}
 
 ${briefing ? `BRIEFING DA MARCA/CLIENTE ANEXADO:
 """
@@ -281,14 +297,23 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-200">
-          <PenTool size={20} className="text-white" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-200">
+            <PenTool size={20} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Criar Conteúdo</h1>
+            <p className="text-xs text-gray-400">Descreva o que quer criar — a IA detecta o tom e formato ideal</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Criar Conteúdo</h1>
-          <p className="text-xs text-gray-400">Descreva o que quer criar — a IA detecta o tom e formato ideal</p>
-        </div>
+        {inspiration && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-100 border border-orange-300 text-xs font-medium text-orange-700">
+            <Zap size={14} />
+            Inspirado em referência
+            <button onClick={() => setInspiration(null)} className="ml-1 hover:text-orange-900">✕</button>
+          </div>
+        )}
       </div>
 
       {/* ── Input principal ── */}
@@ -641,6 +666,12 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
           )}
         </div>
       )}
+
+      {/* Reference Explorer */}
+      <ReferenceExplorer
+        onSelectReference={handleGenerateScriptFromReference}
+        onGenerateScript={handleGenerateScriptFromReference}
+      />
     </div>
   )
 }

@@ -2013,99 +2013,6 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Análise Técnica */}
-                  <div className="card p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                          <Wand2 size={12} className="text-purple-500" /> Analise Tecnica
-                        </h4>
-                        <p className="text-[10px] text-gray-400">Ranking, maturidade, recomendacoes</p>
-                      </div>
-                      <button onClick={handlePubliAnalysis} disabled={publiLoading} className="btn-primary text-xs py-1.5 px-3">
-                        {publiLoading ? <><RefreshCw size={12} className="animate-spin" /> Analisando...</> : <><Wand2 size={12} /> Gerar</>}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Relatório para Cliente */}
-                  <div className="card p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                          <FileText size={12} className="text-blue-500" /> Relatorio para Cliente
-                        </h4>
-                        <p className="text-[10px] text-gray-400">Pronto para enviar + resumo WhatsApp</p>
-                      </div>
-                      <button onClick={handleClientReport} disabled={publiClientLoading} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
-                        {publiClientLoading ? <><RefreshCw size={12} className="animate-spin" /> Gerando...</> : <><FileText size={12} /> Gerar</>}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Relatório Unificado */}
-                  <div className="card p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                          <BarChart2 size={12} className="text-emerald-500" /> Relatorio Unificado
-                        </h4>
-                        <p className="text-[10px] text-gray-400">Instagram + LinkedIn consolidado</p>
-                      </div>
-                      <button
-                        onClick={handleUnifiedReport}
-                        disabled={publiPosts.length === 0 || publiUnifiedLoading}
-                        className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {publiUnifiedLoading ? (
-                          <>
-                            <RefreshCw size={12} className="animate-spin" /> Gerando...
-                          </>
-                        ) : (
-                          <>
-                            <BarChart2 size={12} /> Relatorio Unificado
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Exibição do Relatório Unificado Gerado */}
-                {publiUnifiedReport && (
-                  <div className="card p-6 bg-emerald-50 border border-emerald-200">
-                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <CheckCircle size={16} className="text-emerald-600" />
-                      Relatório Unificado Gerado
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Total Posts</p>
-                        <p className="text-lg font-bold text-gray-900">{publiUnifiedReport.totalPosts}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Alcance Total</p>
-                        <p className="text-lg font-bold text-emerald-600">{(publiUnifiedReport.totalReach / 1000).toFixed(1)}K</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">Engajamento</p>
-                        <p className="text-lg font-bold text-blue-600">{publiUnifiedReport.totalEngagement.toLocaleString('pt-BR')}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase mb-1">ER Médio</p>
-                        <p className="text-lg font-bold text-orange-600">{publiUnifiedReport.avgER}%</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {publiError && (
-                  <div className="card p-4 border-red-200 bg-red-50">
-                    <p className="text-xs text-red-600 flex items-center gap-2"><AlertTriangle size={14} /> {publiError}</p>
-                  </div>
-                )}
 
                 {/* ═══ Análise Técnica Result ═══ */}
                 {publiReport && (
@@ -2301,6 +2208,100 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                   </div>
                 )}
               </>
+            )}
+
+            {/* Action Buttons — Always Visible */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Análise Técnica */}
+              <div className="card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <Wand2 size={12} className="text-purple-500" /> Analise Tecnica
+                    </h4>
+                    <p className="text-[10px] text-gray-400">Ranking, maturidade, recomendacoes</p>
+                  </div>
+                  <button onClick={handlePubliAnalysis} disabled={publiLoading || publiPosts.length === 0} className="btn-primary text-xs py-1.5 px-3">
+                    {publiLoading ? <><RefreshCw size={12} className="animate-spin" /> Analisando...</> : <><Wand2 size={12} /> Gerar</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Relatório para Cliente */}
+              <div className="card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <FileText size={12} className="text-blue-500" /> Relatorio para Cliente
+                    </h4>
+                    <p className="text-[10px] text-gray-400">Pronto para enviar + resumo WhatsApp</p>
+                  </div>
+                  <button onClick={handleClientReport} disabled={publiClientLoading || publiPosts.length === 0} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    {publiClientLoading ? <><RefreshCw size={12} className="animate-spin" /> Gerando...</> : <><FileText size={12} /> Gerar</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Relatório Unificado */}
+              <div className="card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <BarChart2 size={12} className="text-emerald-500" /> Relatorio Unificado
+                    </h4>
+                    <p className="text-[10px] text-gray-400">Instagram + LinkedIn consolidado</p>
+                  </div>
+                  <button
+                    onClick={handleUnifiedReport}
+                    disabled={publiPosts.length === 0 || publiUnifiedLoading}
+                    className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {publiUnifiedLoading ? (
+                      <>
+                        <RefreshCw size={12} className="animate-spin" /> Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <BarChart2 size={12} /> Relatorio Unificado
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Exibição do Relatório Unificado Gerado */}
+            {publiUnifiedReport && (
+              <div className="card p-6 bg-emerald-50 border border-emerald-200">
+                <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-600" />
+                  Relatório Unificado Gerado
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1">Total Posts</p>
+                    <p className="text-lg font-bold text-gray-900">{publiUnifiedReport.totalPosts}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1">Alcance Total</p>
+                    <p className="text-lg font-bold text-emerald-600">{(publiUnifiedReport.totalReach / 1000).toFixed(1)}K</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1">Engajamento</p>
+                    <p className="text-lg font-bold text-blue-600">{publiUnifiedReport.totalEngagement.toLocaleString('pt-BR')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1">ER Médio</p>
+                    <p className="text-lg font-bold text-orange-600">{publiUnifiedReport.avgER}%</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {publiError && (
+              <div className="card p-4 border-red-200 bg-red-50">
+                <p className="text-xs text-red-600 flex items-center gap-2"><AlertTriangle size={14} /> {publiError}</p>
+              </div>
             )}
           </div>
         )
