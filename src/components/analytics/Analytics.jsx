@@ -653,7 +653,8 @@ export default function Analytics() {
                   const matchType = m.post_type && m.post_type.toLowerCase().includes(searchLower)
                   const matchDesc = m.description && m.description.toLowerCase().includes(searchLower)
                   const matchLink = m.link && m.link.toLowerCase().includes(searchLower)
-                  if (!matchDate && !matchPlatform && !matchType && !matchDesc && !matchLink) return false
+                  const matchClient = m.client && m.client.toLowerCase().includes(searchLower)
+                  if (!matchDate && !matchPlatform && !matchType && !matchDesc && !matchLink && !matchClient) return false
                 }
                 return true
               })
