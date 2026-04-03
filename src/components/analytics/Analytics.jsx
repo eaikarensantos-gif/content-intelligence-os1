@@ -293,6 +293,7 @@ export default function Analytics() {
   const posts = useStore((s) => s.posts)
   const clients = useStore((s) => s.clients) || []
   const addMetric = useStore((s) => s.addMetric)
+  const updateMetric = useStore((s) => s.updateMetric)
   const deleteMetric = useStore((s) => s.deleteMetric)
   const addIdea = useStore((s) => s.addIdea)
   const clearMetrics = useStore((s) => s.clearMetrics)
@@ -598,6 +599,7 @@ export default function Analytics() {
               { key: 'date', label: 'Data', sortable: true },
               { key: 'post_type', label: 'Tipo', sortable: false },
               { key: 'platform', label: 'Plataforma', sortable: false },
+              { key: 'client', label: 'Cliente', sortable: false },
               { key: 'description', label: 'Descrição', sortable: false },
               { key: 'impressions', label: 'Impressões', sortable: true },
               { key: 'reach', label: 'Alcance', sortable: true },
@@ -726,10 +728,11 @@ export default function Analytics() {
 
               // ── Tabela ──
               const colDefs = [
-                { label: 'Data', w: 30, fmt: m => (m.date || '—').replace('T', ' ').slice(0, 16) },
-                { label: 'Tipo', w: 18, fmt: m => m.post_type || '—' },
-                { label: 'Plataforma', w: 22, fmt: m => m.platform || '—' },
-                { label: 'Descrição', w: 62, fmt: m => ((m.description || '—').length > 48 ? (m.description || '').slice(0, 48) + '…' : (m.description || '—')) },
+                { label: 'Data', w: 28, fmt: m => (m.date || '—').replace('T', ' ').slice(0, 16) },
+                { label: 'Tipo', w: 16, fmt: m => m.post_type || '—' },
+                { label: 'Plataforma', w: 20, fmt: m => m.platform || '—' },
+                { label: 'Cliente', w: 24, fmt: m => m.client || '—' },
+                { label: 'Descrição', w: 50, fmt: m => ((m.description || '—').length > 38 ? (m.description || '').slice(0, 38) + '…' : (m.description || '—')) },
                 { label: 'Impressões', w: 24, fmt: m => (m.impressions || 0).toLocaleString('pt-BR') },
                 { label: 'Alcance', w: 20, fmt: m => (m.reach || 0).toLocaleString('pt-BR') },
                 { label: 'Curtidas', w: 18, fmt: m => (m.likes || 0).toLocaleString('pt-BR') },
@@ -821,11 +824,12 @@ export default function Analytics() {
                       {sorted.length > 0 && (
                         <button
                           onClick={() => {
-                            const headers = ['Data', 'Tipo', 'Plataforma', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Engajamento', 'Taxa Eng.%']
+                            const headers = ['Data', 'Tipo', 'Plataforma', 'Cliente', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Engajamento', 'Taxa Eng.%']
                             const rows = sorted.map(m => [
                               m.date || '',
                               m.post_type || '',
                               m.platform || '',
+                              m.client || '',
                               (m.description || '').replace(/"/g, '""'),
                               m.impressions || 0,
                               m.reach || 0,
@@ -943,6 +947,19 @@ export default function Analytics() {
                             <td className="py-2 px-2.5 text-gray-400 whitespace-nowrap">{fmtDate(m.date, m.publish_time)}</td>
                             <td className="py-2 px-2.5"><PostTypeBadge type={m.post_type} /></td>
                             <td className="py-2 px-2.5"><PlatformBadge platform={m.platform} /></td>
+                            <td className="py-2 px-2.5 min-w-[100px]">
+                              <input
+                                type="text"
+                                defaultValue={m.client || ''}
+                                placeholder="+ cliente"
+                                onBlur={(e) => {
+                                  const val = e.target.value.trim()
+                                  if (val !== (m.client || '')) updateMetric(m.id, { client: val })
+                                }}
+                                onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
+                                className="w-full text-xs text-gray-700 placeholder-gray-300 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-orange-400 focus:outline-none py-0.5 transition-colors"
+                              />
+                            </td>
                             <td className="py-2 px-2.5 max-w-[200px]">
                               <div className="flex items-center gap-1.5">
                                 {m.description ? (
