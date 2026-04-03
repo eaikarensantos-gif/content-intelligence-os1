@@ -235,13 +235,25 @@ Responda APENAS com JSON válido:
   ],
   "creator_references": [
     {
-      "name": "Nome do criador brasileiro",
-      "why": "por que este criador é relevante — usa padrões similares",
-      "what_to_learn": "o que aprender com ele/ela especificamente",
-      "style_match": "qual padrão do DNA se conecta com este criador"
+      "name": "Nome do criador (pode ser internacional)",
+      "handle": "@handle_instagram_ou_linkedin",
+      "platform": "instagram|linkedin",
+      "why": "por que este criador é tecnicamente relevante — qual método de entrega ou estrutura de conteúdo se conecta com os padrões identificados nos dados",
+      "what_to_learn": "aprendizado 100% técnico e específico (ex: 'Como estrutura um carrossel de Case Study em 7 slides com dado + insight + aplicação')",
+      "style_match": "qual padrão do DNA se conecta com este criador",
+      "aesthetic": "descrição da estética visual (ex: 'Paleta neutra, tipografia bold, sem filtros')"
     }
   ]
-}`
+}
+
+REGRAS PARA creator_references:
+- Nicho OBRIGATÓRIO: UX Design, IA aplicada, Carreira Sênior em Tech, Liderança em Produto, Design Systems.
+- Estética: minimalista, técnica, premium — paleta neutra/quente, sem excesso de cores.
+- Público dos criadores sugeridos: profissionais sêniores, gestores, tomadores de decisão em tech.
+- PROIBIDO sugerir: criadores de finanças pessoais genéricas (ex: Nath Arcuri, Thiago Nigro), coaches motivacionais, influenciadores de entretenimento de massa, perfis sem profundidade técnica.
+- PRIORIZE: criadores que publicam case studies, processos de design, análises de produto, IA aplicada ao trabalho, liderança técnica.
+- Pode ser internacional se não houver nacional adequado — prefira qualidade ao localismo.
+- A justificativa "what_to_learn" deve ser SEMPRE sobre método de entrega (estrutura do post, técnica narrativa, formato visual) — nunca sobre tema.`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -254,7 +266,7 @@ Responda APENAS com JSON válido:
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      system: 'You are a world-class Brazilian content strategist. Analyze content performance data and extract actionable patterns. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
+      system: 'You are a world-class content strategist specializing in Tech, UX Design, and AI niches. The user is a Senior UX/AI Designer targeting senior professionals, managers, and decision-makers. Analyze content performance data and extract actionable patterns. For creator_references, only suggest creators with deep technical authority in UX, AI, Product Design, or Senior Tech Leadership — never generic finance, motivation, or mass entertainment creators. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -834,20 +846,46 @@ export default function ContentDNA() {
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {result.creator_references.map((creator, i) => (
-                    <div key={i} className="rounded-xl p-4 border border-sky-100 bg-sky-50/30 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-sky-200 text-sky-700 flex items-center justify-center text-xs font-bold">
-                          {creator.name?.charAt(0)?.toUpperCase() || '?'}
+                    <div key={i} className="rounded-xl p-4 border border-gray-200 bg-white space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-gray-900 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                            {creator.name?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900 leading-tight">{creator.name}</p>
+                            {creator.handle && (
+                              <p className="text-[10px] text-gray-400 font-mono">{creator.handle}</p>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm font-bold text-gray-800">{creator.name}</p>
+                        {creator.platform && (
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase shrink-0 ${
+                            creator.platform === 'linkedin'
+                              ? 'bg-violet-50 text-violet-600 border-violet-200'
+                              : 'bg-pink-50 text-pink-600 border-pink-200'
+                          }`}>
+                            {creator.platform}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-600">{creator.why}</p>
-                      <div className="rounded-lg p-2.5 bg-white border border-sky-100">
-                        <p className="text-[9px] text-sky-500 font-bold uppercase tracking-wide mb-1">O que aprender</p>
-                        <p className="text-[11px] text-gray-600">{creator.what_to_learn}</p>
+
+                      <p className="text-xs text-gray-500 leading-relaxed">{creator.why}</p>
+
+                      <div className="rounded-lg p-2.5 bg-gray-50 border border-gray-100">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide mb-1">Método técnico a aprender</p>
+                        <p className="text-[11px] text-gray-700 leading-relaxed">{creator.what_to_learn}</p>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Award size={10} className="text-sky-400" />
+
+                      {creator.aesthetic && (
+                        <div className="flex items-start gap-1.5">
+                          <Eye size={10} className="text-gray-300 mt-0.5 shrink-0" />
+                          <span className="text-[10px] text-gray-400 italic">{creator.aesthetic}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <Award size={10} className="text-sky-400 shrink-0" />
                         <span className="text-[10px] text-sky-600 font-medium">{creator.style_match}</span>
                       </div>
                     </div>
