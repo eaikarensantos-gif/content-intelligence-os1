@@ -13,4 +13,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'recharts-vendor': ['recharts'],
+          'pdf-vendor': ['jspdf', 'html2canvas', 'pdfjs-dist'],
+          'dnd-vendor': ['@hello-pangea/dnd'],
+          'utils': ['papaparse', 'date-fns', 'uuid', 'xlsx'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 })
