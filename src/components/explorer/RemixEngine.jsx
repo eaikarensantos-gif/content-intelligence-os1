@@ -2,37 +2,75 @@ import { useState } from 'react'
 import { Loader2, Copy, Check, Volume2 } from 'lucide-react'
 import clsx from 'clsx'
 
-// Simulação de transcripts e sugestões de hooks baseados no DNA da Karen
-const TRANSCRIPT_TEMPLATES = {
-  'authority-speech': `"A gente precisa parar de normalizando a frustração no ambiente corporativo.
+// Gerar transcript dinâmico baseado no título da referência
+const generateTranscript = (reference) => {
+  const title = reference.title.toLowerCase()
+
+  // Detectar tema pela referência
+  if (title.includes('imposter') || title.includes('síndrome')) {
+    return `"Imposter syndrome não é um diagnóstico. É um sintoma de um ambiente que não reconhece seu trabalho.
+
+A gente internaliza a culpa de coisas que não são culpa nossa. Você entrega projeto? 'Mas será que foi bom o suficiente?' Você resolve problema? 'Mas será que alguém mais teria resolvido melhor?'
+
+Isso não é humildade. É falta de feedback claro.
+
+E aí vem a real: quando você muda de ambiente e de repente a galera te reconhece, aquela síndrome desaparece. Porque o problema nunca foi você. Era o lugar.
+
+Então a próxima vez que você sentir que é fraude, pergunte: 'Ou eu só estou num lugar que não sabe o que tem?'"`;
+  }
+
+  if (title.includes('fit cultural') || title.includes('processo seletivo') || title.includes('rh')) {
+    return `"A gente precisa parar de normalizando a frustração no ambiente corporativo.
 
 Aquilo que a gente chama de 'fit cultural' é geralmente o chefe querendo controlar como você pensa, como você age, até como você se veste.
 
 Mas aí vem o problema: se você não se encaixa no padrão, você está errado? Não. O ambiente é que está errado.
 
-O que eu recomendo é olhar pro seu histórico. Quantos projetos você entregou? Quantas pessoas você desenvolveu? Se isso não for reconhecido, o problema não é você."`,
+O que eu recomendo é olhar pro seu histórico. Quantos projetos você entregou? Quantas pessoas você desenvolveu? Se isso não for reconhecido, o problema não é você."`;
+  }
 
-  'corporate-absurd': `Cara, tem uma coisa que eu não entendo...
-
-RH pedindo 'paixão pela empresa' com salário que não dá nem pra pagar conta de água.
-
-Paixão é bom. Paixão paga conta? Não.
-
-Se você precisa se apaixonar pela empresa pra ser bem pago, algo tá muito errado aí.`,
-
-  'metaphorical-humor': `Aquele cachorro na reunião de 1:1 com o gestor é LITERAL.
-
-Você fica lá, quietinho, fingindo ouvir enquanto internamente tá tipo "quando isso vai acabar?"
-
-Mas o cachorro é mais honesto — ele pelo menos dorme sem culpa.`,
-
-  'tech-edge': `Olha, IA não tá tomando seu lugar não. Você que tá usando ela errado.
+  if (title.includes('ia') || title.includes('automação') || title.includes('claude')) {
+    return `"Olha, IA não tá tomando seu lugar não. Você que tá usando ela errado.
 
 Eu testei esse novo modelo pra gerar um plano de conteúdo que me levaria 2 horas. Ficou pronto em 30 segundos.
 
 Agora em vez de gastar 2 horas com tarefa chata, eu gasto 30 minutos refinando o que saiu.
 
+A real: quem usar IA bem vai ficar rico. Quem ignorar vai ficar obsoleto."`;
+  }
+
+  if (title.includes('cachorro') || title.includes('animal') || title.includes('reunião')) {
+    return `"Aquele cachorro na reunião de 1:1 com o gestor é LITERAL.
+
+Você fica lá, quietinho, fingindo ouvir enquanto internamente tá tipo 'quando isso vai acabar?'
+
+Mas o cachorro é mais honesto — ele pelo menos dorme sem culpa.
+
+E sabe o que é pior? O gestor acha que você tá engajado porque você tá quietinho. Não, cara. Você tá morto por dentro."`;
+  }
+
+  // Default baseado no arquétipo
+  const archetypeTemplates = {
+    'authority-speech': `"A gente precisa parar de normalizando a frustração no ambiente corporativo.
+
+O que eu recomendo é olhar pro seu histórico. Quantos projetos você entregou? Quantas pessoas você desenvolveu? Se isso não for reconhecido, o problema não é você."`,
+
+    'corporate-absurd': `Cara, tem uma coisa que eu não entendo...
+
+RH pedindo 'paixão pela empresa' com salário que não dá nem pra pagar conta de água.
+
+Se você precisa se apaixonar pela empresa pra ser bem pago, algo tá muito errado aí.`,
+
+    'metaphorical-humor': `Aquele cachorro na reunião de 1:1 é LITERAL. Você fica lá, quietinho, fingindo ouvir enquanto internamente tá tipo "quando isso vai acabar?"
+
+Mas o cachorro é mais honesto — ele pelo menos dorme sem culpa.`,
+
+    'tech-edge': `Olha, IA não tá tomando seu lugar não. Você que tá usando ela errado.
+
 A real: quem usar IA bem vai ficar rico. Quem ignorar vai ficar obsoleto.`,
+  }
+
+  return archetypeTemplates[reference.archetype] || archetypeTemplates['authority-speech']
 }
 
 const HOOK_SUGGESTIONS = {
@@ -74,8 +112,8 @@ export default function RemixEngine({ reference, onGenerateScript, onClose }) {
     // Simular transcrição
     await new Promise(resolve => setTimeout(resolve, 1500))
 
-    const template = TRANSCRIPT_TEMPLATES[reference.archetype] || TRANSCRIPT_TEMPLATES['tech-edge']
-    setTranscript(template)
+    const transcript = generateTranscript(reference)
+    setTranscript(transcript)
 
     const hooks = HOOK_SUGGESTIONS[reference.archetype] || HOOK_SUGGESTIONS['tech-edge']
     setSuggestedHooks(hooks)
