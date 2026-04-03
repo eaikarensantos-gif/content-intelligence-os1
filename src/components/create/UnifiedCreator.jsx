@@ -9,8 +9,10 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { lintText } from '../../utils/brandLinter'
 import * as pdfjsLib from 'pdfjs-dist'
 import ReferenceExplorer from '../explorer/ReferenceExplorer'
+import BrandLinterPanel from '../linter/BrandLinterPanel'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -127,11 +129,35 @@ export default function UnifiedCreator() {
   const [banCandidate, setBanCandidate] = useState(null)
   const [banPosition, setBanPosition] = useState({ x: 0, y: 0 })
   const [inspiration, setInspiration] = useState(null) // Referência/Inspiração do explorador
+  const [brandViolations, setBrandViolations] = useState([])
+  const [showLinter, setShowLinter] = useState(false)
+  const linterTimeoutRef = useRef(null)
   const inputRef = useRef(null)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
   useEffect(() => { inputRef.current?.focus() }, [])
+
+  // ── Brand Linter com debounce ──
+  useEffect(() => {
+    if (linterTimeoutRef.current) clearTimeout(linterTimeoutRef.current)
+
+    if (!input.trim()) {
+      setBrandViolations([])
+      setShowLinter(false)
+      return
+    }
+
+    linterTimeoutRef.current = setTimeout(() => {
+      const violations = lintText(input)
+      setBrandViolations(violations)
+      setShowLinter(violations.length > 0)
+    }, 500) // 500ms debounce
+
+    return () => {
+      if (linterTimeoutRef.current) clearTimeout(linterTimeoutRef.current)
+    }
+  }, [input])
 
   const handleBriefingUpload = async (e) => {
     const file = e.target.files?.[0]
@@ -332,6 +358,11 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
           className="w-full text-sm border-0 outline-none resize-none placeholder:text-gray-300 leading-relaxed"
         />
 
+        {/* Brand Linter Panel */}
+        {showLinter && input.trim() && (
+          <BrandLinterPanel text={input} onClose={() => setShowLinter(false)} />
+        )}
+
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* Formato + Briefing */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -362,14 +393,28 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
           </div>
 
           {/* Gerar */}
-          <button
-            onClick={() => generate()}
-            disabled={loading || !input.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all shadow-lg shadow-orange-200 disabled:opacity-40"
-          >
-            {loading && !adjusting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-            {loading && !adjusting ? 'Criando...' : 'Criar'}
-          </button>
+          {(() => {
+            const highSeverityViolations = brandViolations.filter(v => {
+              const highPriority = [
+                'not-x-but-y', 'ninguem-te-conta', 'a-verdade-e', 'voce-sente',
+                'missao-vida', 'jornada-do',
+              ]
+              return highPriority.includes(v.id)
+            })
+            const isDisabled = loading || !input.trim() || highSeverityViolations.length > 0
+
+            return (
+              <button
+                onClick={() => generate()}
+                disabled={isDisabled}
+                title={highSeverityViolations.length > 0 ? 'Reescreva para remover padrões críticos antes de gerar' : ''}
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all shadow-lg shadow-orange-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {loading && !adjusting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {loading && !adjusting ? 'Criando...' : 'Criar'}
+              </button>
+            )
+          })()}
         </div>
 
         {/* Format selector dropdown */}
