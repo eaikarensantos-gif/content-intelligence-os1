@@ -139,7 +139,6 @@ const TABS = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
   { id: 'publi', label: 'Publi' },
-  { id: 'linkedin', label: 'LinkedIn' },
   { id: 'insights', label: 'Insights IA' },
   { id: 'planner', label: 'Próxima Semana' },
 ]
