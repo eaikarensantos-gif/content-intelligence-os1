@@ -714,26 +714,31 @@ export default function Analytics() {
 
               y += 10
 
-              // ── EXECUTIVE SUMMARY: 3 colunas, sem bordas ──
+              // ── EXECUTIVE SUMMARY: 6 colunas, sem bordas ──
+              const totalLikes = sorted.reduce((s, m) => s + (m.likes || 0), 0)
+              const totalSavesSum = sorted.reduce((s, m) => s + (m.saves || 0), 0)
               const summaryItems = [
+                { label: 'PUBLICACOES',       value: sorted.length.toString() },
                 { label: 'IMPRESSOES TOTAIS', value: totalImp.toLocaleString('pt-BR') },
                 { label: 'ENGAJAMENTO TOTAL', value: totalEng.toLocaleString('pt-BR') },
-                { label: 'ER% MEDIO',         value: avgER.toFixed(2) + '%' },
+                { label: 'TAXA DE ENG. MEDIA',value: avgER.toFixed(2) + '%' },
+                { label: 'CURTIDAS TOTAIS',   value: totalLikes.toLocaleString('pt-BR') },
+                { label: 'SALVAMENTOS TOTAIS',value: totalSavesSum.toLocaleString('pt-BR') },
               ]
-              const colW3 = (pw - 2 * M) / 3
+              const colW3 = (pw - 2 * M) / summaryItems.length
               summaryItems.forEach((item, i) => {
                 const cx = M + i * colW3
 
-                doc.setFontSize(22)
+                doc.setFontSize(18)
                 doc.setFont(undefined, 'bold')
                 doc.setTextColor(20, 20, 20)
-                doc.text(item.value, cx, y + 10)
+                doc.text(item.value, cx, y + 9)
 
-                doc.setFontSize(7.5)
+                doc.setFontSize(6.5)
                 doc.setFont(undefined, 'normal')
                 doc.setTextColor(102, 102, 102)
-                doc.setCharSpace(0.5)
-                doc.text(item.label, cx, y + 16)
+                doc.setCharSpace(0.4)
+                doc.text(item.label, cx, y + 14)
                 doc.setCharSpace(0)
               })
 
@@ -746,24 +751,26 @@ export default function Analytics() {
 
               // ── DATA TABLE ──
               const colDefs = [
-                { label: 'DATA',       w: 26, fmt: m => m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—' },
-                { label: 'TIPO',       w: 16, fmt: m => (m.post_type || '—').toUpperCase() },
-                { label: 'PLATAFORMA', w: 22, fmt: m => (m.platform || '—').toUpperCase() },
-                { label: 'CLIENTE',    w: 26, fmt: m => m.client || '—' },
-                { label: 'DESCRICAO',  w: 48, fmt: m => {
+                { label: 'DATA',       w: 24, fmt: m => m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—' },
+                { label: 'TIPO',       w: 14, fmt: m => (m.post_type || '—').toUpperCase() },
+                { label: 'PLATAFORMA', w: 20, fmt: m => (m.platform || '—').toUpperCase() },
+                { label: 'CLIENTE',    w: 22, fmt: m => m.client || '—' },
+                { label: 'DESCRICAO',  w: 40, fmt: m => {
                   const platform = (m.platform || 'post').charAt(0).toUpperCase() + (m.platform || 'post').slice(1)
                   const date = m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('pt-BR') : ''
                   return `${platform} - ${date}`
                 }},
-                { label: 'IMPRESSOES', w: 24, align: 'right', fmt: m => (m.impressions || 0).toLocaleString('pt-BR') },
-                { label: 'ALCANCE',    w: 20, align: 'right', fmt: m => (m.reach || 0).toLocaleString('pt-BR') },
-                { label: 'CURTIDAS',   w: 18, align: 'right', fmt: m => (m.likes || 0).toLocaleString('pt-BR') },
-                { label: 'COMENT.',    w: 16, align: 'right', fmt: m => (m.comments || 0).toLocaleString('pt-BR') },
-                { label: 'ENGAJ.',     w: 18, align: 'right', fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
-                { label: 'ER%',        w: 18, align: 'right', fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
+                { label: 'IMPRESSOES', w: 22, align: 'right', fmt: m => (m.impressions || 0).toLocaleString('pt-BR') },
+                { label: 'ALCANCE',    w: 18, align: 'right', fmt: m => (m.reach || 0).toLocaleString('pt-BR') },
+                { label: 'CURTIDAS',   w: 16, align: 'right', fmt: m => (m.likes || 0).toLocaleString('pt-BR') },
+                { label: 'COMENT.',    w: 14, align: 'right', fmt: m => (m.comments || 0).toLocaleString('pt-BR') },
+                { label: 'COMPART.',   w: 16, align: 'right', fmt: m => (m.shares || 0).toLocaleString('pt-BR') },
+                { label: 'SALVAM.',    w: 15, align: 'right', fmt: m => (m.saves || 0).toLocaleString('pt-BR') },
+                { label: 'ENGAJ.',     w: 16, align: 'right', fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
+                { label: 'ER%',        w: 16, align: 'right', fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
               ]
 
-              const rowH = 8
+              const rowH = 10  // mais espaço entre linhas
               const footerH = 12
 
               const drawHeader = () => {
@@ -811,11 +818,11 @@ export default function Analytics() {
                   x += col.w
                 })
 
-                y += rowH - 1
+                // Linha separadora abaixo do texto, com espaço suficiente
                 doc.setDrawColor(238, 238, 238)
                 doc.setLineWidth(0.2)
-                doc.line(M, y, pw - M, y)
-                y += 1
+                doc.line(M, y + 4, pw - M, y + 4)
+                y += rowH
               })
 
               // ── RODAPÉ em todas as páginas ──
