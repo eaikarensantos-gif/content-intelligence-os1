@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Tag, Sparkles, Loader2 } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
+import { lintText } from '../../utils/brandLinter'
+import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -114,6 +116,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       .map(([tag]) => tag)
   }, [allIdeas])
 
+  // Brand Linter — linta título + descrição + roteiro + legenda
+  const lintViolations = useMemo(() => {
+    const combined = [form.title, form.description, form.script, form.caption]
+      .filter(Boolean)
+      .join('\n')
+    return lintText(combined)
+  }, [form.title, form.description, form.script, form.caption])
+
   const descRef = useRef(null)
   const autoResizeDesc = useCallback((el) => {
     if (!el) return
@@ -209,6 +219,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   return (
     <Modal open={open} onClose={onClose} title={initial?.id ? 'Editar Ideia' : 'Nova Ideia de Conteúdo'}>
       <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* Brand Directive Banner */}
+        <BrandDirectiveBanner />
 
         {/* Título */}
         <div>
@@ -446,10 +459,20 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
           )}
         </div>
 
+        {/* Brand Linter Panel */}
+        {lintViolations.length > 0 && (
+          <BrandLinterPanel violations={lintViolations} compact />
+        )}
+
         {/* Ações */}
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary">
+          <button
+            type="submit"
+            disabled={lintViolations.length > 0}
+            title={lintViolations.length > 0 ? 'Corrija as violações de tom antes de salvar' : undefined}
+            className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+          >
             {initial?.id ? 'Salvar Alterações' : 'Criar Ideia'}
           </button>
         </div>

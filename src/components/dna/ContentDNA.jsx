@@ -171,6 +171,9 @@ async function analyzeContentDNA(apiKey, metricsData) {
 
   const prompt = `Você é um estrategista de conteúdo digital brasileiro de alto nível. Analise os dados de desempenho abaixo e extraia o "DNA de conteúdo" deste criador — os padrões que fazem seu conteúdo funcionar.
 
+PERFIL DO CRIADOR:
+Este criador produz conteúdo e ministra palestras sobre: Carreira e desenvolvimento profissional, Maturidade profissional, IA aplicada, Crítica social da tecnologia, Corporativo relatable. Público-alvo: profissionais sêniores, gestores e tomadores de decisão em tech. Toda análise, template e ideia deve ser contextualizada neste universo temático.
+
 DADOS DE DESEMPENHO:
 ${JSON.stringify(dataForAI, null, 2)}
 
@@ -247,11 +250,12 @@ Responda APENAS com JSON válido:
 }
 
 REGRAS PARA creator_references:
-- Nicho OBRIGATÓRIO: UX Design, IA aplicada, Carreira Sênior em Tech, Liderança em Produto, Design Systems.
+- Nicho OBRIGATÓRIO: UX Design, IA aplicada, Carreira Sênior em Tech, Liderança em Produto, Design Systems, Maturidade Profissional, Crítica Social da Tecnologia, Corporativo Relatable com profundidade.
+- Os criadores sugeridos devem estar alinhados com os temas que este criador trabalha: carreira e desenvolvimento profissional, maturidade profissional, IA aplicada, crítica social da tecnologia, corporativo relatable.
 - Estética: minimalista, técnica, premium — paleta neutra/quente, sem excesso de cores.
 - Público dos criadores sugeridos: profissionais sêniores, gestores, tomadores de decisão em tech.
 - PROIBIDO sugerir: criadores de finanças pessoais genéricas (ex: Nath Arcuri, Thiago Nigro), coaches motivacionais, influenciadores de entretenimento de massa, perfis sem profundidade técnica.
-- PRIORIZE: criadores que publicam case studies, processos de design, análises de produto, IA aplicada ao trabalho, liderança técnica.
+- PRIORIZE: criadores que combinam humor corporativo com análise técnica, que falam de carreira com honestidade e sem toxic positivity, que tratam IA com senioridade e criticidade.
 - Pode ser internacional se não houver nacional adequado — prefira qualidade ao localismo.
 - A justificativa "what_to_learn" deve ser SEMPRE sobre método de entrega (estrutura do post, técnica narrativa, formato visual) — nunca sobre tema.`
 
@@ -266,7 +270,7 @@ REGRAS PARA creator_references:
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      system: 'You are a world-class content strategist specializing in Tech, UX Design, and AI niches. The user is a Senior UX/AI Designer targeting senior professionals, managers, and decision-makers. Analyze content performance data and extract actionable patterns. For creator_references, only suggest creators with deep technical authority in UX, AI, Product Design, or Senior Tech Leadership — never generic finance, motivation, or mass entertainment creators. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
+      system: 'You are a world-class content strategist specializing in Tech, UX Design, and AI niches. The user is a Senior UX/AI Designer and speaker who creates content and gives talks on: Career & Professional Development, Professional Maturity, Applied AI, Social Critique of Technology, and Relatable Corporate Life. Their audience is senior professionals, managers, and decision-makers in tech. Analyze content performance data and extract actionable patterns. For creator_references, only suggest creators with deep technical authority in UX, AI, Product Design, Senior Tech Leadership, career maturity, or tech social critique — never generic finance, motivation, or mass entertainment creators. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })

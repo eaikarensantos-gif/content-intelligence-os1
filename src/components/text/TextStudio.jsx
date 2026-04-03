@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Wand2, Copy, Check, RefreshCw,
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { lintText } from '../../utils/brandLinter'
+import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -523,6 +525,13 @@ export default function TextStudio() {
 
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length
 
+  // Lint do conteúdo ativo gerado
+  const activeViolations = useMemo(() => {
+    if (!result || !activeTab) return []
+    const copyText = buildCopyText(activeTab, result.versions?.[activeTab])
+    return lintText(copyText)
+  }, [result, activeTab])
+
   return (
     <div className="min-h-full bg-gray-50">
       {/* Header */}
@@ -645,6 +654,9 @@ export default function TextStudio() {
         {/* Results */}
         {result && (
           <div className="space-y-4 animate-slide-up">
+            {/* Brand Directive Banner */}
+            <BrandDirectiveBanner />
+
             {/* Core message */}
             {result.core_message && (
               <div className="card p-4 border border-violet-200 bg-violet-50/50">
@@ -704,7 +716,9 @@ export default function TextStudio() {
                       ) : (
                         <button
                           onClick={() => handleSaveToHub(activeTab)}
-                          className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all"
+                          disabled={activeViolations.length > 0}
+                          title={activeViolations.length > 0 ? 'Corrija as violações de tom antes de salvar' : 'Salvar no Hub de Ideias'}
+                          className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600"
                         >
                           <Save size={12} /> Salvar no Hub
                         </button>
@@ -743,6 +757,13 @@ export default function TextStudio() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Brand Linter Panel */}
+                  {activeViolations.length > 0 && (
+                    <div className="mb-4">
+                      <BrandLinterPanel violations={activeViolations} compact />
+                    </div>
+                  )}
 
                   {(() => {
                     const Component = OUTPUT_COMPONENTS[activeTab]

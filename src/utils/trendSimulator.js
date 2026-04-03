@@ -1,78 +1,75 @@
 const CREATORS_DB = {
   linkedin: [
-    { name: 'Ana Carvalho', handle: '@anacarvalho', followers: '87k', avg_engagement: '4.8%', niche: 'Estratégia de conteúdo e criação digital', recent_topics: ['sistemas de conteúdo', 'monetização', 'LinkedIn'], profile_url: 'https://www.linkedin.com/search/results/people/?keywords=ana+carvalho+content' },
-    { name: 'Bruno Mendes', handle: '@brunomendes', followers: '210k', avg_engagement: '5.2%', niche: 'Carreira e desenvolvimento profissional', recent_topics: ['liderança', 'mercado de trabalho', 'habilidades do futuro'], profile_url: 'https://www.linkedin.com/search/results/people/?keywords=bruno+mendes+carreira' },
-    { name: 'Fernanda Lima', handle: '@fernandalima', followers: '145k', avg_engagement: '4.1%', niche: 'Empreendedorismo e negócios digitais', recent_topics: ['solopreneur', 'negócios', 'produtividade'], profile_url: 'https://www.linkedin.com/search/results/people/?keywords=fernanda+lima+empreendedorismo' },
-    { name: 'Ricardo Souza', handle: '@ricardosouza', followers: '320k', avg_engagement: '3.9%', niche: 'Marketing digital e crescimento', recent_topics: ['estratégia digital', 'tráfego pago', 'funil de vendas'], profile_url: 'https://www.linkedin.com/search/results/people/?keywords=ricardo+souza+marketing' },
-    { name: 'Justin Welsh', handle: '@justinwelsh', followers: '580k', avg_engagement: '6.2%', niche: 'Solopreneurship & content systems', recent_topics: ['one-person business', 'content systems', 'LinkedIn growth'], profile_url: 'https://www.linkedin.com/in/justinwelsh/' },
-    { name: 'Lara Acosta', handle: '@laraacosta', followers: '420k', avg_engagement: '7.1%', niche: 'Personal branding & LinkedIn strategy', recent_topics: ['personal brand', 'LinkedIn content', 'audience building'], profile_url: 'https://www.linkedin.com/in/lara-acosta-/' },
-    { name: 'Matt Gray', handle: '@mattgray', followers: '340k', avg_engagement: '5.8%', niche: 'Building in public & systems', recent_topics: ['creator economy', 'build in public', 'business systems'], profile_url: 'https://www.linkedin.com/in/matt-gray-/' },
+    { name: 'Merci Victoria Grace', handle: '@mercivictoriagrace', followers: '95k', avg_engagement: '5.8%', niche: 'Liderança em Produto e cultura de times de tech', recent_topics: ['product leadership', 'tech org design', 'senior career decisions'], profile_url: 'https://www.linkedin.com/in/mercivictoriagrace/' },
+    { name: 'Wes Kao', handle: '@weskao', followers: '120k', avg_engagement: '6.4%', niche: 'Comunicação executiva e influência técnica', recent_topics: ['executive communication', 'strategic influence', 'working with senior stakeholders'], profile_url: 'https://www.linkedin.com/in/weskao/' },
+    { name: 'Tanya Reilly', handle: '@tanyareilly', followers: '78k', avg_engagement: '5.1%', niche: 'Staff Engineering e maturidade técnica sênior', recent_topics: ['staff engineer', 'technical leadership', 'senior IC career'], profile_url: 'https://www.linkedin.com/in/tanyareilly/' },
+    { name: 'Ethan Mollick', handle: '@emollick', followers: '210k', avg_engagement: '7.2%', niche: 'IA aplicada ao trabalho do conhecimento — perspectiva acadêmica', recent_topics: ['AI co-intelligence', 'human-AI collaboration', 'future of knowledge work'], profile_url: 'https://www.linkedin.com/in/emollick/' },
+    { name: 'Kayvon Beykpour', handle: '@kayvz', followers: '85k', avg_engagement: '4.9%', niche: 'Product strategy e liderança em scale-ups', recent_topics: ['product strategy', 'startup to scale', 'tech leadership decisions'], profile_url: 'https://www.linkedin.com/in/kayvz/' },
+    { name: 'Louie Bacaj', handle: '@louiebacaj', followers: '62k', avg_engagement: '5.7%', niche: 'Solopreneurship estratégico e carreira técnica', recent_topics: ['senior engineer to indie', 'technical solopreneur', 'career transitions in tech'], profile_url: 'https://www.linkedin.com/in/louiebacaj/' },
+    { name: 'Gergely Orosz', handle: '@gergelyorosz', followers: '195k', avg_engagement: '6.9%', niche: 'Engenharia de software sênior e mercado de tech', recent_topics: ['tech layoffs analysis', 'senior engineer career', 'engineering management'], profile_url: 'https://www.linkedin.com/in/gergelyorosz/' },
   ],
   twitter: [
-    { name: 'Thiago Alves', handle: '@thiagoalves', followers: '95k', avg_engagement: '5.5%', niche: 'Escrita online e construção de audiência', recent_topics: ['escrita persuasiva', 'audiência', 'copywriting'], profile_url: 'https://x.com/search?q=thiagoalves+content&f=user' },
-    { name: 'Mariana Castro', handle: '@marianacastro', followers: '78k', avg_engagement: '6.1%', niche: 'Tecnologia e inovação', recent_topics: ['IA', 'startups', 'futuro do trabalho'], profile_url: 'https://x.com/search?q=marianacastro+tech&f=user' },
-    { name: 'Lucas Ferreira', handle: '@lucasferreira', followers: '54k', avg_engagement: '4.7%', niche: 'Finanças pessoais e investimentos', recent_topics: ['independência financeira', 'renda passiva', 'investimentos'], profile_url: 'https://x.com/search?q=lucasferreira+financas&f=user' },
-    { name: 'Dickie Bush', handle: '@dickiebush', followers: '390k', avg_engagement: '5.3%', niche: 'Writing online & audience growth', recent_topics: ['Ship 30 for 30', 'atomic essays', 'writing habits'], profile_url: 'https://x.com/dickiebush' },
-    { name: 'Nicolas Cole', handle: '@nicolascole77', followers: '210k', avg_engagement: '6.4%', niche: 'Digital writing & ghostwriting', recent_topics: ['digital writing', 'ghostwriting', 'category design'], profile_url: 'https://x.com/nicolascole77' },
-    { name: 'Sahil Bloom', handle: '@sahilbloom', followers: '960k', avg_engagement: '4.9%', niche: 'Business, finance & self-improvement', recent_topics: ['mental models', 'wealth building', 'personal growth'], profile_url: 'https://x.com/SahilBloom' },
+    { name: 'Andrej Karpathy', handle: '@karpathy', followers: '890k', avg_engagement: '8.3%', niche: 'IA profunda — ex-OpenAI, ex-Tesla AI', recent_topics: ['LLM internals', 'AI education', 'vibe coding critique'], profile_url: 'https://x.com/karpathy' },
+    { name: 'Simon Willison', handle: '@simonw', followers: '155k', avg_engagement: '5.9%', niche: 'LLMs aplicados e engenharia de prompts avançada', recent_topics: ['prompt engineering', 'LLM tools', 'responsible AI use'], profile_url: 'https://x.com/simonw' },
+    { name: 'Shreya Shankar', handle: '@sh_reya', followers: '72k', avg_engagement: '6.1%', niche: 'ML Engineering e confiabilidade de sistemas de IA', recent_topics: ['ML reliability', 'data quality', 'LLM evals'], profile_url: 'https://x.com/sh_reya' },
+    { name: 'Swyx', handle: '@swyx', followers: '145k', avg_engagement: '5.4%', niche: 'AI Engineer landscape e futuro das habilidades', recent_topics: ['AI engineer', 'latent space', 'software 2.0 career'], profile_url: 'https://x.com/swyx' },
+    { name: 'Hamel Husain', handle: '@hamelhusain', followers: '68k', avg_engagement: '5.8%', niche: 'LLMOps e engenharia prática de IA', recent_topics: ['LLM evaluation', 'AI systems in production', 'practical ML'], profile_url: 'https://x.com/hamelhusain' },
+    { name: 'Yann LeCun', handle: '@ylecun', followers: '740k', avg_engagement: '4.2%', niche: 'Crítica técnica de IA — Chief AI Scientist Meta', recent_topics: ['AI limitations', 'AGI critique', 'embodied AI'], profile_url: 'https://x.com/ylecun' },
   ],
   instagram: [
-    { name: 'Camila Ramos', handle: '@camilaramos', followers: '1.2M', avg_engagement: '3.8%', niche: 'Lifestyle e marca pessoal', recent_topics: ['rotina', 'disciplina', 'vida intencional'], profile_url: 'https://www.instagram.com/explore/search/keyword/?q=camilaramos' },
-    { name: 'Pedro Nunes', handle: '@pedronunes', followers: '680k', avg_engagement: '4.3%', niche: 'Marketing e vendas', recent_topics: ['vendas no Instagram', 'lançamentos', 'autoridade'], profile_url: 'https://www.instagram.com/explore/search/keyword/?q=pedronunes+marketing' },
-    { name: 'Juliana Farias', handle: '@julianafarias', followers: '430k', avg_engagement: '5.0%', niche: 'Criatividade e design', recent_topics: ['design', 'criatividade', 'carreira criativa'], profile_url: 'https://www.instagram.com/explore/search/keyword/?q=julianafarias+design' },
-    { name: 'Alex Hormozi', handle: '@hormozi', followers: '2.8M', avg_engagement: '4.1%', niche: 'Business growth & sales', recent_topics: ['offers', 'sales', 'business scaling'], profile_url: 'https://www.instagram.com/hormozi/' },
-    { name: 'Gary Vaynerchuk', handle: '@garyvee', followers: '10.2M', avg_engagement: '2.3%', niche: 'Entrepreneurship & social media', recent_topics: ['content marketing', 'NFTs', 'self-awareness'], profile_url: 'https://www.instagram.com/garyvee/' },
+    { name: 'Juarez Lumertz', handle: '@juarezlumertz', followers: '48k', avg_engagement: '5.3%', niche: 'Crítica corporativa e maturidade profissional', recent_topics: ['ambiente corporativo', 'carreira sênior', 'liderança com honestidade'], profile_url: 'https://www.instagram.com/juarezlumertz/' },
+    { name: 'Álvaro Justen', handle: '@turicas', followers: '32k', avg_engagement: '4.8%', niche: 'Dados abertos, ética em IA e crítica técnica', recent_topics: ['dados públicos', 'viés algorítmico', 'tech e sociedade'], profile_url: 'https://www.instagram.com/turicas/' },
+    { name: 'Camile Santana', handle: '@camilesantana', followers: '61k', avg_engagement: '5.1%', niche: 'Design de produto e liderança criativa', recent_topics: ['design leadership', 'UX estratégico', 'carreira criativa sênior'], profile_url: 'https://www.instagram.com/camilesantana/' },
+    { name: 'Dani Bittencourt', handle: '@danibittencourt', followers: '55k', avg_engagement: '4.6%', niche: 'Corporativo relatable e desenvolvimento profissional', recent_topics: ['vida corporativa', 'liderança real', 'carreira sem toxic positivity'], profile_url: 'https://www.instagram.com/danibittencourt/' },
+    { name: 'Michael Cho', handle: '@michaelchodesign', followers: '94k', avg_engagement: '5.7%', niche: 'UX Design para IA e design de produtos de linguagem', recent_topics: ['AI UX patterns', 'designing for LLMs', 'conversational interfaces'], profile_url: 'https://www.instagram.com/michaelchodesign/' },
   ],
   youtube: [
-    { name: 'Eduardo Motta', handle: '@eduardomotta', followers: '2.1M', avg_engagement: '4.5%', niche: 'Produtividade e ferramentas digitais', recent_topics: ['Notion', 'produtividade', 'ferramentas de IA'], profile_url: 'https://www.youtube.com/@eduardomotta' },
-    { name: 'Gabriela Torres', handle: '@gabrielatorres', followers: '890k', avg_engagement: '3.7%', niche: 'Desenvolvimento pessoal', recent_topics: ['mentalidade', 'hábitos', 'autoconhecimento'], profile_url: 'https://www.youtube.com/@gabrielatorres' },
-    { name: 'Renato Silva', handle: '@renatosilva', followers: '1.5M', avg_engagement: '4.1%', niche: 'Negócios e empreendedorismo', recent_topics: ['negócios digitais', 'receita recorrente', 'escala'], profile_url: 'https://www.youtube.com/@renatosilva' },
-    { name: 'Ali Abdaal', handle: '@aliabdaal', followers: '5.4M', avg_engagement: '4.8%', niche: 'Productivity & creator business', recent_topics: ['productivity systems', 'YouTube growth', 'feel-good productivity'], profile_url: 'https://www.youtube.com/@aliabdaal' },
-    { name: 'Thomas Frank', handle: '@ThomasFrank', followers: '3.2M', avg_engagement: '4.2%', niche: 'Study skills & productivity', recent_topics: ['Notion templates', 'study techniques', 'focus'], profile_url: 'https://www.youtube.com/@ThomasFrank' },
-    { name: 'Nathaniel Drew', handle: '@nathanieldrew', followers: '1.9M', avg_engagement: '5.1%', niche: 'Minimalism & intentional living', recent_topics: ['minimalism', 'digital detox', 'life design'], profile_url: 'https://www.youtube.com/@nathanieldrew' },
+    { name: 'David Shapiro', handle: '@DavidShapiroAI', followers: '210k', avg_engagement: '5.8%', niche: 'IA generativa — análise técnica aprofundada', recent_topics: ['AI alignment', 'LLM architecture', 'AGI timeline analysis'], profile_url: 'https://www.youtube.com/@DavidShapiroAI' },
+    { name: 'Matt Wolfe', handle: '@mreflow', followers: '890k', avg_engagement: '4.9%', niche: 'AI tools aplicados ao trabalho criativo e profissional', recent_topics: ['AI workflows', 'generative tools review', 'AI for business'], profile_url: 'https://www.youtube.com/@mreflow' },
+    { name: 'Tina Huang', handle: '@TinaHuang1', followers: '370k', avg_engagement: '5.3%', niche: 'Carreira em Data Science e transição para IA sênior', recent_topics: ['data science career', 'AI tools for analysts', 'senior IC path'], profile_url: 'https://www.youtube.com/@TinaHuang1' },
+    { name: 'NetworkChuck', handle: '@NetworkChuck', followers: '3.1M', avg_engagement: '4.6%', niche: 'Infra e Cloud para engenheiros e tech leaders', recent_topics: ['AI infrastructure', 'cloud architecture', 'technical deep dives'], profile_url: 'https://www.youtube.com/@NetworkChuck' },
+    { name: 'Fireship', handle: '@Fireship', followers: '2.8M', avg_engagement: '6.1%', niche: 'Crítica técnica ácida e análise de tendências em software', recent_topics: ['AI coding critique', 'software industry satire', 'tech trends analysis'], profile_url: 'https://www.youtube.com/@Fireship' },
+    { name: 'Lex Fridman', handle: '@lexfridman', followers: '4.2M', avg_engagement: '3.8%', niche: 'Entrevistas técnicas de profundidade — IA, engenharia, filosofia', recent_topics: ['AI research frontiers', 'tech philosophy', 'long-form technical interviews'], profile_url: 'https://www.youtube.com/@lexfridman' },
   ],
   tiktok: [
-    { name: 'Beatriz Costa', handle: '@beatrizcosta', followers: '3.4M', avg_engagement: '7.2%', niche: 'Criadores de conteúdo e estratégia', recent_topics: ['viral', 'ganchos', 'crescimento no TikTok'], profile_url: 'https://www.tiktok.com/search?q=beatrizcosta' },
-    { name: 'Igor Pimentel', handle: '@igorpimentel', followers: '1.8M', avg_engagement: '8.1%', niche: 'Educação e entretenimento', recent_topics: ['storytelling', 'persuasão', 'educação rápida'], profile_url: 'https://www.tiktok.com/search?q=igorpimentel' },
-    { name: 'Codie Sanchez', handle: '@codiesanchez', followers: '2.3M', avg_engagement: '6.9%', niche: 'Contrarian investing & business', recent_topics: ['boring businesses', 'cash flow', 'financial freedom'], profile_url: 'https://www.tiktok.com/@codiesancheztx' },
-    { name: 'Vanessa Lau', handle: '@vanessalau', followers: '1.1M', avg_engagement: '5.7%', niche: 'Social media & content strategy', recent_topics: ['Instagram growth', 'content creation', 'online business'], profile_url: 'https://www.tiktok.com/@iamvanessalau' },
+    { name: 'Tess Posner', handle: '@tessposner', followers: '185k', avg_engagement: '6.2%', niche: 'IA e impacto social — perspectiva crítica', recent_topics: ['AI ethics', 'tech equity', 'algorithmic bias'], profile_url: 'https://www.tiktok.com/search?q=tessposner' },
+    { name: 'Futurpedia', handle: '@futurpedia', followers: '430k', avg_engagement: '5.4%', niche: 'Curadoria crítica de ferramentas de IA', recent_topics: ['AI tool reviews', 'workflow automation', 'practical AI use cases'], profile_url: 'https://www.tiktok.com/search?q=futurpedia' },
   ],
 }
 
 const HOOK_PATTERNS = [
-  { hook: 'Gancho de Lista', example: '"X coisas que ninguém te conta sobre [TOPICO]"', frequency: '38%' },
-  { hook: 'Gancho Contrário', example: '"Todos dizem [X] — estão errados. Aqui está o porquê..."', frequency: '24%' },
-  { hook: 'Gancho de História', example: '"Eu [fiz algo] e o que aconteceu mudou tudo..."', frequency: '21%' },
-  { hook: 'Gancho de Dados', example: '"Analisei 1.000 [X] e descobri isso:"', frequency: '17%' },
-  { hook: 'Gancho de Problema', example: '"O real motivo pelo qual [DOR] acontece (e como resolver)"', frequency: '29%' },
-  { hook: 'Gancho de Pergunta', example: '"E se [sabedoria convencional] estiver te limitando?"', frequency: '22%' },
+  { hook: 'Provocação Técnica', example: '"[Tecnologia X] resolve [problema Y] — mas ninguém está fazendo a pergunta certa sobre o custo disso."', frequency: '34%' },
+  { hook: 'Análise de Dados', example: '"Analisei [N] casos de [X] e o padrão que emerge contradiz o que os frameworks ensinam."', frequency: '28%' },
+  { hook: 'Diagnóstico de Maturidade', example: '"Profissionais júnior fazem [X]. Sêniores com 10 anos de cicatriz fazem [Y] — e a diferença não está na ferramenta."', frequency: '22%' },
+  { hook: 'Contradição Fundamentada', example: '"Todo mundo adotou [X] como protocolo padrão. Os dados de adoção dizem o contrário."', frequency: '19%' },
+  { hook: 'Consequência Ignorada', example: '"A conversa sobre [X] foca em eficiência. O que ninguém está mapeando é o que isso faz com [Y]."', frequency: '24%' },
+  { hook: 'Reframing de Senioridade', example: '"A IA não nivelou o campo. Ela tornou a diferença entre [júnior e sênior] mais visível do que nunca."', frequency: '31%' },
 ]
 
 const FORMAT_TRENDS = {
   linkedin: [
-    { format: 'Carrossel', trend: '+42%', dominance: '35%' },
-    { format: 'Post de Texto Longo', trend: '+18%', dominance: '40%' },
-    { format: 'Vídeo Curto', trend: '+85%', dominance: '15%' },
+    { format: 'Carrossel Analítico (Case Study)', trend: '+58%', dominance: '38%' },
+    { format: 'Post de Posicionamento (Longo)', trend: '+24%', dominance: '42%' },
+    { format: 'Vídeo Técnico Curto', trend: '+91%', dominance: '14%' },
   ],
   instagram: [
-    { format: 'Reels', trend: '+120%', dominance: '55%' },
-    { format: 'Carrossel', trend: '+30%', dominance: '30%' },
-    { format: 'Post Estático', trend: '-15%', dominance: '15%' },
+    { format: 'Carrossel de Processo / Framework', trend: '+45%', dominance: '40%' },
+    { format: 'Reels com Análise Crítica', trend: '+78%', dominance: '35%' },
+    { format: 'Post Estático de Posicionamento', trend: '+12%', dominance: '20%' },
   ],
   tiktok: [
-    { format: 'Vídeo Curto (< 30s)', trend: '+55%', dominance: '40%' },
-    { format: 'Tutorial / Como Fazer', trend: '+38%', dominance: '30%' },
-    { format: 'Dueto de Tendência', trend: '+22%', dominance: '20%' },
+    { format: 'Análise Técnica Rápida (< 60s)', trend: '+62%', dominance: '35%' },
+    { format: 'Desconstrução de Tendência', trend: '+44%', dominance: '30%' },
   ],
   youtube: [
-    { format: 'Vídeo Longo (10-20 min)', trend: '+12%', dominance: '45%' },
-    { format: 'YouTube Shorts', trend: '+200%', dominance: '30%' },
-    { format: 'Estilo Documentário', trend: '+65%', dominance: '15%' },
+    { format: 'Technical Deep Dive (15-30 min)', trend: '+38%', dominance: '48%' },
+    { format: 'Análise Crítica de Ferramenta / Tendência', trend: '+85%', dominance: '28%' },
+    { format: 'Case Study Documentado', trend: '+52%', dominance: '18%' },
   ],
   twitter: [
-    { format: 'Thread', trend: '+48%', dominance: '50%' },
-    { format: 'Tweet Único', trend: '-8%', dominance: '35%' },
-    { format: 'Spaces', trend: '+15%', dominance: '10%' },
+    { format: 'Thread de Análise Técnica', trend: '+55%', dominance: '52%' },
+    { format: 'Tweet de Posicionamento Contrarian', trend: '+30%', dominance: '30%' },
+    { format: 'Thread de Processo / Workflow', trend: '+40%', dominance: '14%' },
   ],
 }
 
@@ -85,79 +82,88 @@ function generateOpportunities(topic) {
   return [
     {
       id: `opp-${Date.now()}-1`,
-      title: `${topic}: O Guia Completo para Iniciantes em 2025`,
-      description: `Um guia abrangente e prático sobre ${topic}, cobrindo desde os conceitos básicos até estratégias avançadas. Ideal para quem quer começar sem cometer os erros mais comuns.`,
-      hook: 'Gancho de Lista',
-      hook_example: `"7 coisas que eu gostaria de saber antes de começar com ${topic}"`,
+      title: `Arquitetura de Workflow com ${topic}: O que Muda quando a IA Executa o Operacional`,
+      description: `Análise aprofundada de como profissionais sêniores estão redesenhando seus fluxos de trabalho com ${topic} — não como hack de produtividade, mas como decisão estratégica sobre onde colocar cognição humana de alto custo.`,
+      hook: 'Provocação Técnica',
+      hook_example: `"Automatizar ${topic} com IA é a parte fácil. Decidir o que não automatizar é onde a senioria aparece."`,
       format: 'carrossel',
       platform: 'linkedin',
-      content_gap: `Faltam guias práticos em português sobre ${topic} acessíveis para a audiência brasileira.`,
+      content_gap: `A maioria dos conteúdos sobre ${topic} foca em ferramentas. Faltam análises sobre a tomada de decisão por trás da arquitetura de workflows.`,
       potential: 'Very High',
     },
     {
       id: `opp-${Date.now()}-2`,
-      title: `Por Que Todo Conselho Sobre ${topic} Está Errado`,
-      description: `Uma abordagem contrária que desafia o senso comum sobre ${topic}. Baseado em dados reais e experiências práticas.`,
-      hook: 'Gancho Contrário',
-      hook_example: `"Todo mundo fala pra você fazer X com ${topic}, mas os dados mostram o oposto..."`,
+      title: `Os Dados Sobre ${topic} Que Contradizem o Consenso`,
+      description: `Uma análise baseada em dados que desafia as premissas mais aceitas sobre ${topic}. Com evidências concretas e consequências práticas para quem toma decisões técnicas.`,
+      hook: 'Análise de Dados',
+      hook_example: `"Mapeei os padrões de adoção de ${topic} nos últimos 18 meses. O que os dados mostram contradiz o que os frameworks mais populares ensinam."`,
       format: 'thread',
       platform: 'twitter',
-      content_gap: `Poucas vozes trazem perspectivas contrárias embasadas sobre ${topic}.`,
+      content_gap: `Análises com dados reais e posicionamento técnico sobre ${topic} são escassos em português.`,
       potential: 'High',
     },
     {
       id: `opp-${Date.now()}-3`,
-      title: `Passei 6 Meses Dominando ${topic} — Tudo Que Aprendi`,
-      description: `Uma jornada pessoal documentando os aprendizados, fracassos e vitórias de mergulhar fundo em ${topic}. Autêntico e cheio de lições práticas.`,
-      hook: 'Gancho de História',
-      hook_example: `"Eu errei feio com ${topic} por meses. Aqui está o que finalmente funcionou."`,
+      title: `Como Manter Autoria Criativa num Workflow de ${topic} 100% Assistido por IA`,
+      description: `O dilema real que profissionais sêniores enfrentam: ganho de escala vs. perda de identidade técnica. Um case study honesto sobre onde a IA ajuda e onde ela apaga o diferencial humano.`,
+      hook: 'Consequência Ignorada',
+      hook_example: `"A conversa sobre ${topic} foca em velocidade. O que ninguém está mapeando é o que a dependência faz com a sua capacidade de tomar decisões sem assistência."`,
       format: 'video',
       platform: 'youtube',
-      content_gap: `Conteúdos pessoais sobre a jornada real com ${topic} são raros e muito valorizados.`,
+      content_gap: `Conteúdos sobre os limites e os custos invisíveis da automação em ${topic} são raros e têm alto potencial de diferenciação.`,
       potential: 'High',
     },
     {
       id: `opp-${Date.now()}-4`,
-      title: `Os Dados Sobre ${topic} Que Ninguém Está Mostrando`,
-      description: `Uma análise de estatísticas subreportadas e tendências emergentes em ${topic}. Insights baseados em dados que oferecem vantagem competitiva.`,
-      hook: 'Gancho de Dados',
-      hook_example: `"Analisei 500 posts sobre ${topic} e os resultados me surpreenderam:"`,
+      title: `Ética e Viés em ${topic}: A Perspectiva que o Mercado Evita`,
+      description: `Uma análise crítica dos vieses estruturais presentes em ${topic} e as consequências para organizações que adotam sem governança. Posicionamento técnico com responsabilidade.`,
+      hook: 'Provocação Técnica',
+      hook_example: `"O modelo de ${topic} que a sua empresa usa foi treinado com dados que já continham o problema que você quer resolver. Isso não é teoria — é engenharia."`,
       format: 'carrossel',
       platform: 'linkedin',
-      content_gap: `Conteúdos baseados em dados reais sobre ${topic} em português são escassos.`,
+      content_gap: `Análises de ética e viés em ${topic} com profundidade técnica e linguagem acessível para gestores são praticamente inexistentes em português.`,
       potential: 'Very High',
     },
     {
       id: `opp-${Date.now()}-5`,
-      title: `O Erro Mais Caro Que Você Pode Cometer Com ${topic}`,
-      description: `Um mergulho profundo no equívoco mais comum em ${topic}, por que ele acontece e um caminho claro para corrigi-lo.`,
-      hook: 'Gancho de Problema',
-      hook_example: `"Esse erro simples em ${topic} me custou meses de progresso. Não cometa o mesmo."`,
+      title: `Transição para ${topic}: O que Ninguém Está Ensinando para Profissionais com 10+ Anos`,
+      description: `O que diferencia a transição de um sênior para ${topic} de um júnior? A resposta não é técnica — é sobre o que abrir mão, o que reaprender e o que defender.`,
+      hook: 'Diagnóstico de Maturidade',
+      hook_example: `"Profissionais júnior adotam ${topic} como ferramenta nova. Sêniores com 10 anos de cicatriz precisam de uma conversa diferente — sobre o que isso muda no seu modelo mental."`,
       format: 'reel',
       platform: 'instagram',
-      content_gap: `Conteúdos sobre erros práticos em ${topic} têm alta taxa de engajamento e baixa concorrência.`,
+      content_gap: `Conteúdos de transição para ${topic} são quase sempre voltados para iniciantes. Falta profundidade para quem já tem bagagem.`,
       potential: 'High',
     },
     {
       id: `opp-${Date.now()}-6`,
-      title: `Vale a Pena Investir em ${topic} em 2025? A Resposta Honesta`,
-      description: `Uma análise imparcial sobre o real valor de ${topic} hoje. Corta o hype para entregar perspectiva real.`,
-      hook: 'Gancho de Pergunta',
-      hook_example: `"Antes de gastar tempo e dinheiro em ${topic}, assiste esse vídeo."`,
+      title: `ROI Real de ${topic} em Operações Complexas: Análise Sem Hype`,
+      description: `Uma avaliação técnica e econômica do retorno real de investir em ${topic} — incluindo os custos ocultos de manutenção, governança, requalificação e dependência de fornecedor.`,
+      hook: 'Contradição Fundamentada',
+      hook_example: `"Todo mundo otimizou ${topic} para velocidade. Os CFOs que fizeram as contas 18 meses depois têm uma história diferente."`,
       format: 'video',
       platform: 'youtube',
-      content_gap: `Avaliações honestas e sem viés sobre ${topic} são raras — a maioria é patrocinada ou superficial.`,
+      content_gap: `Análises de ROI honestas e sem viés de venda sobre ${topic} são raras — a maioria dos conteúdos é produzida por quem tem interesse na adoção.`,
       potential: 'Medium',
     },
   ]
 }
 
 export function simulateTrendSearch(topic) {
-  const platforms = ['linkedin', 'twitter', 'instagram', 'youtube', 'tiktok']
+  // Prioriza LinkedIn e YouTube — plataformas de peso para o nicho sênior
+  const platformWeights = {
+    linkedin: 3,
+    youtube: 3,
+    twitter: 2,
+    instagram: 2,
+    tiktok: 1,
+  }
+
   const allCreators = []
-  platforms.forEach((plt) => {
-    const pool = CREATORS_DB[plt] || []
-    pickRandom(pool, Math.min(2, pool.length)).forEach((c) => {
+  Object.entries(CREATORS_DB).forEach(([plt, pool]) => {
+    const weight = platformWeights[plt] || 1
+    const count = Math.min(weight, pool.length)
+    pickRandom(pool, count).forEach((c) => {
       allCreators.push({ ...c, platform: plt, id: `creator-${Math.random().toString(36).substr(2, 6)}` })
     })
   })
@@ -166,9 +172,10 @@ export function simulateTrendSearch(topic) {
 
   const recurringHooks = pickRandom(HOOK_PATTERNS, 4).map((h) => ({
     ...h,
-    relevance: `Altamente eficaz para conteúdo sobre ${topic}`,
+    relevance: `Padrão de alta eficácia para audiências sêniores em ${topic}`,
   }))
 
+  const platforms = ['linkedin', 'twitter', 'instagram', 'youtube', 'tiktok']
   const dominantFormats = []
   platforms.forEach((plt) => {
     const fmts = FORMAT_TRENDS[plt] || []
@@ -178,14 +185,14 @@ export function simulateTrendSearch(topic) {
   })
 
   const emergingTopics = [
-    `${topic} para iniciantes`,
-    `${topic} com inteligência artificial`,
-    `cases de sucesso em ${topic}`,
-    `futuro do ${topic}`,
-    `monetização com ${topic}`,
-    `${topic} na prática`,
-    `ferramentas de ${topic}`,
-    `erros comuns em ${topic}`,
+    `Governança de ${topic} em pequenas e médias empresas`,
+    `${topic} e autoria criativa: onde a IA ajuda e onde apaga`,
+    `Fine-tuning de modelos de ${topic} para contexto organizacional`,
+    `Design System Automation com ${topic}`,
+    `${topic} para tomadores de decisão sem background técnico`,
+    `Prompt Engineering avançado aplicado a ${topic}`,
+    `Ética e viés em sistemas de ${topic}`,
+    `Transição de carreira para ${topic}: a perspectiva sênior`,
   ]
 
   const opportunities = generateOpportunities(topic)
