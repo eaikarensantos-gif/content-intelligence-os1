@@ -1306,8 +1306,10 @@ export default function Analytics() {
         const monthLabel = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
         // Filtra por mês + sinalizadores publi
+        // Inclui: posts com sinais na descrição (hashtags/menções) OU com cliente preenchido manualmente
         let publiPosts = enriched.filter(m => {
           if (m.date < firstOfMonth || m.date > lastDay) return false
+          if (m.client && m.client.trim()) return true   // cliente preenchido = publi
           const desc = (m.description || '').toLowerCase()
           const hasSignal = PUBLI_SIGNALS.some(s => desc.includes(s))
           const hasMention = /@[\w._]+/i.test(desc)
@@ -1321,6 +1323,9 @@ export default function Analytics() {
             const cName = client.name?.toLowerCase() || ''
             const cTags = (client.hashtags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
             publiPosts = publiPosts.filter(m => {
+              // Verifica campo client direto (LinkedIn/manual) OU sinais na descrição
+              const clientField = (m.client || '').toLowerCase()
+              if (clientField && (clientField === cName || clientField.includes(cName) || cName.includes(clientField))) return true
               const desc = (m.description || '').toLowerCase()
               return desc.includes(cName) || desc.includes('@' + cName) || cTags.some(t => desc.includes(t))
             })
