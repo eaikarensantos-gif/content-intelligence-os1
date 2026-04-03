@@ -207,9 +207,73 @@ export const normalizeRow = (raw) => {
   }
 }
 
+// ── Parser para o formato vertical de post único do LinkedIn ─────────────────
+// O LinkedIn exporta 1 post como um Excel vertical: col A = label, col B = valor
+const LI_SINGLE_LABEL_MAP = {
+  'url da publicacao':                                   'link',
+  'data da publicacao':                                  'date_raw',
+  'hora da publicacao':                                  'time_raw',
+  'impressoes':                                          'impressions',
+  'usuarios alcancados':                                 'reach',
+  'reacoes':                                             'likes',
+  'comentarios':                                         'comments',
+  'compartilhamentos':                                   'shares',
+  'salvamentos':                                         'saves',
+  'seguidores obtidos com esta publicacao':              'follows',
+  'envios no linkedin':                                  'link_clicks',
+  'visualizacoes do perfil a partir desta publicacao':   'profile_visits',
+  // Vídeo
+  'visualizacoes':                                       'video_views',
+  'tempo de assistir':                                   'watch_time',
+  'tempo medio de visualizacao':                         'avg_watch_time',
+}
+
+function parseLinkedinSinglePost(rows) {
+  // Monta dict label → valor percorrendo as linhas
+  const kv = {}
+  rows.forEach(row => {
+    if (!row || row.length < 2) return
+    const label = stripAccents(String(row[0] || '').toLowerCase().trim())
+    const value = String(row[1] || '').trim()
+    if (!label || !value) return
+    const mapped = LI_SINGLE_LABEL_MAP[label]
+    if (mapped) kv[mapped] = value
+  })
+
+  // Data + hora
+  const dateStr = `${kv.date_raw || ''} ${kv.time_raw || ''}`.trim()
+  const date = normalizeDate(kv.date_raw || '')
+
+  // Extrai ID da URL
+  const rawLink = kv.link || ''
+  const idMatch = rawLink.match(/(?:activity|ugcPost|share)[:\-](\d+)/i)
+  const description = idMatch ? `Post LinkedIn #${idMatch[1]}` : (rawLink || 'Post LinkedIn')
+
+  return {
+    post_id:      '',
+    platform:     'linkedin',
+    date,
+    publish_time: kv.time_raw || '',
+    impressions:  toNum(kv.impressions),
+    reach:        toNum(kv.reach),
+    likes:        toNum(kv.likes),
+    comments:     toNum(kv.comments),
+    shares:       toNum(kv.shares),
+    saves:        toNum(kv.saves),
+    follows:      toNum(kv.follows),
+    link_clicks:  toNum(kv.link_clicks),
+    duration_sec: 0,
+    description,
+    link:         rawLink,
+    post_type:    'post',
+    client:       '',
+  }
+}
+
 /**
  * Parse a CSV or XLSX/XLS file and return rows as array of objects (header-keyed).
- * Returns a Promise that resolves to { data: object[] }.
+ * Detects LinkedIn single-post vertical format automatically.
+ * Returns a Promise that resolves to { data: object[], linkedinSingle: boolean }.
  */
 export function parseFile(file) {
   return new Promise((resolve, reject) => {
@@ -222,6 +286,23 @@ export function parseFile(file) {
         try {
           const wb = XLSX.read(e.target.result, { type: 'array' })
           const sheet = wb.Sheets[wb.SheetNames[0]]
+
+          // Lê como arrays para detectar formato vertical
+          const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+          const firstLabel = stripAccents(String(rawRows[0]?.[0] || '').toLowerCase().trim())
+
+          // Detecta formato vertical de post único do LinkedIn
+          if (firstLabel === 'url da publicacao') {
+            const normalized = parseLinkedinSinglePost(rawRows)
+            if (normalized.date || normalized.link) {
+              resolve({ data: [normalized], linkedinSingle: true })
+            } else {
+              reject(new Error('Arquivo LinkedIn sem data ou URL válida.'))
+            }
+            return
+          }
+
+          // Formato tabular padrão
           const data = XLSX.utils.sheet_to_json(sheet, { defval: '' })
           resolve({ data })
         } catch (err) {

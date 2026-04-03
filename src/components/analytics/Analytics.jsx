@@ -1138,11 +1138,18 @@ export default function Analytics() {
                     const file = e.target.files?.[0]
                     if (!file) return
                     try {
-                      const { data } = await parseFile(file)
-                      const linkedin = isLinkedinFile(data)
-                      const rows = linkedin
-                        ? data.map(normalizeLinkedinRow).filter(Boolean)
-                        : data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                      const { data, linkedinSingle } = await parseFile(file)
+                      let rows
+                      if (linkedinSingle) {
+                        // Formato vertical de post único do LinkedIn — já normalizado
+                        rows = data
+                      } else if (isLinkedinFile(data)) {
+                        // Formato tabular do LinkedIn (relatório de múltiplos posts)
+                        rows = data.map(normalizeLinkedinRow).filter(Boolean)
+                      } else {
+                        // Instagram / formato padrão
+                        rows = data.map(normalizeRow).filter(r => r.date || r.impressions > 0)
+                      }
                       rows.forEach(row => addMetric(row))
                     } catch (err) {
                       console.error(err)
