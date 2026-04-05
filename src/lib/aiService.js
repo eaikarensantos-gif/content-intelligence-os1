@@ -1,16 +1,13 @@
-// ─── Provider definitions ─────────────────────────────────────────────────────
+// ─── Provider definitions ────────────────────────────────────────────────────
 
 export const PROVIDERS = {
   openai: {
     label: 'OpenAI',
-    baseUrl: 'https://api.openai.com/v1',
     models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
     defaultModel: 'gpt-4o-mini',
-    type: 'openai',
   },
   groq: {
     label: 'Groq (rápido e gratuito)',
-    baseUrl: 'https://api.groq.com/openai/v1',
     models: [
       'llama-3.1-8b-instant',
       'llama-3.1-70b-versatile',
@@ -18,11 +15,9 @@ export const PROVIDERS = {
       'gemma2-9b-it',
     ],
     defaultModel: 'llama-3.1-8b-instant',
-    type: 'openai',
   },
   openrouter: {
     label: 'OpenRouter (qualquer modelo)',
-    baseUrl: 'https://openrouter.ai/api/v1',
     models: [
       'openai/gpt-4o-mini',
       'openai/gpt-4o',
@@ -33,25 +28,20 @@ export const PROVIDERS = {
       'mistralai/mistral-7b-instruct:free',
     ],
     defaultModel: 'openai/gpt-4o-mini',
-    type: 'openai',
   },
   gemini: {
     label: 'Google Gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'],
     defaultModel: 'gemini-1.5-flash',
-    type: 'gemini',
   },
   custom: {
     label: 'Custom (OpenAI-compatible)',
-    baseUrl: '',
     models: [],
     defaultModel: '',
-    type: 'openai',
   },
 }
 
-// ─── JSON parser — strips markdown code fences if present ─────────────────────
+// ─── JSON parser — strips markdown code fences if present ────────────────────
 
 function parseJSON(text) {
   const cleaned = text
@@ -61,76 +51,7 @@ function parseJSON(text) {
   return JSON.parse(cleaned)
 }
 
-// ─── OpenAI-compatible call ───────────────────────────────────────────────────
-
-async function callOpenAICompatible(baseUrl, apiKey, model, messages, opts = {}) {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${apiKey}`,
-    ...opts.extraHeaders,
-  }
-
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: opts.temperature ?? 0.7,
-      max_tokens: opts.maxTokens ?? 2000,
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `API error ${res.status}`)
-  }
-
-  const data = await res.json()
-  return data.choices?.[0]?.message?.content ?? ''
-}
-
-// ─── Google Gemini call ────────────────────────────────────────────────────────
-
-async function callGemini(apiKey, model, messages, opts = {}) {
-  const systemMsg = messages.find((m) => m.role === 'system')
-  const contents = messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }))
-
-  const body = {
-    contents,
-    generationConfig: {
-      temperature: opts.temperature ?? 0.7,
-      maxOutputTokens: opts.maxTokens ?? 2000,
-    },
-  }
-
-  if (systemMsg) {
-    body.systemInstruction = { parts: [{ text: systemMsg.content }] }
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `Gemini API error ${res.status}`)
-  }
-
-  const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-}
-
-// ─── Main entry point ─────────────────────────────────────────────────────────
+// ─── Core call — goes through /api/ai serverless proxy (solves CORS) ─────────
 
 export async function callAI(aiSettings, messages, opts = {}) {
   const { provider, apiKey, model, customBaseUrl } = aiSettings
@@ -139,32 +60,35 @@ export async function callAI(aiSettings, messages, opts = {}) {
     throw new Error('Nenhuma chave de API configurada. Vá em Configurações para adicionar.')
   }
 
-  const providerDef = PROVIDERS[provider]
-  if (!providerDef) throw new Error(`Provedor desconhecido: ${provider}`)
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider,
+      apiKey,
+      model,
+      messages,
+      options: opts,
+      customBaseUrl,
+    }),
+  })
 
-  const type = providerDef.type
-  const baseUrl = provider === 'custom' ? customBaseUrl : providerDef.baseUrl
+  const data = await res.json()
 
-  if (type === 'gemini') {
-    return callGemini(apiKey, model, messages, opts)
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `Proxy error ${res.status}`)
   }
 
-  const extraHeaders =
-    provider === 'openrouter'
-      ? { 'HTTP-Referer': window.location.origin, 'X-Title': 'Content Intelligence OS' }
-      : {}
-
-  return callOpenAICompatible(baseUrl, apiKey, model, messages, { ...opts, extraHeaders })
+  return data.content ?? ''
 }
 
-// ─── Feature-specific AI calls ────────────────────────────────────────────────
+// ─── Feature-specific AI calls ───────────────────────────────────────────────
 
 export async function aiTrendSearch(aiSettings, topic) {
   const messages = [
     {
       role: 'system',
-      content:
-        'You are a content market research analyst. Respond ONLY with valid JSON, no explanations, no markdown.',
+      content: 'You are a content market research analyst. Respond ONLY with valid JSON, no explanations, no markdown.',
     },
     {
       role: 'user',
@@ -193,10 +117,10 @@ Return this JSON structure exactly:
 
 Rules:
 - Generate exactly 5 opportunities
-- platform must be one of: linkedin, twitter, instagram, youtube, tiktok
-- format must be one of: carousel, thread, video, reel, article
-- hook must be one of: List Hook, Contrarian Hook, Story Hook, Data Hook, Problem Hook, Question Hook
-- potential must be one of: Very High, High, Medium
+- platform: linkedin | twitter | instagram | youtube | tiktok
+- format: carousel | thread | video | reel | article
+- hook: List Hook | Contrarian Hook | Story Hook | Data Hook | Problem Hook | Question Hook
+- potential: Very High | High | Medium
 - Generate 4 recurring_hooks
 - Return ONLY the JSON object`,
     },
@@ -205,7 +129,6 @@ Rules:
   const text = await callAI(aiSettings, messages, { temperature: 0.8, maxTokens: 2000 })
   const parsed = parseJSON(text)
 
-  // Add sequential ids if missing
   parsed.opportunities = (parsed.opportunities || []).map((o, i) => ({
     ...o,
     id: o.id || `opp-ai-${Date.now()}-${i}`,
@@ -231,22 +154,21 @@ export async function aiGenerateIdeas(aiSettings, { insights, trendResults, coun
       .join(', ')}`
   }
 
-  if (!context) {
-    context = '\nGenerate diverse, high-quality content ideas for a creator.'
-  }
+  if (!context) context = '\nGenerate diverse, high-quality content ideas for a creator.'
+
+  const sourceType = source === 'insights' ? 'insight' : source === 'trends' ? 'trend' : 'ai'
 
   const messages = [
     {
       role: 'system',
-      content:
-        'You are a content strategy expert. Respond ONLY with valid JSON, no explanations, no markdown.',
+      content: 'You are a content strategy expert. Respond ONLY with valid JSON, no explanations, no markdown.',
     },
     {
       role: 'user',
       content: `Generate ${count} creative content ideas for a creator based on this context:
 ${context}
 
-Return a JSON array exactly like this:
+Return a JSON array:
 [
   {
     "id": "idea-1",
@@ -257,7 +179,7 @@ Return a JSON array exactly like this:
     "format": "carousel",
     "platform": "linkedin",
     "priority": "high",
-    "source_type": "${source === 'insights' ? 'insight' : source === 'trends' ? 'trend' : 'ai'}"
+    "source_type": "${sourceType}"
   }
 ]
 
@@ -303,17 +225,16 @@ export async function aiGenerateInsights(aiSettings, { posts, metrics }) {
   const messages = [
     {
       role: 'system',
-      content:
-        'You are a content analytics expert. Respond ONLY with valid JSON, no explanations, no markdown.',
+      content: 'You are a content analytics expert. Respond ONLY with valid JSON, no explanations, no markdown.',
     },
     {
       role: 'user',
       content: `Analyze this content performance data and generate actionable insights.
 
-Posts (${postsData.length} posts): ${JSON.stringify(postsData)}
-Metrics (${metricsData.length} snapshots): ${JSON.stringify(metricsData)}
+Posts (${postsData.length}): ${JSON.stringify(postsData)}
+Metrics (${metricsData.length}): ${JSON.stringify(metricsData)}
 
-Return a JSON array of insights:
+Return a JSON array:
 [
   {
     "id": "ins-1",
@@ -328,8 +249,8 @@ Return a JSON array of insights:
 Rules:
 - type: format | hook | platform | topic | summary
 - Generate 6 to 8 insights
-- value: a number between 0 and 1 representing impact (0.05 = high impact)
-- Be specific — reference actual platforms, formats, and numbers from the data
+- value: 0–1 representing impact
+- Reference actual platforms, formats, numbers from the data
 - Return ONLY the JSON array`,
     },
   ]
@@ -344,9 +265,7 @@ Rules:
 }
 
 export async function testConnection(aiSettings) {
-  const messages = [
-    { role: 'user', content: 'Reply with exactly: {"ok":true}' },
-  ]
+  const messages = [{ role: 'user', content: 'Reply with exactly: {"ok":true}' }]
   const text = await callAI(aiSettings, messages, { maxTokens: 20 })
   return text.includes('ok')
 }
