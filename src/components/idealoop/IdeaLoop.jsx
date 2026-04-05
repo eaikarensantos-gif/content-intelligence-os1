@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { Zap, Plus, RefreshCw, Sparkles, Radar, Loader2, Check, TrendingUp, BookOpen } from 'lucide-react'
+import { Zap, Plus, RefreshCw, Sparkles, Radar, Loader2, Check, Settings } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
 import { generateIdeasFromInsights, generateIdeasFromTrends } from '../../utils/ideaGenerator'
+import { aiGenerateIdeas } from '../../lib/aiService'
 import { PlatformBadge, FormatBadge, PriorityBadge } from '../common/Badge'
 
 const SOURCE_ICONS = { insight: Sparkles, trend: Radar, ai: Zap }
@@ -22,7 +25,6 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
         </div>
       )}
 
-      {/* Source badge */}
       <div className="flex items-center gap-1.5">
         <span className={`chip border text-[10px] ${SOURCE_COLORS[idea.source_type] || SOURCE_COLORS.ai}`}>
           <Icon size={10} />
@@ -30,20 +32,15 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
         </span>
       </div>
 
-      {/* Title */}
       <h3 className="text-sm font-semibold text-gray-800 leading-snug">{idea.title}</h3>
-
-      {/* Description */}
       <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{idea.description}</p>
 
-      {/* Meta */}
       <div className="flex flex-wrap gap-1.5">
         <PlatformBadge platform={idea.platform} />
         <FormatBadge format={idea.format} />
         <PriorityBadge priority={idea.priority} />
       </div>
 
-      {/* Hook type */}
       {idea.hook && (
         <div className="text-[11px] text-gray-500 flex items-center gap-1.5">
           <span className="text-orange-500 font-medium">Hook:</span>
@@ -51,7 +48,6 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
         </div>
       )}
 
-      {/* Save button */}
       <div className="pt-1 border-t border-gray-100">
         <button
           onClick={() => onSave(idea)}
@@ -72,31 +68,61 @@ export default function IdeaLoop() {
   const setGeneratedIdeas = useStore((s) => s.setGeneratedIdeas)
   const saveGeneratedIdea = useStore((s) => s.saveGeneratedIdea)
 
+  const aiSettings = useAIStore((s) => s.getSettings())
+  const isAIConfigured = useAIStore((s) => s.isConfigured())
+
   const [loading, setLoading] = useState(false)
   const [source, setSource] = useState('all')
   const [savedIds, setSavedIds] = useState(new Set())
+  const [aiError, setAiError] = useState('')
+  const [aiPowered, setAiPowered] = useState(false)
 
   const hasInsights = insights.length > 0
   const hasTrends = !!trendResults
 
   const handleGenerate = async (src = source) => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1000))
+    setAiError('')
 
-    let ideas = []
-    if (src === 'insights' || src === 'all') {
-      ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
-    }
-    if ((src === 'trends' || src === 'all') && trendResults) {
-      ideas = [...ideas, ...generateIdeasFromTrends(trendResults, 4)]
-    }
-    if (src === 'ai' || ideas.length === 0) {
-      ideas = [...ideas, ...generateIdeasFromInsights([], 6)]
-    }
+    try {
+      let ideas = []
 
-    setGeneratedIdeas(ideas)
-    setLoading(false)
-    setSavedIds(new Set())
+      if (isAIConfigured) {
+        ideas = await aiGenerateIdeas(aiSettings, {
+          insights: src === 'insights' || src === 'all' ? insights : [],
+          trendResults: (src === 'trends' || src === 'all') ? trendResults : null,
+          count: 9,
+          source: src,
+        })
+        setAiPowered(true)
+      } else {
+        await new Promise((r) => setTimeout(r, 1000))
+        if (src === 'insights' || src === 'all') {
+          ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
+        }
+        if ((src === 'trends' || src === 'all') && trendResults) {
+          ideas = [...ideas, ...generateIdeasFromTrends(trendResults, 4)]
+        }
+        if (src === 'ai' || ideas.length === 0) {
+          ideas = [...ideas, ...generateIdeasFromInsights([], 6)]
+        }
+        setAiPowered(false)
+      }
+
+      setGeneratedIdeas(ideas)
+      setSavedIds(new Set())
+    } catch (err) {
+      setAiError(err.message)
+      // Fallback to template generation
+      let ideas = []
+      if (src === 'insights' || src === 'all') ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
+      if ((src === 'trends' || src === 'all') && trendResults) ideas = [...ideas, ...generateIdeasFromTrends(trendResults, 4)]
+      if (ideas.length === 0) ideas = generateIdeasFromInsights([], 6)
+      setGeneratedIdeas(ideas)
+      setAiPowered(false)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSave = (idea) => {
@@ -119,11 +145,22 @@ export default function IdeaLoop() {
                 <Zap size={16} className="text-amber-500" />
               </div>
               <h2 className="text-base font-bold text-gray-900">Idea Generation Loop</h2>
+              {isAIConfigured && (
+                <span className="chip bg-violet-100 text-violet-700 border border-violet-200">
+                  <Zap size={9} /> AI-powered
+                </span>
+              )}
             </div>
             <p className="text-sm text-gray-500 max-w-lg">
-              Generates new content ideas powered by your performance insights and trend radar results.
-              The more data you have, the smarter the suggestions get.
+              {isAIConfigured
+                ? 'AI generates unique, contextual content ideas based on your insights and trend data. The more data you have, the smarter the suggestions.'
+                : 'Generates new content ideas powered by your performance insights and trend radar results. The more data you have, the smarter the suggestions get.'}
             </p>
+            {!isAIConfigured && (
+              <NavLink to="/settings" className="inline-flex items-center gap-1.5 mt-2 text-xs text-violet-600 hover:underline">
+                <Settings size={11} /> Connect AI for original ideas
+              </NavLink>
+            )}
           </div>
         </div>
       </div>
@@ -203,6 +240,13 @@ export default function IdeaLoop() {
         </div>
       </div>
 
+      {/* AI error */}
+      {aiError && (
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
+          AI error: {aiError} — showing template-based ideas instead.
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div className="card p-12 flex flex-col items-center gap-4">
@@ -211,7 +255,9 @@ export default function IdeaLoop() {
             <Zap size={18} className="absolute inset-0 m-auto text-amber-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-800">Generating ideas...</p>
+            <p className="text-sm font-medium text-gray-800">
+              {isAIConfigured ? 'AI is creating your ideas...' : 'Generating ideas...'}
+            </p>
             <p className="text-xs text-gray-400 mt-1">Combining insights, trends, and AI creativity</p>
           </div>
         </div>
@@ -221,10 +267,15 @@ export default function IdeaLoop() {
       {!loading && generatedIdeas.length > 0 && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
               {generatedIdeas.length} Ideas Generated
+              {aiPowered && (
+                <span className="chip bg-violet-100 text-violet-700 border border-violet-200 text-[10px]">
+                  <Zap size={9} /> AI
+                </span>
+              )}
               {savedIds.size > 0 && (
-                <span className="ml-2 text-xs text-emerald-600 font-normal">({savedIds.size} saved)</span>
+                <span className="text-xs text-emerald-600 font-normal">({savedIds.size} saved)</span>
               )}
             </h3>
             <button onClick={() => handleGenerate(source)} className="btn-ghost text-xs">
@@ -232,7 +283,6 @@ export default function IdeaLoop() {
             </button>
           </div>
 
-          {/* From Insights */}
           {fromInsights.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -247,7 +297,6 @@ export default function IdeaLoop() {
             </div>
           )}
 
-          {/* From Trends */}
           {fromTrends.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -262,7 +311,6 @@ export default function IdeaLoop() {
             </div>
           )}
 
-          {/* AI only */}
           {fromAI.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -296,7 +344,9 @@ export default function IdeaLoop() {
           </div>
           <h3 className="text-gray-700 font-semibold mb-2">Ready to generate ideas</h3>
           <p className="text-gray-400 text-sm max-w-sm mb-4">
-            Click "Generate Ideas" to create new content ideas powered by your analytics insights and trend radar data.
+            {isAIConfigured
+              ? 'AI will generate unique content ideas tailored to your niche and data.'
+              : 'Click "Generate Ideas" to create new content ideas powered by your analytics insights and trend radar data.'}
           </p>
           <button onClick={() => handleGenerate(source)} className="btn-primary">
             <Zap size={14} /> Generate Ideas Now

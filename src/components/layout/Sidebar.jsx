@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Kanban, Radar, BarChart2,
-  Sparkles, Zap, ChevronRight,
+  Sparkles, Zap, ChevronRight, Settings,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
 
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -19,6 +20,7 @@ const NAV = [
 export default function Sidebar() {
   const ideas = useStore((s) => s.ideas)
   const readyCount = ideas.filter((i) => i.status === 'ready').length
+  const isAIConfigured = useAIStore((s) => s.isConfigured())
 
   return (
     <aside className="w-64 shrink-0 h-screen sticky top-0 bg-orange-50 border-r border-orange-100 flex flex-col">
@@ -67,6 +69,33 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      {/* Settings link */}
+      <div className="px-3 pb-3 border-t border-orange-100 pt-3">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            clsx(
+              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group w-full',
+              isActive
+                ? 'bg-violet-100 text-violet-800 border border-violet-200'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-white'
+            )
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <Settings size={16} className={isActive ? 'text-violet-600' : 'text-gray-400 group-hover:text-gray-600'} />
+              <span className="flex-1">AI Settings</span>
+              {/* Indicator dot */}
+              <span className={clsx(
+                'w-2 h-2 rounded-full shrink-0',
+                isAIConfigured ? 'bg-emerald-400' : 'bg-amber-400'
+              )} title={isAIConfigured ? 'AI configured' : 'No API key'} />
+            </>
+          )}
+        </NavLink>
+      </div>
+
       {/* Footer */}
       <div className="px-4 pb-5 pt-3 border-t border-orange-100">
         <div className="flex items-center gap-3">
@@ -75,7 +104,7 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-medium text-gray-800 truncate">Creator User</div>
-            <div className="text-[10px] text-gray-400">Pro Plan</div>
+            <div className="text-[10px] text-gray-400">{isAIConfigured ? 'AI Active' : 'Simulation mode'}</div>
           </div>
         </div>
       </div>

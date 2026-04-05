@@ -8,6 +8,7 @@ import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
 import InsightEngine from './components/insights/InsightEngine'
 import IdeaLoop from './components/idealoop/IdeaLoop'
+import AISettings from './components/settings/AISettings'
 
 function Layout({ children }) {
   return (
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/insights" element={<InsightEngine />} />
           <Route path="/loop" element={<IdeaLoop />} />
+          <Route path="/settings" element={<AISettings />} />
         </Routes>
       </Layout>
     </BrowserRouter>

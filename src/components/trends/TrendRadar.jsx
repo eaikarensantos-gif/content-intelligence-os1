@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { Search, Radar, Users, TrendingUp, Lightbulb, Plus, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { Search, Radar, Users, TrendingUp, Lightbulb, Plus, ExternalLink, ChevronDown, ChevronUp, Loader2, Zap, Settings } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
 import { simulateTrendSearch } from '../../utils/trendSimulator'
+import { aiTrendSearch } from '../../lib/aiService'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 
 const PLATFORM_ICONS = {
@@ -56,10 +59,12 @@ function OpportunityCard({ opp, onSave }) {
       {expanded && (
         <div className="space-y-2 animate-fade-in">
           <p className="text-xs text-gray-500 leading-relaxed">{opp.description}</p>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-[11px] text-gray-500 font-medium mb-0.5">Content Gap Identified:</p>
-            <p className="text-xs text-gray-600">{opp.content_gap}</p>
-          </div>
+          {opp.content_gap && (
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-[11px] text-gray-500 font-medium mb-0.5">Content Gap Identified:</p>
+              <p className="text-xs text-gray-600">{opp.content_gap}</p>
+            </div>
+          )}
           {opp.hook_example && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
               <p className="text-[11px] text-orange-600 font-medium mb-0.5">Hook Example:</p>
@@ -70,10 +75,7 @@ function OpportunityCard({ opp, onSave }) {
       )}
 
       <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-        <button
-          onClick={() => setExpanded((x) => !x)}
-          className="btn-ghost text-xs py-1 px-2"
-        >
+        <button onClick={() => setExpanded((x) => !x)} className="btn-ghost text-xs py-1 px-2">
           {expanded ? <><ChevronUp size={12} /> Less</> : <><ChevronDown size={12} /> Details</>}
         </button>
         <button onClick={() => onSave(opp)} className="btn-primary text-xs py-1.5 px-3">
@@ -89,18 +91,60 @@ export default function TrendRadar() {
   const trendResults = useStore((s) => s.trendResults)
   const addIdea = useStore((s) => s.addIdea)
 
+  const aiSettings = useAIStore((s) => s.getSettings())
+  const isAIConfigured = useAIStore((s) => s.isConfigured())
+
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
   const [savedIds, setSavedIds] = useState(new Set())
+  const [aiError, setAiError] = useState('')
 
   const handleSearch = async () => {
     if (!topic.trim()) return
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1800))
-    const results = simulateTrendSearch(topic.trim())
-    setTrendResults(results)
-    setLoading(false)
-    setSavedIds(new Set())
+    setAiError('')
+
+    try {
+      let results
+
+      if (isAIConfigured) {
+        // Real AI search
+        const aiData = await aiTrendSearch(aiSettings, topic.trim())
+        // Merge AI opportunities with simulated creators + patterns
+        const simulated = simulateTrendSearch(topic.trim())
+        results = {
+          ...simulated,
+          topic: topic.trim(),
+          searched_at: new Date().toISOString(),
+          opportunities: aiData.opportunities || simulated.opportunities,
+          patterns: {
+            ...simulated.patterns,
+            recurring_hooks: aiData.recurring_hooks?.length
+              ? aiData.recurring_hooks.map((h) => ({ ...h, relevance: `Relevant for ${topic}` }))
+              : simulated.patterns.recurring_hooks,
+            emerging_topics: aiData.emerging_topics?.length
+              ? aiData.emerging_topics
+              : simulated.patterns.emerging_topics,
+          },
+          ai_powered: true,
+        }
+      } else {
+        // Simulation fallback
+        await new Promise((r) => setTimeout(r, 1800))
+        results = simulateTrendSearch(topic.trim())
+      }
+
+      setTrendResults(results)
+      setSavedIds(new Set())
+    } catch (err) {
+      setAiError(err.message)
+      // Fallback to simulation on error
+      const results = simulateTrendSearch(topic.trim())
+      setTrendResults(results)
+      setSavedIds(new Set())
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSaveOpp = (opp) => {
@@ -122,14 +166,27 @@ export default function TrendRadar() {
     <div className="p-6 space-y-6 animate-fade-in">
       {/* Search */}
       <div className="card p-6 space-y-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-xl bg-orange-100">
-            <Radar size={18} className="text-orange-500" />
+        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-orange-100">
+              <Radar size={18} className="text-orange-500" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Discover Trends in Your Niche</h2>
+              <p className="text-xs text-gray-400">Enter a topic to find creators, patterns, and content opportunities</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900">Discover Trends in Your Niche</h2>
-            <p className="text-xs text-gray-400">Enter a topic to find creators, patterns, and content opportunities</p>
-          </div>
+
+          {/* AI mode indicator */}
+          {isAIConfigured ? (
+            <span className="chip bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-1">
+              <Zap size={10} /> AI-powered
+            </span>
+          ) : (
+            <NavLink to="/settings" className="chip bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 hover:bg-amber-200 transition-colors">
+              <Settings size={10} /> Connect AI
+            </NavLink>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -162,6 +219,13 @@ export default function TrendRadar() {
             </button>
           ))}
         </div>
+
+        {/* AI error notice */}
+        {aiError && (
+          <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
+            AI error: {aiError} — showing simulated results.
+          </div>
+        )}
       </div>
 
       {/* Loading state */}
@@ -172,7 +236,9 @@ export default function TrendRadar() {
             <Radar size={20} className="absolute inset-0 m-auto text-orange-500 animate-pulse-glow" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-800 mb-1">Scanning the radar...</p>
+            <p className="text-sm font-medium text-gray-800 mb-1">
+              {isAIConfigured ? 'AI is analyzing the market...' : 'Scanning the radar...'}
+            </p>
             <p className="text-xs text-gray-400">Discovering creators, patterns, and opportunities for "{topic}"</p>
           </div>
         </div>
@@ -187,6 +253,11 @@ export default function TrendRadar() {
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium text-gray-700">Results for </span>
               <span className="text-sm font-bold text-orange-600">"{trendResults.topic}"</span>
+              {trendResults.ai_powered && (
+                <span className="ml-2 chip bg-violet-100 text-violet-700 border border-violet-200">
+                  <Zap size={9} /> AI
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
               <span>{trendResults.creators?.length} creators</span>
@@ -213,7 +284,6 @@ export default function TrendRadar() {
               <h3 className="text-sm font-semibold text-gray-900">Content Patterns</h3>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Hooks */}
               <div className="card p-4">
                 <h4 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">Recurring Hooks</h4>
                 <div className="space-y-2">
@@ -229,7 +299,6 @@ export default function TrendRadar() {
                 </div>
               </div>
 
-              {/* Formats */}
               <div className="card p-4">
                 <h4 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">Dominant Formats</h4>
                 <div className="space-y-3">
@@ -252,15 +321,11 @@ export default function TrendRadar() {
                 </div>
               </div>
 
-              {/* Emerging topics */}
               <div className="card p-4">
                 <h4 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">Emerging Topics</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {trendResults.patterns?.emerging_topics?.map((t, i) => (
-                    <span
-                      key={i}
-                      className="text-xs px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 text-gray-700"
-                    >
+                    <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 text-gray-700">
                       {t}
                     </span>
                   ))}
@@ -299,9 +364,16 @@ export default function TrendRadar() {
             <Radar size={28} className="text-orange-500" />
           </div>
           <h3 className="text-gray-700 font-semibold mb-2">Enter a topic to start</h3>
-          <p className="text-gray-400 text-sm max-w-sm">
-            The Trend Radar will discover creators, content patterns, and opportunities tailored to your niche.
+          <p className="text-gray-400 text-sm max-w-sm mb-4">
+            {isAIConfigured
+              ? 'AI-powered analysis will discover real opportunities, patterns and trends in your niche.'
+              : 'The Trend Radar will discover creators, content patterns, and opportunities tailored to your niche.'}
           </p>
+          {!isAIConfigured && (
+            <NavLink to="/settings" className="btn-secondary text-xs">
+              <Settings size={12} /> Connect AI for real results
+            </NavLink>
+          )}
         </div>
       )}
     </div>

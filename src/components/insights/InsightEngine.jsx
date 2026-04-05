@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { Sparkles, RefreshCw, TrendingUp, Award, BarChart2, Layers, MessageSquare, Loader2 } from 'lucide-react'
+import { Sparkles, RefreshCw, TrendingUp, Award, BarChart2, Layers, MessageSquare, Loader2, Zap, Settings } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
 import { InsightTypeBadge } from '../common/Badge'
+import { generateInsights } from '../../utils/analytics'
+import { aiGenerateInsights } from '../../lib/aiService'
 
 const ICONS = {
   format: Layers,
@@ -53,18 +57,43 @@ export default function InsightEngine() {
   const metrics = useStore((s) => s.metrics)
   const posts = useStore((s) => s.posts)
   const insights = useStore((s) => s.insights)
-  const generateInsightsAction = useStore((s) => s.generateInsights)
+  const setInsights = useStore((s) => s.generateInsights)
   const clearInsights = useStore((s) => s.clearInsights)
+
+  const aiSettings = useAIStore((s) => s.getSettings())
+  const isAIConfigured = useAIStore((s) => s.isConfigured())
+
   const [loading, setLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [aiPowered, setAiPowered] = useState(false)
+
+  const canGenerate = metrics.length >= 2
 
   const handleGenerate = async () => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    generateInsightsAction()
-    setLoading(false)
-  }
+    setAiError('')
 
-  const canGenerate = metrics.length >= 2
+    try {
+      if (isAIConfigured) {
+        const generated = await aiGenerateInsights(aiSettings, { posts, metrics })
+        // Inject into store via the existing generateInsights action
+        // but we need to set them directly — use store's internal setter
+        useStore.setState({ insights: generated })
+        setAiPowered(true)
+      } else {
+        await new Promise((r) => setTimeout(r, 1200))
+        setInsights()
+        setAiPowered(false)
+      }
+    } catch (err) {
+      setAiError(err.message)
+      // Fallback to rule-based insights
+      setInsights()
+      setAiPowered(false)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -74,15 +103,29 @@ export default function InsightEngine() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={18} className="text-orange-500" />
-              <h2 className="text-base font-bold text-gray-900">AI Insight Engine</h2>
+              <h2 className="text-base font-bold text-gray-900">
+                {isAIConfigured ? 'AI Insight Engine' : 'Insight Engine'}
+              </h2>
+              {isAIConfigured && (
+                <span className="chip bg-violet-100 text-violet-700 border border-violet-200">
+                  <Zap size={9} /> AI-powered
+                </span>
+              )}
             </div>
             <p className="text-sm text-gray-500 max-w-lg">
-              Automatically generates insights from your post performance data — revealing which formats, hooks, and platforms are driving your best results.
+              {isAIConfigured
+                ? 'Uses AI to deeply analyze your post performance data — revealing nuanced insights about formats, hooks, and platforms driving your results.'
+                : 'Automatically generates insights from your post performance data — revealing which formats, hooks, and platforms are driving your best results.'}
             </p>
             {!canGenerate && (
               <p className="text-xs text-amber-600 mt-2">
                 ⚠ You need at least 2 metric entries to generate insights. Add more in Analytics.
               </p>
+            )}
+            {!isAIConfigured && (
+              <NavLink to="/settings" className="inline-flex items-center gap-1.5 mt-2 text-xs text-violet-600 hover:underline">
+                <Settings size={11} /> Connect AI for deeper analysis
+              </NavLink>
             )}
           </div>
           <div className="flex gap-2 shrink-0 flex-wrap">
@@ -120,6 +163,13 @@ export default function InsightEngine() {
         ))}
       </div>
 
+      {/* AI error */}
+      {aiError && (
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
+          AI error: {aiError} — showing rule-based insights instead.
+        </div>
+      )}
+
       {/* Insights */}
       {loading && (
         <div className="card p-12 flex flex-col items-center gap-4">
@@ -128,7 +178,9 @@ export default function InsightEngine() {
             <Sparkles size={18} className="absolute inset-0 m-auto text-orange-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-800">Processing your data...</p>
+            <p className="text-sm font-medium text-gray-800">
+              {isAIConfigured ? 'AI is analyzing your data...' : 'Processing your data...'}
+            </p>
             <p className="text-xs text-gray-400 mt-1">Analyzing formats, hooks, platforms, and patterns</p>
           </div>
         </div>
@@ -137,8 +189,13 @@ export default function InsightEngine() {
       {!loading && insights.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
               {insights.length} Insights Found
+              {aiPowered && (
+                <span className="chip bg-violet-100 text-violet-700 border border-violet-200 text-[10px]">
+                  <Zap size={9} /> AI
+                </span>
+              )}
             </h3>
             <span className="text-xs text-gray-400">Based on {metrics.length} metric snapshots</span>
           </div>
