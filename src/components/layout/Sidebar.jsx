@@ -15,6 +15,7 @@ const NAV = [
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/insights', icon: Sparkles, label: 'Insight Engine' },
   { to: '/loop', icon: Zap, label: 'Idea Loop' },
+  { to: '/settings', icon: Settings, label: 'Configurações' },
 ]
 
 export default function Sidebar() {
@@ -68,33 +69,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      {/* Settings link */}
-      <div className="px-3 pb-3 border-t border-orange-100 pt-3">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            clsx(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group w-full',
-              isActive
-                ? 'bg-violet-100 text-violet-800 border border-violet-200'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-white'
-            )
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <Settings size={16} className={isActive ? 'text-violet-600' : 'text-gray-400 group-hover:text-gray-600'} />
-              <span className="flex-1">AI Settings</span>
-              {/* Indicator dot */}
-              <span className={clsx(
-                'w-2 h-2 rounded-full shrink-0',
-                isAIConfigured ? 'bg-emerald-400' : 'bg-amber-400'
-              )} title={isAIConfigured ? 'AI configured' : 'No API key'} />
-            </>
-          )}
-        </NavLink>
-      </div>
 
       {/* Footer */}
       <div className="px-4 pb-5 pt-3 border-t border-orange-100">
