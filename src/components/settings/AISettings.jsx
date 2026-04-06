@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import {
   Settings, Key, Cpu, CheckCircle2, XCircle, Loader2,
-  Eye, EyeOff, ExternalLink, Zap, ChevronDown, Youtube,
+  Eye, EyeOff, ExternalLink, Zap, ChevronDown, Youtube, Database, RefreshCw,
 } from 'lucide-react'
 import useAIStore from '../../store/useAIStore'
+import useSupabaseStore from '../../store/useSupabaseStore'
+import useStore from '../../store/useStore'
 import { PROVIDERS, testConnection } from '../../lib/aiService'
 
 const PROVIDER_DOCS = {
@@ -21,11 +23,33 @@ export default function AISettings() {
     getSettings, isConfigured, isYoutubeConfigured,
   } = useAIStore()
 
+  const {
+    url: sbUrl, key: sbKey, status: sbStatus, errorMsg: sbError,
+    setUrl: setSbUrl, setKey: setSbKey, isConfigured: isSbConfigured,
+  } = useSupabaseStore()
+  const loadFromDB = useStore((s) => s.loadFromDB)
+  const setDbStatus = useSupabaseStore((s) => s.setStatus)
+
   const [showKey, setShowKey] = useState(false)
   const [showYtKey, setShowYtKey] = useState(false)
-  const [testStatus, setTestStatus] = useState(null) // null | 'loading' | 'ok' | 'error'
+  const [showSbKey, setShowSbKey] = useState(false)
+  const [testStatus, setTestStatus] = useState(null)
   const [testError, setTestError] = useState('')
   const [saved, setSaved] = useState(false)
+  const [dbSyncing, setDbSyncing] = useState(false)
+
+  const handleSyncDB = async () => {
+    setDbSyncing(true)
+    setDbStatus('loading')
+    try {
+      const ok = await loadFromDB()
+      setDbStatus(ok ? 'connected' : 'error', ok ? '' : 'Falha ao conectar')
+    } catch (e) {
+      setDbStatus('error', e.message)
+    } finally {
+      setDbSyncing(false)
+    }
+  }
 
   const providerDef = PROVIDERS[provider]
   const docs = PROVIDER_DOCS[provider]
@@ -88,6 +112,19 @@ export default function AISettings() {
           ) : (
             <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 font-medium">
               <Youtube size={12} /> YouTube não configurado
+            </span>
+          )}
+          {isSbConfigured() ? (
+            <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-medium ${
+              sbStatus === 'connected' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+              sbStatus === 'error'     ? 'bg-red-100 text-red-700 border-red-200' :
+                                        'bg-blue-100 text-blue-700 border-blue-200'
+            }`}>
+              <Database size={12} /> {sbStatus === 'connected' ? 'Supabase conectado' : sbStatus === 'error' ? 'Supabase erro' : 'Supabase configurado'}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 font-medium">
+              <Database size={12} /> Banco não configurado
             </span>
           )}
         </div>
@@ -261,6 +298,98 @@ export default function AISettings() {
             <XCircle size={15} /> {testError || 'Connection failed'}
           </span>
         )}
+      </div>
+
+      {/* Supabase */}
+      <div className="card p-5 space-y-4 border-emerald-100">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Database size={15} className="text-emerald-500" /> Banco de Dados Real (Supabase)
+        </h3>
+        <p className="text-xs text-gray-500">
+          Salva suas ideias, posts e métricas em um banco PostgreSQL real — acessível de qualquer dispositivo, com backup automático.
+          Sem configuração, os dados ficam apenas neste navegador.
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Project URL</label>
+            <input
+              type="text"
+              value={sbUrl}
+              onChange={(e) => setSbUrl(e.target.value)}
+              placeholder="https://xxxxxxxxxxxx.supabase.co"
+              className="input w-full text-sm font-mono"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Anon Key</label>
+            <div className="relative">
+              <input
+                type={showSbKey ? 'text' : 'password'}
+                value={sbKey}
+                onChange={(e) => setSbKey(e.target.value)}
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                className="input w-full pr-10 text-sm font-mono"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                onClick={() => setShowSbKey((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                type="button"
+              >
+                {showSbKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={handleSyncDB}
+            disabled={!isSbConfigured() || dbSyncing}
+            className="btn-secondary text-xs"
+          >
+            {dbSyncing ? <><Loader2 size={12} className="animate-spin" /> Sincronizando...</> : <><RefreshCw size={12} /> Sincronizar dados</>}
+          </button>
+          {sbStatus === 'connected' && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+              <CheckCircle2 size={13} /> Dados carregados do banco
+            </span>
+          )}
+          {sbStatus === 'error' && (
+            <span className="flex items-center gap-1.5 text-xs text-red-500 font-medium">
+              <XCircle size={13} /> {sbError || 'Erro ao conectar'}
+            </span>
+          )}
+        </div>
+
+        <a
+          href="https://supabase.com/dashboard"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
+        >
+          <ExternalLink size={12} /> Abrir Supabase Dashboard
+        </a>
+
+        <div className="p-3 rounded-lg bg-gray-50 border border-gray-100 text-[11px] text-gray-500 space-y-1">
+          <p><strong>Como configurar (gratuito):</strong></p>
+          <p>1. Acesse supabase.com → New project</p>
+          <p>2. Vá em Settings → API → copie "Project URL" e "anon public key"</p>
+          <p>3. No SQL Editor, rode o script abaixo para criar as tabelas:</p>
+          <pre className="mt-2 p-2 bg-gray-100 rounded text-[10px] overflow-x-auto whitespace-pre">{`create table ideas (id text primary key, title text, description text, topic text, format text, hook_type text, platform text, priority text, status text, tags jsonb default '[]', post_id text, scheduled_date text, created_at timestamptz default now());
+
+create table posts (id text primary key, idea_id text, title text, content text, platform text, format text, hook_type text, status text, published_at text, created_at timestamptz default now());
+
+create table metrics (id text primary key, post_id text, platform text, format text, hook_type text, views int default 0, likes int default 0, comments int default 0, shares int default 0, saves int default 0, link_clicks int default 0, engagement_rate float, authority_score float, recorded_at text, created_at timestamptz default now());
+
+alter table ideas disable row level security;
+alter table posts disable row level security;
+alter table metrics disable row level security;`}</pre>
+        </div>
       </div>
 
       {/* YouTube API key */}

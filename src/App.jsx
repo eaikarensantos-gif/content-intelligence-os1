@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
@@ -9,6 +10,8 @@ import Analytics from './components/analytics/Analytics'
 import InsightEngine from './components/insights/InsightEngine'
 import IdeaLoop from './components/idealoop/IdeaLoop'
 import AISettings from './components/settings/AISettings'
+import useStore from './store/useStore'
+import useSupabaseStore from './store/useSupabaseStore'
 
 function Layout({ children }) {
   return (
@@ -25,6 +28,18 @@ function Layout({ children }) {
 }
 
 export default function App() {
+  const loadFromDB = useStore((s) => s.loadFromDB)
+  const isSupabaseConfigured = useSupabaseStore((s) => s.isConfigured())
+  const setStatus = useSupabaseStore((s) => s.setStatus)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    setStatus('loading')
+    loadFromDB()
+      .then((ok) => setStatus(ok ? 'connected' : 'error', ok ? '' : 'Falha ao carregar dados'))
+      .catch((err) => setStatus('error', err.message))
+  }, [isSupabaseConfigured])
+
   return (
     <BrowserRouter>
       <Layout>
