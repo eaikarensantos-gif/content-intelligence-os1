@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Settings, Key, Cpu, CheckCircle2, XCircle, Loader2,
-  Eye, EyeOff, ExternalLink, Zap, ChevronDown,
+  Eye, EyeOff, ExternalLink, Zap, ChevronDown, Youtube,
 } from 'lucide-react'
 import useAIStore from '../../store/useAIStore'
 import { PROVIDERS, testConnection } from '../../lib/aiService'
@@ -16,12 +16,13 @@ const PROVIDER_DOCS = {
 
 export default function AISettings() {
   const {
-    provider, apiKey, model, customBaseUrl,
-    setProvider, setApiKey, setModel, setCustomBaseUrl,
-    getSettings, isConfigured,
+    provider, apiKey, model, customBaseUrl, youtubeApiKey,
+    setProvider, setApiKey, setModel, setCustomBaseUrl, setYoutubeApiKey,
+    getSettings, isConfigured, isYoutubeConfigured,
   } = useAIStore()
 
   const [showKey, setShowKey] = useState(false)
+  const [showYtKey, setShowYtKey] = useState(false)
   const [testStatus, setTestStatus] = useState(null) // null | 'loading' | 'ok' | 'error'
   const [testError, setTestError] = useState('')
   const [saved, setSaved] = useState(false)
@@ -69,15 +70,24 @@ export default function AISettings() {
           </div>
         </div>
 
-        {/* Status pill */}
-        <div className="mt-4">
+        {/* Status pills */}
+        <div className="mt-4 flex flex-wrap gap-2">
           {isConfigured() ? (
             <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium">
-              <CheckCircle2 size={12} /> AI connected — using {PROVIDERS[provider]?.label}
+              <CheckCircle2 size={12} /> IA conectada — {PROVIDERS[provider]?.label}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-medium">
-              <XCircle size={12} /> No API key — running in simulation mode
+              <XCircle size={12} /> IA não configurada
+            </span>
+          )}
+          {isYoutubeConfigured() ? (
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-red-100 text-red-700 border border-red-200 font-medium">
+              <Youtube size={12} /> YouTube ativo
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200 font-medium">
+              <Youtube size={12} /> YouTube não configurado
             </span>
           )}
         </div>
@@ -253,12 +263,69 @@ export default function AISettings() {
         )}
       </div>
 
+      {/* YouTube API key */}
+      <div className="card p-5 space-y-4 border-red-100">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Youtube size={15} className="text-red-500" /> YouTube Data API
+        </h3>
+        <p className="text-xs text-gray-500">
+          Habilita a busca de vídeos <strong>reais</strong> no Trend Radar — criadores, métricas verdadeiras e links diretos para validação.
+          Sem essa chave, a seção de referências permanece vazia (zero dados fictícios).
+        </p>
+
+        <div className="relative">
+          <input
+            type={showYtKey ? 'text' : 'password'}
+            value={youtubeApiKey}
+            onChange={(e) => setYoutubeApiKey(e.target.value)}
+            placeholder="Sua YouTube Data API v3 key (AIza...)"
+            className="input w-full pr-10 font-mono text-sm"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button
+            onClick={() => setShowYtKey((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            type="button"
+          >
+            {showYtKey ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isYoutubeConfigured() ? (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+              <CheckCircle2 size={13} /> Chave configurada — YouTube ativo
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400">Chave não configurada</span>
+          )}
+        </div>
+
+        <a
+          href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:underline"
+        >
+          <ExternalLink size={12} /> Obter YouTube Data API key (gratuito no Google Cloud)
+        </a>
+
+        <div className="p-3 rounded-lg bg-gray-50 border border-gray-100 text-[11px] text-gray-500 space-y-1">
+          <p><strong>Como ativar gratuitamente:</strong></p>
+          <p>1. Acesse Google Cloud Console → APIs &amp; Services → Library</p>
+          <p>2. Ative "YouTube Data API v3"</p>
+          <p>3. Crie uma credencial do tipo "API Key"</p>
+          <p>4. Cole a chave aqui e salve</p>
+        </div>
+      </div>
+
       {/* Tip */}
       <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-        <p className="text-xs text-amber-700 font-medium mb-1">Recommendation for beginners</p>
+        <p className="text-xs text-amber-700 font-medium mb-1">Recomendação para começar</p>
         <p className="text-xs text-amber-600">
-          Use <strong>Groq</strong> or <strong>Gemini</strong> — both offer free API keys with generous limits.
-          Groq's <code className="bg-amber-100 px-1 rounded">llama-3.1-8b-instant</code> is extremely fast and free.
+          Use <strong>Groq</strong> ou <strong>Gemini</strong> para IA — ambos têm chaves gratuitas.
+          Para vídeos reais, ative o <strong>YouTube Data API v3</strong> (gratuito, 10.000 req/dia).
         </p>
       </div>
     </div>

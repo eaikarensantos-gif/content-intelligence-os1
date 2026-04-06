@@ -269,3 +269,39 @@ export async function testConnection(aiSettings) {
   const text = await callAI(aiSettings, messages, { maxTokens: 20 })
   return text.includes('ok')
 }
+
+// ─── YouTube real search (via serverless proxy) ───────────────────────────────
+
+export async function youtubeSearch(youtubeApiKey, query) {
+  if (!youtubeApiKey?.trim()) {
+    throw new Error('YouTube API key não configurada. Adicione em Configurações → YouTube.')
+  }
+
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'youtube-search', youtubeApiKey, query }),
+  })
+
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data.results ?? []
+}
+
+// ─── Whisper transcription (via serverless proxy) ─────────────────────────────
+
+export async function transcribeAudio(openaiApiKey, audioUrl) {
+  if (!openaiApiKey?.trim()) {
+    throw new Error('OpenAI API key necessária para transcrição via Whisper.')
+  }
+
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'transcribe', openaiApiKey, audioUrl }),
+  })
+
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data.transcript ?? ''
+}

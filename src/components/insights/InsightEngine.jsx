@@ -76,18 +76,16 @@ export default function InsightEngine() {
     try {
       if (isAIConfigured) {
         const generated = await aiGenerateInsights(aiSettings, { posts, metrics })
-        // Inject into store via the existing generateInsights action
-        // but we need to set them directly — use store's internal setter
         useStore.setState({ insights: generated })
         setAiPowered(true)
       } else {
-        await new Promise((r) => setTimeout(r, 1200))
+        // Rule-based insights calculated from the user's own real data
         setInsights()
         setAiPowered(false)
       }
     } catch (err) {
       setAiError(err.message)
-      // Fallback to rule-based insights
+      // IA indisponível — mantém análise baseada nos dados reais do usuário
       setInsights()
       setAiPowered(false)
     } finally {
@@ -166,7 +164,7 @@ export default function InsightEngine() {
       {/* AI error */}
       {aiError && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
-          AI error: {aiError} — showing rule-based insights instead.
+          IA indisponível: {aiError} — exibindo análise baseada nos seus dados reais.
         </div>
       )}
 

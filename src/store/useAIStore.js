@@ -9,6 +9,7 @@ const useAIStore = create(
       apiKey: '',
       model: PROVIDERS.groq.defaultModel,
       customBaseUrl: '',
+      youtubeApiKey: '',
 
       setProvider: (provider) => {
         const def = PROVIDERS[provider]
@@ -21,6 +22,7 @@ const useAIStore = create(
       setApiKey: (apiKey) => set({ apiKey }),
       setModel: (model) => set({ model }),
       setCustomBaseUrl: (customBaseUrl) => set({ customBaseUrl }),
+      setYoutubeApiKey: (youtubeApiKey) => set({ youtubeApiKey }),
 
       getSettings: () => {
         const { provider, apiKey, model, customBaseUrl } = get()
@@ -28,6 +30,7 @@ const useAIStore = create(
       },
 
       isConfigured: () => !!get().apiKey?.trim(),
+      isYoutubeConfigured: () => !!get().youtubeApiKey?.trim(),
     }),
     {
       name: 'content-intelligence-ai-settings',
@@ -36,6 +39,7 @@ const useAIStore = create(
         apiKey: s.apiKey,
         model: s.model,
         customBaseUrl: s.customBaseUrl,
+        youtubeApiKey: s.youtubeApiKey,
       }),
     }
   )

@@ -96,7 +96,7 @@ export default function IdeaLoop() {
         })
         setAiPowered(true)
       } else {
-        await new Promise((r) => setTimeout(r, 1000))
+        // Template-based from user's real insights + trend data (no fake data)
         if (src === 'insights' || src === 'all') {
           ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
         }
@@ -113,13 +113,8 @@ export default function IdeaLoop() {
       setSavedIds(new Set())
     } catch (err) {
       setAiError(err.message)
-      // Fallback to template generation
-      let ideas = []
-      if (src === 'insights' || src === 'all') ideas = [...ideas, ...generateIdeasFromInsights(insights, 6)]
-      if ((src === 'trends' || src === 'all') && trendResults) ideas = [...ideas, ...generateIdeasFromTrends(trendResults, 4)]
-      if (ideas.length === 0) ideas = generateIdeasFromInsights([], 6)
-      setGeneratedIdeas(ideas)
       setAiPowered(false)
+      // IA indisponível — sem fallback silencioso. Exibe erro acima.
     } finally {
       setLoading(false)
     }
@@ -243,7 +238,7 @@ export default function IdeaLoop() {
       {/* AI error */}
       {aiError && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
-          AI error: {aiError} — showing template-based ideas instead.
+          IA indisponível: {aiError}
         </div>
       )}
 

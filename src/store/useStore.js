@@ -8,9 +8,9 @@ const useStore = create(
   persist(
     (set, get) => ({
       // ── State ──────────────────────────────────────────────
-      ideas: sampleIdeas,
-      posts: samplePosts,
-      metrics: sampleMetrics,
+      ideas: [],
+      posts: [],
+      metrics: [],
       insights: [],
       generatedIdeas: [],
       trendResults: null,
@@ -130,9 +130,9 @@ const useStore = create(
       // ── Reset (dev helper) ─────────────────────────────────
       reset: () =>
         set({
-          ideas: sampleIdeas,
-          posts: samplePosts,
-          metrics: sampleMetrics,
+          ideas: [],
+          posts: [],
+          metrics: [],
           insights: [],
           generatedIdeas: [],
           trendResults: null,
