@@ -47,7 +47,7 @@ export default function Sidebar() {
             end={to === '/'}
             className={({ isActive }) =>
               clsx(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative',
+                'flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 group relative',
                 isActive
                   ? 'bg-orange-100 text-orange-800 border border-orange-200'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-white'
