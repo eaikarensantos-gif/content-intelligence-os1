@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
@@ -25,6 +25,9 @@ import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
 import BriefingStudio from './components/brand/BriefingStudio'
 import PostAnalyzer from './components/post-analyzer/PostAnalyzer'
+import SupabaseSettings from './components/settings/SupabaseSettings'
+import useStore from './store/useStore'
+import { isSupabaseConfigured } from './lib/supabase'
 // PricingManager is embedded inside AdManager
 
 function Layout({ children }) {
@@ -53,6 +56,12 @@ function Layout({ children }) {
 }
 
 export default function App() {
+  const loadFromDB = useStore((s) => s.loadFromDB)
+
+  useEffect(() => {
+    if (isSupabaseConfigured()) loadFromDB()
+  }, [])
+
   return (
     <LoginGate>
       <BrowserRouter>
@@ -80,6 +89,7 @@ export default function App() {
             <Route path="/post-analyzer" element={<PostAnalyzer />} />
             <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
+            <Route path="/settings" element={<SupabaseSettings />} />
           </Routes>
         </Layout>
       </BrowserRouter>

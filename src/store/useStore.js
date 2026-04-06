@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { enrichMetric, generateInsights } from '../utils/analytics'
+import { dbLoadAll, dbSaveAll } from '../lib/db'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 const useStore = create(
   persist(
@@ -334,6 +336,45 @@ const useStore = create(
       deleteHybridArchetype: (id) =>
         set((s) => ({ hybridArchetypes: s.hybridArchetypes.filter((h) => h.id !== id) })),
 
+      // ── Supabase sync ─────────────────────────────────────
+      dbStatus: 'idle', // idle | loading | connected | error
+      dbError: '',
+      setDbStatus: (status, err = '') => set({ dbStatus: status, dbError: err }),
+
+      loadFromDB: async () => {
+        set({ dbStatus: 'loading' })
+        try {
+          const data = await dbLoadAll()
+          if (!data) { set({ dbStatus: 'idle' }); return false }
+          set({
+            ...(data.ideas?.length        ? { ideas: data.ideas }               : {}),
+            ...(data.posts?.length        ? { posts: data.posts }               : {}),
+            ...(data.metrics?.length      ? { metrics: data.metrics }           : {}),
+            ...(data.clients?.length      ? { clients: data.clients }           : {}),
+            ...(data.tasks?.length        ? { tasks: data.tasks }               : {}),
+            ...(data.ads?.length          ? { ads: data.ads }                   : {}),
+            ...(data.leads?.length        ? { leads: data.leads }               : {}),
+            ...(data.favorites?.length    ? { favorites: data.favorites }       : {}),
+            ...(data.archetypes?.length   ? { archetypes: data.archetypes }     : {}),
+            ...(data.hybridArchetypes?.length ? { hybridArchetypes: data.hybridArchetypes } : {}),
+            ...(data.thoughtCaptures?.length  ? { thoughtCaptures: data.thoughtCaptures }   : {}),
+            ...(data.videoAnalyses?.length    ? { videoAnalyses: data.videoAnalyses }       : {}),
+            ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
+            ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
+            ...(data.bannedWords?.length      ? { bannedWords: data.bannedWords }           : {}),
+            ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
+            ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
+            ...(data.brandVoice ? { brandVoice: data.brandVoice } : {}),
+            dbStatus: 'connected',
+            dbError: '',
+          })
+          return true
+        } catch (err) {
+          set({ dbStatus: 'error', dbError: err.message })
+          return false
+        }
+      },
+
       // ── Reset ──────────────────────────────────────────────
       reset: () =>
         set({
@@ -381,5 +422,13 @@ const useStore = create(
     }
   )
 )
+
+// ─── Auto-sync debounced ao Supabase ─────────────────────────────────────────
+let _syncTimer = null
+useStore.subscribe((state) => {
+  if (!isSupabaseConfigured()) return
+  clearTimeout(_syncTimer)
+  _syncTimer = setTimeout(() => dbSaveAll(state), 2500)
+})
 
 export default useStore

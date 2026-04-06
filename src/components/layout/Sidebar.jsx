@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
 
 const BOTTOM_NAV = [
   { to: '/brand-voice', icon: Mic, label: 'Minha Voz' },
+  { to: '/settings', icon: Settings, label: 'Configurações' },
   { to: '/security', icon: Shield, label: 'Registro de Acessos' },
 ]
 
