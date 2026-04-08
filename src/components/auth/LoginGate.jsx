@@ -63,7 +63,7 @@ const simpleHash = (str) => {
 
 export default function LoginGate({ children }) {
   const [session, setSession] = useState(() => getSession())
-  const [mode, setMode] = useState('login') // 'setup' | 'login'
+  const [mode, setMode] = useState('login') // sempre começa em login
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -72,11 +72,9 @@ export default function LoginGate({ children }) {
   const [loading, setLoading] = useState(false)
   const [lockout, setLockout] = useState(false)
 
-  // Verifica se já existe owner cadastrado (roda no mount e ao deslogar)
+  // Ao deslogar volta para login
   useEffect(() => {
-    const owner = localStorage.getItem(OWNER_KEY)
-    if (!owner) setMode('setup')
-    else setMode('login')
+    if (!session) setMode('login')
   }, [session])
 
   // Lockout após 5 tentativas erradas em 15 min
@@ -209,26 +207,31 @@ export default function LoginGate({ children }) {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="flex items-center gap-2 mb-6">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              mode === 'setup' ? 'bg-orange-100' : 'bg-gray-100'
-            }`}>
-              {mode === 'setup' ? (
-                <Shield size={16} className="text-orange-600" />
-              ) : (
-                <Lock size={16} className="text-gray-600" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                {mode === 'setup' ? 'Criar Conta' : 'Entrar'}
-              </h2>
-              <p className="text-xs text-gray-400">
-                {mode === 'setup'
-                  ? 'Primeiro acesso — defina suas credenciais'
-                  : 'Digite suas credenciais para acessar'}
-              </p>
-            </div>
+
+          {/* Tabs login / cadastro */}
+          <div className="flex rounded-xl bg-gray-100 p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError('') }}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                mode === 'login'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('setup'); setError('') }}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                mode === 'setup'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Criar conta
+            </button>
           </div>
 
           <form onSubmit={mode === 'setup' ? handleSetup : handleLogin} className="space-y-4">
