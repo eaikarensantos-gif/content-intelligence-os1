@@ -26,6 +26,7 @@ import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
 import BriefingStudio from './components/brand/BriefingStudio'
 import PostAnalyzer from './components/post-analyzer/PostAnalyzer'
 import SupabaseSettings from './components/settings/SupabaseSettings'
+import AuthenticityAnalyzer from './components/authenticity/AuthenticityAnalyzer'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 // PricingManager is embedded inside AdManager
@@ -90,6 +91,7 @@ export default function App() {
             <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
+            <Route path="/authenticity" element={<AuthenticityAnalyzer />} />
           </Routes>
         </Layout>
       </BrowserRouter>
