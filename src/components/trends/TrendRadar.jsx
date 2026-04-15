@@ -83,6 +83,9 @@ CONTENT IDEAS MUST AVOID (apply to "ideas" and "opportunities" arrays):
 - "X erros que eu cometi" framing with clickbait energy
 - Lifestyle content about being a solopreneur/freelancer (cost of living, tools budget)
 - Content that sounds like a self-help podcast or entrepreneurship influencer
+- Catastrophist or extremist takes: "a bolha tech acabou", "o fim de [profissão]", "ninguém quer admitir", "[X] está morto"
+- The AI-and-jobs cliché in any form: "IA vai roubar seu emprego", "vai te tornar irrelevante", "sua carreira vai acabar" — this angle is overused and doesn't match the creator's voice
+- Engagement bait titles that exist only to provoke reaction without real substance behind them
 
 CONTENT IDEAS MUST FAVOR:
 - Reflective analysis of what's changing in tech careers and what it means

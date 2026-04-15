@@ -106,9 +106,11 @@ PROIBIDO — ABSOLUTAMENTE:
 - Referências a criadores de finanças pessoais, coaching ou autoajuda
 - Frases que soariam bem num podcast de empreendedorismo genérico
 - Exemplos ou referências exclusivas a UX, design ou product management — o conteúdo deve ser relevante para qualquer profissional de tech
+- Narrativas catastrofistas ou extremistas: "a bolha X acabou", "o fim de...", "ninguém quer admitir", "está morto"
+- O clichê de IA e emprego em qualquer forma: "IA vai roubar seu emprego", "vai fazer você irrelevante", "sua profissão vai acabar" — esse ângulo está esgotado e não representa a voz da criadora
+- Tom de alarmismo ou bait de engajamento fácil — evite títulos que existem só para provocar reação sem oferecer substância real
 
 PREFERIDO — MODELOS DE GANCHO SÊNIOR:
-- "A IA não vai roubar seu emprego. Vai roubar o emprego de quem faz o que a IA faz barato."
 - "Senioria não é saber mais. É saber o que ignorar."
 - "O problema não é que o modelo aluciou. É que ninguém checou porque o prazo era amanhã."
 - "Depois de acompanhar dezenas de transições de carreira em tech, o que me preocupa não é a IA..."
