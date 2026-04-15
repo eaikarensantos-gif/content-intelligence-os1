@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
   Brain, Sparkles, Copy, Check, Plus, Trash2,
   Clock, Layers, Video, AlignLeft, BookOpen, Zap,
@@ -244,7 +245,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      system: 'You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks.',
+      system: withAntiAIFilter('You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks.'),
       messages: [{ role: 'user', content: prompt }],
     }),
   })

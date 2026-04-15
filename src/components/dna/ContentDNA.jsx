@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
   Dna, Upload, FileText, Zap, TrendingUp, Copy, Check, Plus,
   BarChart2, Sparkles, RefreshCw, Target, Layers, BookOpen,
@@ -270,7 +271,7 @@ REGRAS PARA creator_references:
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      system: 'You are a world-class content strategist specializing in Tech, UX Design, and AI niches. The user is a Senior UX/AI Designer and speaker who creates content and gives talks on: Career & Professional Development, Professional Maturity, Applied AI, Social Critique of Technology, and Relatable Corporate Life. Their audience is senior professionals, managers, and decision-makers in tech. Analyze content performance data and extract actionable patterns. For creator_references, only suggest creators with deep technical authority in UX, AI, Product Design, Senior Tech Leadership, career maturity, or tech social critique — never generic finance, motivation, or mass entertainment creators. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.',
+      system: withAntiAIFilter('You are a world-class content strategist specializing in Tech Career niches. The user is a tech career consultant, mentor, and content creator who covers: Career & Professional Development, Professional Maturity, Applied AI, Social Critique of Technology, and Relatable Corporate Life. Their audience is senior professionals, managers, and decision-makers in tech. Analyze content performance data and extract actionable patterns. For creator_references, only suggest creators with deep technical authority in tech career, AI, Senior Tech Leadership, career maturity, or tech social critique — never generic finance, motivation, or mass entertainment creators. Write in natural, observational Brazilian Portuguese. Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.'),
       messages: [{ role: 'user', content: prompt }],
     }),
   })

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
   Sparkles, RefreshCw, Check, Copy, Plus, ChevronDown, ChevronUp,
   Target, Users, Sliders, BookOpen, Zap, AlertCircle, X,
@@ -172,7 +173,7 @@ async function generateIdeas(apiKey, params) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 6000,
-      system: 'You are a sharp, curious Brazilian content strategist. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER default to sad, heavy, or dramatic tone. Respond ONLY with valid JSON. No markdown, no code blocks, no text before or after the JSON.',
+      system: withAntiAIFilter('You are a sharp, curious Brazilian content strategist. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER default to sad, heavy, or dramatic tone. Respond ONLY with valid JSON. No markdown, no code blocks, no text before or after the JSON.'),
       messages: [{ role: 'user', content: prompt }],
     }),
   })

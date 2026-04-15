@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
@@ -254,6 +255,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 4000,
+          system: ANTI_AI_FILTER,
           messages: [{ role: 'user', content: prompt }],
         }),
       })

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import {
   Upload, Sparkles, FileText, Film, Loader2, Copy, Check,
   RefreshCw, ChevronDown, ChevronRight, Megaphone, X,
@@ -204,6 +205,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 6000,
+          system: ANTI_AI_FILTER,
           messages: [{ role: 'user', content: prompt }],
         }),
       })
