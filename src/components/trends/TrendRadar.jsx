@@ -68,6 +68,30 @@ async function callClaudeForTrends(apiKey, topic, insights = []) {
 
 ${insightsContext}
 
+CREATOR PROFILE — this report is for a specific creator. Ideas and opportunities MUST fit their brand:
+- She talks about TECH CAREER in general — not UX, not product management, not a specific role. Content must be relevant to any tech professional.
+- Her content style: REFLEXIVE SENIOR — analytical, critical, direct. She provokes thought, not motivation.
+- Her audience: professionals navigating real complexity in tech careers — layoffs, AI disruption, leadership decisions, seniority debates.
+- Her tone: like a candid conversation after a hard meeting, not a lifestyle influencer or productivity guru.
+
+CONTENT IDEAS MUST AVOID (apply to "ideas" and "opportunities" arrays):
+- Tool lists ("5 ferramentas que uso...", "apps que uso no dia a dia")
+- Income comparisons ("abandonei meu emprego de R$15k para ganhar R$3k")
+- Home office / workspace tours
+- Productivity hacks, morning routines, time management tips
+- Motivational or inspirational content ("você consegue", "acredite em você")
+- "X erros que eu cometi" framing with clickbait energy
+- Lifestyle content about being a solopreneur/freelancer (cost of living, tools budget)
+- Content that sounds like a self-help podcast or entrepreneurship influencer
+
+CONTENT IDEAS MUST FAVOR:
+- Reflective analysis of what's changing in tech careers and what it means
+- Contrarian takes with real argument (going against market consensus)
+- Human/ethical impact of tech decisions on professionals
+- Specific observations from experience, not generic advice
+- Titles that sound like a talk opening or a direct professional conversation — short, with a clear position
+- Hook examples that feel like "something a senior tech professional would say after years of experience"
+
 CRITICAL RULES:
 - ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
 - Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
