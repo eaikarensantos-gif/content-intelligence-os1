@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@hello-pangea/dnd": "^17.0.0",
     "@supabase/supabase-js": "^2.101.1",
     "clsx": "^2.1.1",
