@@ -70,3 +70,27 @@ Based on the data, provide 3–5 specific recommendations such as:
 Return a clean markdown report the user can read inline. Use tables for KPI summaries and top posts. Bold the key numbers. End with a prioritized action list.
 
 If there is no Instagram data yet, guide the user to add metrics via the "Add Metrics" button in Analytics, selecting Instagram as the platform.
+
+## New: Dynamic Reports Page
+
+The app now includes a fully interactive Reports page (`/reports` or "Relatórios" in sidebar) that generates dynamic metrics reports with:
+
+- **Interactive Dashboard**: Real-time charts that respond to hover/filter actions
+- **Customizable Branding**: Set primary color, fonts, logo, company name inline
+- **Content Analysis**:
+  - 🏆 Top 10 posts by engagement (with direct Instagram links)
+  - 📉 Bottom 5 underperforming posts
+  - 🔗 Most converting content (sorted by link clicks)
+  - ⏰ 5 most active posting times
+- **Audience Demographics**: Gender distribution, top cities, age ranges
+- **Strategic Insights**: AI-generated insights on:
+  - Best-performing formats to double down
+  - Hook types that generate shares/saves
+  - Engagement vs benchmarks (3%+ is good)
+  - Save rate analysis for viral potential
+  - Link click analysis for conversion signals
+- **Action Plan**: 5-week roadmap with specific recommendations
+- **Smart Filters**: Toggle posts vs stories to see format-specific metrics
+
+The page uses existing store data (`metrics[]`, `posts[]`) and analytics utilities for instant rendering.
+Access at: https://content-intelligence-os1.vercel.app/reports
