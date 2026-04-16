@@ -163,6 +163,7 @@ export default function DynamicMetricsReport() {
     logoUrl: '',
   })
   const [filterType, setFilterType] = useState('all')
+  const [selectedPlatform, setSelectedPlatform] = useState('all')
 
   if (!metrics.length) {
     return (
@@ -174,25 +175,32 @@ export default function DynamicMetricsReport() {
     )
   }
 
-  const instagramMetrics = metrics.filter((m) => m.platform === 'instagram')
-  if (!instagramMetrics.length) {
+  // Get all platforms available
+  const platformsAvailable = [...new Set(metrics.map((m) => m.platform))].filter(Boolean)
+
+  // Filter metrics by selected platform
+  const reportMetrics = selectedPlatform === 'all'
+    ? metrics
+    : metrics.filter((m) => m.platform === selectedPlatform)
+
+  if (!reportMetrics.length) {
     return (
       <div className="p-6 text-center py-20">
         <AlertCircle size={48} className="mx-auto text-gray-300 mb-4" />
-        <p className="text-gray-500 mb-4">Nenhuma métrica do Instagram encontrada.</p>
-        <p className="text-sm text-gray-400">Adicione métricas com plataforma "Instagram" para gerar este relatório.</p>
+        <p className="text-gray-500 mb-4">Nenhuma métrica encontrada para esta plataforma.</p>
+        <p className="text-sm text-gray-400">Selecione outra plataforma ou adicione mais métricas.</p>
       </div>
     )
   }
 
-  const top10 = getTop10Posts(posts, instagramMetrics)
-  const bottom5 = getBottom5Posts(posts, instagramMetrics)
-  const converting = getMostConvertingContent(posts, instagramMetrics)
-  const activeTimes = getMostActiveTimes(instagramMetrics)
-  const engMetrics = getEngagementMetrics(posts, instagramMetrics, filterType)
-  const insights = generateStrategicInsights(posts, instagramMetrics)
-  const recommendations = generateNextMonthRecommendations(posts, instagramMetrics)
-  const demographics = getDemographicsOverview(instagramMetrics)
+  const top10 = getTop10Posts(posts, reportMetrics)
+  const bottom5 = getBottom5Posts(posts, reportMetrics)
+  const converting = getMostConvertingContent(posts, reportMetrics)
+  const activeTimes = getMostActiveTimes(reportMetrics)
+  const engMetrics = getEngagementMetrics(posts, reportMetrics, filterType)
+  const insights = generateStrategicInsights(posts, reportMetrics)
+  const recommendations = generateNextMonthRecommendations(posts, reportMetrics)
+  const demographics = getDemographicsOverview(reportMetrics)
 
   return (
     <div className="p-6 space-y-6 animate-fade-in" style={{ fontFamily: brand.font }}>
@@ -210,12 +218,47 @@ export default function DynamicMetricsReport() {
       {/* Brand Settings */}
       <BrandSettings brand={brand} setBrand={setBrand} />
 
+      {/* Platform Selector */}
+      {platformsAvailable.length > 1 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText size={16} className="text-orange-500" />
+            <span className="font-semibold text-gray-900">Plataforma</span>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={() => setSelectedPlatform('all')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+                selectedPlatform === 'all'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Todas as Plataformas
+            </button>
+            {platformsAvailable.map((platform) => (
+              <button
+                key={platform}
+                onClick={() => setSelectedPlatform(platform)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition capitalize ${
+                  selectedPlatform === platform
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {platform}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Eye}
           label="Total de Impressões"
-          value={instagramMetrics.reduce((s, m) => s + m.impressions, 0).toLocaleString()}
+          value={reportMetrics.reduce((s, m) => s + m.impressions, 0).toLocaleString()}
           color="orange"
         />
         <StatCard
