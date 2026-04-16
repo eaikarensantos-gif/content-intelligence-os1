@@ -34,9 +34,6 @@ const NAV_GROUPS = [
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
       { to: '/video-editor', icon: Scissors, label: 'Editor de Cortes' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade' },
-      { to: '/archetypes', icon: Shapes, label: 'Arquétipos' },
-      { to: '/briefing', icon: Megaphone, label: 'Briefing Studio' },
-      { to: '/post-analyzer', icon: BarChart2, label: 'Análise de Posts' },
     ],
   },
 ]

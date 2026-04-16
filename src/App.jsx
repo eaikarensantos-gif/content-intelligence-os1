@@ -19,13 +19,13 @@ import ContentDNA from './components/dna/ContentDNA'
 import AccessLog from './components/auth/AccessLog'
 import TaskBoard from './components/tasks/TaskBoard'
 import AdManager from './components/ads/AdManager'
-import ContentArchetypes from './components/archetypes/ContentArchetypes'
+// import ContentArchetypes from './components/archetypes/ContentArchetypes' // arquivado
+// import BriefingStudio from './components/brand/BriefingStudio' // arquivado
+// import PostAnalyzer from './components/post-analyzer/PostAnalyzer' // arquivado
 import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
-import BriefingStudio from './components/brand/BriefingStudio'
-import PostAnalyzer from './components/post-analyzer/PostAnalyzer'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import AuthenticityAnalyzer from './components/authenticity/AuthenticityAnalyzer'
 import useStore from './store/useStore'
@@ -85,11 +85,9 @@ export default function App() {
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/ads" element={<AdManager />} />
-            <Route path="/archetypes" element={<ContentArchetypes />} />
+            {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/reports" element={<PerformanceReport />} />
-            <Route path="/briefing" element={<BriefingStudio />} />
-            <Route path="/post-analyzer" element={<PostAnalyzer />} />
             <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
