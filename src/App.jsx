@@ -8,6 +8,7 @@ import IdeasHub from './components/ideas/IdeasHub'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
+import VideoEditor from './components/video/VideoEditor'
 import ThoughtCapture from './components/thoughts/ThoughtCapture'
 import TextStudio from './components/text/TextStudio'
 import IdeaGenerator from './components/generate/IdeaGenerator'
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/video" element={<VideoAnalyzer />} />
+            <Route path="/video-editor" element={<VideoEditor />} />
             <Route path="/create" element={<UnifiedCreator />} />
             <Route path="/create-legacy" element={<CreateContent />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />

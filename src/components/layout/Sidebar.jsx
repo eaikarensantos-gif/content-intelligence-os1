@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -32,6 +32,7 @@ const NAV_GROUPS = [
     children: [
       { to: '/authenticity', icon: ShieldAlert, label: 'Crítico de Autenticidade' },
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
+      { to: '/video-editor', icon: Scissors, label: 'Editor de Cortes' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade' },
       { to: '/archetypes', icon: Shapes, label: 'Arquétipos' },
       { to: '/briefing', icon: Megaphone, label: 'Briefing Studio' },
