@@ -10,6 +10,7 @@ import Analytics from './components/analytics/Analytics'
 import InsightEngine from './components/insights/InsightEngine'
 import IdeaLoop from './components/idealoop/IdeaLoop'
 import AISettings from './components/settings/AISettings'
+import DynamicMetricsReport from './components/reports/DynamicMetricsReport'
 import useStore from './store/useStore'
 import useSupabaseStore from './store/useSupabaseStore'
 
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/kanban" element={<KanbanBoard />} />
           <Route path="/trends" element={<TrendRadar />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/reports" element={<DynamicMetricsReport />} />
           <Route path="/insights" element={<InsightEngine />} />
           <Route path="/loop" element={<IdeaLoop />} />
           <Route path="/settings" element={<AISettings />} />

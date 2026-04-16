@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Lightbulb, Kanban, Radar, BarChart2,
+  LayoutDashboard, Lightbulb, Kanban, Radar, BarChart2, FileText,
   Sparkles, Zap, ChevronRight, Settings,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -13,6 +13,7 @@ const NAV = [
   { to: '/kanban', icon: Kanban, label: 'Content Board' },
   { to: '/trends', icon: Radar, label: 'Trend Radar' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/reports', icon: FileText, label: 'Relatórios' },
   { to: '/insights', icon: Sparkles, label: 'Insight Engine' },
   { to: '/loop', icon: Zap, label: 'Idea Loop' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
