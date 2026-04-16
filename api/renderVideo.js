@@ -1,40 +1,37 @@
-// api/renderVideo.js
+// api/renderVideo.js — renderização via Shotstack (https://shotstack.io)
+// Variável de ambiente necessária: SHOTSTACK_KEY
+
+const SHOTSTACK_BASE = 'https://api.shotstack.io/edit/v1'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { videoUrl, cuts } = req.body
+  const { videoUrl, cuts, videoDuration } = req.body
 
   if (!videoUrl || !cuts) {
     return res.status(400).json({ error: 'videoUrl e cuts são obrigatórios' })
   }
 
   try {
-    // PASSO 1 — Monta o comando FFmpeg com os cortes
-    const ffmpegCommand = buildFFmpegCommand(videoUrl, cuts)
+    // PASSO 1 — Inverte os cortes: monta os segmentos que FICAM
+    const segments = buildSegments(cuts)
 
-    // PASSO 2 — Cria a task no FFhub
-    const taskResponse = await fetch('https://api.ffhub.io/v1/tasks', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.FFHUB_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ command: ffmpegCommand })
-    })
+    // PASSO 2 — Monta o timeline do Shotstack
+    const payload = buildTimeline(videoUrl, segments, videoDuration)
 
-    const { task_id } = await taskResponse.json()
+    // PASSO 3 — Envia para renderização
+    const { id } = await submitRender(payload)
 
-    // PASSO 3 — Polling até completar (máx 5 minutos)
-    const result = await pollUntilDone(task_id)
+    // PASSO 4 — Polling até completar (máx 5 minutos)
+    const result = await pollUntilDone(id)
 
-    // PASSO 4 — Retorna URL do vídeo final
+    // PASSO 5 — Retorna URL do vídeo final
     res.json({
-      downloadUrl: result.outputs[0].url,
-      filename: result.outputs[0].filename,
-      size: result.outputs[0].size
+      downloadUrl: result.url,
+      filename: `video-editado-${id}.mp4`,
+      size: result.filesize || null,
     })
 
   } catch (error) {
@@ -43,79 +40,113 @@ export default async function handler(req, res) {
   }
 }
 
-// ─── Monta o comando FFmpeg ───────────────────────────────────────────────────
-// Recebe os cortes e constrói um comando que preserva
-// só o que FICA — inverte a lógica dos cortes
+// ─── Inverte os cortes ────────────────────────────────────────────────────────
+// cuts = [{ start: 5.2, end: 8.1 }, { start: 15.0, end: 17.3 }]
+// O que remove: 5.2→8.1 e 15.0→17.3
+// O que fica:   0→5.2, 8.1→15.0, 17.3→fim
 
-function buildFFmpegCommand(videoUrl, cuts) {
-  // cuts = [{ start: 5.2, end: 8.1 }, { start: 15.0, end: 17.3 }]
-  // Isso significa: remover 5.2→8.1 e 15.0→17.3
-  // O que fica: 0→5.2, 8.1→15.0, 17.3→fim
-
-  if (!cuts || cuts.length === 0) {
-    // Sem cortes — só reencoda
-    return `ffmpeg -i "${videoUrl}" -c:v libx264 -preset fast -c:a aac output.mp4`
-  }
-
-  // Monta os segmentos que ficam usando o filtro select + concat
-  // Exemplo com 2 cortes gera 3 segmentos
+function buildSegments(cuts) {
   const segments = []
   let cursor = 0
 
-  cuts.forEach((cut, i) => {
+  for (const cut of cuts) {
     if (cursor < cut.start) {
       segments.push({ start: cursor, end: cut.start })
     }
     cursor = cut.end
-  })
+  }
 
-  // Adiciona o segmento final (do último corte até o fim)
+  // Segmento final — do último corte até o fim do vídeo
   segments.push({ start: cursor, end: null })
 
-  // Monta o filtro concat do FFmpeg
-  const filterParts = segments.map((seg, i) => {
-    const trimEnd = seg.end ? `:end=${seg.end}` : ''
-    return `[0:v]trim=start=${seg.start}${trimEnd},setpts=PTS-STARTPTS[v${i}]; ` +
-           `[0:a]atrim=start=${seg.start}${trimEnd},asetpts=PTS-STARTPTS[a${i}]`
+  return segments
+}
+
+// ─── Monta o timeline do Shotstack ───────────────────────────────────────────
+// Cada segmento vira um clip com trim (ponto de entrada no vídeo original)
+// e length (duração do trecho). O último segmento usa videoDuration ou 3600s
+// como fallback seguro — o Shotstack clipla no fim real do vídeo.
+
+function buildTimeline(videoUrl, segments, videoDuration) {
+  let timelineCursor = 0
+
+  const clips = segments.map((seg) => {
+    const duration = seg.end != null
+      ? seg.end - seg.start
+      : (videoDuration != null ? videoDuration - seg.start : 3600)
+
+    const clip = {
+      asset: {
+        type: 'video',
+        src: videoUrl,
+        trim: seg.start,
+      },
+      start: timelineCursor,
+      length: duration,
+    }
+
+    timelineCursor += duration
+    return clip
   })
 
-  const concatInputs = segments.map((_, i) => `[v${i}][a${i}]`).join('')
-  const concatFilter = `${concatInputs}concat=n=${segments.length}:v=1:a=1[outv][outa]`
+  return {
+    timeline: {
+      tracks: [{ clips }],
+    },
+    output: {
+      format: 'mp4',
+      resolution: 'original',
+    },
+  }
+}
 
-  const fullFilter = [...filterParts, concatFilter].join('; ')
+// ─── Envia para o Shotstack ───────────────────────────────────────────────────
 
-  return `ffmpeg -i "${videoUrl}" -filter_complex "${fullFilter}" ` +
-         `-map "[outv]" -map "[outa]" -c:v libx264 -preset fast -c:a aac output.mp4`
+async function submitRender(payload) {
+  const response = await fetch(`${SHOTSTACK_BASE}/render`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.SHOTSTACK_KEY,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.message || `Shotstack error ${response.status}`)
+  }
+
+  const data = await response.json()
+  return data.response // { id, message, success }
 }
 
 // ─── Polling ──────────────────────────────────────────────────────────────────
 // Checa o status a cada 3 segundos
-// Desiste após 5 minutos (100 tentativas)
+// Status possíveis: queued → fetching → rendering → saving → done | failed
 
-async function pollUntilDone(taskId, maxAttempts = 100) {
+async function pollUntilDone(renderId, maxAttempts = 100) {
   for (let i = 0; i < maxAttempts; i++) {
     await sleep(3000)
 
-    const response = await fetch(`https://api.ffhub.io/v1/tasks/${taskId}`, {
-      headers: { 'Authorization': `Bearer ${process.env.FFHUB_KEY}` }
+    const response = await fetch(`${SHOTSTACK_BASE}/render/${renderId}`, {
+      headers: { 'x-api-key': process.env.SHOTSTACK_KEY },
     })
 
-    const task = await response.json()
+    const data = await response.json()
+    const render = data.response
 
-    if (task.status === 'completed') {
-      return task
+    if (render.status === 'done') return render
+    if (render.status === 'failed') {
+      throw new Error(`Shotstack falhou: ${render.error || 'erro desconhecido'}`)
     }
 
-    if (task.status === 'failed') {
-      throw new Error(`FFhub falhou: ${task.error || 'erro desconhecido'}`)
-    }
-
-    // status pending ou running — continua polling
+    // queued / fetching / rendering / saving — continua polling
   }
 
   throw new Error('Timeout: renderização demorou mais de 5 minutos')
 }
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
