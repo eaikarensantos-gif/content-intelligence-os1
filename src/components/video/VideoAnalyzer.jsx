@@ -32,6 +32,19 @@ const TABS = [
   { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
 ]
 
+const MY_VIDEO_TABS = [
+  { id: 'resumo', label: 'Resumo', icon: AlignLeft },
+  { id: 'estrutura', label: 'Estrutura', icon: Layers },
+  { id: 'tom', label: 'Tom & Padrões', icon: Mic },
+  { id: 'retencao', label: 'Retenção', icon: Eye },
+  { id: 'porque', label: 'Por Que Funciona', icon: Star },
+  { id: 'template', label: 'Template', icon: BookOpen },
+  { id: 'ideias', label: 'Ideias', icon: Lightbulb },
+  { id: 'transcricao', label: 'Transcrição', icon: FileText },
+  { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
+  { id: 'melhorar', label: 'O que Melhorar', icon: Target },
+]
+
 const TYPE_OPTIONS = [
   { value: 'auto', label: 'Detectar automaticamente' },
   { value: 'educational', label: 'Educacional / Tutorial' },
@@ -308,6 +321,87 @@ RULES:
     { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" },
     { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" },
     { "title": "Título específico da ideia", "hook": "Sugestão de gancho", "format": "video|reel|carrossel|thread|image", "platform": "youtube|instagram|tiktok|linkedin|twitter", "hook_type": "curiosity|pain|contrarian|list|personal", "angle": "Ângulo específico", "why_now": "Por que relevante" }
+  ]
+}`
+}
+
+// ── Feedback prompt (my own video critique) ───────────────────────────────────
+function buildFeedbackPrompt({ title, transcript, hasFrames, frameCount }) {
+  const hasTranscript = transcript && transcript.trim().length > 30
+
+  const dataSection = hasTranscript
+    ? `TRANSCRIÇÃO REAL DO VÍDEO:\n---\n${transcript.trim().slice(0, 6000)}\n---\n`
+    : hasFrames
+    ? `${frameCount} keyframes do vídeo estão anexados como imagens. Analise apenas o que é visualmente observável.`
+    : `Sem transcrição ou frames. Analise com base no título fornecido.`
+
+  return `Você é um consultor de conteúdo digital especializado em analisar vídeos de criadores e dar feedback crítico e acionável.
+
+CRIADORA: Karen Santos
+POSICIONAMENTO: Estrategista de conteúdo e especialista em IA aplicada ao marketing de conteúdo
+SLOGAN: "Maturidade profissional na era da IA"
+TOM DE VOZ: Analítico, técnico, direto, sem floreios. Premium e minimalista. Fala com autoridade, não com hype.
+OBJETIVOS COMO CRIADORA:
+- Gerar engajamento real (comentários, compartilhamentos, conversas)
+- Construir autoridade como especialista em IA e estratégia de conteúdo
+- Converter audiência em clientes de alto valor
+- Criar conteúdo evergreen com alto potencial de salvamento
+PÚBLICO-ALVO: Profissionais e empreendedores que querem usar IA com maturidade para crescer
+
+VÍDEO PARA ANALISAR:
+- Título: ${title || '(não informado)'}
+${hasFrames ? `- Frames: ${frameCount} keyframes anexados` : ''}
+
+${dataSection}
+
+TAREFA: Analise este vídeo da Karen com olhar crítico e identifique onde ela pode melhorar. Seja específico, direto e construtivo. Não elogie o que não merece elogio — Karen prefere feedback honesto.
+
+Responda APENAS com este JSON (sem markdown, sem texto extra):
+
+{
+  "overall_score": 7,
+  "summary_critique": "Diagnóstico geral em 2-3 frases — o que funciona e o que travar o crescimento",
+  "hook_analysis": {
+    "score": 6,
+    "what_happened": "O que o gancho fez (ou não fez)",
+    "problem": "Por que não está funcionando ao máximo",
+    "rewrite": "Versão melhorada do gancho, no tom da Karen"
+  },
+  "structure_analysis": {
+    "score": 7,
+    "strengths": ["ponto forte 1", "ponto forte 2"],
+    "gaps": ["problema estrutural 1", "problema estrutural 2"],
+    "recommendation": "Como reorganizar para maior impacto"
+  },
+  "brand_voice_fit": {
+    "score": 8,
+    "alignment": "Como o conteúdo se alinha (ou não) com o posicionamento Premium/Analítico da Karen",
+    "off_brand_moments": ["momento 1 que soa fora do posicionamento", "momento 2"],
+    "fix": "Como ajustar para soar mais autêntico ao estilo da Karen"
+  },
+  "engagement_triggers": {
+    "score": 5,
+    "missing": ["gatilho de engajamento ausente 1", "gatilho ausente 2"],
+    "present": ["gatilho presente 1"],
+    "add_these": ["Sugestão concreta de gatilho 1 adaptado ao estilo da Karen", "Sugestão 2"]
+  },
+  "cta_analysis": {
+    "score": 6,
+    "current": "O CTA atual (ou ausência dele)",
+    "problem": "Por que não está convertendo",
+    "better_cta": "CTA melhorado no tom da Karen"
+  },
+  "top_3_priorities": [
+    { "priority": 1, "action": "Ação mais urgente", "impact": "Alto impacto em engajamento/autoridade", "how": "Como implementar na prática" },
+    { "priority": 2, "action": "Segunda ação prioritária", "impact": "Impacto esperado", "how": "Como implementar" },
+    { "priority": 3, "action": "Terceira ação prioritária", "impact": "Impacto esperado", "how": "Como implementar" }
+  ],
+  "next_video_checklist": [
+    "Checklist item 1 para aplicar no próximo vídeo",
+    "Checklist item 2",
+    "Checklist item 3",
+    "Checklist item 4",
+    "Checklist item 5"
   ]
 }`
 }
@@ -611,6 +705,7 @@ export default function VideoAnalyzer() {
   const [showHistory, setShowHistory] = useState(false)
   const [savedAnalysis, setSavedAnalysis] = useState(false)
   const [error, setError] = useState('')
+  const [analysisMode, setAnalysisMode] = useState('reference') // 'reference' | 'mine'
 
   // Script
   const [generatingScript, setGeneratingScript] = useState(false)
@@ -703,13 +798,20 @@ export default function VideoAnalyzer() {
       setLoadingStep(2)
       const hasFinalTranscript = finalTranscript.trim().length > 30
       const source = hasFinalTranscript ? 'transcript' : hasFramesData ? 'frames' : 'inference'
-      const prompt = buildPrompt({
-        url, title: metaTitle, channel, topic, videoType,
-        transcript: hasFinalTranscript ? finalTranscript : '',
-        hasFrames: hasFramesData,
-        frameCount: frames.length,
-        inferenceOnly: source === 'inference',
-      })
+      const prompt = analysisMode === 'mine'
+        ? buildFeedbackPrompt({
+            title: metaTitle,
+            transcript: hasFinalTranscript ? finalTranscript : '',
+            hasFrames: hasFramesData,
+            frameCount: frames.length,
+          })
+        : buildPrompt({
+            url, title: metaTitle, channel, topic, videoType,
+            transcript: hasFinalTranscript ? finalTranscript : '',
+            hasFrames: hasFramesData,
+            frameCount: frames.length,
+            inferenceOnly: source === 'inference',
+          })
       setLoadingStep(3)
       const raw = await callClaudeAPI(apiKey, prompt, hasFramesData ? frames : [])
       const jsonMatch = raw.match(/\{[\s\S]*\}/)
@@ -723,7 +825,7 @@ export default function VideoAnalyzer() {
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
     } finally {
-      setActiveTab('resumo')
+      setActiveTab(analysisMode === 'mine' ? 'melhorar' : 'resumo')
       setLoading(false)
     }
   }
@@ -867,6 +969,32 @@ export default function VideoAnalyzer() {
           )}
         </div>
       </div>
+
+      {/* Mode toggle */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
+        <button
+          onClick={() => { setAnalysisMode('reference'); setAnalysis(null); setError('') }}
+          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'reference' ? 'bg-violet-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Sparkles size={13} /> Analisar Referência
+        </button>
+        <button
+          onClick={() => { setAnalysisMode('mine'); setAnalysis(null); setError('') }}
+          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'mine' ? 'bg-orange-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Target size={13} /> Meu Vídeo
+        </button>
+      </div>
+
+      {analysisMode === 'mine' && !analysis && (
+        <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3">
+          <Target size={15} className="text-orange-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Feedback do Meu Vídeo</p>
+            <p className="text-xs text-gray-600">Envie seu próprio vídeo ou cole a transcrição. A IA vai analisar criticamente e apontar o que melhorar com base no seu posicionamento e objetivos como criadora.</p>
+          </div>
+        </div>
+      )}
 
       {/* No API key banner */}
       {!apiKey && !analysis && (
@@ -1414,10 +1542,12 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
-            {TABS.map((t) => (
+            {(analysisMode === 'mine' ? MY_VIDEO_TABS : TABS).map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                  activeTab === t.id ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-gray-700'
+                  activeTab === t.id
+                    ? t.id === 'melhorar' ? 'bg-orange-500 text-white' : 'bg-violet-600 text-white'
+                    : 'text-gray-400 hover:text-gray-700'
                 }`}>
                 <t.icon size={12} /> {t.label}
               </button>
@@ -2027,6 +2157,228 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                     <button onClick={handleReset} className="btn-secondary text-xs">
                       <RotateCcw size={12} /> Nova análise
                     </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── O QUE MELHORAR ────────────────────────────────────────────────── */}
+          {activeTab === 'melhorar' && (
+            <div className="space-y-5">
+              {/* Score geral */}
+              {analysis.overall_score != null && (
+                <div className="card p-5 border border-orange-100 bg-gradient-to-br from-orange-50/40 to-white">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-orange-200">
+                      <span className="text-2xl font-bold text-white">{analysis.overall_score}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-1">Score do Vídeo</p>
+                      <p className="text-sm text-gray-800 leading-relaxed">{analysis.summary_critique}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Top 3 Prioridades */}
+              {analysis.top_3_priorities?.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Target size={14} className="text-orange-500" />
+                    <h3 className="text-sm font-semibold text-gray-900">Top 3 Prioridades de Melhoria</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {analysis.top_3_priorities.map((p) => (
+                      <div key={p.priority} className="card p-4 border border-orange-100">
+                        <div className="flex items-start gap-3">
+                          <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center shrink-0 text-white text-xs font-bold">
+                            {p.priority}
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            <p className="text-sm font-semibold text-gray-900">{p.action}</p>
+                            <p className="text-xs text-orange-600 font-medium">{p.impact}</p>
+                            <p className="text-xs text-gray-500 leading-relaxed">{p.how}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Gancho */}
+                {analysis.hook_analysis && (
+                  <div className="card p-4 border border-amber-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Zap size={13} className="text-amber-500" />
+                        <h4 className="text-xs font-semibold text-gray-900">Gancho</h4>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${analysis.hook_analysis.score >= 7 ? 'bg-emerald-100 text-emerald-700' : analysis.hook_analysis.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                        {analysis.hook_analysis.score}/10
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">{analysis.hook_analysis.what_happened}</p>
+                    {analysis.hook_analysis.problem && (
+                      <div className="p-2.5 rounded-lg bg-red-50 border border-red-100">
+                        <p className="text-[10px] text-red-500 font-semibold uppercase mb-0.5">Problema</p>
+                        <p className="text-xs text-red-700">{analysis.hook_analysis.problem}</p>
+                      </div>
+                    )}
+                    {analysis.hook_analysis.rewrite && (
+                      <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
+                        <p className="text-[10px] text-emerald-600 font-semibold uppercase mb-0.5">Versão melhorada</p>
+                        <p className="text-xs text-emerald-800 font-medium italic">"{analysis.hook_analysis.rewrite}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* CTA */}
+                {analysis.cta_analysis && (
+                  <div className="card p-4 border border-sky-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ArrowRight size={13} className="text-sky-500" />
+                        <h4 className="text-xs font-semibold text-gray-900">CTA</h4>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${analysis.cta_analysis.score >= 7 ? 'bg-emerald-100 text-emerald-700' : analysis.cta_analysis.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                        {analysis.cta_analysis.score}/10
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">{analysis.cta_analysis.current}</p>
+                    {analysis.cta_analysis.problem && (
+                      <div className="p-2.5 rounded-lg bg-red-50 border border-red-100">
+                        <p className="text-[10px] text-red-500 font-semibold uppercase mb-0.5">Problema</p>
+                        <p className="text-xs text-red-700">{analysis.cta_analysis.problem}</p>
+                      </div>
+                    )}
+                    {analysis.cta_analysis.better_cta && (
+                      <div className="p-2.5 rounded-lg bg-sky-50 border border-sky-100">
+                        <p className="text-[10px] text-sky-600 font-semibold uppercase mb-0.5">CTA melhorado</p>
+                        <p className="text-xs text-sky-800 font-medium italic">"{analysis.cta_analysis.better_cta}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tom de Voz / Brand Fit */}
+                {analysis.brand_voice_fit && (
+                  <div className="card p-4 border border-violet-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Mic size={13} className="text-violet-500" />
+                        <h4 className="text-xs font-semibold text-gray-900">Fit com Posicionamento</h4>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${analysis.brand_voice_fit.score >= 7 ? 'bg-emerald-100 text-emerald-700' : analysis.brand_voice_fit.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                        {analysis.brand_voice_fit.score}/10
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">{analysis.brand_voice_fit.alignment}</p>
+                    {analysis.brand_voice_fit.off_brand_moments?.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-red-500 font-semibold uppercase">Momentos fora do posicionamento</p>
+                        {analysis.brand_voice_fit.off_brand_moments.map((m, i) => (
+                          <p key={i} className="text-xs text-gray-600 flex items-start gap-1.5"><span className="text-red-400 shrink-0">×</span>{m}</p>
+                        ))}
+                      </div>
+                    )}
+                    {analysis.brand_voice_fit.fix && (
+                      <div className="p-2.5 rounded-lg bg-violet-50 border border-violet-100">
+                        <p className="text-[10px] text-violet-600 font-semibold uppercase mb-0.5">Como ajustar</p>
+                        <p className="text-xs text-violet-800">{analysis.brand_voice_fit.fix}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Gatilhos de Engajamento */}
+                {analysis.engagement_triggers && (
+                  <div className="card p-4 border border-emerald-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={13} className="text-emerald-500" />
+                        <h4 className="text-xs font-semibold text-gray-900">Gatilhos de Engajamento</h4>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${analysis.engagement_triggers.score >= 7 ? 'bg-emerald-100 text-emerald-700' : analysis.engagement_triggers.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                        {analysis.engagement_triggers.score}/10
+                      </span>
+                    </div>
+                    {analysis.engagement_triggers.missing?.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-red-500 font-semibold uppercase">Ausentes</p>
+                        {analysis.engagement_triggers.missing.map((m, i) => (
+                          <p key={i} className="text-xs text-gray-600 flex items-start gap-1.5"><span className="text-red-400 shrink-0">×</span>{m}</p>
+                        ))}
+                      </div>
+                    )}
+                    {analysis.engagement_triggers.add_these?.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-emerald-600 font-semibold uppercase">Adicionar</p>
+                        {analysis.engagement_triggers.add_these.map((s, i) => (
+                          <p key={i} className="text-xs text-gray-700 flex items-start gap-1.5"><span className="text-emerald-500 shrink-0">+</span>{s}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Estrutura */}
+              {analysis.structure_analysis && (
+                <div className="card p-4 border border-gray-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers size={13} className="text-gray-500" />
+                      <h4 className="text-xs font-semibold text-gray-900">Estrutura do Vídeo</h4>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${analysis.structure_analysis.score >= 7 ? 'bg-emerald-100 text-emerald-700' : analysis.structure_analysis.score >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                      {analysis.structure_analysis.score}/10
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {analysis.structure_analysis.strengths?.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-emerald-600 font-semibold uppercase">Pontos fortes</p>
+                        {analysis.structure_analysis.strengths.map((s, i) => (
+                          <p key={i} className="text-xs text-gray-700 flex items-start gap-1.5"><span className="text-emerald-500 shrink-0">✓</span>{s}</p>
+                        ))}
+                      </div>
+                    )}
+                    {analysis.structure_analysis.gaps?.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-red-500 font-semibold uppercase">Lacunas</p>
+                        {analysis.structure_analysis.gaps.map((g, i) => (
+                          <p key={i} className="text-xs text-gray-700 flex items-start gap-1.5"><span className="text-red-400 shrink-0">×</span>{g}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {analysis.structure_analysis.recommendation && (
+                    <div className="p-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase mb-0.5">Recomendação</p>
+                      <p className="text-xs text-gray-700">{analysis.structure_analysis.recommendation}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Checklist próximo vídeo */}
+              {analysis.next_video_checklist?.length > 0 && (
+                <div className="card p-4 border border-orange-100 bg-orange-50/20 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Check size={14} className="text-orange-500" />
+                    <h4 className="text-xs font-semibold text-gray-900">Checklist para o Próximo Vídeo</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {analysis.next_video_checklist.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded border-2 border-orange-300 shrink-0 mt-0.5" />
+                        <p className="text-xs text-gray-700">{item}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
