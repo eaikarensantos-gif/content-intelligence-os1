@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            width: 400px;
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        h2 {
+            color: #1f2937;
+            margin: 0 0 15px 0;
+        }
+        p {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0 0 15px 0;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #f97316;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #ea580c;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-size: 13px;
+        }
+        .status.success {
+            display: block;
+            background: #d1fae5;
+            color: #047857;
+            border: 1px solid #10b981;
+        }
+        .status.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 15px 0;
+        }
+        .quick-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .quick-links a {
+            padding: 10px;
+            text-align: center;
+            background: #f3f4f6;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #1f2937;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .quick-links a:hover {
+            background: #e5e7eb;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f97316;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🧪 Teste Relatório</h2>
+        <p>Clique para adicionar dados de teste e abrir os relatórios.</p>
+
+        <button onclick="loadAndRedirect()">
+            ✅ Carregar Dados + Abrir Relatórios
+        </button>
+
+        <button onclick="loadDataOnly()">
+            📥 Apenas Carregar Dados
+        </button>
+
+        <div class="divider"></div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value">10</div>
+                <div class="stat-label">Posts</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">44K</div>
+                <div class="stat-label">Impressões</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">15%</div>
+                <div class="stat-label">Engajamento</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">7.4K</div>
+                <div class="stat-label">Interações</div>
+            </div>
+        </div>
+
+        <div class="quick-links">
+            <a href="http://localhost:5173/" target="_blank">🏠 Dashboard</a>
+            <a href="http://localhost:5173/reports" target="_blank">📊 Relatórios</a>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

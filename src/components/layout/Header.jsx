@@ -1,5 +1,5 @@
-import { useLocation } from 'react-router-dom'
-import { Bell, Search } from 'lucide-react'
+import { useLocation, Link } from 'react-router-dom'
+import { Bell, Search, FileText } from 'lucide-react'
 
 const TITLES = {
   '/': { title: 'Dashboard', sub: 'Your content intelligence overview' },
@@ -7,6 +7,7 @@ const TITLES = {
   '/kanban': { title: 'Content Board', sub: 'Plan and manage your content pipeline' },
   '/trends': { title: 'Trend Radar', sub: 'Discover what\'s working in your niche' },
   '/analytics': { title: 'Analytics', sub: 'Track and analyze post performance' },
+  '/reports': { title: 'Relatórios Dinâmicos', sub: 'Análise completa e interativa de métricas do Instagram' },
   '/insights': { title: 'Insight Engine', sub: 'AI-generated insights from your data' },
   '/loop': { title: 'Idea Loop', sub: 'Generate new ideas powered by your analytics' },
 }
@@ -22,7 +23,18 @@ export default function Header() {
         <p className="text-xs text-gray-400 mt-0.5">{info.sub}</p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <Link
+          to="/reports"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${
+            pathname === '/reports'
+              ? 'bg-orange-500 text-white'
+              : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+          }`}
+        >
+          <FileText size={16} />
+          <span className="hidden sm:inline">Relatórios</span>
+        </Link>
         <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
           <Search size={15} />
         </button>
