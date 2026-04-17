@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 
 export default function Modal({ open, onClose, title, children, maxWidth = 'max-w-2xl' }) {
-  // Track where mousedown started — só fecha o backdrop se o clique
-  // começou E terminou no backdrop (evita fechar ao arrastar texto)
-  const mouseDownOnBackdrop = useRef(false)
+  const backdropRef = useRef(null)
+  // Track where mousedown started — só fecha se começou E terminou fora do painel
+  const mouseDownOutside = useRef(false)
 
   useEffect(() => {
     if (!open) return
@@ -19,17 +19,19 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
 
   if (!open) return null
 
+  const isOutside = (t) => t === backdropRef.current || (t.closest && !t.closest('[data-modal-panel]'))
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget }}
-      onClick={(e) => { if (e.target === e.currentTarget && mouseDownOnBackdrop.current) onClose() }}
+      onMouseDown={(e) => { mouseDownOutside.current = isOutside(e.target) }}
+      onClick={(e) => { if (mouseDownOutside.current && isOutside(e.target)) onClose() }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" />
+      <div ref={backdropRef} className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" />
 
       {/* Panel */}
-      <div className={`relative w-full ${maxWidth} bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-black/20 animate-slide-up max-h-[90vh] flex flex-col`}>
+      <div data-modal-panel className={`relative w-full ${maxWidth} bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-black/20 animate-slide-up max-h-[90vh] flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
