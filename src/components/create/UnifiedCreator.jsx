@@ -362,7 +362,11 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
 
         {/* Brand Linter Panel */}
         {showLinter && input.trim() && (
-          <BrandLinterPanel text={input} onClose={() => setShowLinter(false)} />
+          <BrandLinterPanel
+            text={input}
+            onClose={() => setShowLinter(false)}
+            onFix={(oldText, newText) => setInput(prev => prev.replace(oldText, newText))}
+          />
         )}
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
