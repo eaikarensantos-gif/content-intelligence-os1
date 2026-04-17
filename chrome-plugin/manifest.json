@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Teste Relatório - Content Intelligence",
+  "version": "1.0",
+  "description": "Plugin para carregar dados de teste nos Relatórios",
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Teste Relatório"
+  },
+  "host_permissions": [
+    "http://localhost:5173/*"
+  ]
+}

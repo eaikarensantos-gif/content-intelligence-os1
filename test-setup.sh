@@ -1,0 +1,281 @@
+#!/bin/bash
+# Script automático para adicionar dados de teste
+
+cat > /home/user/content-intelligence-os1/add-test-data.html << 'EOF'
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Teste Automático - Relatório de Métricas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .content { padding: 30px; }
+        .step {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border-left: 4px solid #f97316;
+            border-radius: 8px;
+        }
+        .step h3 { color: #1f2937; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .step p { color: #6b7280; margin: 8px 0; font-size: 14px; }
+        button {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin: 20px 0;
+            background: #f97316;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover { background: #ea580c; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #047857;
+        }
+        .status.error {
+            display: block;
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value { font-size: 24px; font-weight: bold; color: #f97316; }
+        .stat-label { font-size: 12px; color: #6b7280; margin-top: 5px; }
+        .links {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .links a {
+            flex: 1;
+            padding: 12px;
+            background: #e5e7eb;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #1f2937;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .links a:hover { background: #d1d5db; }
+        .links a.primary { background: #f97316; color: white; }
+        .links a.primary:hover { background: #ea580c; }
+        .checklist {
+            list-style: none;
+            margin: 15px 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .checklist li.done { color: #10b981; }
+        .checklist span { font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Teste Automático</h1>
+            <p>Relatório de Métricas do Instagram</p>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h3><span>1️⃣</span> Adicionar Dados de Teste</h3>
+                <p>Carregue 10 posts com métricas reais do Instagram diretamente no navegador.</p>
+                <button onclick="loadTestData()">✅ Carregar Dados Agora</button>
+                <div id="status" class="status"></div>
+            </div>
+
+            <div class="step">
+                <h3><span>2️⃣</span> O que será testado</h3>
+                <ul class="checklist">
+                    <li><span>📊</span> 10 posts variados (Reels, Stories, Carousels)</li>
+                    <li><span>📈</span> Engajamento real: 7,423 interações</li>
+                    <li><span>👁️</span> Impressões: 44,450 alcance</li>
+                    <li><span>⭐</span> Taxa média: 15% (acima do benchmark)</li>
+                    <li><span>🎯</span> Todos os formatos inclusos</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3><span>3️⃣</span> Abrir o Relatório</h3>
+                <p>Clique no botão abaixo para acessar a página de relatórios:</p>
+                <div class="links">
+                    <a href="http://localhost:5173/reports" class="primary" target="_blank">
+                        🎯 Abrir Relatórios
+                    </a>
+                    <a href="http://localhost:5173/" target="_blank">
+                        🏠 Voltar ao Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span>4️⃣</span> Elementos a Testar</h3>
+                <ul class="checklist">
+                    <li><span>✨</span> Customização de identidade visual</li>
+                    <li><span>📊</span> Gráficos interativos (hover para detalhes)</li>
+                    <li><span>🏆</span> Top 10 posts com links para Instagram</li>
+                    <li><span>📉</span> Bottom 5 posts</li>
+                    <li><span>🔗</span> Conteúdos que convertem</li>
+                    <li><span>⏰</span> Horários mais ativos</li>
+                    <li><span>🧠</span> Insights estratégicos</li>
+                    <li><span>📋</span> Plano de ação mensal</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3><span>5️⃣</span> Testar Filtros</h3>
+                <ul class="checklist">
+                    <li><span>📱</span> Selecione "Posts" para ver apenas posts estáticos</li>
+                    <li><span>📲</span> Selecione "Stories" para ver apenas stories</li>
+                    <li><span>📊</span> Selecione "Todos" para visualização completa</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3><span>📌</span> Dados que serão carregados</h3>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">10</div>
+                        <div class="stat-label">Posts</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">44K</div>
+                        <div class="stat-label">Impressões</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">15%</div>
+                        <div class="stat-label">Engajamento</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">7.4K</div>
+                        <div class="stat-label">Interações</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadTestData() {
+            const testMetrics = [
+                { id: 'm1', post_id: 'p1', platform: 'instagram', date: '2024-04-10', impressions: 5200, reach: 3500, likes: 450, comments: 85, shares: 25, saves: 120, link_clicks: 340 },
+                { id: 'm2', post_id: 'p2', platform: 'instagram', date: '2024-04-11', impressions: 2100, reach: 1800, likes: 280, comments: 35, shares: 8, saves: 45, link_clicks: 85 },
+                { id: 'm3', post_id: 'p3', platform: 'instagram', date: '2024-04-12', impressions: 8900, reach: 7200, likes: 920, comments: 180, shares: 95, saves: 310, link_clicks: 520 },
+                { id: 'm4', post_id: 'p4', platform: 'instagram', date: '2024-04-13', impressions: 4500, reach: 3800, likes: 520, comments: 110, shares: 45, saves: 180, link_clicks: 250 },
+                { id: 'm5', post_id: 'p5', platform: 'instagram', date: '2024-04-14', impressions: 3200, reach: 2900, likes: 320, comments: 60, shares: 15, saves: 90, link_clicks: 120 },
+                { id: 'm6', post_id: 'p6', platform: 'instagram', date: '2024-04-15', impressions: 7100, reach: 5900, likes: 750, comments: 145, shares: 85, saves: 250, link_clicks: 420 },
+                { id: 'm7', post_id: 'p7', platform: 'instagram', date: '2024-04-16', impressions: 950, reach: 820, likes: 85, comments: 12, shares: 3, saves: 15, link_clicks: 45 },
+                { id: 'm8', post_id: 'p8', platform: 'instagram', date: '2024-04-16', impressions: 6200, reach: 5100, likes: 680, comments: 125, shares: 55, saves: 220, link_clicks: 380 },
+                { id: 'm9', post_id: 'p9', platform: 'instagram', date: '2024-04-16', impressions: 3800, reach: 3200, likes: 420, comments: 75, shares: 35, saves: 140, link_clicks: 190 },
+                { id: 'm10', post_id: 'p10', platform: 'instagram', date: '2024-04-16', impressions: 2500, reach: 2100, likes: 280, comments: 50, shares: 20, saves: 85, link_clicks: 110 }
+            ]
+
+            const testPosts = [
+                { id: 'p1', title: '5 Dicas de Instagram', format: 'Reel', hook_type: 'problem', platform: 'instagram' },
+                { id: 'p2', title: 'Like se você ama', format: 'Static', hook_type: 'engagement', platform: 'instagram' },
+                { id: 'p3', title: 'Trending Sound', format: 'Reel', hook_type: 'curiosity', platform: 'instagram' },
+                { id: 'p4', title: 'Carrossel Educativo', format: 'Carousel', hook_type: 'education', platform: 'instagram' },
+                { id: 'p5', title: 'Story com Enquete', format: 'Story', hook_type: 'engagement', platform: 'instagram' },
+                { id: 'p6', title: 'Conteúdo de Valor', format: 'Reel', hook_type: 'solution', platform: 'instagram' },
+                { id: 'p7', title: 'Meme Viral', format: 'Static', hook_type: 'humor', platform: 'instagram' },
+                { id: 'p8', title: 'Tutorial Rápido', format: 'Reel', hook_type: 'education', platform: 'instagram' },
+                { id: 'p9', title: 'Depoimento', format: 'Static', hook_type: 'social-proof', platform: 'instagram' },
+                { id: 'p10', title: 'Call to Action', format: 'Carousel', hook_type: 'cta', platform: 'instagram' }
+            ]
+
+            try {
+                // Salvar no localStorage
+                localStorage.setItem('app-store', JSON.stringify({
+                    posts: testPosts,
+                    metrics: testMetrics,
+                    ideas: [],
+                    board: [],
+                }))
+
+                // Mostrar status
+                const statusEl = document.getElementById('status')
+                statusEl.className = 'status success'
+                statusEl.innerHTML = `
+                    <strong>✅ Dados carregados com sucesso!</strong><br>
+                    • 10 posts adicionados<br>
+                    • 44,450 impressões<br>
+                    • 7,423 interações totais<br>
+                    • Engajamento: 15% (acima do benchmark)<br><br>
+                    <strong>Próximo passo:</strong> Abra o relatório em <code>http://localhost:5173/reports</code>
+                `
+
+                // Rolar até o status
+                statusEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            } catch (error) {
+                const statusEl = document.getElementById('status')
+                statusEl.className = 'status error'
+                statusEl.innerHTML = `<strong>❌ Erro:</strong> ${error.message}`
+            }
+        }
+
+        // Log para debug
+        console.log('%c🧪 Teste de Relatórios', 'font-size: 16px; font-weight: bold; color: #f97316;')
+        console.log('Clique em "Carregar Dados Agora" para adicionar dados de teste ao localStorage')
+    </script>
+</body>
+</html>
+EOF
+
+echo "✅ Arquivo criado: add-test-data.html"
