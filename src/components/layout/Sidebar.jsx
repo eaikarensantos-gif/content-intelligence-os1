@@ -22,6 +22,7 @@ const NAV_GROUPS = [
     label: 'Inteligência',
     children: [
       { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+      { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
       { to: '/trends', icon: Radar, label: 'Creator Insights' },
     ],
