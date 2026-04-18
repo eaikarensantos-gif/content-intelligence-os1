@@ -830,6 +830,8 @@ export default function VideoAnalyzer() {
   // Script
   const [generatingScript, setGeneratingScript] = useState(false)
   const [generatedScript, setGeneratedScript] = useState(null)
+  const [improvedScript, setImprovedScript] = useState(null)
+  const [generatingImproved, setGeneratingImproved] = useState(false)
 
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
@@ -953,7 +955,90 @@ export default function VideoAnalyzer() {
     setUrl(''); setTitle(''); setTopic(''); setVideoType('auto')
     setTranscript(''); setVideoFile(null); setFrames([])
     setAnalysis(null); setSavedIdeas(new Set()); setSavedAnalysis(false)
-    setError(''); setGeneratedScript(null)
+    setError(''); setGeneratedScript(null); setImprovedScript(null)
+  }
+
+  const handleGenerateImproved = async () => {
+    if (!analysis || !apiKey) return
+    setGeneratingImproved(true)
+    setImprovedScript(null)
+    try {
+      const fb = analysis
+      const hookFix = fb.hook_analysis?.rewrite || fb.hook_analysis?.problem || ''
+      const ctaFix = fb.cta_analysis?.better_cta || fb.cta_analysis?.problem || ''
+      const structFix = fb.structure_analysis?.recommendation || ''
+      const priorities = (fb.top_3_priorities || []).map(p => `${p.priority}. ${p.action}: ${p.how}`).join('\n')
+      const checklist = (fb.next_video_checklist || []).join('\n- ')
+      const originalTranscript = transcript?.trim() || ''
+
+      const prompt = `Você é um roteirista especialista em conteúdo para Karen Santos.
+
+POSICIONAMENTO DA KAREN: Estrategista de conteúdo e especialista em IA aplicada ao marketing.
+SLOGAN: "Maturidade profissional na era da IA"
+TOM: Direto, analítico, técnico, sem floreios. Fala com autoridade, não com hype. Observacional, não coach.
+
+PALAVRAS E ESTRUTURAS PROIBIDAS (NUNCA USE):
+- transformador, robusto, holístico, navegar (figurado), alavancar, potencializar, impulsionar (vago)
+- jornada (sentido pessoal), ecossistema (figurado), protagonista, empoderar, ressignificar
+- gerar valor, entregar valor, gerar impacto, no mundo de hoje, no cenário atual, na era digital
+- "Mais do que X, é Y", "No fim, tudo se resume a...", "E você, já parou para pensar nisso?"
+- Listas de exatamente 3 tópicos com negrito + conclusão moral
+- Vulnerabilidade falsa: problema → superação → lição aprendida (tudo arrumado)
+- Perguntas retóricas como fechamento
+- "não é sobre X, é sobre Y" (oposição estilizada)
+- Qualquer estrutura de coach, motivacional vazio ou clickbait
+
+FEEDBACK IDENTIFICADO NO VÍDEO ORIGINAL:
+Score geral: ${fb.overall_score}/10
+Diagnóstico: ${fb.summary_critique}
+
+Gancho — problema: ${fb.hook_analysis?.problem || ''}
+Gancho — versão melhorada: ${hookFix}
+
+CTA — problema: ${fb.cta_analysis?.problem || ''}
+CTA melhorado: ${ctaFix}
+
+Estrutura — recomendação: ${structFix}
+
+Top 3 prioridades:
+${priorities}
+
+Checklist a aplicar:
+- ${checklist}
+
+${originalTranscript ? `TRANSCRIÇÃO ORIGINAL (reescrever com melhorias):\n---\n${originalTranscript.slice(0, 4000)}\n---` : `Título do vídeo: ${title || '(não informado)'}`}
+
+TAREFA: Crie um roteiro completo e melhorado aplicando TODAS as correções acima. O roteiro deve:
+- Corrigir o gancho conforme sugerido
+- Aplicar o CTA melhorado
+- Resolver os problemas estruturais identificados
+- Soar 100% como a Karen: direto, técnico, sem floreios, com autoridade
+- Ter impacto nos primeiros 3 segundos
+- Gerar conversa real nos comentários
+
+Responda APENAS com este JSON:
+{
+  "title": "Título sugerido para o vídeo",
+  "platform": "instagram|youtube|tiktok|linkedin",
+  "estimated_duration": "X:XX",
+  "sections": [
+    { "name": "Gancho", "text": "Texto exato do gancho corrigido", "note": "Tom/entrega" },
+    { "name": "Desenvolvimento", "text": "Corpo do conteúdo", "note": "Tom/entrega" },
+    { "name": "CTA", "text": "CTA melhorado exato", "note": "Tom/entrega" }
+  ],
+  "caption": "Legenda pronta para postar",
+  "what_changed": ["Mudança 1 aplicada", "Mudança 2 aplicada", "Mudança 3 aplicada"]
+}`
+
+      const raw = await callClaudeAPI(apiKey, prompt)
+      const m = raw.match(/\{[\s\S]*\}/)
+      if (!m) throw new Error('A IA não retornou um roteiro estruturado.')
+      setImprovedScript(JSON.parse(m[0]))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setGeneratingImproved(false)
+    }
   }
 
   const handleSaveAnalysis = () => {
@@ -2504,6 +2589,90 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                   </div>
                 </div>
               )}
+
+              {/* ── Gerar Roteiro Melhorado ─────────────────────────────── */}
+              <div className="card p-5 border border-orange-200 bg-gradient-to-br from-orange-50 to-white space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">Gerar Roteiro Melhorado</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">A IA aplica todas as correções e escreve um novo roteiro no seu tom</p>
+                  </div>
+                  <button
+                    onClick={handleGenerateImproved}
+                    disabled={generatingImproved || !apiKey}
+                    className="btn-primary text-sm py-2.5 px-5 shrink-0"
+                    style={{ background: generatingImproved ? undefined : 'linear-gradient(135deg, #f97316, #ea580c)' }}
+                  >
+                    {generatingImproved
+                      ? <><RefreshCw size={14} className="animate-spin" /> Escrevendo roteiro...</>
+                      : <><Sparkles size={14} /> Gerar Roteiro Melhorado</>
+                    }
+                  </button>
+                </div>
+
+                {improvedScript && (
+                  <div className="space-y-4 pt-2 border-t border-orange-100">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{improvedScript.title}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          {improvedScript.platform && <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">{improvedScript.platform}</span>}
+                          {improvedScript.estimated_duration && <span className="text-[10px] text-gray-400">{improvedScript.estimated_duration}</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const text = (improvedScript.sections || []).map(s => `[${s.name}]\n${s.text}`).join('\n\n') + (improvedScript.caption ? `\n\n[Legenda]\n${improvedScript.caption}` : '')
+                          navigator.clipboard.writeText(text)
+                        }}
+                        className="btn-secondary text-xs shrink-0"
+                      >
+                        <Copy size={12} /> Copiar roteiro
+                      </button>
+                    </div>
+
+                    {/* Script sections */}
+                    <div className="space-y-3">
+                      {(improvedScript.sections || []).map((s, i) => (
+                        <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
+                            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">{s.name}</p>
+                            {s.note && <p className="text-[10px] text-gray-400 italic">{s.note}</p>}
+                          </div>
+                          <div className="p-3">
+                            <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">{s.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Caption */}
+                    {improvedScript.caption && (
+                      <div className="rounded-xl border border-blue-100 overflow-hidden">
+                        <div className="px-3 py-2 bg-blue-50 border-b border-blue-100">
+                          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">Legenda para postar</p>
+                        </div>
+                        <div className="p-3">
+                          <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{improvedScript.caption}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* What changed */}
+                    {improvedScript.what_changed?.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">Melhorias aplicadas</p>
+                        {improvedScript.what_changed.map((w, i) => (
+                          <p key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
+                            <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>{w}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
