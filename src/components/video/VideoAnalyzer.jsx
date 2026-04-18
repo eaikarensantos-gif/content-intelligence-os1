@@ -832,6 +832,7 @@ export default function VideoAnalyzer() {
   const [generatedScript, setGeneratedScript] = useState(null)
   const [improvedScript, setImprovedScript] = useState(null)
   const [generatingImproved, setGeneratingImproved] = useState(false)
+  const analysisTranscriptRef = useRef('')  // transcript actually used in current analysis
 
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
@@ -881,10 +882,12 @@ export default function VideoAnalyzer() {
 
     setLoading(true)
     setAnalysis(null)
+    setImprovedScript(null)
     setError('')
     setSavedIdeas(new Set())
     setSavedAnalysis(false)
     setLoadingStep(0)
+    analysisTranscriptRef.current = ''
 
     try {
       let metaTitle = title
@@ -940,6 +943,7 @@ export default function VideoAnalyzer() {
       const result = JSON.parse(jsonMatch[0])
       setLoadingStep(4)
       await new Promise((r) => setTimeout(r, 300))
+      analysisTranscriptRef.current = hasFinalTranscript ? finalTranscript : ''
       setAnalysis(result)
       setAnalysisSource(source)
       if (metaTitle && !title) setTitle(metaTitle)
@@ -969,7 +973,7 @@ export default function VideoAnalyzer() {
       const structFix = fb.structure_analysis?.recommendation || ''
       const priorities = (fb.top_3_priorities || []).map(p => `${p.priority}. ${p.action}: ${p.how}`).join('\n')
       const checklist = (fb.next_video_checklist || []).join('\n- ')
-      const originalTranscript = transcript?.trim() || ''
+      const originalTranscript = analysisTranscriptRef.current?.trim() || ''
 
       const prompt = `Você é um roteirista especialista em conteúdo para Karen Santos.
 
