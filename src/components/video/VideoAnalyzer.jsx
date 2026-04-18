@@ -203,7 +203,7 @@ async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
   try {
     arrayBuffer = await videoFile.arrayBuffer()
   } catch {
-    throw new Error('O browser não conseguiu ler o arquivo. Tente exportar só o áudio (MP3) antes de enviar.')
+    throw new Error('O browser não conseguiu ler o arquivo. Use o botão "Extrair só o áudio" antes de transcrever, ou exporte como MP3 pelo VLC.')
   }
 
   const audioCtx = new AudioContext()
@@ -787,7 +787,6 @@ export default function VideoAnalyzer() {
   const [videoType, setVideoType] = useState('auto')
   const [transcript, setTranscript] = useState('')
   const [videoFile, setVideoFile] = useState(null)
-  const [reducerOutput, setReducerOutput] = useState(null)
   const [frames, setFrames] = useState([])
   const [extractingFrames, setExtractingFrames] = useState(false)
   const fileInputRef = useRef(null)
@@ -868,7 +867,13 @@ export default function VideoAnalyzer() {
 
       const ext = videoFile.name.split('.').pop().toLowerCase()
       setReducerProgress('Lendo arquivo...')
-      await ff.writeFile(`input.${ext}`, await fetchFile(videoFile))
+      let fileData
+      try {
+        fileData = await fetchFile(videoFile)
+      } catch {
+        throw new Error(`Arquivo muito grande para carregar no browser (${(videoFile.size / 1024 / 1024).toFixed(0)} MB). Use o VLC para exportar só o áudio antes de enviar.`)
+      }
+      await ff.writeFile(`input.${ext}`, fileData)
 
       let outName, args, mimeType
       if (mode === 'audio') {
