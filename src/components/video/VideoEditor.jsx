@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 
-const CDN = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+const CDN = '/ffmpeg'
 
 function formatTime(sec) {
   if (sec == null || isNaN(sec)) return '0:00'

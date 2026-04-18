@@ -14,7 +14,7 @@ import {
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
 
-const CDN = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+const CDN = '/ffmpeg'
 
 const LS_KEY = 'cio-anthropic-key'
 const LS_KEY_GROQ = 'cio-groq-key'
@@ -845,59 +845,70 @@ export default function VideoAnalyzer() {
 
   // ── Video Reducer ──────────────────────────────────────────────────────────
   const ffmpegRef = useRef(null)
-  const [reducerPhase, setReducerPhase] = useState('idle') // idle | loading | processing | done | error
+  const [reducerPhase, setReducerPhase] = useState('idle') // idle | processing | done | error
   const [reducerProgress, setReducerProgress] = useState('')
   const [reducerOutput, setReducerOutput] = useState(null) // { url, name, size, blob }
 
   const handleReduce = async (mode) => {
     if (!videoFile) return
-    setReducerPhase('loading')
-    setReducerProgress('Carregando FFmpeg...')
+    setReducerPhase('processing')
     setReducerOutput(null)
     try {
+      if (mode === 'audio') {
+        // Use Web Audio API — no WASM needed, works with any video/audio file
+        setReducerProgress('Lendo arquivo...')
+        let arrayBuffer
+        try { arrayBuffer = await videoFile.arrayBuffer() } catch {
+          throw new Error(`Arquivo muito grande para ler no browser. Exporte só o áudio pelo VLC antes de enviar.`)
+        }
+        setReducerProgress('Decodificando áudio...')
+        const audioCtx = new AudioContext()
+        let audioBuffer
+        try { audioBuffer = await audioCtx.decodeAudioData(arrayBuffer) } catch {
+          throw new Error('Formato não suportado para extração de áudio. Envie como MP4 ou exporte o áudio como MP3.')
+        } finally { await audioCtx.close() }
+
+        setReducerProgress('Convertendo para WAV 16kHz...')
+        const wav = await audioBufferToWavBlob(audioBuffer)
+        const outName = videoFile.name.replace(/\.[^/.]+$/, '') + '_audio.wav'
+        const url = URL.createObjectURL(wav)
+        setReducerOutput({ url, name: outName, size: wav.size, blob: wav, mimeType: 'audio/wav' })
+        setReducerPhase('done')
+        setReducerProgress('')
+        return
+      }
+
+      // Video compression — uses FFmpeg WASM
+      setReducerProgress('Carregando FFmpeg...')
       if (!ffmpegRef.current) {
         const ff = new FFmpeg()
         ff.on('log', ({ message }) => setReducerProgress(message.slice(0, 80)))
-        ff.on('progress', ({ progress: p }) => setReducerProgress(`Processando... ${Math.round(p * 100)}%`))
+        ff.on('progress', ({ progress: p }) => setReducerProgress(`Comprimindo... ${Math.round(p * 100)}%`))
         await ff.load({ coreURL: `${CDN}/ffmpeg-core.js`, wasmURL: `${CDN}/ffmpeg-core.wasm` })
         ffmpegRef.current = ff
       }
       const ff = ffmpegRef.current
-      setReducerPhase('processing')
 
       const ext = videoFile.name.split('.').pop().toLowerCase()
       setReducerProgress('Lendo arquivo...')
       let fileData
-      try {
-        fileData = await fetchFile(videoFile)
-      } catch {
-        throw new Error(`Arquivo muito grande para carregar no browser (${(videoFile.size / 1024 / 1024).toFixed(0)} MB). Use o VLC para exportar só o áudio antes de enviar.`)
+      try { fileData = await fetchFile(videoFile) } catch {
+        throw new Error(`Arquivo muito grande para carregar no browser (${(videoFile.size / 1024 / 1024).toFixed(0)} MB). Use "Extrair só o áudio" em vez disso.`)
       }
       await ff.writeFile(`input.${ext}`, fileData)
 
-      let outName, args, mimeType
-      if (mode === 'audio') {
-        outName = videoFile.name.replace(/\.[^/.]+$/, '') + '_audio.m4a'
-        mimeType = 'audio/mp4'
-        args = ['-i', `input.${ext}`, '-vn', '-c:a', 'aac', '-b:a', '64k', 'output.m4a']
-      } else {
-        outName = videoFile.name.replace(/\.[^/.]+$/, '') + '_720p.mp4'
-        mimeType = 'video/mp4'
-        args = ['-i', `input.${ext}`, '-vf', 'scale=-2:720', '-c:v', 'libx264', '-crf', '28', '-preset', 'fast', '-c:a', 'aac', '-b:a', '64k', 'output.mp4']
-      }
-
-      setReducerProgress(mode === 'audio' ? 'Extraindo áudio...' : 'Comprimindo vídeo...')
+      const outName = videoFile.name.replace(/\.[^/.]+$/, '') + '_720p.mp4'
+      const args = ['-i', `input.${ext}`, '-vf', 'scale=-2:720', '-c:v', 'libx264', '-crf', '28', '-preset', 'fast', '-c:a', 'aac', '-b:a', '64k', 'output.mp4']
+      setReducerProgress('Comprimindo vídeo (720p)...')
       await ff.exec(args)
 
-      const outFile = mode === 'audio' ? 'output.m4a' : 'output.mp4'
-      const data = await ff.readFile(outFile)
-      const blob = new Blob([data.buffer], { type: mimeType })
+      const data = await ff.readFile('output.mp4')
+      const blob = new Blob([data.buffer], { type: 'video/mp4' })
       const url = URL.createObjectURL(blob)
-
       await ff.deleteFile(`input.${ext}`).catch(() => {})
-      await ff.deleteFile(outFile).catch(() => {})
+      await ff.deleteFile('output.mp4').catch(() => {})
 
-      setReducerOutput({ url, name: outName, size: blob.size, blob, mimeType })
+      setReducerOutput({ url, name: outName, size: blob.size, blob, mimeType: 'video/mp4' })
       setReducerPhase('done')
       setReducerProgress('')
     } catch (e) {
@@ -1411,7 +1422,7 @@ Responda APENAS com este JSON:
                 </div>
               )}
 
-              {(reducerPhase === 'loading' || reducerPhase === 'processing') && (
+              {(reducerPhase === 'processing') && (
                 <div className="flex items-center gap-2">
                   <RefreshCw size={13} className="animate-spin text-amber-600 shrink-0" />
                   <p className="text-sm text-amber-700">{reducerProgress || 'Processando...'}</p>
@@ -1557,7 +1568,7 @@ Responda APENAS com este JSON:
                     </div>
                   )}
 
-                  {(reducerPhase === 'loading' || reducerPhase === 'processing') && (
+                  {(reducerPhase === 'processing') && (
                     <div className="flex items-center gap-2">
                       <RefreshCw size={12} className="animate-spin text-amber-600 shrink-0" />
                       <p className="text-xs text-amber-700 truncate">{reducerProgress || 'Processando...'}</p>
