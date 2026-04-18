@@ -1380,6 +1380,65 @@ Responda APENAS com este JSON:
             </div>
           </div>
 
+          {/* ── Video Reducer Banner — shown when large file is loaded ─── */}
+          {videoFile && videoFile.size > 24 * 1024 * 1024 && (
+            <div className={`card p-4 space-y-3 border-2 ${reducerPhase === 'done' ? 'border-emerald-300 bg-emerald-50/30' : 'border-amber-300 bg-amber-50/30'}`}>
+              <div className="flex items-center gap-2">
+                <Scissors size={14} className={reducerPhase === 'done' ? 'text-emerald-600' : 'text-amber-600'} />
+                <p className="text-sm font-semibold text-gray-900">
+                  {reducerPhase === 'done'
+                    ? `Arquivo reduzido — ${reducerOutput?.name} (${(reducerOutput?.size / 1024 / 1024).toFixed(1)} MB)`
+                    : `Arquivo grande (${(videoFile.size / 1024 / 1024).toFixed(0)} MB) — reduza antes de transcrever`
+                  }
+                </p>
+              </div>
+
+              {reducerPhase === 'idle' && (
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => handleReduce('audio')}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm">
+                    <Mic size={13} /> Extrair só o áudio (recomendado)
+                  </button>
+                  <button onClick={() => handleReduce('video')}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">
+                    <Film size={13} /> Comprimir vídeo (720p)
+                  </button>
+                </div>
+              )}
+
+              {(reducerPhase === 'loading' || reducerPhase === 'processing') && (
+                <div className="flex items-center gap-2">
+                  <RefreshCw size={13} className="animate-spin text-amber-600 shrink-0" />
+                  <p className="text-sm text-amber-700">{reducerProgress || 'Processando...'}</p>
+                </div>
+              )}
+
+              {reducerPhase === 'error' && (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-red-600">{reducerProgress}</p>
+                  <button onClick={() => setReducerPhase('idle')} className="text-xs text-gray-500 hover:text-gray-700 shrink-0">Tentar novamente</button>
+                </div>
+              )}
+
+              {reducerPhase === 'done' && reducerOutput && (
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={handleUseReducedFile}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm">
+                    <Check size={13} /> Usar para transcrição
+                  </button>
+                  <a href={reducerOutput.url} download={reducerOutput.name}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors">
+                    <Download size={13} /> Baixar arquivo
+                  </a>
+                  <button onClick={() => { setReducerPhase('idle'); setReducerOutput(null) }}
+                    className="text-xs text-gray-400 hover:text-gray-600 px-2">
+                    Reduzir de outra forma
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Main input area: Video source + Transcript side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
