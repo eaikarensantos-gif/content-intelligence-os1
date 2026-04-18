@@ -170,56 +170,9 @@ async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
   return (await res.text()).trim()
 }
 
-// Handles any file size: extracts audio, converts to compact WAV, chunks if needed
-// Streams audio from a large video at 16x speed — avoids loading full file into RAM
-function extractAudioViaStream(videoFile, onStatus) {
-  return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(videoFile)
-    const video = document.createElement('video')
-    video.src = objectUrl
-    video.preload = 'metadata'
-
-    const cleanup = () => URL.revokeObjectURL(objectUrl)
-
-    video.onerror = () => { cleanup(); reject(new Error('Erro ao carregar o vídeo. Verifique o formato do arquivo.')) }
-
-    video.onloadedmetadata = () => {
-      const duration = video.duration
-      let stream
-      try { stream = video.captureStream() } catch {
-        cleanup()
-        return reject(new Error('Browser não suporta captureStream. Use Chrome ou Edge para arquivos grandes.'))
-      }
-      const audioTracks = stream.getAudioTracks()
-      if (!audioTracks.length) {
-        cleanup()
-        return reject(new Error('Nenhuma faixa de áudio encontrada no vídeo.'))
-      }
-
-      const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find(m => MediaRecorder.isTypeSupported(m)) || ''
-      const rec = new MediaRecorder(new MediaStream(audioTracks), { mimeType: mime, audioBitsPerSecond: 32000 })
-      const bufs = []
-
-      rec.ondataavailable = e => { if (e.data?.size > 0) bufs.push(e.data) }
-      rec.onstop = () => { cleanup(); resolve(new Blob(bufs, { type: mime || 'audio/webm' })) }
-      rec.onerror = e => { cleanup(); reject(e.error) }
-
-      rec.start(2000)
-      video.playbackRate = 16
-      video.play().catch(reject)
-
-      const mins = Math.ceil(duration / 60)
-      onStatus?.(`Extraindo áudio (vídeo de ${mins} min, modo 16x)...`)
-
-      // Stop after real-time equivalent of full duration at 16x + 3s buffer
-      setTimeout(() => { try { rec.stop() } catch {} }, (duration / 16 + 3) * 1000)
-      video.onended = () => { try { rec.stop() } catch {} }
-    }
-  })
-}
-
 async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
   const MAX_BYTES = 24 * 1024 * 1024
+  const BYTES_PER_SEC = 16000 * 2  // 16kHz mono 16-bit
 
   // Small enough to send directly
   if (videoFile.size <= MAX_BYTES) {
@@ -227,31 +180,33 @@ async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
     return transcribeWithGroq(groqKey, videoFile, lang)
   }
 
-  // Large file: stream audio out at 16x speed, collect as webm/opus (very compact)
-  onStatus?.('Arquivo grande detectado — extraindo áudio...')
-  const audioBlob = await extractAudioViaStream(videoFile, onStatus)
-
-  if (audioBlob.size <= MAX_BYTES) {
-    onStatus?.('Transcrevendo...')
-    const audioFile = new File([audioBlob], 'audio.webm', { type: audioBlob.type })
-    return transcribeWithGroq(groqKey, audioFile, lang)
-  }
-
-  // Still too large — split by decoding (fallback for edge cases)
-  onStatus?.('Dividindo áudio em partes...')
-  const arrayBuffer = await audioBlob.arrayBuffer()
+  // Extract and compress audio via AudioContext (correct pitch, no distortion)
+  onStatus?.('Extraindo áudio do vídeo...')
+  const arrayBuffer = await videoFile.arrayBuffer()
   const audioCtx = new AudioContext()
   let audioBuffer
-  try { audioBuffer = await audioCtx.decodeAudioData(arrayBuffer) }
-  finally { await audioCtx.close() }
+  try {
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+  } finally {
+    await audioCtx.close()
+  }
 
-  const BYTES_PER_SEC = 16000 * 2
+  const totalDuration = audioBuffer.duration
+  const estimatedBytes = totalDuration * BYTES_PER_SEC
+
+  if (estimatedBytes <= MAX_BYTES) {
+    onStatus?.('Transcrevendo...')
+    const wav = await audioBufferToWavBlob(audioBuffer)
+    return transcribeWithGroq(groqKey, new File([wav], 'audio.wav', { type: 'audio/wav' }), lang)
+  }
+
+  // Audio too long — split into chunks and transcribe sequentially
   const maxSecs = Math.floor(MAX_BYTES / BYTES_PER_SEC)
-  const chunkCount = Math.ceil(audioBuffer.duration / maxSecs)
+  const chunkCount = Math.ceil(totalDuration / maxSecs)
   const parts = []
   for (let i = 0; i < chunkCount; i++) {
     const start = i * maxSecs
-    const end = Math.min(start + maxSecs, audioBuffer.duration)
+    const end = Math.min(start + maxSecs, totalDuration)
     onStatus?.(`Transcrevendo parte ${i + 1} de ${chunkCount}...`)
     const wav = await audioBufferToWavBlob(audioBuffer, start, end)
     const text = await transcribeWithGroq(groqKey, new File([wav], `chunk${i}.wav`, { type: 'audio/wav' }), lang)
