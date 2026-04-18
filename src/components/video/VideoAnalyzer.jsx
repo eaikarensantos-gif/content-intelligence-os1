@@ -172,7 +172,8 @@ async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
 
 async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
   const MAX_BYTES = 24 * 1024 * 1024
-  const BYTES_PER_SEC = 16000 * 2  // 16kHz mono 16-bit
+  const BYTES_PER_SEC = 16000 * 2
+  const BROWSER_LIMIT = 300 * 1024 * 1024  // ~300MB — safe limit for arrayBuffer in browser
 
   // Small enough to send directly
   if (videoFile.size <= MAX_BYTES) {
@@ -180,13 +181,32 @@ async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
     return transcribeWithGroq(groqKey, videoFile, lang)
   }
 
-  // Extract and compress audio via AudioContext (correct pitch, no distortion)
-  onStatus?.('Extraindo áudio do vídeo...')
-  const arrayBuffer = await videoFile.arrayBuffer()
+  // File too large for browser processing
+  if (videoFile.size > BROWSER_LIMIT) {
+    const mb = (videoFile.size / 1024 / 1024).toFixed(0)
+    throw new Error(
+      `Arquivo de ${mb}MB é grande demais para processar no browser. ` +
+      `Opções: (1) Extraia só o áudio com o VLC (Media → Converter → só faixa de áudio em MP3 64kbps), ` +
+      `(2) Use um trecho menor do vídeo, ` +
+      `(3) Use app.gladia.io ou assemblyai.com que aceitam arquivos grandes.`
+    )
+  }
+
+  // Extract and compress audio via AudioContext
+  onStatus?.('Extraindo áudio do vídeo (pode levar 1-2 min)...')
+  let arrayBuffer
+  try {
+    arrayBuffer = await videoFile.arrayBuffer()
+  } catch {
+    throw new Error('O browser não conseguiu ler o arquivo. Tente exportar só o áudio (MP3) antes de enviar.')
+  }
+
   const audioCtx = new AudioContext()
   let audioBuffer
   try {
     audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+  } catch {
+    throw new Error('Formato de vídeo não suportado para extração de áudio. Exporte como MP4 ou envie o áudio separado em MP3.')
   } finally {
     await audioCtx.close()
   }
@@ -200,7 +220,6 @@ async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
     return transcribeWithGroq(groqKey, new File([wav], 'audio.wav', { type: 'audio/wav' }), lang)
   }
 
-  // Audio too long — split into chunks and transcribe sequentially
   const maxSecs = Math.floor(MAX_BYTES / BYTES_PER_SEC)
   const chunkCount = Math.ceil(totalDuration / maxSecs)
   const parts = []
