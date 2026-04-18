@@ -118,17 +118,46 @@ async function extractKeyframes(videoFile, count = 6) {
 }
 
 // ── Groq Whisper transcription ────────────────────────────────────────────────
+
+// Renders an AudioBuffer slice to a mono 16kHz WAV Blob (compact for Whisper)
+function audioBufferToWavBlob(audioBuffer, startSec = 0, endSec = null) {
+  const sampleRate = 16000
+  const end = Math.min(endSec ?? audioBuffer.duration, audioBuffer.duration)
+  const duration = end - startSec
+  return new Promise((resolve, reject) => {
+    const frameCount = Math.ceil(duration * sampleRate)
+    const offlineCtx = new OfflineAudioContext(1, frameCount, sampleRate)
+    const source = offlineCtx.createBufferSource()
+    source.buffer = audioBuffer
+    source.start(0, startSec, duration)
+    source.connect(offlineCtx.destination)
+    offlineCtx.startRendering().then((rendered) => {
+      const samples = rendered.getChannelData(0)
+      const byteLen = 44 + samples.length * 2
+      const buf = new ArrayBuffer(byteLen)
+      const v = new DataView(buf)
+      const wr = (off, s) => { for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)) }
+      wr(0, 'RIFF'); v.setUint32(4, byteLen - 8, true)
+      wr(8, 'WAVE'); wr(12, 'fmt ')
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+      v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true)
+      v.setUint16(32, 2, true); v.setUint16(34, 16, true)
+      wr(36, 'data'); v.setUint32(40, samples.length * 2, true)
+      for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]))
+        v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true)
+      }
+      resolve(new Blob([buf], { type: 'audio/wav' }))
+    }).catch(reject)
+  })
+}
+
 async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
-  const MAX_SIZE = 25 * 1024 * 1024
-  if (audioFile.size > MAX_SIZE) {
-    throw new Error(`Arquivo muito grande (${(audioFile.size / 1024 / 1024).toFixed(1)} MB). O limite do Whisper é 25 MB. Compacte o arquivo ou use um trecho menor.`)
-  }
   const formData = new FormData()
-  formData.append('file', audioFile, audioFile.name)
+  formData.append('file', audioFile, audioFile.name || 'audio.wav')
   formData.append('model', 'whisper-large-v3-turbo')
   formData.append('response_format', 'text')
   if (lang !== 'auto') formData.append('language', lang)
-
   const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${groqKey}` },
@@ -139,6 +168,52 @@ async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
     throw new Error(`Erro na transcrição (${res.status}): ${err}`)
   }
   return (await res.text()).trim()
+}
+
+// Handles any file size: extracts audio, converts to compact WAV, chunks if needed
+async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
+  const MAX_BYTES = 24 * 1024 * 1024  // 24 MB safe margin
+  const BYTES_PER_SEC = 16000 * 2      // 16kHz 16-bit mono
+
+  // Small enough to send directly
+  if (videoFile.size <= MAX_BYTES) {
+    onStatus?.('Transcrevendo com Whisper...')
+    return transcribeWithGroq(groqKey, videoFile, lang)
+  }
+
+  // Extract and compress audio
+  onStatus?.('Extraindo áudio do vídeo...')
+  const arrayBuffer = await videoFile.arrayBuffer()
+  const audioCtx = new AudioContext()
+  let audioBuffer
+  try {
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+  } finally {
+    await audioCtx.close()
+  }
+
+  const totalDuration = audioBuffer.duration
+  const estimatedBytes = totalDuration * BYTES_PER_SEC
+
+  if (estimatedBytes <= MAX_BYTES) {
+    onStatus?.('Transcrevendo...')
+    const wav = await audioBufferToWavBlob(audioBuffer)
+    return transcribeWithGroq(groqKey, new File([wav], 'audio.wav', { type: 'audio/wav' }), lang)
+  }
+
+  // Split into timed chunks
+  const maxSecs = Math.floor(MAX_BYTES / BYTES_PER_SEC)
+  const chunkCount = Math.ceil(totalDuration / maxSecs)
+  const parts = []
+  for (let i = 0; i < chunkCount; i++) {
+    const start = i * maxSecs
+    const end = Math.min(start + maxSecs, totalDuration)
+    onStatus?.(`Transcrevendo parte ${i + 1} de ${chunkCount}...`)
+    const wav = await audioBufferToWavBlob(audioBuffer, start, end)
+    const text = await transcribeWithGroq(groqKey, new File([wav], `chunk${i}.wav`, { type: 'audio/wav' }), lang)
+    parts.push(text)
+  }
+  return parts.join(' ')
 }
 
 // ── Claude API — supports image frames via Vision ─────────────────────────────
@@ -678,6 +753,7 @@ export default function VideoAnalyzer() {
   const [groqKey, setGroqKey] = useState(() => localStorage.getItem(LS_KEY_GROQ) || '')
   const [showGroqModal, setShowGroqModal] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
+  const [transcribingStatus, setTranscribingStatus] = useState('')
   const [transcriptLang, setTranscriptLang] = useState('pt')
 
   // Input
@@ -783,13 +859,12 @@ export default function VideoAnalyzer() {
       if (canAutoTranscribe) {
         setLoadingStep(1)
         try {
-          const text = await transcribeWithGroq(groqKey, videoFile, transcriptLang)
+          const text = await transcribeLargeFile(groqKey, videoFile, transcriptLang, setTranscribingStatus)
           if (text && text.trim().length > 20) {
             finalTranscript = text.trim()
             setTranscript(finalTranscript)
           }
         } catch (transcribeErr) {
-          // Transcription failed — fall back to frames/inference, show soft warning
           console.warn('Auto-transcription failed:', transcribeErr.message)
         }
       }
@@ -878,14 +953,16 @@ export default function VideoAnalyzer() {
   const handleTranscribe = async () => {
     if (!videoFile || !groqKey) return
     setTranscribing(true)
+    setTranscribingStatus('Iniciando transcrição...')
     setError('')
     try {
-      const text = await transcribeWithGroq(groqKey, videoFile, transcriptLang)
+      const text = await transcribeLargeFile(groqKey, videoFile, transcriptLang, setTranscribingStatus)
       setTranscript(text)
     } catch (e) {
       setError(e.message)
     } finally {
       setTranscribing(false)
+      setTranscribingStatus('')
     }
   }
 
@@ -1448,7 +1525,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             {extractingFrames
               ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
               : transcribing
-              ? <><RefreshCw size={15} className="animate-spin" /> Transcrevendo com Whisper...</>
+              ? <><RefreshCw size={15} className="animate-spin" /> {transcribingStatus || 'Transcrevendo...'}</>
               : videoFile && groqKey && transcript.trim().length < 30
               ? <><Mic size={15} /> Transcrever e Analisar com IA</>
               : <><Sparkles size={15} /> Analisar Vídeo com IA</>
@@ -2130,11 +2207,12 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                       <button
                         onClick={async () => {
                           setTranscribing(true)
+                          setTranscribingStatus('Iniciando transcrição...')
                           try {
-                            const text = await transcribeWithGroq(groqKey, videoFile, transcriptLang)
+                            const text = await transcribeLargeFile(groqKey, videoFile, transcriptLang, setTranscribingStatus)
                             if (text?.trim()) setTranscript(text.trim())
                           } catch(e) { setError(e.message) }
-                          finally { setTranscribing(false) }
+                          finally { setTranscribing(false); setTranscribingStatus('') }
                         }}
                         disabled={transcribing}
                         className="btn-primary text-xs py-2 px-4"
