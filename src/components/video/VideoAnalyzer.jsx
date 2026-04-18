@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react'
+import { FFmpeg } from '@ffmpeg/ffmpeg'
+import { fetchFile } from '@ffmpeg/util'
 import {
   Video, Link2, ChevronRight, BookOpen,
   Lightbulb, Layers, Clock, Eye, Copy, Check,
@@ -7,9 +9,12 @@ import {
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
   Upload, AlignLeft, Info, Bookmark, BookMarked, Pencil, MessageSquare, Send, Loader2,
+  Scissors, Download,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
+
+const CDN = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
 
 const LS_KEY = 'cio-anthropic-key'
 const LS_KEY_GROQ = 'cio-groq-key'
@@ -782,6 +787,7 @@ export default function VideoAnalyzer() {
   const [videoType, setVideoType] = useState('auto')
   const [transcript, setTranscript] = useState('')
   const [videoFile, setVideoFile] = useState(null)
+  const [reducerOutput, setReducerOutput] = useState(null)
   const [frames, setFrames] = useState([])
   const [extractingFrames, setExtractingFrames] = useState(false)
   const fileInputRef = useRef(null)
@@ -828,6 +834,7 @@ export default function VideoAnalyzer() {
   const handleFileSelect = async (file) => {
     if (!file) return
     setVideoFile(file)
+    setReducerOutput(null)
     setTitle((t) => t || file.name.replace(/\.[^/.]+$/, ''))
     if (file.type.startsWith('video/')) {
       setExtractingFrames(true)
@@ -835,6 +842,71 @@ export default function VideoAnalyzer() {
       setFrames(extracted)
       setExtractingFrames(false)
     }
+  }
+
+  // ── Video Reducer ──────────────────────────────────────────────────────────
+  const ffmpegRef = useRef(null)
+  const [reducerPhase, setReducerPhase] = useState('idle') // idle | loading | processing | done | error
+  const [reducerProgress, setReducerProgress] = useState('')
+  const [reducerOutput, setReducerOutput] = useState(null) // { url, name, size, blob }
+
+  const handleReduce = async (mode) => {
+    if (!videoFile) return
+    setReducerPhase('loading')
+    setReducerProgress('Carregando FFmpeg...')
+    setReducerOutput(null)
+    try {
+      if (!ffmpegRef.current) {
+        const ff = new FFmpeg()
+        ff.on('log', ({ message }) => setReducerProgress(message.slice(0, 80)))
+        ff.on('progress', ({ progress: p }) => setReducerProgress(`Processando... ${Math.round(p * 100)}%`))
+        await ff.load({ coreURL: `${CDN}/ffmpeg-core.js`, wasmURL: `${CDN}/ffmpeg-core.wasm` })
+        ffmpegRef.current = ff
+      }
+      const ff = ffmpegRef.current
+      setReducerPhase('processing')
+
+      const ext = videoFile.name.split('.').pop().toLowerCase()
+      setReducerProgress('Lendo arquivo...')
+      await ff.writeFile(`input.${ext}`, await fetchFile(videoFile))
+
+      let outName, args, mimeType
+      if (mode === 'audio') {
+        outName = videoFile.name.replace(/\.[^/.]+$/, '') + '_audio.m4a'
+        mimeType = 'audio/mp4'
+        args = ['-i', `input.${ext}`, '-vn', '-c:a', 'aac', '-b:a', '64k', 'output.m4a']
+      } else {
+        outName = videoFile.name.replace(/\.[^/.]+$/, '') + '_720p.mp4'
+        mimeType = 'video/mp4'
+        args = ['-i', `input.${ext}`, '-vf', 'scale=-2:720', '-c:v', 'libx264', '-crf', '28', '-preset', 'fast', '-c:a', 'aac', '-b:a', '64k', 'output.mp4']
+      }
+
+      setReducerProgress(mode === 'audio' ? 'Extraindo áudio...' : 'Comprimindo vídeo...')
+      await ff.exec(args)
+
+      const outFile = mode === 'audio' ? 'output.m4a' : 'output.mp4'
+      const data = await ff.readFile(outFile)
+      const blob = new Blob([data.buffer], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+
+      await ff.deleteFile(`input.${ext}`).catch(() => {})
+      await ff.deleteFile(outFile).catch(() => {})
+
+      setReducerOutput({ url, name: outName, size: blob.size, blob, mimeType })
+      setReducerPhase('done')
+      setReducerProgress('')
+    } catch (e) {
+      setReducerPhase('error')
+      setReducerProgress(e.message)
+    }
+  }
+
+  const handleUseReducedFile = () => {
+    if (!reducerOutput) return
+    const file = new File([reducerOutput.blob], reducerOutput.name, { type: reducerOutput.mimeType })
+    handleFileSelect(file)
+    setReducerOutput(null)
+    setReducerPhase('idle')
   }
 
   const handleAnalyze = async () => {
@@ -1393,6 +1465,70 @@ Responda APENAS com este JSON:
                   </>
                 )}
               </div>
+
+              {/* Video Reducer — shown for large files */}
+              {videoFile && videoFile.size > 24 * 1024 * 1024 && reducerPhase !== 'done' && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Scissors size={13} className="text-amber-600 shrink-0" />
+                    <p className="text-xs font-semibold text-amber-800">
+                      Arquivo grande ({(videoFile.size / 1024 / 1024).toFixed(0)} MB) — reduza antes de transcrever
+                    </p>
+                  </div>
+
+                  {reducerPhase === 'idle' && (
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleReduce('audio')}
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                      >
+                        <Mic size={12} /> Extrair só o áudio
+                      </button>
+                      <button
+                        onClick={() => handleReduce('video')}
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      >
+                        <Film size={12} /> Comprimir vídeo (720p)
+                      </button>
+                    </div>
+                  )}
+
+                  {(reducerPhase === 'loading' || reducerPhase === 'processing') && (
+                    <div className="flex items-center gap-2">
+                      <RefreshCw size={12} className="animate-spin text-amber-600 shrink-0" />
+                      <p className="text-xs text-amber-700 truncate">{reducerProgress || 'Processando...'}</p>
+                    </div>
+                  )}
+
+                  {reducerPhase === 'error' && (
+                    <p className="text-xs text-red-600">{reducerProgress}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Reducer output */}
+              {reducerOutput && reducerPhase === 'done' && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-emerald-800">
+                    ✓ Reduzido: {reducerOutput.name} ({(reducerOutput.size / 1024 / 1024).toFixed(1)} MB)
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={handleUseReducedFile}
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                    >
+                      <Check size={12} /> Usar para transcrição
+                    </button>
+                    <a
+                      href={reducerOutput.url}
+                      download={reducerOutput.name}
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors"
+                    >
+                      <Download size={12} /> Baixar arquivo
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {/* Frame preview strip */}
               {frames.length > 0 && (
