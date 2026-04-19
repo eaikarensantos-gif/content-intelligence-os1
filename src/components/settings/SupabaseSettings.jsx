@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key } from 'lucide-react'
+import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
 
-const LS_ANTHROPIC = 'cio-anthropic-key'
-const LS_GROQ      = 'cio-groq-key'
+const LS_ANTHROPIC  = 'cio-anthropic-key'
+const LS_GROQ       = 'cio-groq-key'
+const LS_YOUTUBE    = 'cio-youtube-key'
 const SUPABASE_URL_KEY = 'supabase-url'
 const SUPABASE_KEY_KEY = 'supabase-key'
 
@@ -21,8 +22,10 @@ export default function SupabaseSettings() {
 
   const [anthropicKey, setAnthropicKey]   = useState(() => localStorage.getItem(LS_ANTHROPIC) || '')
   const [groqKey, setGroqKey]             = useState(() => localStorage.getItem(LS_GROQ) || '')
+  const [youtubeKey, setYoutubeKey]       = useState(() => localStorage.getItem(LS_YOUTUBE) || '')
   const [showAnthropicKey, setShowAnthropicKey] = useState(false)
   const [showGroqKey, setShowGroqKey]           = useState(false)
+  const [showYoutubeKey, setShowYoutubeKey]     = useState(false)
 
   const [testing, setTesting] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -58,6 +61,8 @@ export default function SupabaseSettings() {
   const handleSaveApiKeys = () => {
     localStorage.setItem(LS_ANTHROPIC, anthropicKey.trim())
     localStorage.setItem(LS_GROQ, groqKey.trim())
+    if (youtubeKey.trim()) localStorage.setItem(LS_YOUTUBE, youtubeKey.trim())
+    else localStorage.removeItem(LS_YOUTUBE)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -183,7 +188,7 @@ alter table user_data disable row level security;`}</pre>
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Groq (grátis)</label>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Groq (grátis — transcrição)</label>
             <div className="relative">
               <input
                 type={showGroqKey ? 'text' : 'password'}
@@ -197,6 +202,24 @@ alter table user_data disable row level security;`}</pre>
               </button>
             </div>
           </div>
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5">
+              <Youtube size={12} className="text-red-500" /> YouTube Data API v3 (criadores reais no Creator Insights)
+            </label>
+            <div className="relative">
+              <input
+                type={showYoutubeKey ? 'text' : 'password'}
+                value={youtubeKey}
+                onChange={(e) => setYoutubeKey(e.target.value)}
+                placeholder="AIza..."
+                className="input w-full pr-10 text-sm font-mono"
+              />
+              <button onClick={() => setShowYoutubeKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+                {showYoutubeKey ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">Gratuito. Crie em Google Cloud Console → APIs → YouTube Data API v3 → Credentials.</p>
+          </div>
         </div>
 
         <button onClick={handleSaveApiKeys} className="btn-primary text-xs">
@@ -209,6 +232,9 @@ alter table user_data disable row level security;`}</pre>
           </a>
           <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline flex items-center gap-1">
             <ExternalLink size={11} /> Obter chave Groq (gratuita)
+          </a>
+          <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer" className="text-xs text-red-500 hover:underline flex items-center gap-1">
+            <ExternalLink size={11} /> Ativar YouTube Data API
           </a>
         </div>
       </div>

@@ -4,8 +4,53 @@ import {
   ChevronDown, ChevronUp, Loader2, Brain, Zap, BarChart2,
   MessageSquare, Layout, BookOpen, Target, AlertCircle,
   Flame, Sparkles, Globe, Check, ArrowUpRight, Hash,
-  FileText, Eye, Filter, KeyRound, Layers,
+  FileText, Eye, Filter, KeyRound, Layers, Youtube, RefreshCw,
 } from 'lucide-react'
+
+const LS_YOUTUBE = 'cio-youtube-key'
+
+async function searchYouTubeChannels(query, apiKey) {
+  // Step 1: search for channels
+  const searchRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=12&relevanceLanguage=pt&regionCode=BR&key=${apiKey}`
+  )
+  if (!searchRes.ok) {
+    const err = await searchRes.json()
+    throw new Error(err.error?.message || 'Erro na YouTube API')
+  }
+  const searchData = await searchRes.json()
+  const items = searchData.items || []
+  if (items.length === 0) return []
+
+  // Step 2: get statistics for each channel
+  const ids = items.map(i => i.id.channelId).join(',')
+  const statsRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${ids}&key=${apiKey}`
+  )
+  const statsData = await statsRes.json()
+  const statsMap = {}
+  ;(statsData.items || []).forEach(ch => { statsMap[ch.id] = ch })
+
+  return items.map(item => {
+    const chId = item.id.channelId
+    const stats = statsMap[chId]
+    const subs = stats?.statistics?.subscriberCount
+    const subsFormatted = subs
+      ? subs >= 1_000_000 ? `${(subs / 1_000_000).toFixed(1)}M`
+      : subs >= 1_000 ? `${Math.round(subs / 1_000)}K`
+      : subs
+      : '—'
+    return {
+      id: chId,
+      name: item.snippet.channelTitle,
+      description: item.snippet.description,
+      thumbnail: item.snippet.thumbnails?.default?.url,
+      subscribers: subsFormatted,
+      channel_url: `https://www.youtube.com/channel/${chId}`,
+      videos: stats?.statistics?.videoCount || '—',
+    }
+  })
+}
 import useStore from '../../store/useStore'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 // CarouselStudio moved to /carousel route (Studio de Criação)
@@ -566,8 +611,29 @@ export default function TrendRadar() {
   const [savedIds, setSavedIds] = useState(new Set())
   const [creatorPlatformFilter, setCreatorPlatformFilter] = useState('all')
   const [creatorSearch, setCreatorSearch] = useState('')
+  const [ytResults, setYtResults] = useState([])
+  const [ytLoading, setYtLoading] = useState(false)
+  const [ytError, setYtError] = useState(null)
+  const [ytSearched, setYtSearched] = useState(false)
 
   const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
+  const hasYtKey  = !!localStorage.getItem(LS_YOUTUBE)
+
+  const handleYouTubeSearch = async () => {
+    const ytKey = localStorage.getItem(LS_YOUTUBE)
+    if (!ytKey || !trendResults?.topic) return
+    setYtLoading(true)
+    setYtError(null)
+    setYtSearched(true)
+    try {
+      const results = await searchYouTubeChannels(trendResults.topic, ytKey)
+      setYtResults(results)
+    } catch (e) {
+      setYtError(e.message)
+    } finally {
+      setYtLoading(false)
+    }
+  }
 
   const handleSearch = async () => {
     if (!topic.trim()) return
@@ -575,6 +641,9 @@ export default function TrendRadar() {
     setError(null)
     setLoadPhase(0)
     setActiveTab('overview')
+    setYtResults([])
+    setYtSearched(false)
+    setYtError(null)
 
     const phaseInterval = setInterval(() => {
       setLoadPhase((p) => (p < LOADING_PHASES.length - 1 ? p + 1 : p))
@@ -935,6 +1004,73 @@ export default function TrendRadar() {
                     </div>
                   )
                 })}
+              </div>
+
+              {/* ── YouTube real channels ── */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Youtube size={15} className="text-red-500" /> Canais Reais no YouTube
+                    {ytResults.length > 0 && <span className="text-[11px] text-gray-400 font-normal">· {ytResults.length} encontrados</span>}
+                  </h4>
+                  {hasYtKey ? (
+                    <button
+                      onClick={handleYouTubeSearch}
+                      disabled={ytLoading}
+                      className="flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                    >
+                      {ytLoading ? <><Loader2 size={12} className="animate-spin" /> Buscando...</> : <><Youtube size={12} /> {ytSearched ? 'Buscar novamente' : 'Buscar canais reais'}</>}
+                    </button>
+                  ) : (
+                    <a href="/settings" className="text-[11px] text-red-500 hover:underline flex items-center gap-1">
+                      <KeyRound size={11} /> Configure a chave YouTube em Configurações
+                    </a>
+                  )}
+                </div>
+
+                {ytError && (
+                  <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-[11px] text-red-700">
+                    <AlertCircle size={13} className="shrink-0 mt-0.5" /> {ytError}
+                  </div>
+                )}
+
+                {ytSearched && !ytLoading && ytResults.length === 0 && !ytError && (
+                  <p className="text-[11px] text-gray-400 text-center py-4">Nenhum canal encontrado para este tema no YouTube.</p>
+                )}
+
+                {ytResults.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {ytResults.map((ch) => (
+                      <a key={ch.id} href={ch.channel_url} target="_blank" rel="noopener noreferrer"
+                        className="card p-4 flex items-start gap-3 hover:border-red-300 transition-colors group">
+                        {ch.thumbnail
+                          ? <img src={ch.thumbnail} alt={ch.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100" />
+                          : <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-sm font-bold text-red-600 shrink-0">{ch.name.charAt(0)}</div>
+                        }
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-sm font-semibold text-gray-900 truncate group-hover:text-red-700 transition-colors">{ch.name}</span>
+                            <span className="text-red-400 shrink-0"><Youtube size={12} /></span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 mb-1.5">{ch.subscribers} inscritos · {ch.videos} vídeos</p>
+                          {ch.description && (
+                            <p className="text-[11px] text-gray-600 leading-relaxed line-clamp-2">{ch.description}</p>
+                          )}
+                          <div className="mt-2 flex items-center gap-1 text-[10px] text-red-500 font-medium">
+                            <ExternalLink size={9} /> Ver canal
+                          </div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {!ytSearched && (
+                  <div className="flex items-start gap-2 bg-gray-50 border border-dashed border-gray-200 rounded-xl px-3 py-3 text-[11px] text-gray-500">
+                    <Youtube size={13} className="text-red-400 shrink-0 mt-0.5" />
+                    <span>{hasYtKey ? 'Clique em "Buscar canais reais" para buscar criadores reais do YouTube sobre este tema.' : 'Configure sua chave da YouTube Data API em Configurações para ver criadores reais.'}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
