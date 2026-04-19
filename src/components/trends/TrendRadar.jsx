@@ -146,16 +146,25 @@ Respond with ONLY a valid JSON object, no markdown, no code blocks:
       "best_search_tip": "dica específica de como encontrar os melhores perfis nessa plataforma para esse nicho"
     }
   ],
+  "content_searches": [
+    {
+      "id": "s1",
+      "platform": "instagram",
+      "theme": "nome do tema ou subtópico específico",
+      "description": "descrição do que esse tema aborda e por que é relevante para '${topic}'",
+      "search_url": "URL clicável de busca — use hashtag ou keyword: Instagram=https://www.instagram.com/explore/tags/HASHTAG/, TikTok=https://www.tiktok.com/tag/HASHTAG, LinkedIn=https://www.linkedin.com/search/results/content/?keywords=TERM, YouTube=https://www.youtube.com/results?search_query=TERM",
+      "search_term": "o termo ou hashtag exato a buscar",
+      "why_relevant": "por que esse ângulo/tema é interessante para quem pesquisa '${topic}'"
+    }
+  ],
   "example_posts": [
     {
       "id": "p1",
-      "title": "título ou caption do post",
-      "creator": "nome do criador",
+      "title": "título ou tipo de conteúdo (descreva o ângulo, não invente um post real)",
       "platform": "platform",
       "format": "carrossel|reel|thread|video|artigo",
-      "engagement": "X.XK curtidas · XK comentários",
-      "url": "URL de busca relacionada",
-      "hook": "gancho usado no post"
+      "search_url": "URL de busca para encontrar posts desse tipo — Instagram=https://www.instagram.com/explore/tags/HASHTAG/, TikTok=https://www.tiktok.com/tag/HASHTAG, YouTube=https://www.youtube.com/results?search_query=TERM",
+      "hook": "tipo de gancho usado nesses posts"
     }
   ],
   "patterns": {
@@ -535,7 +544,7 @@ function IdeaCard({ idea, onSave, saved }) {
 const RESULT_TABS = [
   { id: 'overview',      label: 'Visão Geral',         icon: BarChart2 },
   { id: 'creators',      label: 'Onde Buscar',         icon: Users },
-  { id: 'posts',         label: 'Posts',               icon: FileText },
+  { id: 'content',       label: 'Buscar Conteúdo',     icon: Search },
   { id: 'patterns',      label: 'Padrões',             icon: TrendingUp },
   { id: 'gaps',          label: 'Lacunas',             icon: Filter },
   { id: 'opportunities', label: 'Oportunidades',       icon: Lightbulb },
@@ -744,7 +753,7 @@ export default function TrendRadar() {
                 Resultados para <span className="text-orange-600">"{trendResults.topic}"</span>
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {trendResults.creator_search?.length} plataformas para buscar · {trendResults.trends?.length} tendências · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
+                {trendResults.creator_search?.length} plataformas · {trendResults.content_searches?.length} temas para buscar · {trendResults.trends?.length} tendências · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
               </p>
             </div>
             {insights.length > 0 && (
@@ -761,7 +770,7 @@ export default function TrendRadar() {
                 overview: trendResults.trends?.length,
                 carousel: null,
                 creators: trendResults.creator_search?.length,
-                posts: trendResults.example_posts?.length,
+                content: trendResults.content_searches?.length,
                 patterns: trendResults.patterns?.recurring_hooks?.length,
                 gaps: trendResults.content_gaps?.length,
                 opportunities: trendResults.opportunities?.length,
@@ -930,15 +939,50 @@ export default function TrendRadar() {
             </div>
           )}
 
-          {/* ── Tab: Posts ───────────────────────────────────────────────────── */}
-          {activeTab === 'posts' && (
+          {/* ── Tab: Buscar Conteúdo ─────────────────────────────────────────── */}
+          {activeTab === 'content' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <FileText size={15} className="text-purple-500" /> Posts de Referência
-                <span className="text-[11px] text-gray-400 font-normal">· exemplos do que está performando</span>
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Search size={15} className="text-purple-500" /> Temas para Explorar
+                </h3>
+              </div>
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-700">
+                <span className="shrink-0 mt-0.5">ℹ️</span>
+                <span>Cada card abaixo é um <strong>ângulo ou subtema</strong> que aparece no universo de <strong>{trendResults.topic}</strong>. Clique em "Abrir busca" para ver posts reais sobre esse tema na plataforma.</span>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {(trendResults.example_posts || []).map((post) => <ExamplePostCard key={post.id} post={post} />)}
+                {(trendResults.content_searches || []).map((cs) => {
+                  const meta = PLATFORM_META[cs.platform]
+                  return (
+                    <div key={cs.id} className="card p-4 space-y-2.5 hover:border-purple-300 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{meta?.emoji || '🌐'}</span>
+                        <span className="text-[11px] font-medium text-gray-500">{meta?.label || cs.platform}</span>
+                        {cs.search_url && (
+                          <a href={cs.search_url} target="_blank" rel="noopener noreferrer"
+                            className="ml-auto flex items-center gap-1 text-[10px] font-medium text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded-lg transition-colors shrink-0">
+                            <ExternalLink size={10} /> Abrir busca
+                          </a>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{cs.theme}</p>
+                        {cs.search_term && (
+                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium mb-2">
+                            🔍 {cs.search_term}
+                          </span>
+                        )}
+                        {cs.description && <p className="text-[11px] text-gray-600 leading-relaxed">{cs.description}</p>}
+                      </div>
+                      {cs.why_relevant && (
+                        <div className="bg-orange-50 rounded-lg p-2 border border-orange-100">
+                          <p className="text-[10px] text-orange-700 leading-relaxed">💡 {cs.why_relevant}</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

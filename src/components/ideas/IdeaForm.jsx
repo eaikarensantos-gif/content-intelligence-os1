@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag, Sparkles, Loader2, Wand2, Zap } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import { lintText } from '../../utils/brandLinter'
@@ -53,6 +53,7 @@ const EMPTY = {
   caption: '',                // legenda
   cta: '',                    // call to action
   creation_order: null,       // ordem de criação/postagem
+  reference_links: [],        // links de referência
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -144,7 +145,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [generatingHook, setGeneratingHook] = useState(false)
   const [generatingCaption, setGeneratingCaption] = useState(false)
   const [generatingCta, setGeneratingCta] = useState(false)
+  const [linkInput, setLinkInput] = useState('')
   const tagRef = useRef(null)
+  const linkRef = useRef(null)
   // All unique tags from existing ideas (history)
   const allIdeas = useStore((s) => s.ideas)
   const tagHistory = useMemo(() => {
@@ -227,6 +230,16 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   }
 
   const removeTag = (tag) => set('tags', form.tags.filter((t) => t !== tag))
+
+  // ── Links de referência ─────────────────────────────────────────────────────
+  const addLink = (raw) => {
+    const url = raw.trim()
+    if (!url) return
+    const links = form.reference_links || []
+    if (!links.includes(url)) set('reference_links', [...links, url])
+    setLinkInput('')
+  }
+  const removeLink = (url) => set('reference_links', (form.reference_links || []).filter((l) => l !== url))
 
   // ── AI generation ─────────────────────────────────────────────────────────
   const handleGenerateTitle = async () => {
@@ -574,6 +587,53 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
                     #{t}
                   </button>
                 ))}
+            </div>
+          )}
+        </div>
+
+        {/* Links de referência */}
+        <div>
+          <label className="label">Links de Referência</label>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Link2 size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                ref={linkRef}
+                className="input pl-7 text-xs"
+                placeholder="https://... Cole o link e pressione Enter"
+                value={linkInput}
+                onChange={(e) => setLinkInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); addLink(linkInput) }
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => addLink(linkInput)}
+              disabled={!linkInput.trim()}
+              className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium border border-gray-200 disabled:opacity-40 transition-all"
+            >
+              Adicionar
+            </button>
+          </div>
+          {(form.reference_links || []).length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {(form.reference_links || []).map((url) => (
+                <div key={url} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                  <Link2 size={10} className="text-gray-400 shrink-0" />
+                  <a href={url} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 text-[11px] text-blue-600 hover:text-blue-800 truncate underline underline-offset-2">
+                    {url}
+                  </a>
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-500 shrink-0">
+                    <ExternalLink size={11} />
+                  </a>
+                  <button type="button" onClick={() => removeLink(url)} className="text-gray-300 hover:text-red-400 shrink-0 transition-colors">
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
