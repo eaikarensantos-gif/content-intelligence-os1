@@ -152,135 +152,60 @@ CREATOR SEARCH STRATEGY — CRITICAL RULES:
 - For each platform, provide: specific hashtags to search, keyword search terms, and a clear description of what type of creator to look for.
 - The search URLs must be real, clickable links using the exact hashtags/terms you provide.
 
-Respond with ONLY a valid JSON object, no markdown, no code blocks:
+Return ONLY a compact JSON object (no markdown). Generate exactly the counts shown — no more:
 {
   "topic": "${topic}",
   "overall_signal": "Emergente|Crescendo|Alto Momentum|Saturado",
   "signal_score": 0-100,
   "platform_signals": [
-    {
-      "platform": "tiktok",
-      "signal": "Fraco|Emergente|Forte|Alto Momentum",
-      "posts_per_week": "~XK posts/semana",
-      "growth_rate": "+X%",
-      "dominant_format": "formato dominante",
-      "key_insight": "insight específico sobre como o tópico performa nessa plataforma"
-    }
+    { "platform": "tiktok", "signal": "Fraco|Emergente|Forte|Alto Momentum", "posts_per_week": "~XK/sem", "growth_rate": "+X%", "dominant_format": "formato", "key_insight": "1 frase" },
+    { "platform": "instagram", "signal": "...", "posts_per_week": "...", "growth_rate": "...", "dominant_format": "...", "key_insight": "..." },
+    { "platform": "linkedin", "signal": "...", "posts_per_week": "...", "growth_rate": "...", "dominant_format": "...", "key_insight": "..." }
   ],
   "trends": [
-    {
-      "id": "t1",
-      "name": "nome específico da subtendência",
-      "classification": "Emergente|Crescendo|Alto Momentum|Saturado",
-      "description": "descrição detalhada em português",
-      "growth_rate": "+XX% em 30 dias",
-      "why_trending": "motivo específico pelo qual está crescendo",
-      "platforms": ["tiktok", "instagram"]
-    }
+    { "id": "t1", "name": "subtendência", "classification": "Emergente|Crescendo|Alto Momentum|Saturado", "description": "2 frases", "growth_rate": "+X%", "why_trending": "1 frase", "platforms": ["tiktok"] },
+    { "id": "t2", "name": "...", "classification": "...", "description": "...", "growth_rate": "...", "why_trending": "...", "platforms": ["instagram"] },
+    { "id": "t3", "name": "...", "classification": "...", "description": "...", "growth_rate": "...", "why_trending": "...", "platforms": ["linkedin"] }
   ],
   "creator_search": [
-    {
-      "id": "cs1",
-      "platform": "instagram",
-      "platform_search_url": "https://www.instagram.com/explore/tags/HASHTAG/",
-      "hashtags": ["#hashtag1real", "#hashtag2real"],
-      "keyword_searches": ["termo de busca 1", "termo de busca 2"],
-      "archetype": "Descrição do tipo de criador que faz esse conteúdo nessa plataforma — comportamento, estilo, tom",
-      "what_to_look_for": "O que observar no perfil para confirmar que é relevante (ex: frequência de posts, tipo de conteúdo, engajamento típico)",
-      "size_range": "10K–500K seguidores",
-      "best_search_tip": "dica específica de como encontrar os melhores perfis nessa plataforma para esse nicho"
-    }
+    { "id": "cs1", "platform": "instagram", "platform_search_url": "https://www.instagram.com/explore/tags/HASHTAG/", "hashtags": ["#tag1", "#tag2"], "keyword_searches": ["termo1", "termo2"], "archetype": "1 frase descrevendo o tipo de criador", "what_to_look_for": "1 frase", "size_range": "10K–500K", "best_search_tip": "1 frase" },
+    { "id": "cs2", "platform": "tiktok", "platform_search_url": "https://www.tiktok.com/tag/HASHTAG", "hashtags": ["#tag1"], "keyword_searches": ["termo1"], "archetype": "...", "what_to_look_for": "...", "size_range": "...", "best_search_tip": "..." },
+    { "id": "cs3", "platform": "youtube", "platform_search_url": "https://www.youtube.com/results?search_query=TERM", "hashtags": [], "keyword_searches": ["termo1", "termo2"], "archetype": "...", "what_to_look_for": "...", "size_range": "...", "best_search_tip": "..." }
   ],
   "content_searches": [
-    {
-      "id": "s1",
-      "platform": "instagram",
-      "theme": "nome do tema ou subtópico específico",
-      "description": "descrição do que esse tema aborda e por que é relevante para '${topic}'",
-      "search_url": "URL clicável de busca — use hashtag ou keyword: Instagram=https://www.instagram.com/explore/tags/HASHTAG/, TikTok=https://www.tiktok.com/tag/HASHTAG, LinkedIn=https://www.linkedin.com/search/results/content/?keywords=TERM, YouTube=https://www.youtube.com/results?search_query=TERM",
-      "search_term": "o termo ou hashtag exato a buscar",
-      "why_relevant": "por que esse ângulo/tema é interessante para quem pesquisa '${topic}'"
-    }
-  ],
-  "example_posts": [
-    {
-      "id": "p1",
-      "title": "título ou tipo de conteúdo (descreva o ângulo, não invente um post real)",
-      "platform": "platform",
-      "format": "carrossel|reel|thread|video|artigo",
-      "search_url": "URL de busca para encontrar posts desse tipo — Instagram=https://www.instagram.com/explore/tags/HASHTAG/, TikTok=https://www.tiktok.com/tag/HASHTAG, YouTube=https://www.youtube.com/results?search_query=TERM",
-      "hook": "tipo de gancho usado nesses posts"
-    }
+    { "id": "s1", "platform": "instagram", "theme": "nome do subtema", "description": "1 frase", "search_url": "https://www.instagram.com/explore/tags/HASHTAG/", "search_term": "#hashtag", "why_relevant": "1 frase" },
+    { "id": "s2", "platform": "tiktok", "theme": "...", "description": "...", "search_url": "https://www.tiktok.com/tag/HASHTAG", "search_term": "...", "why_relevant": "..." },
+    { "id": "s3", "platform": "youtube", "theme": "...", "description": "...", "search_url": "https://www.youtube.com/results?search_query=TERM", "search_term": "...", "why_relevant": "..." },
+    { "id": "s4", "platform": "linkedin", "theme": "...", "description": "...", "search_url": "https://www.linkedin.com/search/results/content/?keywords=TERM", "search_term": "...", "why_relevant": "..." },
+    { "id": "s5", "platform": "instagram", "theme": "...", "description": "...", "search_url": "...", "search_term": "...", "why_relevant": "..." }
   ],
   "patterns": {
     "recurring_hooks": [
-      {
-        "hook": "tipo do gancho",
-        "type": "lista|contrário|história|dados|problema|pergunta|curiosidade",
-        "frequency": "X% dos posts virais",
-        "example": "frase gancho exata e específica para '${topic}' em português",
-        "platforms": ["platform1"]
-      }
-    ],
-    "dominant_formats": [
-      {
-        "platform": "platform",
-        "formats": [
-          { "format": "formato", "dominance": "XX%", "trend": "+X%" }
-        ]
-      }
+      { "hook": "tipo", "type": "lista|contrário|história|dados|problema|pergunta", "frequency": "X%", "example": "frase gancho em português", "platforms": ["platform"] },
+      { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] },
+      { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] }
     ],
     "narrative_styles": [
-      {
-        "style": "nome do estilo narrativo",
-        "frequency": "XX%",
-        "description": "como esse estilo se manifesta no tópico",
-        "why_works": "por que funciona para essa audiência"
-      }
+      { "style": "nome", "frequency": "X%", "description": "1 frase", "why_works": "1 frase" },
+      { "style": "...", "frequency": "...", "description": "...", "why_works": "..." }
     ],
-    "retention_techniques": [
-      {
-        "technique": "nome da técnica",
-        "description": "descrição da técnica",
-        "example": "exemplo de aplicação específica para o tópico"
-      }
-    ],
-    "emerging_topics": ["subtópico1", "subtópico2", "subtópico3", "subtópico4", "subtópico5", "subtópico6"]
+    "emerging_topics": ["subtópico1", "subtópico2", "subtópico3", "subtópico4"]
   },
   "content_gaps": [
-    {
-      "id": "g1",
-      "gap": "lacuna de conteúdo específica",
-      "description": "por que essa perspectiva está faltando e qual a oportunidade",
-      "opportunity_level": "Alta|Média|Baixa",
-      "platforms": ["platform1", "platform2"]
-    }
+    { "id": "g1", "gap": "lacuna específica", "description": "1 frase", "opportunity_level": "Alta|Média|Baixa", "platforms": ["platform"] },
+    { "id": "g2", "gap": "...", "description": "...", "opportunity_level": "...", "platforms": ["..."] }
   ],
   "opportunities": [
-    {
-      "id": "o1",
-      "title": "título específico de conteúdo",
-      "description": "descrição detalhada do ângulo e proposta de valor",
-      "hook": "tipo de gancho",
-      "hook_example": "frase exata de abertura em português",
-      "format": "carrossel|reel|thread|video|artigo",
-      "platform": "platform",
-      "potential": "Very High|High|Medium|Low",
-      "content_gap": "qual lacuna preenche",
-      "why_now": "por que criar isso agora"
-    }
+    { "id": "o1", "title": "título do conteúdo", "description": "2 frases", "hook": "tipo", "hook_example": "frase exata em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "potential": "Very High|High|Medium", "why_now": "1 frase" },
+    { "id": "o2", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." },
+    { "id": "o3", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." }
   ],
   "ideas": [
-    {
-      "id": "i1",
-      "title": "título da ideia de conteúdo",
-      "hook": "tipo",
-      "hook_suggestion": "frase exata de abertura irresistível em português",
-      "format": "carrossel|reel|thread|video|artigo",
-      "platform": "platform",
-      "priority": "high|medium|low",
-      "angle": "ângulo único que diferencia do conteúdo comum"
-    }
+    { "id": "i1", "title": "título da ideia", "hook": "tipo", "hook_suggestion": "frase de abertura em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "priority": "high|medium|low", "angle": "diferencial em 1 frase" },
+    { "id": "i2", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
+    { "id": "i3", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
+    { "id": "i4", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
+    { "id": "i5", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." }
   ]
 }`
 
@@ -293,8 +218,8 @@ Respond with ONLY a valid JSON object, no markdown, no code blocks:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
       system: 'You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.',
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -647,7 +572,7 @@ export default function TrendRadar() {
 
     const phaseInterval = setInterval(() => {
       setLoadPhase((p) => (p < LOADING_PHASES.length - 1 ? p + 1 : p))
-    }, 1100)
+    }, 600)
 
     try {
       const apiKey = localStorage.getItem('cio-anthropic-key')
