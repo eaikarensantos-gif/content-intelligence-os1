@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag, Sparkles, Loader2 } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2, Wand2, Zap } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import { lintText } from '../../utils/brandLinter'
@@ -58,6 +58,43 @@ const EMPTY = {
 // ─── Componente principal ─────────────────────────────────────────────────────
 async function generateWithAI(apiKey, type, context) {
   const prompts = {
+    title: `Você é especialista em títulos de conteúdo para criadores brasileiros. Crie 4 opções de título para o seguinte conteúdo.
+
+${context.description ? `Ideia/Descrição: ${context.description}` : ''}
+${context.topic ? `Nicho: ${context.topic}` : ''}
+Formato: ${context.format || 'video'}
+Plataforma: ${context.platforms?.join(', ') || 'Instagram'}
+
+REGRAS OBRIGATÓRIAS:
+- Títulos CHAMATIVOS mas 100% honestos — sem exagero, sem clickbait
+- PROIBIDO: "Incrível", "Chocante", "Você não vai acreditar", "NUNCA", "SEMPRE", extremismos
+- Use especificidade real (números, situações concretas, nomes de conceitos)
+- Pode usar contrário, pergunta, dado, problema — desde que seja verdadeiro
+- Tom: inteligente, direto, maduro — como um especialista falaria
+- Máximo 80 caracteres por título
+
+Retorne APENAS um JSON válido com array de 4 strings, sem markdown:
+["Título 1", "Título 2", "Título 3", "Título 4"]`,
+
+    hook: `Você é especialista em ganchos (hooks) para criadores de conteúdo brasileiros.
+
+Título do conteúdo: ${context.title}
+${context.description ? `Contexto: ${context.description.slice(0, 300)}` : ''}
+${context.topic ? `Nicho: ${context.topic}` : ''}
+Tipo de gancho: ${context.hook_type || 'problema'}
+Formato: ${context.format || 'video'}
+
+Crie UM gancho de alta conversão para abrir este conteúdo.
+
+REGRAS:
+- Primeira frase ou parágrafo curto (máximo 3 frases)
+- Chame atenção SEM clickbait nem exagero
+- Use a tensão real do problema, dado ou contrário
+- Tom humano, específico, inteligente
+- PROIBIDO: frases genéricas, superlativo vazio, mentira ou medo exagerado
+
+Responda APENAS com o texto do gancho, sem explicações nem formatação.`,
+
     caption: `Você é um copywriter expert em redes sociais brasileiras. Gere UMA legenda engajadora para o seguinte conteúdo. A legenda deve ser natural, conversacional e adequada para ${context.platforms?.join(', ') || 'Instagram'}.
 
 Título: ${context.title}
@@ -73,6 +110,7 @@ Regras:
 - Termine com uma pergunta ou reflexão que gere comentários
 
 Responda APENAS com a legenda, sem explicações.`,
+
     cta: `Você é especialista em CTAs (Call to Action) para redes sociais brasileiras. Gere UM CTA altamente engajador para o seguinte conteúdo.
 
 Título: ${context.title}
@@ -92,7 +130,7 @@ Responda APENAS com o CTA, sem explicações.`,
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, messages: [{ role: 'user', content: prompts[type] }] }),
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{ role: 'user', content: prompts[type] }] }),
   })
   const data = await res.json()
   return data.content?.[0]?.text || ''
@@ -101,6 +139,9 @@ Responda APENAS com o CTA, sem explicações.`,
 export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [form, setForm] = useState(EMPTY)
   const [tagInput, setTagInput] = useState('')
+  const [generatingTitle, setGeneratingTitle] = useState(false)
+  const [titleSuggestions, setTitleSuggestions] = useState([])
+  const [generatingHook, setGeneratingHook] = useState(false)
   const [generatingCaption, setGeneratingCaption] = useState(false)
   const [generatingCta, setGeneratingCta] = useState(false)
   const tagRef = useRef(null)
@@ -188,6 +229,35 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const removeTag = (tag) => set('tags', form.tags.filter((t) => t !== tag))
 
   // ── AI generation ─────────────────────────────────────────────────────────
+  const handleGenerateTitle = async () => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
+    if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a descrição ou tópico para gerar títulos.'); return }
+    setGeneratingTitle(true)
+    setTitleSuggestions([])
+    try {
+      const raw = await generateWithAI(apiKey, 'title', form)
+      const parsed = JSON.parse(raw.trim())
+      if (Array.isArray(parsed)) setTitleSuggestions(parsed.filter(Boolean))
+    } catch { /* silent */ }
+    setGeneratingTitle(false)
+  }
+
+  const handleGenerateHook = async () => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
+    if (!form.title.trim()) { alert('Preencha o título antes de gerar o gancho.'); return }
+    setGeneratingHook(true)
+    try {
+      const hook = await generateWithAI(apiKey, 'hook', form)
+      if (hook.trim()) {
+        set('description', hook.trim() + (form.description.trim() ? '\n\n' + form.description.trim() : ''))
+        setTimeout(() => autoResizeDesc(descRef.current), 50)
+      }
+    } catch { /* silent */ }
+    setGeneratingHook(false)
+  }
+
   const handleGenerateAI = async (type) => {
     const apiKey = localStorage.getItem(LS_KEY)
     if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
@@ -225,19 +295,57 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
         {/* Título */}
         <div>
-          <label className="label">Título *</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">Título *</label>
+            <button
+              type="button"
+              onClick={handleGenerateTitle}
+              disabled={generatingTitle}
+              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 font-medium transition-all disabled:opacity-50"
+            >
+              {generatingTitle ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
+              {generatingTitle ? 'Gerando...' : 'Gerar Títulos'}
+            </button>
+          </div>
           <input
             className="input"
             placeholder="ex: 5 Ferramentas de IA Que Todo Criador Precisa"
             value={form.title}
-            onChange={(e) => set('title', e.target.value)}
+            onChange={(e) => { set('title', e.target.value); setTitleSuggestions([]) }}
             required
           />
+          {/* Title suggestions */}
+          {titleSuggestions.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Clique para usar:</p>
+              {titleSuggestions.map((t, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { set('title', t); setTitleSuggestions([]) }}
+                  className="w-full text-left text-xs px-3 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 hover:border-violet-300 transition-all leading-snug"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Descrição */}
         <div>
-          <label className="label">Descrição</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">Descrição</label>
+            <button
+              type="button"
+              onClick={handleGenerateHook}
+              disabled={generatingHook}
+              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 font-medium transition-all disabled:opacity-50"
+            >
+              {generatingHook ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
+              {generatingHook ? 'Gerando...' : 'Gerar Gancho'}
+            </button>
+          </div>
           <textarea
             ref={descRef}
             className="input resize-none min-h-[80px]"
