@@ -101,14 +101,11 @@ CRITICAL RULES:
 - Hook examples must be SPECIFIC to topic "${topic}", not generic
 - Content gaps must be REAL underexplored angles about "${topic}"
 
-CREATOR LIST RULES — READ CAREFULLY:
-- Include 15 creators. Prioritize MID-TIER (10K–500K followers) and MICRO (1K–10K) creators who actually specialize in "${topic}". Do NOT pad the list with mega-celebrities just because they are famous.
-- ONLY include a creator if their PRIMARY content is genuinely about "${topic}" or a direct sub-niche of it. A famous TV presenter, actor, comedian, or general entertainer should NOT appear unless their main content feed is specifically about this topic.
-- If you are NOT confident a specific creator makes content about "${topic}", describe the ARCHETYPE instead: use a descriptive name like "Criador de conteúdo corporate humor no TikTok BR" and set handle to "@buscar: corporate relatable brasil" and profile_url to the appropriate search URL. This is better than listing a wrong real person.
-- For creators you ARE confident about: use their real handle and name
-- For profile_url use search URLs: LinkedIn=https://www.linkedin.com/search/results/people/?keywords=NAME, Instagram=https://www.instagram.com/explore/search/keyword/?q=HANDLE, TikTok=https://www.tiktok.com/search?q=HANDLE, YouTube=https://www.youtube.com/results?search_query=NAME, Twitter=https://x.com/search?q=HANDLE&f=user
-- Mark each creator with "verified": true if you are confident they create content on this topic, or "verified": false if you are describing an archetype/search suggestion
-- Prioritize creators who are actively posting about "${topic}" in the last 6 months
+CREATOR SEARCH STRATEGY — CRITICAL RULES:
+- Do NOT invent or name specific real people. Claude does not have real-time social media data.
+- Instead, generate actionable search intelligence per platform so the user can find real creators themselves.
+- For each platform, provide: specific hashtags to search, keyword search terms, and a clear description of what type of creator to look for.
+- The search URLs must be real, clickable links using the exact hashtags/terms you provide.
 
 Respond with ONLY a valid JSON object, no markdown, no code blocks:
 {
@@ -136,19 +133,17 @@ Respond with ONLY a valid JSON object, no markdown, no code blocks:
       "platforms": ["tiktok", "instagram"]
     }
   ],
-  "creators": [
+  "creator_search": [
     {
-      "id": "c1",
-      "name": "Nome do Criador",
-      "handle": "@handle",
+      "id": "cs1",
       "platform": "instagram",
-      "followers": "XXK",
-      "profile_url": "URL de busca",
-      "niche": "nicho específico",
-      "avg_engagement": "X.X%",
-      "recent_topics": ["tópico1", "tópico2"],
-      "why_relevant": "por que é relevante especificamente para o tópico",
-      "verified": true
+      "platform_search_url": "https://www.instagram.com/explore/tags/HASHTAG/",
+      "hashtags": ["#hashtag1real", "#hashtag2real"],
+      "keyword_searches": ["termo de busca 1", "termo de busca 2"],
+      "archetype": "Descrição do tipo de criador que faz esse conteúdo nessa plataforma — comportamento, estilo, tom",
+      "what_to_look_for": "O que observar no perfil para confirmar que é relevante (ex: frequência de posts, tipo de conteúdo, engajamento típico)",
+      "size_range": "10K–500K seguidores",
+      "best_search_tip": "dica específica de como encontrar os melhores perfis nessa plataforma para esse nicho"
     }
   ],
   "example_posts": [
@@ -539,7 +534,7 @@ function IdeaCard({ idea, onSave, saved }) {
 // ─── Tabs config ───────────────────────────────────────────────────────────────
 const RESULT_TABS = [
   { id: 'overview',      label: 'Visão Geral',         icon: BarChart2 },
-  { id: 'creators',      label: 'Criadores',           icon: Users },
+  { id: 'creators',      label: 'Onde Buscar',         icon: Users },
   { id: 'posts',         label: 'Posts',               icon: FileText },
   { id: 'patterns',      label: 'Padrões',             icon: TrendingUp },
   { id: 'gaps',          label: 'Lacunas',             icon: Filter },
@@ -749,7 +744,7 @@ export default function TrendRadar() {
                 Resultados para <span className="text-orange-600">"{trendResults.topic}"</span>
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {trendResults.creators?.length} criadores · {trendResults.trends?.length} tendências · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
+                {trendResults.creator_search?.length} plataformas para buscar · {trendResults.trends?.length} tendências · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
               </p>
             </div>
             {insights.length > 0 && (
@@ -765,7 +760,7 @@ export default function TrendRadar() {
               const counts = {
                 overview: trendResults.trends?.length,
                 carousel: null,
-                creators: trendResults.creators?.length,
+                creators: trendResults.creator_search?.length,
                 posts: trendResults.example_posts?.length,
                 patterns: trendResults.patterns?.recurring_hooks?.length,
                 gaps: trendResults.content_gaps?.length,
@@ -836,59 +831,104 @@ export default function TrendRadar() {
             </div>
           )}
 
-          {/* ── Tab: Criadores ───────────────────────────────────────────────── */}
-          {activeTab === 'creators' && (() => {
-            const allCreators = trendResults.creators || []
-            const platforms = [...new Set(allCreators.map(c => c.platform))].sort()
-            const filtered = allCreators.filter(c => {
-              if (creatorPlatformFilter !== 'all' && c.platform !== creatorPlatformFilter) return false
-              if (creatorSearch && !c.name.toLowerCase().includes(creatorSearch.toLowerCase()) && !(c.handle || '').toLowerCase().includes(creatorSearch.toLowerCase()) && !(c.niche || '').toLowerCase().includes(creatorSearch.toLowerCase())) return false
-              return true
-            })
-            return (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <Users size={15} className="text-blue-500" /> Criadores Relevantes
-                    <span className="text-[11px] text-gray-400 font-normal">· {filtered.length} de {allCreators.length}</span>
-                  </h3>
-                  <div className="flex items-center gap-2 ml-auto flex-wrap">
-                    <div className="relative">
-                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input value={creatorSearch} onChange={e => setCreatorSearch(e.target.value)} placeholder="Buscar criador..."
-                        className="pl-8 pr-3 py-1.5 text-[11px] border border-gray-200 rounded-lg outline-none focus:border-orange-300 w-40" />
-                    </div>
-                    <div className="flex gap-1">
-                      <button onClick={() => setCreatorPlatformFilter('all')}
-                        className={`text-[10px] px-2 py-1 rounded-md border font-medium transition-all ${creatorPlatformFilter === 'all' ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                        Todos
-                      </button>
-                      {platforms.map(p => {
-                        const meta = PLATFORM_META[p]
-                        return (
-                          <button key={p} onClick={() => setCreatorPlatformFilter(p)}
-                            className={`text-[10px] px-2 py-1 rounded-md border font-medium transition-all ${creatorPlatformFilter === p ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                            {meta?.emoji || '🌐'} {p.charAt(0).toUpperCase() + p.slice(1)}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-[11px] text-amber-700">
-                  <span className="shrink-0 mt-0.5">⚠️</span>
-                  <span><strong>Dados gerados por IA:</strong> criadores marcados como "IA confirmou nicho" são pessoas reais que o modelo conhece. Criadores "Sugestão de busca" são arquétipos — use o link para encontrar perfis reais. <strong>Sempre verifique antes de usar.</strong></span>
-                </div>
-                {filtered.length === 0 ? (
-                  <div className="text-center py-8 text-sm text-gray-400">Nenhum criador encontrado com esses filtros</div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {filtered.map((c) => <CreatorCard key={c.id} creator={c} />)}
-                  </div>
-                )}
+          {/* ── Tab: Onde Buscar Criadores ───────────────────────────────────── */}
+          {activeTab === 'creators' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Users size={15} className="text-blue-500" /> Como Encontrar Criadores Reais
+                </h3>
               </div>
-            )
-          })()}
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-700">
+                <span className="shrink-0 mt-0.5">ℹ️</span>
+                <span>A IA não tem acesso a dados reais de redes sociais. Em vez de inventar perfis, aqui estão <strong>estratégias de busca por plataforma</strong> para você encontrar criadores reais que fazem conteúdo sobre <strong>{trendResults.topic}</strong>.</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(trendResults.creator_search || []).map((cs) => {
+                  const meta = PLATFORM_META[cs.platform]
+                  return (
+                    <div key={cs.id} className="card p-4 space-y-3 hover:border-blue-300 transition-colors">
+                      {/* Platform header */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{meta?.emoji || '🌐'}</span>
+                        <span className="text-sm font-semibold text-gray-900">{meta?.label || cs.platform}</span>
+                        {cs.platform_search_url && (
+                          <a href={cs.platform_search_url} target="_blank" rel="noopener noreferrer"
+                            className="ml-auto flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded-lg transition-colors">
+                            <ExternalLink size={10} /> Abrir busca
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Archetype */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tipo de criador a procurar</p>
+                        <p className="text-xs text-gray-700 leading-relaxed">{cs.archetype}</p>
+                      </div>
+
+                      {/* Hashtags */}
+                      {cs.hashtags?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Hashtags para buscar</p>
+                          <div className="flex flex-wrap gap-1">
+                            {cs.hashtags.map((h) => {
+                              const term = h.replace(/^#/, '')
+                              const searchUrls = {
+                                instagram: `https://www.instagram.com/explore/tags/${term}/`,
+                                tiktok: `https://www.tiktok.com/tag/${term}`,
+                                linkedin: `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(h)}`,
+                                youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(h)}`,
+                                twitter: `https://x.com/search?q=${encodeURIComponent(h)}&f=live`,
+                              }
+                              const url = searchUrls[cs.platform] || `https://www.google.com/search?q=${encodeURIComponent(h + ' ' + cs.platform)}`
+                              return (
+                                <a key={h} href={url} target="_blank" rel="noopener noreferrer"
+                                  className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200 font-medium transition-colors">
+                                  {h}
+                                </a>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Keyword searches */}
+                      {cs.keyword_searches?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Termos de busca</p>
+                          <div className="flex flex-wrap gap-1">
+                            {cs.keyword_searches.map((kw) => {
+                              const searchUrls = {
+                                instagram: `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(kw)}`,
+                                tiktok: `https://www.tiktok.com/search?q=${encodeURIComponent(kw)}`,
+                                linkedin: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(kw)}`,
+                                youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(kw)}`,
+                                twitter: `https://x.com/search?q=${encodeURIComponent(kw)}&f=user`,
+                              }
+                              const url = searchUrls[cs.platform] || `https://www.google.com/search?q=${encodeURIComponent(kw + ' ' + cs.platform)}`
+                              return (
+                                <a key={kw} href={url} target="_blank" rel="noopener noreferrer"
+                                  className="text-[10px] px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 font-medium transition-colors flex items-center gap-0.5">
+                                  <Search size={8} /> {kw}
+                                </a>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* What to look for + tip */}
+                      <div className="bg-orange-50 rounded-lg p-2.5 border border-orange-100 space-y-1.5">
+                        {cs.size_range && <p className="text-[10px] text-orange-600 font-semibold">🎯 Faixa ideal: {cs.size_range}</p>}
+                        {cs.what_to_look_for && <p className="text-[10px] text-orange-700 leading-relaxed">{cs.what_to_look_for}</p>}
+                        {cs.best_search_tip && <p className="text-[10px] text-orange-600 italic leading-relaxed">💡 {cs.best_search_tip}</p>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ── Tab: Posts ───────────────────────────────────────────────────── */}
           {activeTab === 'posts' && (
@@ -1107,7 +1147,7 @@ export default function TrendRadar() {
 
           <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl">
             {[
-              { icon: Users, label: '15+ criadores', desc: 'com links clicáveis' },
+              { icon: Users, label: 'Onde buscar', desc: 'hashtags e buscas reais por plataforma' },
               { icon: TrendingUp, label: 'Padrões detectados', desc: 'hooks, formatos, narrativas' },
               { icon: Target, label: 'Lacunas de conteúdo', desc: 'ângulos inexplorados' },
               { icon: Sparkles, label: 'Ideias geradas', desc: 'prontas para o Hub' },
