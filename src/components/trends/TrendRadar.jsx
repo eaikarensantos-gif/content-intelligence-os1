@@ -220,7 +220,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 6000,
+      max_tokens: 8192,
       system: 'You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.',
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -233,28 +233,43 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
 
   const data = await response.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
+  const match = raw.match(/\{[\s\S]*/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
-  // Sanitize common AI JSON mistakes: trailing commas before ] or }
-  let sanitized = match[0]
-    .replace(/,\s*]/g, ']')
-    .replace(/,\s*}/g, '}')
-  try {
-    return JSON.parse(sanitized)
-  } catch {
-    // JSON was truncated — close open arrays/objects and retry
-    const opens = (sanitized.match(/[\[{]/g) || []).length
-    const closes = (sanitized.match(/[\]}]/g) || []).length
-    let patched = sanitized
-    // Remove last incomplete entry (likely cut mid-value)
-    patched = patched.replace(/,\s*"[^"]*"\s*:\s*[^,}\]]*$/, '')
-    patched = patched.replace(/,\s*"[^"]*"?\s*$/, '')
-    // Close unclosed structures
-    const depth = opens - closes
-    for (let i = 0; i < depth; i++) patched += (patched.trimEnd().endsWith('{') || patched.trimEnd().endsWith(',') ? '' : '') + '}'
-    patched = patched.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']')
-    return JSON.parse(patched)
+  return repairAndParseJSON(match[0])
+}
+
+function repairAndParseJSON(raw) {
+  // Fix obvious trailing-comma mistakes first
+  let s = raw.replace(/,(\s*[}\]])/g, '$1')
+  // Try clean parse
+  try { return JSON.parse(s) } catch { /* continue to repair */ }
+
+  // Walk the string tracking open brackets (respecting strings and escapes)
+  // so we can close any unclosed structures after truncation
+  const stack = []
+  let inStr = false, esc = false
+  let lastSafeIdx = 0 // last position that was a complete value boundary
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i]
+    if (esc) { esc = false; continue }
+    if (ch === '\\' && inStr) { esc = true; continue }
+    if (ch === '"') { inStr = !inStr; continue }
+    if (inStr) continue
+    if (ch === '{' || ch === '[') { stack.push(ch === '{' ? '}' : ']') }
+    else if (ch === '}' || ch === ']') {
+      if (stack.length) stack.pop()
+      lastSafeIdx = i // after closing a bracket we're at a safe boundary
+    }
   }
+
+  // Truncate to last safe boundary, close open structures
+  let trimmed = s.slice(0, lastSafeIdx + 1)
+  trimmed = trimmed.replace(/,(\s*)$/, '$1') // remove trailing comma
+  trimmed += stack.reverse().join('')
+  trimmed = trimmed.replace(/,(\s*[}\]])/g, '$1')
+
+  return JSON.parse(trimmed)
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
