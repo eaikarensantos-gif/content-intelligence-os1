@@ -270,7 +270,17 @@ export default function Sidebar({ isOpen, onClose }) {
           />
         </div>
 
-        {/* Theme toggle + User */}
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-orange-200 bg-white hover:bg-orange-50 transition-colors text-sm font-medium text-gray-600 hover:text-orange-700"
+        >
+          {theme === 'dark'
+            ? <><Sun size={16} className="text-orange-500" /> Modo Claro</>
+            : <><Moon size={16} className="text-orange-500" /> Modo Escuro</>}
+        </button>
+
+        {/* User */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-xs font-bold text-white">
             CU
@@ -279,13 +289,6 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="text-xs font-medium text-gray-800 truncate">Usuário Criador</div>
             <div className="text-[10px] text-gray-400">Plano Pro</div>
           </div>
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
-            className="p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-colors shrink-0"
-          >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
         </div>
       </div>
     </aside>
