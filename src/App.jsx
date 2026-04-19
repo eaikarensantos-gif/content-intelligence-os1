@@ -7,6 +7,7 @@ import Dashboard from './components/dashboard/Dashboard'
 import IdeasHub from './components/ideas/IdeasHub'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
+import SocialDashboard from './components/analytics/SocialDashboard'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
 import VideoEditor from './components/video/VideoEditor'
 import ThoughtCapture from './components/thoughts/ThoughtCapture'
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="/ideas" element={<IdeasHub />} />
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/social" element={<SocialDashboard />} />
             <Route path="/video" element={<VideoAnalyzer />} />
             <Route path="/video-editor" element={<VideoEditor />} />
             <Route path="/create" element={<UnifiedCreator />} />

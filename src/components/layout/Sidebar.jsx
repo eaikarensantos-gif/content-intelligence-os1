@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors, Activity,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -22,6 +22,7 @@ const NAV_GROUPS = [
     label: 'Inteligência',
     children: [
       { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+      { to: '/social', icon: Activity, label: 'Social Dashboard' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
       { to: '/trends', icon: Radar, label: 'Creator Insights' },
