@@ -9,7 +9,7 @@ import {
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
   Upload, AlignLeft, Info, Bookmark, BookMarked, Pencil, MessageSquare, Send, Loader2,
-  Scissors, Download,
+  Scissors, Download, Languages,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
@@ -819,6 +819,37 @@ export default function VideoAnalyzer() {
   const [improvedScript, setImprovedScript] = useState(null)
   const [generatingImproved, setGeneratingImproved] = useState(false)
   const analysisTranscriptRef = useRef('')  // transcript actually used in current analysis
+  const [translating, setTranslating] = useState(false)
+
+  const handleTranslate = async (getText, setText) => {
+    const text = getText()
+    if (!text || text.trim().length < 10 || !apiKey) return
+    setTranslating(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: `Traduza o texto abaixo para português brasileiro de forma fiel e natural. Mantenha a formatação, parágrafos e estrutura original. Retorne APENAS a tradução, sem introdução nem comentários.\n\n${text.trim()}` }],
+        }),
+      })
+      if (!res.ok) throw new Error('API error')
+      const data = await res.json()
+      const translated = data.content?.[0]?.text || ''
+      if (translated.trim()) setText(translated.trim())
+    } catch (e) {
+      console.error('Translation failed:', e)
+    } finally {
+      setTranslating(false)
+    }
+  }
 
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
@@ -1523,6 +1554,17 @@ Responda APENAS com este JSON:
                   value={scriptText}
                   onChange={(e) => setScriptText(e.target.value)}
                 />
+                {scriptText.trim().length > 10 && (
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={() => handleTranslate(() => scriptText, setScriptText)}
+                      disabled={translating}
+                      className="flex items-center gap-1 text-[10px] font-medium text-indigo-500 hover:text-indigo-700 disabled:opacity-50 transition-colors"
+                    >
+                      {translating ? <><RefreshCw size={10} className="animate-spin" /> Traduzindo...</> : <><Languages size={10} /> Traduzir para PT</>}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
@@ -1824,14 +1866,25 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                 />
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-[10px] text-gray-400">{transcript.length} caracteres</p>
-                  {transcript.trim().length > 0 && (
-                    <button
-                      onClick={() => setTranscript('')}
-                      className="text-[10px] text-gray-400 hover:text-red-400 transition-colors"
-                    >
-                      Limpar
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {transcript.trim().length > 10 && (
+                      <button
+                        onClick={() => handleTranslate(() => transcript, setTranscript)}
+                        disabled={translating}
+                        className="flex items-center gap-1 text-[10px] font-medium text-indigo-500 hover:text-indigo-700 disabled:opacity-50 transition-colors"
+                      >
+                        {translating ? <><RefreshCw size={10} className="animate-spin" /> Traduzindo...</> : <><Languages size={10} /> Traduzir para PT</>}
+                      </button>
+                    )}
+                    {transcript.trim().length > 0 && (
+                      <button
+                        onClick={() => setTranscript('')}
+                        className="text-[10px] text-gray-400 hover:text-red-400 transition-colors"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2545,12 +2598,21 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                       <h3 className="text-sm font-semibold text-gray-900">Transcrição Real</h3>
                       <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">✦ Conteúdo original</span>
                     </div>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(transcript)}
-                      className="btn-secondary text-xs"
-                    >
-                      <Copy size={12} /> Copiar
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleTranslate(() => transcript, setTranscript)}
+                        disabled={translating}
+                        className="flex items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-1.5 disabled:opacity-50 transition-colors"
+                      >
+                        {translating ? <><RefreshCw size={11} className="animate-spin" /> Traduzindo...</> : <><Languages size={11} /> Traduzir para PT</>}
+                      </button>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(transcript)}
+                        className="btn-secondary text-xs"
+                      >
+                        <Copy size={12} /> Copiar
+                      </button>
+                    </div>
                   </div>
                   <div className="card p-5 bg-emerald-50/20 border border-emerald-100 space-y-3">
                     <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-semibold uppercase tracking-wide">
