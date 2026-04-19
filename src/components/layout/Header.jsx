@@ -30,6 +30,7 @@ export default function Header({ onMenuClick }) {
   const info = TITLES[pathname] || TITLES['/']
   const isCreateChild = CREATE_ROUTES.has(pathname)
   const favorites = useStore((s) => s.favorites)
+  const unseenFavorites = useStore((s) => s.unseenFavorites)
   const toggleFavorites = useStore((s) => s.toggleFavorites)
 
   return (
@@ -66,9 +67,9 @@ export default function Header({ onMenuClick }) {
           aria-label="Abrir favoritos"
         >
           <Heart size={15} className={favorites.length > 0 ? 'fill-red-500 text-red-500' : ''} />
-          {favorites.length > 0 && (
+          {unseenFavorites > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center px-1 text-[9px] font-bold bg-red-500 text-white rounded-full">
-              {favorites.length}
+              {unseenFavorites}
             </span>
           )}
         </button>

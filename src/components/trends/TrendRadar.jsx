@@ -5,6 +5,7 @@ import {
   MessageSquare, Layout, BookOpen, Target, AlertCircle,
   Flame, Sparkles, Globe, Check, ArrowUpRight, Hash,
   FileText, Eye, Filter, KeyRound, Layers, Youtube, RefreshCw,
+  Heart, Bookmark,
 } from 'lucide-react'
 
 const LS_YOUTUBE = 'cio-youtube-key'
@@ -219,7 +220,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
+      max_tokens: 6000,
       system: 'You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.',
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -235,10 +236,25 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
   // Sanitize common AI JSON mistakes: trailing commas before ] or }
-  const sanitized = match[0]
+  let sanitized = match[0]
     .replace(/,\s*]/g, ']')
     .replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  try {
+    return JSON.parse(sanitized)
+  } catch {
+    // JSON was truncated — close open arrays/objects and retry
+    const opens = (sanitized.match(/[\[{]/g) || []).length
+    const closes = (sanitized.match(/[\]}]/g) || []).length
+    let patched = sanitized
+    // Remove last incomplete entry (likely cut mid-value)
+    patched = patched.replace(/,\s*"[^"]*"\s*:\s*[^,}\]]*$/, '')
+    patched = patched.replace(/,\s*"[^"]*"?\s*$/, '')
+    // Close unclosed structures
+    const depth = opens - closes
+    for (let i = 0; i < depth; i++) patched += (patched.trimEnd().endsWith('{') || patched.trimEnd().endsWith(',') ? '' : '') + '}'
+    patched = patched.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']')
+    return JSON.parse(patched)
+  }
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -415,6 +431,13 @@ function HookCard({ hook }) {
 
 function OpportunityCard({ opp, onSave, saved }) {
   const [expanded, setExpanded] = useState(false)
+  const addFavorite = useStore((s) => s.addFavorite)
+  const favorites = useStore((s) => s.favorites)
+  const isFav = favorites.some((f) => f.type === 'insight' && f.title === opp.title)
+  const toggleFav = (e) => {
+    e.stopPropagation()
+    if (!isFav) addFavorite({ type: 'insight', title: opp.title, content: [opp.description, opp.hook_example ? `\nGancho: "${opp.hook_example}"` : '', opp.why_now ? `\nPor que agora: ${opp.why_now}` : ''].filter(Boolean).join(''), source: 'Creator Insights · Oportunidades' })
+  }
   return (
     <div className={`card p-4 space-y-3 hover:border-orange-300 transition-all ${saved ? 'opacity-60' : ''}`}>
       {saved && (
@@ -424,9 +447,14 @@ function OpportunityCard({ opp, onSave, saved }) {
       )}
       <div className="flex items-start justify-between gap-2">
         <h4 className="text-sm font-semibold text-gray-900 flex-1 leading-snug">{opp.title}</h4>
-        <span className={`chip border shrink-0 text-[10px] ${POTENTIAL_COLORS[opp.potential] || POTENTIAL_COLORS['Medium']}`}>
-          {POTENTIAL_LABELS[opp.potential] || opp.potential}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={toggleFav} title={isFav ? 'Nos favoritos' : 'Salvar nos favoritos'} className={`p-1 rounded-lg transition-colors ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
+            <Heart size={13} className={isFav ? 'fill-current' : ''} />
+          </button>
+          <span className={`chip border text-[10px] ${POTENTIAL_COLORS[opp.potential] || POTENTIAL_COLORS['Medium']}`}>
+            {POTENTIAL_LABELS[opp.potential] || opp.potential}
+          </span>
+        </div>
       </div>
       <div className="flex gap-1.5 flex-wrap">
         <PlatformBadge platform={opp.platform} />
@@ -473,13 +501,24 @@ function OpportunityCard({ opp, onSave, saved }) {
 }
 
 function IdeaCard({ idea, onSave, saved }) {
+  const addFavorite = useStore((s) => s.addFavorite)
+  const favorites = useStore((s) => s.favorites)
+  const isFav = favorites.some((f) => f.type === 'insight' && f.title === idea.title)
+  const toggleFav = () => {
+    if (!isFav) addFavorite({ type: 'insight', title: idea.title, content: [idea.hook_suggestion ? `Gancho: "${idea.hook_suggestion}"` : '', idea.angle ? `\nÂngulo: ${idea.angle}` : '', idea.format ? `\nFormato: ${idea.format}` : ''].filter(Boolean).join(''), source: 'Creator Insights · Ideias' })
+  }
   return (
     <div className={`card p-4 space-y-3 hover:border-orange-300 transition-all ${saved ? 'opacity-60' : ''}`}>
-      <div className="flex items-center gap-1.5">
-        <span className="chip border text-[10px] bg-orange-100 text-orange-700 border-orange-200 capitalize">{idea.hook}</span>
-        <span className={`chip border text-[10px] ${idea.priority === 'high' ? 'bg-red-100 text-red-600 border-red-200' : idea.priority === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-          {idea.priority === 'high' ? 'Alta' : idea.priority === 'medium' ? 'Média' : 'Baixa'}
-        </span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="chip border text-[10px] bg-orange-100 text-orange-700 border-orange-200 capitalize">{idea.hook}</span>
+          <span className={`chip border text-[10px] ${idea.priority === 'high' ? 'bg-red-100 text-red-600 border-red-200' : idea.priority === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+            {idea.priority === 'high' ? 'Alta' : idea.priority === 'medium' ? 'Média' : 'Baixa'}
+          </span>
+        </div>
+        <button onClick={toggleFav} title={isFav ? 'Nos favoritos' : 'Salvar nos favoritos'} className={`p-1 rounded-lg transition-colors ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
+          <Heart size={13} className={isFav ? 'fill-current' : ''} />
+        </button>
       </div>
       <h4 className="text-sm font-semibold text-gray-900 leading-snug">{idea.title}</h4>
       {idea.hook_suggestion && (
@@ -541,6 +580,8 @@ export default function TrendRadar() {
   const [ytError, setYtError] = useState(null)
   const [ytSearched, setYtSearched] = useState(false)
 
+  const addFavorite = useStore((s) => s.addFavorite)
+  const favorites   = useStore((s) => s.favorites)
   const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
   const hasYtKey  = !!localStorage.getItem(LS_YOUTUBE)
 
@@ -1015,17 +1056,27 @@ export default function TrendRadar() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(trendResults.content_searches || []).map((cs) => {
                   const meta = PLATFORM_META[cs.platform]
+                  const isFav = favorites.some((f) => f.type === 'search' && f.title === cs.theme)
                   return (
                     <div key={cs.id} className="card p-4 space-y-2.5 hover:border-purple-300 transition-colors">
                       <div className="flex items-center gap-2">
                         <span className="text-base">{meta?.emoji || '🌐'}</span>
                         <span className="text-[11px] font-medium text-gray-500">{meta?.label || cs.platform}</span>
-                        {cs.search_url && (
-                          <a href={cs.search_url} target="_blank" rel="noopener noreferrer"
-                            className="ml-auto flex items-center gap-1 text-[10px] font-medium text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded-lg transition-colors shrink-0">
-                            <ExternalLink size={10} /> Abrir busca
-                          </a>
-                        )}
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <button
+                            onClick={() => !isFav && addFavorite({ type: 'search', title: cs.theme, search_term: cs.search_term, url: cs.search_url, content: cs.description || '', why_relevant: cs.why_relevant || '', source: `Creator Insights · ${meta?.label || cs.platform}` })}
+                            title={isFav ? 'Nos favoritos' : 'Salvar nos favoritos'}
+                            className={`p-1 rounded-lg transition-colors ${isFav ? 'text-purple-500' : 'text-gray-300 hover:text-purple-400'}`}
+                          >
+                            <Bookmark size={13} className={isFav ? 'fill-current' : ''} />
+                          </button>
+                          {cs.search_url && (
+                            <a href={cs.search_url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[10px] font-medium text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded-lg transition-colors shrink-0">
+                              <ExternalLink size={10} /> Abrir busca
+                            </a>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{cs.theme}</p>

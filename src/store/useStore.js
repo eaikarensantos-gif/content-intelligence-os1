@@ -24,6 +24,7 @@ const useStore = create(
       proposals: [],
       favorites: [],
       favoritesOpen: false,
+      unseenFavorites: 0,
       hiddenReportTags: [],
       bannedWords: [],
 
@@ -56,12 +57,16 @@ const useStore = create(
         })),
 
       // ── Favoritos ─────────────────────────────────────────────
-      toggleFavorites: () => set((s) => ({ favoritesOpen: !s.favoritesOpen })),
-      closeFavorites: () => set({ favoritesOpen: false }),
+      toggleFavorites: () => set((s) => ({
+        favoritesOpen: !s.favoritesOpen,
+        unseenFavorites: s.favoritesOpen ? s.unseenFavorites : 0, // reset when opening
+      })),
+      closeFavorites: () => set({ favoritesOpen: false, unseenFavorites: 0 }),
 
       addFavorite: (fav) =>
         set((s) => ({
           favorites: [...s.favorites, { id: uuidv4(), created_at: new Date().toISOString(), ...fav }],
+          unseenFavorites: s.favoritesOpen ? 0 : s.unseenFavorites + 1,
         })),
 
       removeFavorite: (id) =>

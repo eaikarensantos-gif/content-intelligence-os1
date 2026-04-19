@@ -776,6 +776,7 @@ export default function VideoAnalyzer() {
   const deleteVideoAnalysis = useStore((s) => s.deleteVideoAnalysis)
   const videoAnalyses = useStore((s) => s.videoAnalyses)
   const addIdea = useStore((s) => s.addIdea)
+  const addFavorite = useStore((s) => s.addFavorite)
 
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
   const [showKeyModal, setShowKeyModal] = useState(false)
@@ -1555,7 +1556,14 @@ Responda APENAS com este JSON:
                   onChange={(e) => setScriptText(e.target.value)}
                 />
                 {scriptText.trim().length > 10 && (
-                  <div className="flex justify-end mt-2">
+                  <div className="flex items-center justify-between mt-2">
+                    <button
+                      onClick={() => addFavorite({ type: 'script', title: title || 'Roteiro de vídeo', content: scriptText.trim(), source: 'Analisador de Vídeo · Meu Roteiro' })}
+                      className="flex items-center gap-1 text-[10px] font-medium text-orange-500 hover:text-orange-700 transition-colors"
+                      title="Salvar roteiro nos favoritos"
+                    >
+                      <Bookmark size={10} /> Salvar roteiro
+                    </button>
                     <button
                       onClick={() => handleTranslate(() => scriptText, setScriptText)}
                       disabled={translating}
@@ -1874,6 +1882,15 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                         className="flex items-center gap-1 text-[10px] font-medium text-indigo-500 hover:text-indigo-700 disabled:opacity-50 transition-colors"
                       >
                         {translating ? <><RefreshCw size={10} className="animate-spin" /> Traduzindo...</> : <><Languages size={10} /> Traduzir para PT</>}
+                      </button>
+                    )}
+                    {transcript.trim().length > 0 && (
+                      <button
+                        onClick={() => addFavorite({ type: 'script', title: title || 'Transcrição de vídeo', content: transcript.trim(), source: 'Analisador de Vídeo · Transcrição' })}
+                        className="flex items-center gap-1 text-[10px] font-medium text-orange-500 hover:text-orange-700 transition-colors"
+                        title="Salvar transcrição nos favoritos"
+                      >
+                        <Bookmark size={10} /> Salvar
                       </button>
                     )}
                     {transcript.trim().length > 0 && (
