@@ -424,16 +424,22 @@ RULES:
 }
 
 // ── Feedback prompt (my own video critique) ───────────────────────────────────
-function buildFeedbackPrompt({ title, transcript, hasFrames, frameCount }) {
+function buildFeedbackPrompt({ title, transcript, hasFrames, frameCount, isScript = false }) {
   const hasTranscript = transcript && transcript.trim().length > 30
 
-  const dataSection = hasTranscript
+  const dataSection = isScript
+    ? `ROTEIRO ESCRITO (ainda não gravado):\n---\n${transcript.trim().slice(0, 6000)}\n---\n`
+    : hasTranscript
     ? `TRANSCRIÇÃO REAL DO VÍDEO:\n---\n${transcript.trim().slice(0, 6000)}\n---\n`
     : hasFrames
     ? `${frameCount} keyframes do vídeo estão anexados como imagens. Analise apenas o que é visualmente observável.`
     : `Sem transcrição ou frames. Analise com base no título fornecido.`
 
-  return `Você é um consultor de conteúdo digital especializado em analisar vídeos de criadores e dar feedback crítico e acionável.
+  const taskDescription = isScript
+    ? `TAREFA: Analise este ROTEIRO da Karen antes de ela gravar. Identifique pontos fortes e o que deve ser ajustado antes da gravação. Foque em: gancho, estrutura, tom de voz, promessa, gatilhos de engajamento e CTA. Seja específico e direto — Karen quer feedback honesto para melhorar antes de ligar a câmera.`
+    : `TAREFA: Analise este vídeo da Karen com olhar crítico e identifique onde ela pode melhorar. Seja específico, direto e construtivo. Não elogie o que não merece elogio — Karen prefere feedback honesto.`
+
+  return `Você é um consultor de conteúdo digital especializado em analisar ${isScript ? 'roteiros escritos' : 'vídeos'} de criadores e dar feedback crítico e acionável.
 
 CRIADORA: Karen Santos
 POSICIONAMENTO: Estrategista de conteúdo e especialista em IA aplicada ao marketing de conteúdo
@@ -452,7 +458,7 @@ ${hasFrames ? `- Frames: ${frameCount} keyframes anexados` : ''}
 
 ${dataSection}
 
-TAREFA: Analise este vídeo da Karen com olhar crítico e identifique onde ela pode melhorar. Seja específico, direto e construtivo. Não elogie o que não merece elogio — Karen prefere feedback honesto.
+${taskDescription}
 
 Responda APENAS com este JSON (sem markdown, sem texto extra):
 
@@ -804,7 +810,8 @@ export default function VideoAnalyzer() {
   const [showHistory, setShowHistory] = useState(false)
   const [savedAnalysis, setSavedAnalysis] = useState(false)
   const [error, setError] = useState('')
-  const [analysisMode, setAnalysisMode] = useState('reference') // 'reference' | 'mine'
+  const [analysisMode, setAnalysisMode] = useState('reference') // 'reference' | 'mine' | 'script'
+  const [scriptText, setScriptText] = useState('')
 
   // Script
   const [generatingScript, setGeneratingScript] = useState(false)
@@ -926,18 +933,30 @@ export default function VideoAnalyzer() {
   }
 
   const handleAnalyze = async () => {
+    // Script mode: validate script text
+    if (analysisMode === 'script') {
+      if (!scriptText.trim() || scriptText.trim().length < 50) {
+        setError('Cole o roteiro completo antes de analisar (mínimo 50 caracteres).')
+        return
+      }
+      if (!apiKey) {
+        setError('Uma API Key da Anthropic é necessária. Clique em "Adicionar API Key" acima.')
+        return
+      }
+    }
+
     const hasTranscriptText = transcript.trim().length > 30
     const hasFramesData = frames.length > 0
     const hasUrl = url.trim().length > 0
     const hasTitle = title.trim().length > 0
     const canAutoTranscribe = videoFile && groqKey && !hasTranscriptText
 
-    if (!hasTranscriptText && !hasFramesData && !hasUrl && !hasTitle && !videoFile) {
+    if (analysisMode !== 'script' && !hasTranscriptText && !hasFramesData && !hasUrl && !hasTitle && !videoFile) {
       setError('Informe pelo menos a URL, título do vídeo, ou envie um arquivo de vídeo para analisar.')
       return
     }
 
-    if (!apiKey) {
+    if (analysisMode !== 'script' && !apiKey) {
       setError('Uma API Key da Anthropic é necessária. Clique em "Adicionar API Key" acima.')
       return
     }
@@ -954,29 +973,31 @@ export default function VideoAnalyzer() {
     try {
       let metaTitle = title
       let channel = ''
-      let finalTranscript = transcript
+      let finalTranscript = analysisMode === 'script' ? scriptText.trim() : transcript
 
-      // Step 0 — YouTube metadata
-      setLoadingStep(0)
-      if (hasUrl) {
-        const meta = await fetchYouTubeMeta(url)
-        if (meta) {
-          if (!title.trim()) metaTitle = meta.title
-          channel = meta.channel
-        }
-      }
-
-      // Step 1 — Auto-transcribe with Groq Whisper if file present and no transcript yet
-      if (canAutoTranscribe) {
-        setLoadingStep(1)
-        try {
-          const text = await transcribeLargeFile(groqKey, videoFile, transcriptLang, setTranscribingStatus)
-          if (text && text.trim().length > 20) {
-            finalTranscript = text.trim()
-            setTranscript(finalTranscript)
+      if (analysisMode !== 'script') {
+        // Step 0 — YouTube metadata
+        setLoadingStep(0)
+        if (hasUrl) {
+          const meta = await fetchYouTubeMeta(url)
+          if (meta) {
+            if (!title.trim()) metaTitle = meta.title
+            channel = meta.channel
           }
-        } catch (transcribeErr) {
-          console.warn('Auto-transcription failed:', transcribeErr.message)
+        }
+
+        // Step 1 — Auto-transcribe with Groq Whisper if file present and no transcript yet
+        if (canAutoTranscribe) {
+          setLoadingStep(1)
+          try {
+            const text = await transcribeLargeFile(groqKey, videoFile, transcriptLang, setTranscribingStatus)
+            if (text && text.trim().length > 20) {
+              finalTranscript = text.trim()
+              setTranscript(finalTranscript)
+            }
+          } catch (transcribeErr) {
+            console.warn('Auto-transcription failed:', transcribeErr.message)
+          }
         }
       }
 
@@ -984,12 +1005,13 @@ export default function VideoAnalyzer() {
       setLoadingStep(2)
       const hasFinalTranscript = finalTranscript.trim().length > 30
       const source = hasFinalTranscript ? 'transcript' : hasFramesData ? 'frames' : 'inference'
-      const prompt = analysisMode === 'mine'
+      const prompt = (analysisMode === 'mine' || analysisMode === 'script')
         ? buildFeedbackPrompt({
             title: metaTitle,
             transcript: hasFinalTranscript ? finalTranscript : '',
-            hasFrames: hasFramesData,
-            frameCount: frames.length,
+            hasFrames: analysisMode === 'script' ? false : hasFramesData,
+            frameCount: analysisMode === 'script' ? 0 : frames.length,
+            isScript: analysisMode === 'script',
           })
         : buildPrompt({
             url, title: metaTitle, channel, topic, videoType,
@@ -999,7 +1021,7 @@ export default function VideoAnalyzer() {
             inferenceOnly: source === 'inference',
           })
       setLoadingStep(3)
-      const raw = await callClaudeAPI(apiKey, prompt, hasFramesData ? frames : [])
+      const raw = await callClaudeAPI(apiKey, prompt, analysisMode === 'script' ? [] : hasFramesData ? frames : [])
       const jsonMatch = raw.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
       const result = JSON.parse(jsonMatch[0])
@@ -1012,14 +1034,14 @@ export default function VideoAnalyzer() {
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
     } finally {
-      setActiveTab(analysisMode === 'mine' ? 'melhorar' : 'resumo')
+      setActiveTab((analysisMode === 'mine' || analysisMode === 'script') ? 'melhorar' : 'resumo')
       setLoading(false)
     }
   }
 
   const handleReset = () => {
     setUrl(''); setTitle(''); setTopic(''); setVideoType('auto')
-    setTranscript(''); setVideoFile(null); setFrames([])
+    setTranscript(''); setScriptText(''); setVideoFile(null); setFrames([])
     setAnalysis(null); setSavedIdeas(new Set()); setSavedAnalysis(false)
     setError(''); setGeneratedScript(null); setImprovedScript(null)
   }
@@ -1243,7 +1265,7 @@ Responda APENAS com este JSON:
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit flex-wrap">
         <button
           onClick={() => { setAnalysisMode('reference'); setAnalysis(null); setError('') }}
           className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'reference' ? 'bg-violet-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
@@ -1256,6 +1278,12 @@ Responda APENAS com este JSON:
         >
           <Target size={13} /> Meu Vídeo
         </button>
+        <button
+          onClick={() => { setAnalysisMode('script'); setAnalysis(null); setError('') }}
+          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'script' ? 'bg-indigo-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <FileText size={13} /> Meu Roteiro
+        </button>
       </div>
 
       {analysisMode === 'mine' && !analysis && (
@@ -1264,6 +1292,16 @@ Responda APENAS com este JSON:
           <div>
             <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Feedback do Meu Vídeo</p>
             <p className="text-xs text-gray-600">Envie seu próprio vídeo ou cole a transcrição. A IA vai analisar criticamente e apontar o que melhorar com base no seu posicionamento e objetivos como criadora.</p>
+          </div>
+        </div>
+      )}
+
+      {analysisMode === 'script' && !analysis && (
+        <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-start gap-3">
+          <FileText size={15} className="text-indigo-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Análise de Roteiro</p>
+            <p className="text-xs text-gray-600">Cole o roteiro do vídeo que você ainda vai gravar. A IA vai analisar gancho, estrutura, tom de voz, CTA e pontuar o que precisa melhorar antes de você gravar.</p>
           </div>
         </div>
       )}
@@ -1455,7 +1493,52 @@ Responda APENAS com este JSON:
             </div>
           )}
 
+          {/* ── Script input (only in script mode) ─────────────────────── */}
+          {analysisMode === 'script' && (
+            <div className="card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-500"><FileText size={13} /></div>
+                <p className="text-sm font-semibold text-gray-900">Roteiro para Analisar</p>
+              </div>
+
+              <div>
+                <label className="label">Título do vídeo (opcional)</label>
+                <input
+                  className="input"
+                  placeholder="Ex: Como usar IA para criar conteúdo sem perder autenticidade"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label flex items-center justify-between">
+                  <span>Roteiro completo</span>
+                  <span className="text-[10px] text-gray-400">{scriptText.length} caracteres</span>
+                </label>
+                <textarea
+                  className="input resize-none font-mono text-xs leading-relaxed"
+                  rows={16}
+                  placeholder={"Cole seu roteiro aqui...\n\nEx:\n[GANCHO]\nVocê sabia que 90% dos criadores de conteúdo estão usando IA do jeito errado?\n\n[DESENVOLVIMENTO]\n...\n\n[CTA]\n..."}
+                  value={scriptText}
+                  onChange={(e) => setScriptText(e.target.value)}
+                />
+              </div>
+
+              {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+
+              <button
+                onClick={handleAnalyze}
+                disabled={!scriptText.trim() || !apiKey}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+              >
+                <Sparkles size={15} /> Analisar Roteiro
+              </button>
+            </div>
+          )}
+
           {/* Main input area: Video source + Transcript side by side */}
+          {analysisMode !== 'script' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             {/* LEFT — Video source */}
@@ -1793,8 +1876,10 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           </div>
 
-          {/* Error + Analyze button */}
-          {error && (
+          )} {/* end analysisMode !== 'script' */}
+
+          {/* Error + Analyze button (non-script modes only) */}
+          {analysisMode !== 'script' && error && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2">
               <AlertCircle size={13} className="text-red-400 mt-0.5 shrink-0" />
               <p className="text-xs text-red-600">{error}</p>
@@ -1802,7 +1887,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
           )}
 
           {/* Upgrade-path hint — shown only when no real data (inference mode) */}
-          {!hasRealData && !extractingFrames && (
+          {analysisMode !== 'script' && !hasRealData && !extractingFrames && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
               <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
                 <Info size={12} /> Análise por inferência — para análise mais precisa:
@@ -1825,7 +1910,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {!apiKey && (
+          {analysisMode !== 'script' && !apiKey && (
             <button
               onClick={() => setShowKeyModal(true)}
               className="btn-primary w-full py-2 text-xs mb-2"
@@ -1834,6 +1919,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
               <Key size={13} /> Adicionar API Key para Analisar
             </button>
           )}
+          {analysisMode !== 'script' && (
           <button
             onClick={handleAnalyze}
             disabled={extractingFrames || !hasAnyData}
@@ -1849,6 +1935,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
               : <><Sparkles size={15} /> Analisar Vídeo com IA</>
             }
           </button>
+          )}
         </div>
       )}
 
@@ -1937,7 +2024,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
-            {(analysisMode === 'mine' ? MY_VIDEO_TABS : TABS).map((t) => (
+            {(analysisMode === 'mine' || analysisMode === 'script' ? MY_VIDEO_TABS : TABS).map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === t.id
