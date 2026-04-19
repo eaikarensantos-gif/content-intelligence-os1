@@ -98,13 +98,17 @@ CONTENT IDEAS MUST FAVOR:
 CRITICAL RULES:
 - ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
 - Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
-- Include 15+ creators that ACTUALLY exist and create content about "${topic}". Use REAL names and handles of known Brazilian and international creators. Do NOT invent fictional creators.
-- For each creator, provide their REAL handle/username and a search URL so the user can find them
-- For profile_url use search URLs: LinkedIn=https://www.linkedin.com/search/results/people/?keywords=NAME, Instagram=https://www.instagram.com/explore/search/keyword/?q=HANDLE, TikTok=https://www.tiktok.com/search?q=HANDLE, YouTube=https://www.youtube.com/results?search_query=NAME, Twitter=https://x.com/search?q=HANDLE&f=user
-- Prioritize creators who are actively posting about "${topic}" in the last 6 months
-- Include a MIX of: mega creators (100K+), mid-tier (10K-100K), and micro creators (1K-10K) for diverse perspectives
 - Hook examples must be SPECIFIC to topic "${topic}", not generic
 - Content gaps must be REAL underexplored angles about "${topic}"
+
+CREATOR LIST RULES — READ CAREFULLY:
+- Include 15 creators. Prioritize MID-TIER (10K–500K followers) and MICRO (1K–10K) creators who actually specialize in "${topic}". Do NOT pad the list with mega-celebrities just because they are famous.
+- ONLY include a creator if their PRIMARY content is genuinely about "${topic}" or a direct sub-niche of it. A famous TV presenter, actor, comedian, or general entertainer should NOT appear unless their main content feed is specifically about this topic.
+- If you are NOT confident a specific creator makes content about "${topic}", describe the ARCHETYPE instead: use a descriptive name like "Criador de conteúdo corporate humor no TikTok BR" and set handle to "@buscar: corporate relatable brasil" and profile_url to the appropriate search URL. This is better than listing a wrong real person.
+- For creators you ARE confident about: use their real handle and name
+- For profile_url use search URLs: LinkedIn=https://www.linkedin.com/search/results/people/?keywords=NAME, Instagram=https://www.instagram.com/explore/search/keyword/?q=HANDLE, TikTok=https://www.tiktok.com/search?q=HANDLE, YouTube=https://www.youtube.com/results?search_query=NAME, Twitter=https://x.com/search?q=HANDLE&f=user
+- Mark each creator with "verified": true if you are confident they create content on this topic, or "verified": false if you are describing an archetype/search suggestion
+- Prioritize creators who are actively posting about "${topic}" in the last 6 months
 
 Respond with ONLY a valid JSON object, no markdown, no code blocks:
 {
@@ -143,7 +147,8 @@ Respond with ONLY a valid JSON object, no markdown, no code blocks:
       "niche": "nicho específico",
       "avg_engagement": "X.X%",
       "recent_topics": ["tópico1", "tópico2"],
-      "why_relevant": "por que é relevante especificamente para o tópico"
+      "why_relevant": "por que é relevante especificamente para o tópico",
+      "verified": true
     }
   ],
   "example_posts": [
@@ -340,19 +345,24 @@ function TrendCard({ trend }) {
 
 function CreatorCard({ creator }) {
   const meta = PLATFORM_META[creator.platform]
+  const isSearchSuggestion = creator.verified === false
   return (
-    <div className="card p-4 flex items-start gap-3 hover:border-orange-300 transition-colors">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm">
+    <div className={`card p-4 flex items-start gap-3 hover:border-orange-300 transition-colors ${isSearchSuggestion ? 'border-dashed border-gray-200 bg-gray-50/50' : ''}`}>
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm ${isSearchSuggestion ? 'bg-gradient-to-br from-gray-400 to-gray-500' : 'bg-gradient-to-br from-orange-500 to-orange-600'}`}>
         {creator.name.charAt(0)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-sm font-semibold text-gray-900 truncate">{creator.name}</span>
+          <span className={`text-sm font-semibold truncate ${isSearchSuggestion ? 'text-gray-500' : 'text-gray-900'}`}>{creator.name}</span>
           <span className="text-sm" title={creator.platform}>{meta?.emoji || '🌐'}</span>
+          {isSearchSuggestion
+            ? <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 border border-amber-200 font-medium shrink-0">Sugestão de busca</span>
+            : <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 font-medium shrink-0">IA confirmou nicho</span>
+          }
           {creator.profile_url && (
             <a href={creator.profile_url} target="_blank" rel="noopener noreferrer"
-              className="ml-auto text-gray-300 hover:text-orange-500 transition-colors shrink-0"
-              onClick={(e) => e.stopPropagation()} title="Ver perfil">
+              className="text-gray-300 hover:text-orange-500 transition-colors shrink-0"
+              onClick={(e) => e.stopPropagation()} title={isSearchSuggestion ? 'Buscar no Google' : 'Ver perfil'}>
               <ExternalLink size={13} />
             </a>
           )}
@@ -365,8 +375,10 @@ function CreatorCard({ creator }) {
           ))}
         </div>
         {creator.why_relevant && (
-          <div className="bg-orange-50 rounded-lg p-2 border border-orange-100">
-            <p className="text-[10px] text-orange-700 leading-relaxed">💡 {creator.why_relevant}</p>
+          <div className={`rounded-lg p-2 border ${isSearchSuggestion ? 'bg-amber-50 border-amber-100' : 'bg-orange-50 border-orange-100'}`}>
+            <p className={`text-[10px] leading-relaxed ${isSearchSuggestion ? 'text-amber-700' : 'text-orange-700'}`}>
+              {isSearchSuggestion ? '🔍' : '💡'} {creator.why_relevant}
+            </p>
           </div>
         )}
       </div>
@@ -862,6 +874,10 @@ export default function TrendRadar() {
                       })}
                     </div>
                   </div>
+                </div>
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-[11px] text-amber-700">
+                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span><strong>Dados gerados por IA:</strong> criadores marcados como "IA confirmou nicho" são pessoas reais que o modelo conhece. Criadores "Sugestão de busca" são arquétipos — use o link para encontrar perfis reais. <strong>Sempre verifique antes de usar.</strong></span>
                 </div>
                 {filtered.length === 0 ? (
                   <div className="text-center py-8 text-sm text-gray-400">Nenhum criador encontrado com esses filtros</div>

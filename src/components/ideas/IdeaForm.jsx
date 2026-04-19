@@ -232,14 +232,25 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const handleGenerateTitle = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
     if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
-    if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a descrição ou tópico para gerar títulos.'); return }
+    if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
     setGeneratingTitle(true)
     setTitleSuggestions([])
     try {
       const raw = await generateWithAI(apiKey, 'title', form)
-      const parsed = JSON.parse(raw.trim())
-      if (Array.isArray(parsed)) setTitleSuggestions(parsed.filter(Boolean))
-    } catch { /* silent */ }
+      // Strip markdown code fences if present
+      const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
+      // Extract JSON array from response
+      const match = clean.match(/\[[\s\S]*\]/)
+      const parsed = JSON.parse(match ? match[0] : clean)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setTitleSuggestions(parsed.filter(Boolean))
+      } else {
+        alert('Não foi possível gerar títulos. Tente novamente.')
+      }
+    } catch (e) {
+      console.error('Title generation failed:', e)
+      alert('Erro ao gerar títulos. Verifique sua API key e tente novamente.')
+    }
     setGeneratingTitle(false)
   }
 
