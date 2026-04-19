@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Settings, Key, Cpu, CheckCircle2, XCircle, Loader2,
   Eye, EyeOff, ExternalLink, Zap, ChevronDown, Youtube, Database, RefreshCw,
+  Sun, Moon,
 } from 'lucide-react'
 import useAIStore from '../../store/useAIStore'
 import useSupabaseStore from '../../store/useSupabaseStore'
@@ -29,6 +30,8 @@ export default function AISettings() {
   } = useSupabaseStore()
   const loadFromDB = useStore((s) => s.loadFromDB)
   const setDbStatus = useSupabaseStore((s) => s.setStatus)
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
 
   const [showKey, setShowKey] = useState(false)
   const [showYtKey, setShowYtKey] = useState(false)
@@ -127,6 +130,36 @@ export default function AISettings() {
               <Database size={12} /> Banco não configurado
             </span>
           )}
+        </div>
+      </div>
+
+      {/* Aparência */}
+      <div className="card p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          {theme === 'dark' ? <Moon size={15} className="text-indigo-400" /> : <Sun size={15} className="text-amber-500" />}
+          Aparência
+        </h3>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setTheme('light')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${
+              theme === 'light'
+                ? 'border-orange-400 bg-orange-50 text-orange-700'
+                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+            }`}
+          >
+            <Sun size={16} /> Modo Claro
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${
+              theme === 'dark'
+                ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+            }`}
+          >
+            <Moon size={16} /> Modo Escuro
+          </button>
         </div>
       </div>
 
