@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube } from 'lucide-react'
+import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
@@ -15,6 +15,8 @@ export default function SupabaseSettings() {
   const dbError   = useStore((s) => s.dbError)
   const setDbStatus = useStore((s) => s.setDbStatus)
   const loadFromDB  = useStore((s) => s.loadFromDB)
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
 
   const [sbUrl, setSbUrl]     = useState(getSupabaseUrl)
   const [sbKey, setSbKey]     = useState(getSupabaseKey)
@@ -74,6 +76,36 @@ export default function SupabaseSettings() {
       <div>
         <h1 className="text-lg font-bold text-gray-900">Configurações</h1>
         <p className="text-sm text-gray-400 mt-0.5">Banco de dados, chaves de API e integrações</p>
+      </div>
+
+      {/* ── Aparência ────────────────────────────────────────────────────────── */}
+      <div className="card p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          {theme === 'dark' ? <Moon size={15} className="text-indigo-400" /> : <Sun size={15} className="text-amber-500" />}
+          Aparência
+        </h2>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setTheme('light')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${
+              theme === 'light'
+                ? 'border-orange-400 bg-orange-50 text-orange-700'
+                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+            }`}
+          >
+            <Sun size={16} /> Modo Claro
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all ${
+              theme === 'dark'
+                ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+            }`}
+          >
+            <Moon size={16} /> Modo Escuro
+          </button>
+        </div>
       </div>
 
       {/* ── Supabase ─────────────────────────────────────────────────────────── */}

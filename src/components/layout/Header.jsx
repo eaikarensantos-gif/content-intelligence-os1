@@ -1,5 +1,5 @@
 import { useLocation, Link } from 'react-router-dom'
-import { Heart, Search, Menu, ChevronRight } from 'lucide-react'
+import { Heart, Search, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TITLES = {
@@ -32,6 +32,8 @@ export default function Header({ onMenuClick }) {
   const favorites = useStore((s) => s.favorites)
   const unseenFavorites = useStore((s) => s.unseenFavorites)
   const toggleFavorites = useStore((s) => s.toggleFavorites)
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
 
   return (
     <header className="h-14 sm:h-16 px-4 sm:px-6 flex items-center justify-between border-b border-gray-200 bg-white/95 backdrop-blur-sm sticky top-0 z-20 shrink-0">
@@ -60,6 +62,13 @@ export default function Header({ onMenuClick }) {
       <div className="flex items-center gap-1.5 shrink-0">
         <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
           <Search size={15} />
+        </button>
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-orange-500 transition-colors"
+          aria-label="Alternar tema"
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
         <button
           onClick={toggleFavorites}

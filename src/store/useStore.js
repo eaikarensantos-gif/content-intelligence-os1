@@ -27,6 +27,7 @@ const useStore = create(
       unseenFavorites: 0,
       hiddenReportTags: [],
       bannedWords: [],
+      theme: 'light',
 
       // ── Perfil do Criador ────────────────────────────────
       creatorProfile: {
@@ -37,6 +38,8 @@ const useStore = create(
         platforms: [],
         description: '',
       },
+
+      setTheme: (t) => set({ theme: t }),
 
       setCreatorProfile: (profile) =>
         set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
@@ -422,6 +425,7 @@ const useStore = create(
         proposals: s.proposals,
         hiddenReportTags: s.hiddenReportTags,
         bannedWords: s.bannedWords,
+        theme: s.theme,
         creatorProfile: s.creatorProfile,
       }),
     }

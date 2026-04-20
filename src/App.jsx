@@ -60,6 +60,11 @@ function Layout({ children }) {
 
 export default function App() {
   const loadFromDB = useStore((s) => s.loadFromDB)
+  const theme = useStore((s) => s.theme)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
 
   useEffect(() => {
     if (isSupabaseConfigured()) loadFromDB()
