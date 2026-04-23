@@ -27,6 +27,7 @@ import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
+import ContentBrain from './components/brain/ContentBrain'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import AuthenticityAnalyzer from './components/authenticity/AuthenticityAnalyzer'
 import useStore from './store/useStore'
@@ -99,6 +100,7 @@ export default function App() {
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/authenticity" element={<AuthenticityAnalyzer />} />
+            <Route path="/brain" element={<ContentBrain />} />
           </Routes>
         </Layout>
       </BrowserRouter>

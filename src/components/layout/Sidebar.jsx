@@ -4,12 +4,14 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors, Activity,
+  Brain, Sun, Moon,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
+  { to: '/brain', icon: Brain, label: 'Content Brain' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
@@ -61,6 +63,8 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const importRef = useRef(null)
   const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
 
   // Track which group is open — auto-expand the one containing current route
   const [openGroup, setOpenGroup] = useState(() => findGroupForPath(location.pathname))
@@ -266,6 +270,16 @@ export default function Sidebar({ isOpen, onClose }) {
             onChange={handleImport}
           />
         </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-orange-200 bg-white hover:bg-orange-50 transition-colors text-sm font-medium text-gray-600 hover:text-orange-700"
+        >
+          {theme === 'dark'
+            ? <><Sun size={15} className="text-orange-500" /> Modo Claro</>
+            : <><Moon size={15} className="text-orange-500" /> Modo Escuro</>}
+        </button>
 
         {/* User */}
         <div className="flex items-center gap-3">
