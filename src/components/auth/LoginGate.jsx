@@ -170,6 +170,7 @@ export default function LoginGate({ children }) {
     localStorage.removeItem(OWNER_KEY)
     localStorage.removeItem(AUTH_KEY)
     localStorage.removeItem(ATTEMPTS_KEY)
+    setLockout(false)
     setMode('setup')
     setError('')
     setEmail('')
