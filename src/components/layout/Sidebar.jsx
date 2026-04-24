@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Kanban, Radar, BarChart2, FileText,
-  Sparkles, Zap, ChevronRight, Settings,
+  Sparkles, Zap, ChevronRight, Settings, Brain,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -16,6 +16,7 @@ const NAV = [
   { to: '/reports', icon: FileText, label: 'Relatórios' },
   { to: '/insights', icon: Sparkles, label: 'Insight Engine' },
   { to: '/loop', icon: Zap, label: 'Idea Loop' },
+  { to: '/contact-brain', icon: Brain, label: 'Contact Brain' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
 ]
 

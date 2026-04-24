@@ -11,6 +11,7 @@ import InsightEngine from './components/insights/InsightEngine'
 import IdeaLoop from './components/idealoop/IdeaLoop'
 import AISettings from './components/settings/AISettings'
 import DynamicMetricsReport from './components/reports/DynamicMetricsReport'
+import ContactBrain from './components/contactbrain/ContactBrain'
 import useStore from './store/useStore'
 import useSupabaseStore from './store/useSupabaseStore'
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/insights" element={<InsightEngine />} />
           <Route path="/loop" element={<IdeaLoop />} />
           <Route path="/settings" element={<AISettings />} />
+          <Route path="/contact-brain" element={<ContactBrain />} />
         </Routes>
       </Layout>
     </BrowserRouter>
