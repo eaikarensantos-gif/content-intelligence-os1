@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PostAnalyzer - Múltiplos Posts</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header { background: linear-gradient(135deg, #ff6400 0%, #ff8533 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+    .header h1 { font-size: 28px; margin-bottom: 5px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+
+    .upload-section { background: white; border: 2px dashed #ff6400; border-radius: 12px; padding: 40px; text-align: center; margin-bottom: 30px; }
+    .upload-section p { color: #6b7280; margin-bottom: 15px; }
+    .upload-section button { background: #ff6400; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .upload-section button:hover { background: #e55c00; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 24px; border-radius: 12px; border-left: 4px solid #ff6400; }
+    .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 10px; }
+    .stat-value { font-size: 32px; font-weight: bold; color: #1f2937; }
+
+    table { width: 100%; background: white; border-collapse: collapse; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    thead { background: linear-gradient(135deg, #ff6400 0%, #ff8533 100%); color: white; }
+    th { padding: 16px; text-align: left; font-weight: 600; font-size: 14px; }
+    td { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
+    tr:hover { background: #f9fafb; }
+    tr.best-er { background: #fff5f0; }
+    .er-best { color: #ff6400; font-weight: bold; background: #fff0e6; padding: 2px 6px; border-radius: 4px; }
+    .badge { display: inline-block; background: #ff6400; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 5px; }
+
+    .delete-btn { background: #fee2e2; color: #dc2626; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+    .delete-btn:hover { background: #fecaca; }
+
+    .actions { display: flex; gap: 12px; margin-top: 30px; }
+    .btn-primary { flex: 1; padding: 16px; background: linear-gradient(135deg, #ff6400 0%, #ff8533 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 100, 0, 0.3); }
+    .btn-secondary { padding: 16px 32px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+    .empty-state svg { font-size: 48px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Análise Completa de Posts</h1>
+      <p>Importe múltiplos arquivos e gere um relatório profissional</p>
+    </div>
+
+    <div class="upload-section">
+      <p style="font-size: 16px; font-weight: 500; color: #1f2937; margin-bottom: 8px;">Arraste um arquivo .xlsx aqui ou clique para selecionar</p>
+      <p style="font-size: 13px; color: #6b7280; margin-bottom: 20px;">Você pode adicionar múltiplos arquivos. Todos os posts serão reunidos no relatório final.</p>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+      <button onclick="document.getElementById('fileInput').click()">➕ Anexar Arquivo</button>
+    </div>
+
+    <div id="stats" class="stats" style="display: none;"></div>
+
+    <div id="tableContainer" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Título</th>
+            <th>ER %</th>
+            <th>Alcance</th>
+            <th>Interações</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+      <div style="font-size: 48px; margin-bottom: 20px;">📁</div>
+      <p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">Nenhum post adicionado ainda</p>
+      <p>Importe o primeiro arquivo para começar</p>
+    </div>
+
+    <div id="actions" style="display: none;" class="actions">
+      <button class="btn-primary" onclick="generatePDF()">📥 GERAR RELATÓRIO COMPLETO EM PDF</button>
+      <button class="btn-secondary" onclick="clearAll()">🗑️ Limpar Tudo</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+  <script>
+    let allPosts = [];
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const workbook = XLSX.read(event.target.result, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+          const newPosts = jsonData.map(row => {
+            const interacoes = (parseInt(row['Curtidas'] || row['Likes'] || 0) || 0) +
+                              (parseInt(row['Comentários'] || row['Comments'] || 0) || 0) +
+                              (parseInt(row['Compartilhamentos'] || row['Shares'] || 0) || 0) +
+                              (parseInt(row['Salvamentos'] || row['Saves'] || 0) || 0);
+            const alcance = parseInt(row['Alcance'] || row['Reach'] || 0) || 0;
+            const er = alcance > 0 ? ((interacoes / alcance) * 100).toFixed(2) : 0;
+
+            return {
+              data: row['Data'] || new Date().toLocaleDateString('pt-BR'),
+              titulo: (row['Título'] || row['Caption'] || 'Post sem título').substring(0, 50),
+              er: parseFloat(er),
+              alcance: alcance,
+              interacoes: interacoes
+            };
+          });
+
+          allPosts = [...allPosts, ...newPosts].sort((a, b) => b.er - a.er);
+
+          document.getElementById('fileInput').value = '';
+          updateUI();
+        } catch (err) {
+          alert('Erro ao processar arquivo: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function updateUI() {
+      const hasData = allPosts.length > 0;
+      document.getElementById('emptyState').style.display = hasData ? 'none' : 'block';
+      document.getElementById('stats').style.display = hasData ? 'grid' : 'none';
+      document.getElementById('tableContainer').style.display = hasData ? 'block' : 'none';
+      document.getElementById('actions').style.display = hasData ? 'flex' : 'none';
+
+      if (hasData) {
+        const maxER = Math.max(...allPosts.map(p => p.er));
+        const avgER = (allPosts.reduce((sum, p) => sum + p.er, 0) / allPosts.length).toFixed(2);
+        const totalAlcance = allPosts.reduce((sum, p) => sum + p.alcance, 0);
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-label">Posts</div>
+            <div class="stat-value">${allPosts.length}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Maior ER</div>
+            <div class="stat-value">${maxER.toFixed(2)}%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ER Médio</div>
+            <div class="stat-value">${avgER}%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Alcance</div>
+            <div class="stat-value">${(totalAlcance / 1000).toFixed(1)}k</div>
+          </div>
+        `;
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = allPosts.map((post, idx) => {
+          const isBest = post.er === maxER;
+          return `
+            <tr class="${isBest ? 'best-er' : ''}">
+              <td>${post.data}</td>
+              <td>${post.titulo}</td>
+              <td><span class="${isBest ? 'er-best' : ''}">${post.er}%${isBest ? '<span class="badge">BEST</span>' : ''}</span></td>
+              <td>${post.alcance.toLocaleString()}</td>
+              <td>${post.interacoes}</td>
+              <td><button class="delete-btn" onclick="deletePost(${idx})">🗑️ Remover</button></td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    function deletePost(idx) {
+      allPosts.splice(idx, 1);
+      updateUI();
+    }
+
+    function clearAll() {
+      if (confirm('Tem certeza que deseja remover todos os posts?')) {
+        allPosts = [];
+        updateUI();
+      }
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // PÁGINA 1: CAPA
+      doc.setFillColor(255, 100, 0);
+      doc.rect(0, 0, pageWidth, pageHeight / 3, 'F');
+
+      doc.setFontSize(32);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.text('ANÁLISE DE PERFORMANCE', 20, 60);
+      doc.text('DE POSTS', 20, 95);
+
+      doc.setFontSize(48);
+      doc.text('📊', pageWidth - 50, 80);
+
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, 120, pageWidth - 40, 80, 'F');
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Total de posts: ${allPosts.length}`, 30, 135);
+
+      const maxER = Math.max(...allPosts.map(p => p.er));
+      const avgER = (allPosts.reduce((sum, p) => sum + p.er, 0) / allPosts.length).toFixed(2);
+      const totalAlcance = allPosts.reduce((sum, p) => sum + p.alcance, 0);
+
+      doc.text(`Data da análise: ${new Date().toLocaleDateString('pt-BR')}`, 30, 150);
+      doc.text(`Maior ER: ${maxER.toFixed(2)}%`, 30, 165);
+      doc.text(`ER Médio: ${avgER}% | Alcance Total: ${totalAlcance.toLocaleString()}`, 30, 180);
+
+      doc.setFontSize(9);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Relatório gerado automaticamente pelo Content Intelligence OS', 20, pageHeight - 20);
+
+      // PÁGINA 2+: DETALHES
+      doc.addPage();
+      let currentY = 20;
+
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'bold');
+      doc.text('Detalhes dos Posts', 20, currentY);
+      currentY += 15;
+
+      // Table header
+      doc.setFillColor(255, 100, 0);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+
+      const headers = ['Data', 'Título', 'ER %', 'Alcance', 'Interações'];
+      const colX = [20, 50, 115, 145, 175];
+      const rowHeight = 7;
+
+      headers.forEach((h, i) => doc.text(h, colX[i], currentY));
+      currentY += rowHeight + 2;
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(8);
+
+      allPosts.forEach(post => {
+        if (currentY > pageHeight - 25) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        const isBest = post.er === maxER;
+        if (isBest) {
+          doc.setFillColor(255, 245, 220);
+          doc.rect(20, currentY - 5, pageWidth - 40, rowHeight, 'F');
+          doc.setTextColor(255, 100, 0);
+          doc.setFont(undefined, 'bold');
+        }
+
+        const data = [post.data, post.titulo.substring(0, 30), `${post.er}%`, post.alcance.toLocaleString(), post.interacoes.toString()];
+        data.forEach((cell, i) => doc.text(String(cell), colX[i], currentY));
+
+        if (isBest) {
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, 'normal');
+        }
+
+        currentY += rowHeight + 1;
+      });
+
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, pageHeight - 10);
+
+      doc.save(`Relatorio_Performance_${new Date().getTime()}.pdf`);
+    }
+  </script>
+</body>
+</html>

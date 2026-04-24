@@ -1,84 +1,58 @@
+// Banco de dados via Supabase — tabela única user_data (chave/valor JSONB)
+// SQL para rodar no Supabase SQL Editor:
+//
+// create table if not exists user_data (
+//   key text primary key,
+//   value jsonb not null default '[]',
+//   updated_at timestamptz default now()
+// );
+// alter table user_data disable row level security;
+
 import { getSupabase, isSupabaseConfigured } from './supabase'
 
-// ─── Load all ─────────────────────────────────────────────────────────────────
+const COLLECTIONS = [
+  'ideas', 'posts', 'metrics', 'clients', 'videoAnalyses',
+  'thoughtCaptures', 'tasks', 'ads', 'leads', 'archetypes',
+  'hybridArchetypes', 'favorites', 'pricingProducts', 'proposals',
+  'creatorProfile', 'brandVoice', 'bannedWords', 'hiddenReportTags',
+]
+
+// ─── Carrega todos os dados do Supabase ───────────────────────────────────────
 
 export async function dbLoadAll() {
   if (!isSupabaseConfigured()) return null
   const db = getSupabase()
 
-  const [ideasRes, postsRes, metricsRes] = await Promise.all([
-    db.from('ideas').select('*').order('created_at', { ascending: false }),
-    db.from('posts').select('*').order('created_at', { ascending: false }),
-    db.from('metrics').select('*').order('created_at', { ascending: false }),
-  ])
+  const { data, error } = await db.from('user_data').select('key, value')
+  if (error) throw new Error(error.message)
 
-  if (ideasRes.error) throw new Error(ideasRes.error.message)
-  if (postsRes.error) throw new Error(postsRes.error.message)
-  if (metricsRes.error) throw new Error(metricsRes.error.message)
-
-  return {
-    ideas: ideasRes.data || [],
-    posts: postsRes.data || [],
-    metrics: metricsRes.data || [],
-  }
+  const result = {}
+  data.forEach((row) => { result[row.key] = row.value })
+  return result
 }
 
-// ─── Ideas ────────────────────────────────────────────────────────────────────
+// ─── Salva todo o estado no Supabase (debounced pelo store) ───────────────────
 
-export async function dbInsertIdea(idea) {
+export async function dbSaveAll(state) {
   if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('ideas').upsert(idea)
-  if (error) console.error('[DB] Insert idea:', error.message)
+  const db = getSupabase()
+
+  const rows = COLLECTIONS.map((key) => ({
+    key,
+    value: state[key] ?? [],
+    updated_at: new Date().toISOString(),
+  }))
+
+  const { error } = await db.from('user_data').upsert(rows)
+  if (error) console.error('[DB] Sync error:', error.message)
 }
 
-export async function dbUpdateIdea(id, updates) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('ideas').update(updates).eq('id', id)
-  if (error) console.error('[DB] Update idea:', error.message)
-}
+// ─── Testa a conexão ──────────────────────────────────────────────────────────
 
-export async function dbDeleteIdea(id) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('ideas').delete().eq('id', id)
-  if (error) console.error('[DB] Delete idea:', error.message)
-}
-
-// ─── Posts ────────────────────────────────────────────────────────────────────
-
-export async function dbInsertPost(post) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('posts').upsert(post)
-  if (error) console.error('[DB] Insert post:', error.message)
-}
-
-export async function dbUpdatePost(id, updates) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('posts').update(updates).eq('id', id)
-  if (error) console.error('[DB] Update post:', error.message)
-}
-
-export async function dbDeletePost(id) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('posts').delete().eq('id', id)
-  if (error) console.error('[DB] Delete post:', error.message)
-}
-
-// ─── Metrics ──────────────────────────────────────────────────────────────────
-
-export async function dbInsertMetric(metric) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('metrics').upsert(metric)
-  if (error) console.error('[DB] Insert metric:', error.message)
-}
-
-export async function dbUpdateMetric(id, updates) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('metrics').update(updates).eq('id', id)
-  if (error) console.error('[DB] Update metric:', error.message)
-}
-
-export async function dbDeleteMetric(id) {
-  if (!isSupabaseConfigured()) return
-  const { error } = await getSupabase().from('metrics').delete().eq('id', id)
-  if (error) console.error('[DB] Delete metric:', error.message)
+export async function dbTestConnection() {
+  if (!isSupabaseConfigured()) throw new Error('Credenciais não configuradas')
+  const db = getSupabase()
+  const { error } = await db.from('user_data').select('key').limit(1)
+  if (error) throw new Error(error.message)
+  return true
 }

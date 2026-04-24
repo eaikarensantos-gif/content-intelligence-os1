@@ -94,29 +94,29 @@ async function youtubeSearch(youtubeApiKey, query) {
   // Step 3: merge into creator cards
   return searchData.items.map((item) => {
     const stats = statsMap[item.id.videoId] || {}
-    const viewCount  = parseInt(stats.viewCount  || 0)
-    const likeCount  = parseInt(stats.likeCount  || 0)
+    const viewCount    = parseInt(stats.viewCount    || 0)
+    const likeCount    = parseInt(stats.likeCount    || 0)
     const commentCount = parseInt(stats.commentCount || 0)
     const engagementRate = viewCount > 0
       ? ((likeCount + commentCount) / viewCount * 100).toFixed(2) + '%'
       : null
 
     return {
-      id:           item.id.videoId,
-      videoId:      item.id.videoId,
-      name:         item.snippet.channelTitle,
-      handle:       item.snippet.channelTitle,
-      platform:     'youtube',
-      videoTitle:   item.snippet.title,
-      description:  item.snippet.description?.slice(0, 200) || '',
-      publishedAt:  item.snippet.publishedAt,
-      thumbnail:    item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
-      channelId:    item.snippet.channelId,
-      url:          `https://www.youtube.com/watch?v=${item.id.videoId}`,
-      channelUrl:   `https://www.youtube.com/channel/${item.snippet.channelId}`,
-      viewCount:    stats.viewCount  || null,
-      likeCount:    stats.likeCount  || null,
-      commentCount: stats.commentCount || null,
+      id:            item.id.videoId,
+      videoId:       item.id.videoId,
+      name:          item.snippet.channelTitle,
+      handle:        item.snippet.channelTitle,
+      platform:      'youtube',
+      videoTitle:    item.snippet.title,
+      description:   item.snippet.description?.slice(0, 200) || '',
+      publishedAt:   item.snippet.publishedAt,
+      thumbnail:     item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+      channelId:     item.snippet.channelId,
+      url:           `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      channelUrl:    `https://www.youtube.com/channel/${item.snippet.channelId}`,
+      viewCount:     stats.viewCount    || null,
+      likeCount:     stats.likeCount    || null,
+      commentCount:  stats.commentCount || null,
       engagementRate,
     }
   })
@@ -125,12 +125,10 @@ async function youtubeSearch(youtubeApiKey, query) {
 // ─── Whisper transcription ────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
-  // Download the audio from the given URL
   const audioRes = await fetch(audioUrl)
   if (!audioRes.ok) throw new Error(`Could not fetch audio: ${audioRes.status}`)
   const audioBuffer = await audioRes.arrayBuffer()
 
-  // Determine file name from URL
   const urlPath = new URL(audioUrl).pathname
   const ext = urlPath.split('.').pop()?.toLowerCase() || 'mp3'
   const supportedExts = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac']
@@ -204,7 +202,10 @@ export default async function handler(req, res) {
       if (!url) return res.status(400).json({ error: `Unknown provider: ${provider}` })
 
       const extraHeaders = provider === 'openrouter'
-        ? { 'HTTP-Referer': req.headers.origin || 'https://content-intelligence-os.vercel.app', 'X-Title': 'Content Intelligence OS' }
+        ? {
+            'HTTP-Referer': req.headers.origin || 'https://content-intelligence-os1.vercel.app',
+            'X-Title': 'Content Intelligence OS',
+          }
         : {}
 
       content = await callOpenAICompatible(url, apiKey, model, messages, options, extraHeaders)

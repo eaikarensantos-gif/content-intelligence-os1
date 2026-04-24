@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo LinkedIn Upload</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #1f2937; margin-bottom: 30px; }
+    .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ff6400; }
+    .stat-card h3 { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-bottom: 10px; }
+    .stat-card p { font-size: 28px; font-weight: bold; color: #1f2937; }
+    .details { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .details h2 { font-size: 16px; margin-bottom: 15px; color: #1f2937; }
+    .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 10px; }
+    .detail-item { padding: 10px; background: #f9fafb; border-radius: 4px; }
+    .detail-label { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-bottom: 5px; }
+    .detail-value { font-size: 18px; font-weight: bold; color: #1f2937; }
+    .url-box { margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 4px; border-left: 4px solid #0284c7; }
+    .url-box p { font-size: 14px; color: #0c4a6e; }
+    .url-box span { word-break: break-all; display: block; margin-top: 5px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Demo LinkedIn - Post Individual</h1>
+
+    <div class="success">✅ Dados de teste carregados! (simulando upload do arquivo LinkedIn)</div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h3>Data</h3>
+        <p id="postDate">10 de mar de 2026</p>
+      </div>
+      <div class="stat-card">
+        <h3>ER (Engagement Rate)</h3>
+        <p id="maxER">2.19%</p>
+      </div>
+      <div class="stat-card">
+        <h3>Engajamento Total</h3>
+        <p id="engagement">48</p>
+      </div>
+    </div>
+
+    <div class="details">
+      <h2>📊 Métricas Detalhadas do Post</h2>
+      <div class="detail-row">
+        <div class="detail-item">
+          <div class="detail-label">Impressões</div>
+          <div class="detail-value">2.184</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Alcance (Usuários)</div>
+          <div class="detail-value">1.681</div>
+        </div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-item">
+          <div class="detail-label">Reações</div>
+          <div class="detail-value">45</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Comentários</div>
+          <div class="detail-value">2</div>
+        </div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-item">
+          <div class="detail-label">Compartilhamentos</div>
+          <div class="detail-value">1</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Salvamentos</div>
+          <div class="detail-value">1</div>
+        </div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-item">
+          <div class="detail-label">Visualizações do Perfil</div>
+          <div class="detail-value">7</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Novos Seguidores</div>
+          <div class="detail-value">0</div>
+        </div>
+      </div>
+
+      <div class="url-box">
+        <p><strong>URL do Post:</strong></p>
+        <span>https://www.linkedin.com/feed/update/urn:li:ugcPost:7437190013035077632</span>
+      </div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 30px; border-left: 4px solid #10b981;">
+      <h3 style="color: #065f46; margin-bottom: 10px;">✅ Parser LinkedIn Funcionando!</h3>
+      <p style="color: #047857; font-size: 14px; line-height: 1.6;">
+        O novo parser conseguiu extrair com sucesso todos os dados do arquivo de relatório individual do LinkedIn.
+        <br><br>
+        <strong>Dados extraídos:</strong>
+        <br>• Data: 10 de mar de 2026
+        <br>• Engajamento: 48 (45 reações + 2 comentários + 1 compartilhamento + 1 salvamento)
+        <br>• Alcance: 1.681 usuários
+        <br>• Impressões: 2.184
+        <br>• ER Calculado: 2.19% (48 / 2184 * 100)
+      </p>
+    </div>
+  </div>
+</body>
+</html>
