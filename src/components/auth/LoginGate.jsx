@@ -164,6 +164,19 @@ export default function LoginGate({ children }) {
     setError('')
   }
 
+  // ── Reset credentials (keeps app data) ──────────────────────────────────
+  const handleResetCredentials = () => {
+    if (!window.confirm('Isso vai apagar suas credenciais de acesso (seus dados do app ficam intactos). Você precisará criar um novo login. Confirmar?')) return
+    localStorage.removeItem(OWNER_KEY)
+    localStorage.removeItem(AUTH_KEY)
+    localStorage.removeItem(ATTEMPTS_KEY)
+    setMode('setup')
+    setError('')
+    setEmail('')
+    setPassword('')
+    setConfirmPassword('')
+  }
+
   // Se autenticado, renderiza o app
   if (session) {
     return (
@@ -322,7 +335,7 @@ export default function LoginGate({ children }) {
           </form>
 
           {/* Security notice */}
-          <div className="mt-6 pt-4 border-t border-gray-100">
+          <div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
             <div className="flex items-start gap-2 text-[11px] text-gray-400">
               <Shield size={12} className="shrink-0 mt-0.5" />
               <p>
@@ -331,6 +344,15 @@ export default function LoginGate({ children }) {
                   : 'Tentativas de acesso não autorizadas são registradas com email, IP e dados do dispositivo.'}
               </p>
             </div>
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={handleResetCredentials}
+                className="w-full text-[11px] text-gray-400 hover:text-orange-500 transition-colors text-center"
+              >
+                Esqueci minha senha — redefinir acesso
+              </button>
+            )}
           </div>
         </div>
 
