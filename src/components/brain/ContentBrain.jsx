@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import {
-  Brain, Plus, Trash2, ArrowRight, AlertTriangle, Archive, Zap,
+  Brain, Plus, Trash2, ArrowRight, AlertTriangle, Archive,
   Clock, X, CheckCircle2, ChevronDown, ChevronUp, Flame, Layers,
-  BarChart2, TrendingUp, Target, RefreshCw, Inbox, ListTodo,
+  BarChart2, Target, RefreshCw, Inbox, ListTodo,
+  CheckSquare, Circle, Calendar,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -263,6 +264,167 @@ function AddForm({ onAdd, onClose }) {
   )
 }
 
+// ── Task helpers ───────────────────────────────────────────────────────────
+const TASK_PRIORITIES = [
+  { id: 'urgent', label: 'Urgente', color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+  { id: 'high',   label: 'Alta',    color: 'text-orange-500', bg: 'bg-orange-50 border-orange-200' },
+  { id: 'medium', label: 'Média',   color: 'text-yellow-500', bg: 'bg-yellow-50 border-yellow-200' },
+  { id: 'low',    label: 'Baixa',   color: 'text-gray-400',   bg: 'bg-gray-50 border-gray-200' },
+]
+
+const TASK_STATUSES = [
+  { id: 'todo',   label: 'A Fazer',     dot: 'bg-gray-400' },
+  { id: 'doing',  label: 'Em Progresso', dot: 'bg-blue-500' },
+  { id: 'review', label: 'Em Revisão',  dot: 'bg-amber-500' },
+  { id: 'done',   label: 'Concluído',   dot: 'bg-emerald-500' },
+]
+
+function priorityMeta(id) {
+  return TASK_PRIORITIES.find((p) => p.id === id) || TASK_PRIORITIES[2]
+}
+
+function formatTaskDate(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr + 'T00:00:00')
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const diff = Math.floor((d - today) / 86400000)
+  if (diff === 0) return { label: 'Hoje', overdue: false }
+  if (diff === 1) return { label: 'Amanhã', overdue: false }
+  if (diff < 0) return { label: `${Math.abs(diff)}d atrás`, overdue: true }
+  return { label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), overdue: false }
+}
+
+// ── Task Card ──────────────────────────────────────────────────────────────
+function TaskCard({ task, onStatusChange, onDelete }) {
+  const [expanded, setExpanded] = useState(false)
+  const pm = priorityMeta(task.priority)
+  const dateInfo = formatTaskDate(task.due_date)
+  const isDone = task.status === 'done'
+
+  const StatusIcon = isDone ? CheckCircle2 : Circle
+
+  return (
+    <div
+      onClick={() => setExpanded((e) => !e)}
+      className={`card p-3.5 space-y-2 cursor-pointer transition-all duration-150
+        hover:border-orange-200 hover:shadow-md
+        ${isDone ? 'opacity-60' : ''}`}
+    >
+      <div className="flex items-start gap-2.5">
+        <button
+          onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, isDone ? 'todo' : 'done') }}
+          className={`shrink-0 mt-0.5 ${isDone ? 'text-emerald-500' : 'text-gray-300 hover:text-emerald-400'} transition-colors`}
+        >
+          <StatusIcon size={16} />
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-semibold text-gray-800 leading-snug ${isDone ? 'line-through text-gray-400' : ''}`}>
+            {task.title}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${pm.bg} ${pm.color}`}>
+              {pm.label}
+            </span>
+            {dateInfo && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium flex items-center gap-1
+                ${dateInfo.overdue ? 'bg-red-50 text-red-500 border-red-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                <Calendar size={9} /> {dateInfo.label}
+              </span>
+            )}
+            {(task.tags || []).slice(0, 2).map((tag) => (
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200 font-medium">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {expanded ? <ChevronUp size={12} className="text-gray-400 shrink-0 mt-1" /> : <ChevronDown size={12} className="text-gray-400 shrink-0 mt-1" />}
+      </div>
+
+      {expanded && (
+        <div className="space-y-2 pt-1 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="space-y-1">
+              {task.subtasks.map((st, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                  {st.done ? <CheckCircle2 size={10} className="text-emerald-400" /> : <Circle size={10} className="text-gray-300" />}
+                  <span className={st.done ? 'line-through text-gray-400' : ''}>{st.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-1 flex-wrap">
+            {TASK_STATUSES.filter((s) => s.id !== task.status).map((s) => (
+              <button key={s.id}
+                onClick={() => onStatusChange(task.id, s.id)}
+                className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 transition-colors">
+                <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} /> {s.label}
+              </button>
+            ))}
+            <button onClick={() => onDelete(task.id)}
+              className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors ml-auto">
+              <Trash2 size={10} /> Excluir
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Add Task Form ──────────────────────────────────────────────────────────
+function AddTaskForm({ onAdd, onClose }) {
+  const [title, setTitle]       = useState('')
+  const [priority, setPriority] = useState('medium')
+  const [dueDate, setDueDate]   = useState('')
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    onAdd({ title: title.trim(), priority, due_date: dueDate || null })
+    setTitle(''); setPriority('medium'); setDueDate('')
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="card p-4 space-y-3 border-orange-200 shadow-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-gray-700">Nova tarefa</p>
+        <button type="button" onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400">
+          <X size={14} />
+        </button>
+      </div>
+
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="O que precisa ser feito?"
+        className="input text-sm"
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="label">Prioridade</label>
+          <select value={priority} onChange={(e) => setPriority(e.target.value)} className="select text-sm">
+            {TASK_PRIORITIES.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Prazo</label>
+          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="input text-sm" />
+        </div>
+      </div>
+
+      <button type="submit" disabled={!title.trim()} className="btn-primary w-full justify-center">
+        <Plus size={15} /> Adicionar tarefa
+      </button>
+    </form>
+  )
+}
+
 // ── Doing-limit modal ──────────────────────────────────────────────────────
 function FocusLimitModal({ doingItems, candidateId, onSwap, onCancel, onMove }) {
   return (
@@ -309,12 +471,19 @@ export default function ContentBrain() {
   const updateBrainItem = useStore((s) => s.updateBrainItem)
   const deleteBrainItem = useStore((s) => s.deleteBrainItem)
 
-  const [tab, setTab]           = useState('inbox')
-  const [showAdd, setShowAdd]   = useState(false)
-  const [filterLH, setFilterLH] = useState(false) // Low Hanging Fruits
+  const tasks      = useStore((s) => s.tasks)
+  const addTask    = useStore((s) => s.addTask)
+  const updateTask = useStore((s) => s.updateTask)
+  const deleteTask = useStore((s) => s.deleteTask)
+
+  const [tab, setTab]             = useState('inbox')
+  const [showAdd, setShowAdd]     = useState(false)
+  const [showAddTask, setShowAddTask] = useState(false)
+  const [filterLH, setFilterLH]   = useState(false) // Low Hanging Fruits
   const [groupPillar, setGroupPillar] = useState(false)
   const [focusModal, setFocusModal]   = useState(null) // candidateId
-  const [showDone, setShowDone] = useState(false)
+  const [showDone, setShowDone]   = useState(false)
+  const [taskFilter, setTaskFilter] = useState('active') // 'active' | 'done'
 
   // ── Auto-archive stale items (60d) ───────────────────────────────────────
   const items = useMemo(() => {
@@ -348,6 +517,20 @@ export default function ContentBrain() {
     return map
   }, [backlog, groupPillar])
 
+  // ── Tasks derived ────────────────────────────────────────────────────────
+  const activeTasks = useMemo(() =>
+    tasks.filter((t) => t.status !== 'done').sort((a, b) => {
+      const order = { urgent: 0, high: 1, medium: 2, low: 3 }
+      return (order[a.priority] ?? 2) - (order[b.priority] ?? 2)
+    }),
+    [tasks])
+
+  const doneTasks = useMemo(() =>
+    tasks.filter((t) => t.status === 'done'),
+    [tasks])
+
+  const visibleTasks = taskFilter === 'done' ? doneTasks : activeTasks
+
   // ── Stats ─────────────────────────────────────────────────────────────────
   const topScore = useMemo(() =>
     backlog.length > 0 ? calcScore(backlog[0].impact, backlog[0].effort) : 0,
@@ -378,9 +561,10 @@ export default function ContentBrain() {
   }
 
   const TABS = [
-    { id: 'inbox',   label: 'Fornalha',  icon: Inbox,   count: inbox.length },
-    { id: 'backlog', label: 'Backlog',   icon: BarChart2, count: backlog.length },
-    { id: 'doing',   label: 'Foco',      icon: Flame,   count: doing.length, max: 3 },
+    { id: 'inbox',   label: 'Fornalha',  icon: Inbox,      count: inbox.length },
+    { id: 'backlog', label: 'Backlog',   icon: BarChart2,   count: backlog.length },
+    { id: 'doing',   label: 'Foco',      icon: Flame,      count: doing.length, max: 3 },
+    { id: 'tasks',   label: 'Tarefas',   icon: CheckSquare, count: activeTasks.length },
   ]
 
   return (
@@ -401,6 +585,7 @@ export default function ContentBrain() {
             { label: 'Top score', value: topScore },
             { label: 'Degradando', value: staleCount },
             { label: 'Foco hoje', value: `${doing.length}/3` },
+            { label: 'Tarefas', value: activeTasks.length },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white/15 rounded-xl px-3 py-1.5">
               <div className="text-base font-bold">{value}</div>
@@ -581,6 +766,62 @@ export default function ContentBrain() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── TAREFAS ──────────────────────────────────────────────────────── */}
+      {tab === 'tasks' && (
+        <div className="space-y-3">
+          {/* Filter bar */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl flex-1">
+              {[
+                { id: 'active', label: `Ativas (${activeTasks.length})` },
+                { id: 'done',   label: `Concluídas (${doneTasks.length})` },
+              ].map(({ id, label }) => (
+                <button key={id} onClick={() => setTaskFilter(id)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    taskFilter === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {!showAddTask && (
+              <button onClick={() => setShowAddTask(true)}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors shrink-0">
+                <Plus size={13} /> Nova
+              </button>
+            )}
+          </div>
+
+          {showAddTask && (
+            <AddTaskForm
+              onAdd={(data) => { addTask(data); setShowAddTask(false) }}
+              onClose={() => setShowAddTask(false)}
+            />
+          )}
+
+          {visibleTasks.length === 0 && !showAddTask && (
+            <div className="text-center py-12 text-gray-400 space-y-2">
+              <CheckSquare size={32} className="mx-auto text-gray-200" />
+              <p className="text-sm font-medium">
+                {taskFilter === 'done' ? 'Nenhuma tarefa concluída ainda' : 'Nenhuma tarefa ativa'}
+              </p>
+              <p className="text-xs">
+                {taskFilter === 'active' ? 'Crie tarefas para acompanhar seu progresso.' : ''}
+              </p>
+            </div>
+          )}
+
+          {visibleTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onStatusChange={(id, status) => updateTask(id, { status })}
+              onDelete={deleteTask}
+            />
+          ))}
         </div>
       )}
 
