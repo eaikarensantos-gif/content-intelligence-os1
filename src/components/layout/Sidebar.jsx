@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, ClipboardList, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors, Activity,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors, Activity,
   Brain, Sun, Moon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -13,7 +13,6 @@ import useAIStore from '../../store/useAIStore'
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
   { to: '/brain', icon: Brain, label: 'Content Brain' },
-  { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },

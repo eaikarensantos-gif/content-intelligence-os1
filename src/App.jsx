@@ -18,7 +18,6 @@ import UnifiedCreator from './components/create/UnifiedCreator'
 import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
 import AccessLog from './components/auth/AccessLog'
-import TaskBoard from './components/tasks/TaskBoard'
 import AdManager from './components/ads/AdManager'
 // import ContentArchetypes from './components/archetypes/ContentArchetypes' // arquivado
 // import BriefingStudio from './components/brand/BriefingStudio' // arquivado
@@ -91,7 +90,6 @@ export default function App() {
             <Route path="/generate" element={<IdeaGenerator />} />
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
-            <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/ads" element={<AdManager />} />
             {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
