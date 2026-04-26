@@ -1,5 +1,4 @@
-// Zero Mock Policy: all data starts empty.
-// Users add their own real content; no fake pre-populated data.
+// Sem dados de exemplo — o app inicia vazio para dados reais do usuário
 export const sampleIdeas = []
 export const samplePosts = []
 export const sampleMetrics = []

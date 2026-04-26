@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -15,6 +16,7 @@ export default {
       animation: {
         'fade-in': 'fadeIn 0.25s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.25s ease-out',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
       },
       keyframes: {
@@ -22,6 +24,10 @@ export default {
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInRight: {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
         },
         pulseGlow: {
           '0%,100%': { boxShadow: '0 0 5px rgba(249,115,22,0.3)' },

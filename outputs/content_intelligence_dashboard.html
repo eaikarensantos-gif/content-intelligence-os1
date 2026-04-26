@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Intelligence Dashboard — @karensantosperfil</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0d0d0d; --surface: #161616; --card: #1e1e1e; --border: #2a2a2a;
+  --accent: #c8a96e; --accent2: #7c6fcd; --accent3: #4ecca3;
+  --text: #e8e8e8; --muted: #888;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, 'Segoe UI', sans-serif; line-height: 1.5; }
+.container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+@media (max-width: 900px) { .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; } }
+@media (min-width: 901px) and (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-5 { grid-template-columns: repeat(3, 1fr); } }
+h1 { font-size: 28px; font-weight: 800; color: var(--text); }
+h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+h3 { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.section { margin-top: 32px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.kpi-value { font-size: 32px; font-weight: 800; color: var(--accent); margin: 8px 0 4px; }
+.kpi-label { font-size: 12px; color: var(--muted); }
+.kpi-detail { font-size: 11px; color: var(--muted); opacity: 0.7; margin-top: 4px; line-height: 1.4; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; padding: 10px 12px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+tr:hover td { background: rgba(200, 169, 110, 0.05); }
+.theme-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.insight-item { padding: 16px; border-left: 3px solid var(--accent); margin-bottom: 12px; background: var(--surface); border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.6; }
+.cal-cell { text-align: center; padding: 20px 12px; }
+.cal-day { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.cal-format { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.cal-theme { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.cal-metric { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; background: rgba(200, 169, 110, 0.15); color: var(--accent); margin-bottom: 6px; }
+.cal-reason { font-size: 10px; color: var(--muted); line-height: 1.4; }
+.header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-logo { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; color: #fff; }
+.header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.header-meta { font-size: 12px; color: var(--muted); }
+canvas { max-height: 300px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">CI</div>
+    <div>
+      <h1>Content Intelligence OS</h1>
+      <p class="header-meta">@karensantosperfil · Karen Santos | Carreira & Tech</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="header-meta">26/03/2025 — 19/03/2026</span>
+    <span class="badge" style="background: rgba(200,169,110,0.15); color: var(--accent);">Análise Estratégica</span>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="section grid-4">
+  <div class="card">
+    <h3>Posts Orgânicos</h3>
+    <div class="kpi-value">95</div>
+    <div class="kpi-label">62 Reels · 33 Carrosséis</div>
+    <div class="kpi-detail">3 posts com boost removidos da análise</div>
+  </div>
+  <div class="card">
+    <h3>Melhor Eng%</h3>
+    <div class="kpi-value">23.8%</div>
+    <div class="kpi-label">26/08/2025 · Ter</div>
+    <div class="kpi-detail">Adaptabilidade e resiliência se tornaram o padrão corporativo, mas seriam apenas...</div>
+  </div>
+  <div class="card">
+    <h3>Recorde de Saves</h3>
+    <div class="kpi-value">485</div>
+    <div class="kpi-label">Carrossel · Carreira</div>
+    <div class="kpi-detail">Uma carreira que parece “confusa” no papel é, muitas vezes, a mais rica. O probl...</div>
+  </div>
+  <div class="card">
+    <h3>Viral Orgânico</h3>
+    <div class="kpi-value">35.553</div>
+    <div class="kpi-label">views · Reel</div>
+    <div class="kpi-detail">A “Oferta Enganoda” tem um inimigo mortal: a sua atenção! 🕵️‍♀️🚫
+
+Se o preço t...</div>
+  </div>
+</div>
+
+<!-- CHARTS ROW 1 -->
+<div class="section grid-2">
+  <div class="card">
+    <h3>Eng% Médio por Dia da Semana</h3>
+    <canvas id="chartEngDay"></canvas>
+  </div>
+  <div class="card">
+    <h3>Saves Médios por Dia da Semana</h3>
+    <canvas id="chartSavesDay"></canvas>
+  </div>
+</div>
+
+<!-- CHARTS ROW 2 -->
+<div class="section grid-3">
+  <div class="card">
+    <h3>Shares Médios por Tema</h3>
+    <canvas id="chartSharesTheme"></canvas>
+  </div>
+  <div class="card">
+    <h3>Saves Médios por Tema</h3>
+    <canvas id="chartSavesTheme"></canvas>
+  </div>
+  <div class="card">
+    <h3>Reel vs Carrossel</h3>
+    <canvas id="chartRadar"></canvas>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section grid-2">
+  <div class="card">
+    <h3>Top 5 Posts por Engajamento</h3>
+    <table>
+      <thead><tr><th>Data</th><th>Dia</th><th>Tipo</th><th>Tema</th><th>Saves</th><th>Shares</th><th>Eng%</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>16/03/2026</td>
+          <td>Seg</td>
+          <td>Reel</td>
+          <td><span class="theme-badge" style="background: #4ecca322; color: #4ecca3">Humor Corporativo</span></td>
+          <td>48</td>
+          <td>387</td>
+          <td style="color: var(--accent); font-weight: 700;">9.3%</td>
+        </tr>
+        <tr>
+          <td>30/10/2025</td>
+          <td>Qui</td>
+          <td>Carrossel</td>
+          <td><span class="theme-badge" style="background: #c8a96e22; color: #c8a96e">Carreira</span></td>
+          <td>485</td>
+          <td>355</td>
+          <td style="color: var(--accent); font-weight: 700;">19.4%</td>
+        </tr>
+        <tr>
+          <td>15/12/2025</td>
+          <td>Seg</td>
+          <td>Carrossel</td>
+          <td><span class="theme-badge" style="background: #66622; color: #666">Outro</span></td>
+          <td>223</td>
+          <td>388</td>
+          <td style="color: var(--accent); font-weight: 700;">16.2%</td>
+        </tr>
+        <tr>
+          <td>01/10/2025</td>
+          <td>Qua</td>
+          <td>Carrossel</td>
+          <td><span class="theme-badge" style="background: #66622; color: #666">Outro</span></td>
+          <td>0</td>
+          <td>109</td>
+          <td style="color: var(--accent); font-weight: 700;">0.0%</td>
+        </tr>
+        <tr>
+          <td>09/12/2025</td>
+          <td>Ter</td>
+          <td>Carrossel</td>
+          <td><span class="theme-badge" style="background: #c8a96e22; color: #c8a96e">Carreira</span></td>
+          <td>57</td>
+          <td>89</td>
+          <td style="color: var(--accent); font-weight: 700;">12.0%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Insights Estratégicos</h3>
+    <div class="insight-item">📅 Qua é o dia com maior engajamento médio (12.6%), seguido de Seg (11.9%). Concentre posts estratégicos nesses dias.</div>
+    <div class="insight-item">🕐 Posts publicados no horário "Tarde (12-18h)" têm o melhor Eng% médio (11.1%). 49 dos 95 posts foram nessa faixa.</div>
+    <div class="insight-item">💾 O tema "Carreira" lidera em salvamentos (média de 38 saves), indicando conteúdo de referência — invista em carrosséis educativos nesse tema.</div>
+    <div class="insight-item">🔄 "Humor Corporativo" é o tema mais compartilhado (média de 74 shares), sugerindo alto potencial de viralização orgânica.</div>
+    <div class="insight-item">🎬 Carrosséis superam Reels em engajamento (13.2% vs 8.9%), mas Reels geram mais saves (5 vs 40) — combine ambos na semana.</div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="section">
+  <h2>📅 Calendário Semanal Recomendado</h2>
+  <div class="grid-5">
+    <div class="card cal-cell">
+      <div class="cal-day" style="color: var(--accent2)">Seg</div>
+      <div class="cal-format">Carrossel</div>
+      <div class="cal-theme" style="color: #c8a96e">Carreira</div>
+      <div class="cal-metric">Eng% 11.9%</div>
+      <div class="cal-reason">Segundo melhor engajamento — dia forte</div>
+    </div>
+    <div class="card cal-cell">
+      <div class="cal-day" style="color: var(--text)">Ter</div>
+      <div class="cal-format">Reel</div>
+      <div class="cal-theme" style="color: #4ecca3">Humor Corporativo</div>
+      <div class="cal-metric">10 saves avg</div>
+      <div class="cal-reason">19 posts no histórico</div>
+    </div>
+    <div class="card cal-cell">
+      <div class="cal-day" style="color: var(--accent)">Qua</div>
+      <div class="cal-format">Carrossel</div>
+      <div class="cal-theme" style="color: #7c6fcd">IA/Tech</div>
+      <div class="cal-metric">Eng% 12.6%</div>
+      <div class="cal-reason">Melhor dia para engajamento nos dados</div>
+    </div>
+    <div class="card cal-cell">
+      <div class="cal-day" style="color: var(--text)">Qui</div>
+      <div class="cal-format">Reel</div>
+      <div class="cal-theme" style="color: #e06090">Mulheres & Identidade</div>
+      <div class="cal-metric">30 saves avg</div>
+      <div class="cal-reason">19 posts no histórico</div>
+    </div>
+    <div class="card cal-cell">
+      <div class="cal-day" style="color: var(--text)">Sex</div>
+      <div class="cal-format">Carrossel</div>
+      <div class="cal-theme" style="color: #c8a96e">Carreira</div>
+      <div class="cal-metric">4 saves avg</div>
+      <div class="cal-reason">Fecha a semana com conteúdo leve</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+Chart.defaults.color = '#888';
+Chart.defaults.borderColor = '#2a2a2a';
+
+// Eng% by day
+new Chart(document.getElementById('chartEngDay'), {
+  type: 'bar',
+  data: {
+    labels: ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"],
+    datasets: [{
+      data: [11.9,11.5,12.6,8.3,7.4,5.1,10.3],
+      backgroundColor: ["#555","#555","#c8a96e","#555","#555","#555","#555"],
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } } }
+});
+
+// Saves by day
+new Chart(document.getElementById('chartSavesDay'), {
+  type: 'bar',
+  data: {
+    labels: ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"],
+    datasets: [{
+      data: [27.4,9.5,12.1,29.8,4.3,4,2.3],
+      backgroundColor: ["#555","#555","#555","#c8a96e","#555","#555","#555"],
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+// Shares by theme (horizontal)
+new Chart(document.getElementById('chartSharesTheme'), {
+  type: 'bar',
+  data: {
+    labels: ["Humor Corporativo","Carreira","Outro","IA/Tech","Publi/Parceria","Mulheres & Identidade"],
+    datasets: [{
+      data: [73.7,32.5,21.7,16,4.2,1.7],
+      backgroundColor: ["#4ecca3","#c8a96e","#666","#7c6fcd","#aaa","#e06090"],
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+});
+
+// Saves by theme (horizontal)
+new Chart(document.getElementById('chartSavesTheme'), {
+  type: 'bar',
+  data: {
+    labels: ["Carreira","IA/Tech","Outro","Humor Corporativo","Publi/Parceria","Mulheres & Identidade"],
+    datasets: [{
+      data: [37.5,18.5,15.9,11.8,2.9,1.7],
+      backgroundColor: ["#c8a96e","#7c6fcd","#666","#4ecca3","#aaa","#e06090"],
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+});
+
+// Radar
+new Chart(document.getElementById('chartRadar'), {
+  type: 'radar',
+  data: {
+    labels: ["Views","Eng%","Saves","Shares","Alcance"],
+    datasets: [
+      { label: 'Reel', data: [64,68,14,39,100], borderColor: '#c8a96e', backgroundColor: 'rgba(200,169,110,0.15)', pointBackgroundColor: '#c8a96e', borderWidth: 2 },
+      { label: 'Carrossel', data: [100,100,100,100,43], borderColor: '#7c6fcd', backgroundColor: 'rgba(124,111,205,0.15)', pointBackgroundColor: '#7c6fcd', borderWidth: 2 },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 16 } } },
+    scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: '#2a2a2a' }, angleLines: { color: '#2a2a2a' }, pointLabels: { font: { size: 11 } } } }
+  }
+});
+</script>
+</body>
+</html>

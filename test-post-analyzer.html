@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste PostAnalyzer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { color: #1f2937; margin-bottom: 30px; }
+    .upload-box { background: white; border: 2px dashed #d1d5db; border-radius: 8px; padding: 40px; text-align: center; margin-bottom: 30px; cursor: pointer; }
+    .upload-box:hover { border-color: #ff6400; background: #fef8f1; }
+    input[type="file"] { display: none; }
+    button { background: #ff6400; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #e55c00; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ff6400; }
+    .stat-card h3 { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-bottom: 10px; }
+    .stat-card p { font-size: 28px; font-weight: bold; color: #1f2937; }
+    table { width: 100%; background: white; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
+    th { background: #ff6400; color: white; padding: 12px; text-align: left; font-weight: 600; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+    tr:hover { background: #f9fafb; }
+    tr.max-er { background: #fef3e8; }
+    .er-high { color: #ff6400; font-weight: bold; }
+    .error { background: #fee; color: #c00; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+    .loading { color: #6b7280; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Teste PostAnalyzer</h1>
+
+    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+      <p>Arraste um arquivo .xlsx aqui ou clique para selecionar</p>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="loading" class="loading" style="display: none;">Processando arquivo...</div>
+
+    <div id="results" style="display: none;">
+      <div class="stats">
+        <div class="stat-card">
+          <h3>Posts Analisados</h3>
+          <p id="postCount">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Maior ER</h3>
+          <p id="maxER">0%</p>
+        </div>
+        <div class="stat-card">
+          <h3>Período</h3>
+          <p id="period">-</p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Título</th>
+            <th style="width: 100px;">ER %</th>
+            <th style="width: 120px;">Alcance</th>
+            <th style="width: 120px;">Link</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+
+      <button onclick="generatePDF()" style="margin-top: 30px; width: 100%;">📥 Gerar Relatório PDF</button>
+    </div>
+  </div>
+
+  <script>
+    let parsedData = null;
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      error.style.display = 'none';
+      loading.style.display = 'block';
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const workbook = XLSX.read(event.target.result, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+          // Parse Instagram data
+          const today = new Date();
+          const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+          const [year, month] = period.split('-');
+          const currentPeriod = new Date(`${year}-${month}-01`);
+
+          const posts = jsonData
+            .filter(row => {
+              const rowDate = row['Data'] || row['Date'];
+              if (!rowDate) return false;
+              try {
+                const pDate = new Date(rowDate);
+                return pDate.getFullYear() === currentPeriod.getFullYear() &&
+                       pDate.getMonth() === currentPeriod.getMonth();
+              } catch {
+                return false;
+              }
+            })
+            .map(row => {
+              const interacoes = (parseInt(row['Curtidas'] || row['Likes'] || 0) || 0) +
+                                (parseInt(row['Comentários'] || row['Comments'] || 0) || 0) +
+                                (parseInt(row['Compartilhamentos'] || row['Shares'] || 0) || 0) +
+                                (parseInt(row['Salvamentos'] || row['Saves'] || 0) || 0);
+
+              const alcance = parseInt(row['Alcance'] || row['Reach'] || 0) || 0;
+              const impressoes = parseInt(row['Impressões'] || row['Impressions'] || 0) || 0;
+              const base = alcance > 0 ? alcance : impressoes;
+              const er = base > 0 ? ((interacoes / base) * 100).toFixed(2) : 0;
+
+              return {
+                data: row['Data'] || row['Date'],
+                titulo: row['Título'] || row['Caption'] || 'Post sem título',
+                er: parseFloat(er),
+                alcance: alcance || impressoes,
+                link: row['URL do Post'] || row['Link'] || 'Link não disponível',
+                interacoes,
+                base
+              };
+            })
+            .sort((a, b) => b.er - a.er);
+
+          parsedData = { posts, period, maxER: Math.max(...posts.map(p => p.er)) };
+
+          // Display results
+          document.getElementById('postCount').textContent = posts.length;
+          document.getElementById('maxER').textContent = parsedData.maxER.toFixed(2) + '%';
+          document.getElementById('period').textContent = period;
+
+          const tbody = document.getElementById('tableBody');
+          tbody.innerHTML = posts.map(post => `
+            <tr class="${post.er === parsedData.maxER ? 'max-er' : ''}">
+              <td>${post.data || '—'}</td>
+              <td>${post.titulo.substring(0, 50)}</td>
+              <td class="${post.er === parsedData.maxER ? 'er-high' : ''}">${post.er}%</td>
+              <td>${post.alcance.toLocaleString()}</td>
+              <td>${post.link !== 'Link não disponível' ? `<a href="${post.link}" target="_blank">🔗 Ver Post</a>` : 'N/A'}</td>
+            </tr>
+          `).join('');
+
+          document.getElementById('results').style.display = 'block';
+          loading.style.display = 'none';
+        } catch (err) {
+          error.textContent = '❌ Erro: ' + err.message;
+          error.style.display = 'block';
+          loading.style.display = 'none';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Load test data automatically on page load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        fetch('/instagram_test_data.xlsx')
+          .then(r => r.arrayBuffer())
+          .then(buffer => {
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+            const today = new Date();
+            const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const [year, month] = period.split('-');
+            const currentPeriod = new Date(`${year}-${month}-01`);
+
+            const posts = jsonData
+              .filter(row => {
+                const rowDate = row['Data'] || row['Date'];
+                if (!rowDate) return false;
+                try {
+                  const pDate = new Date(rowDate);
+                  return pDate.getFullYear() === currentPeriod.getFullYear() &&
+                         pDate.getMonth() === currentPeriod.getMonth();
+                } catch {
+                  return false;
+                }
+              })
+              .map(row => {
+                const interacoes = (parseInt(row['Curtidas'] || row['Likes'] || 0) || 0) +
+                                  (parseInt(row['Comentários'] || row['Comments'] || 0) || 0) +
+                                  (parseInt(row['Compartilhamentos'] || row['Shares'] || 0) || 0) +
+                                  (parseInt(row['Salvamentos'] || row['Saves'] || 0) || 0);
+
+                const alcance = parseInt(row['Alcance'] || row['Reach'] || 0) || 0;
+                const impressoes = parseInt(row['Impressões'] || row['Impressions'] || 0) || 0;
+                const base = alcance > 0 ? alcance : impressoes;
+                const er = base > 0 ? ((interacoes / base) * 100).toFixed(2) : 0;
+
+                return {
+                  data: row['Data'] || row['Date'],
+                  titulo: row['Título'] || row['Caption'] || 'Post sem título',
+                  er: parseFloat(er),
+                  alcance: alcance || impressoes,
+                  link: row['URL do Post'] || row['Link'] || 'Link não disponível',
+                  interacoes,
+                  base
+                };
+              })
+              .sort((a, b) => b.er - a.er);
+
+            parsedData = { posts, period, maxER: Math.max(...posts.map(p => p.er)) };
+
+            document.getElementById('postCount').textContent = posts.length;
+            document.getElementById('maxER').textContent = parsedData.maxER.toFixed(2) + '%';
+            document.getElementById('period').textContent = period;
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = posts.map(post => `
+              <tr class="${post.er === parsedData.maxER ? 'max-er' : ''}">
+                <td>${post.data || '—'}</td>
+                <td>${post.titulo.substring(0, 50)}</td>
+                <td class="${post.er === parsedData.maxER ? 'er-high' : ''}">${post.er}%</td>
+                <td>${post.alcance.toLocaleString()}</td>
+                <td>${post.link !== 'Link não disponível' ? `<a href="${post.link}" target="_blank">🔗 Ver Post</a>` : 'N/A'}</td>
+              </tr>
+            `).join('');
+
+            document.getElementById('results').style.display = 'block';
+          })
+          .catch(() => {
+            console.log('Teste: carregue o arquivo manualmente');
+          });
+      }, 500);
+    });
+
+    function generatePDF() {
+      if (!parsedData || parsedData.posts.length === 0) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let currentY = 20;
+
+      // Header
+      doc.setFontSize(18);
+      doc.text('📱 Performance Individual de Posts', 20, currentY);
+      currentY += 15;
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Plataforma: INSTAGRAM | Período: ${parsedData.period}`, 20, currentY);
+      currentY += 15;
+
+      // Table
+      const cols = [20, 70, 20, 30, 25];
+      const colX = [15, 40, 115, 140, 175];
+      const rowHeight = 8;
+
+      doc.setFillColor(255, 100, 0);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+
+      const headers = ['Data', 'Título/Tema', 'ER %', 'Alcance', 'Link'];
+      headers.forEach((h, i) => {
+        doc.text(h, colX[i], currentY, { maxWidth: cols[i] - 2 });
+      });
+      currentY += rowHeight + 2;
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+
+      parsedData.posts.forEach(post => {
+        if (currentY > pageHeight - 20) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        const isMax = post.er === parsedData.maxER;
+        if (isMax) {
+          doc.setFillColor(255, 240, 220);
+          doc.rect(15, currentY - 6, 165, rowHeight, 'F');
+        }
+
+        if (isMax) {
+          doc.setTextColor(255, 100, 0);
+          doc.setFont(undefined, 'bold');
+        }
+
+        const rowData = [post.data || '—', post.titulo.substring(0, 45), `${post.er}%`, post.alcance.toLocaleString(), '🔗'];
+        rowData.forEach((cell, i) => {
+          doc.text(String(cell), colX[i], currentY, { maxWidth: cols[i] - 2 });
+        });
+
+        if (isMax) {
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, 'normal');
+        }
+
+        currentY += rowHeight;
+      });
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 15, pageHeight - 10);
+
+      doc.save(`Performance_instagram_${parsedData.period}.pdf`);
+    }
+  </script>
+</body>
+</html>

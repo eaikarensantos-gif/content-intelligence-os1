@@ -1,54 +1,318 @@
 import { useState } from 'react'
 import {
   Search, Radar, Users, TrendingUp, Lightbulb, Plus, ExternalLink,
-  ChevronDown, ChevronUp, Loader2, Zap, Settings, Youtube, AlertCircle,
-  Eye, ThumbsUp, MessageCircle, Link2,
+  ChevronDown, ChevronUp, Loader2, Brain, Zap, BarChart2,
+  MessageSquare, Layout, BookOpen, Target, AlertCircle,
+  Flame, Sparkles, Globe, Check, ArrowUpRight, Hash,
+  FileText, Eye, Filter, KeyRound, Layers, Youtube, RefreshCw,
+  Heart, Bookmark,
 } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
-import useStore from '../../store/useStore'
-import useAIStore from '../../store/useAIStore'
-import { youtubeSearch, aiTrendSearch } from '../../lib/aiService'
-import { PlatformBadge, FormatBadge } from '../common/Badge'
 
-const PLATFORM_ICONS = {
-  linkedin: '💼', instagram: '📸', tiktok: '🎵', youtube: '🎬', twitter: '𝕏',
+const LS_YOUTUBE = 'cio-youtube-key'
+
+async function searchYouTubeChannels(query, apiKey) {
+  // Step 1: search for channels
+  const searchRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=12&relevanceLanguage=pt&regionCode=BR&key=${apiKey}`
+  )
+  if (!searchRes.ok) {
+    const err = await searchRes.json()
+    throw new Error(err.error?.message || 'Erro na YouTube API')
+  }
+  const searchData = await searchRes.json()
+  const items = searchData.items || []
+  if (items.length === 0) return []
+
+  // Step 2: get statistics for each channel
+  const ids = items.map(i => i.id.channelId).join(',')
+  const statsRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${ids}&key=${apiKey}`
+  )
+  const statsData = await statsRes.json()
+  const statsMap = {}
+  ;(statsData.items || []).forEach(ch => { statsMap[ch.id] = ch })
+
+  return items.map(item => {
+    const chId = item.id.channelId
+    const stats = statsMap[chId]
+    const subs = stats?.statistics?.subscriberCount
+    const subsFormatted = subs
+      ? subs >= 1_000_000 ? `${(subs / 1_000_000).toFixed(1)}M`
+      : subs >= 1_000 ? `${Math.round(subs / 1_000)}K`
+      : subs
+      : '—'
+    return {
+      id: chId,
+      name: item.snippet.channelTitle,
+      description: item.snippet.description,
+      thumbnail: item.snippet.thumbnails?.default?.url,
+      subscribers: subsFormatted,
+      channel_url: `https://www.youtube.com/channel/${chId}`,
+      videos: stats?.statistics?.videoCount || '—',
+    }
+  })
+}
+import useStore from '../../store/useStore'
+import { PlatformBadge, FormatBadge } from '../common/Badge'
+// CarouselStudio moved to /carousel route (Studio de Criação)
+
+// ─── Suggested topics ─────────────────────────────────────────────────────────
+const SUGGESTED = [
+  'IA nos negócios', 'economia de criadores', 'carreira em tecnologia',
+  'marketing digital', 'marca pessoal', 'vida como solopreneur',
+  'finanças pessoais', 'produtividade com IA',
+]
+
+// ─── Signal visual maps ────────────────────────────────────────────────────────
+const SIGNAL_COLORS = {
+  'Fraco':         'bg-gray-100 text-gray-500 border-gray-200',
+  'Emergente':     'bg-blue-100 text-blue-700 border-blue-200',
+  'Forte':         'bg-emerald-100 text-emerald-700 border-emerald-200',
+  'Alto Momentum': 'bg-orange-100 text-orange-700 border-orange-200',
+  'Saturado':      'bg-red-100 text-red-500 border-red-200',
+  'Crescendo':     'bg-teal-100 text-teal-700 border-teal-200',
+}
+const SIGNAL_DOTS = {
+  'Fraco':         'bg-gray-400',
+  'Emergente':     'bg-blue-500',
+  'Forte':         'bg-emerald-500',
+  'Alto Momentum': 'bg-orange-500',
+  'Saturado':      'bg-red-400',
+  'Crescendo':     'bg-teal-500',
+}
+const PLATFORM_META = {
+  tiktok:    { emoji: '🎵', color: 'from-black to-gray-800', text: 'text-white', label: 'TikTok' },
+  instagram: { emoji: '📸', color: 'from-purple-600 to-pink-500', text: 'text-white', label: 'Instagram' },
+  youtube:   { emoji: '🎬', color: 'from-red-600 to-red-700', text: 'text-white', label: 'YouTube' },
+  linkedin:  { emoji: '💼', color: 'from-blue-700 to-blue-800', text: 'text-white', label: 'LinkedIn' },
+  twitter:   { emoji: '𝕏', color: 'from-gray-900 to-black', text: 'text-white', label: 'X / Twitter' },
+}
+const POTENTIAL_COLORS = {
+  'Very High': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  'High':      'bg-blue-100 text-blue-700 border-blue-200',
+  'Medium':    'bg-gray-100 text-gray-500 border-gray-200',
+  'Low':       'bg-gray-100 text-gray-400 border-gray-200',
+}
+const POTENTIAL_LABELS = { 'Very High': 'Muito Alto', 'High': 'Alto', 'Medium': 'Médio', 'Low': 'Baixo' }
+const GAP_COLORS = { 'Alta': 'bg-orange-100 text-orange-700 border-orange-200', 'Média': 'bg-blue-100 text-blue-700 border-blue-200', 'Baixa': 'bg-gray-100 text-gray-500 border-gray-200' }
+
+const LOADING_PHASES = [
+  'Escaneando plataformas...',
+  'Mapeando criadores relevantes...',
+  'Detectando padrões de conteúdo...',
+  'Identificando lacunas e oportunidades...',
+  'Gerando insights estratégicos...',
+]
+
+// ─── Claude API call ───────────────────────────────────────────────────────────
+async function callClaudeForTrends(apiKey, topic, insights = []) {
+  const insightsContext = insights?.length
+    ? `\nCREATOR PERSONAL ANALYTICS (use to personalize recommendations):\n${insights.slice(0, 8).map((ins) => `- ${ins.title}: ${ins.description || ''}`).join('\n')}`
+    : ''
+
+  const prompt = `You are a social media trend intelligence analyst specializing in Brazilian content creators. Analyze the topic "${topic}" and generate a comprehensive, SPECIFIC trend intelligence report.
+
+${insightsContext}
+
+CREATOR PROFILE — this report is for a specific creator. Ideas and opportunities MUST fit their brand:
+- She talks about TECH CAREER in general — not UX, not product management, not a specific role. Content must be relevant to any tech professional.
+- Her content style: REFLEXIVE SENIOR — analytical, critical, direct. She provokes thought, not motivation.
+- Her audience: professionals navigating real complexity in tech careers — layoffs, AI disruption, leadership decisions, seniority debates.
+- Her tone: like a candid conversation after a hard meeting, not a lifestyle influencer or productivity guru.
+
+CONTENT IDEAS MUST AVOID (apply to "ideas" and "opportunities" arrays):
+- Tool lists ("5 ferramentas que uso...", "apps que uso no dia a dia")
+- Income comparisons ("abandonei meu emprego de R$15k para ganhar R$3k")
+- Home office / workspace tours
+- Productivity hacks, morning routines, time management tips
+- Motivational or inspirational content ("você consegue", "acredite em você")
+- "X erros que eu cometi" framing with clickbait energy
+- Lifestyle content about being a solopreneur/freelancer (cost of living, tools budget)
+- Content that sounds like a self-help podcast or entrepreneurship influencer
+- Catastrophist or extremist takes: "a bolha tech acabou", "o fim de [profissão]", "ninguém quer admitir", "[X] está morto"
+- The AI-and-jobs cliché in any form: "IA vai roubar seu emprego", "vai te tornar irrelevante", "sua carreira vai acabar" — this angle is overused and doesn't match the creator's voice
+- Engagement bait titles that exist only to provoke reaction without real substance behind them
+
+CONTENT IDEAS MUST FAVOR:
+- Reflective analysis of what's changing in tech careers and what it means
+- Contrarian takes with real argument (going against market consensus)
+- Human/ethical impact of tech decisions on professionals
+- Specific observations from experience, not generic advice
+- Titles that sound like a talk opening or a direct professional conversation — short, with a clear position
+- Hook examples that feel like "something a senior tech professional would say after years of experience"
+
+CRITICAL RULES:
+- ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
+- Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
+- Hook examples must be SPECIFIC to topic "${topic}", not generic
+- Content gaps must be REAL underexplored angles about "${topic}"
+
+CREATOR SEARCH STRATEGY — CRITICAL RULES:
+- Do NOT invent or name specific real people. Claude does not have real-time social media data.
+- Instead, generate actionable search intelligence per platform so the user can find real creators themselves.
+- For each platform, provide: specific hashtags to search, keyword search terms, and a clear description of what type of creator to look for.
+- The search URLs must be real, clickable links using the exact hashtags/terms you provide.
+
+Return ONLY a compact JSON object (no markdown). Generate exactly the counts shown — no more:
+{
+  "topic": "${topic}",
+  "overall_signal": "Emergente|Crescendo|Alto Momentum|Saturado",
+  "signal_score": 0-100,
+  "platform_signals": [
+    { "platform": "tiktok", "signal": "Fraco|Emergente|Forte|Alto Momentum", "posts_per_week": "~XK/sem", "growth_rate": "+X%", "dominant_format": "formato", "key_insight": "1 frase" },
+    { "platform": "instagram", "signal": "...", "posts_per_week": "...", "growth_rate": "...", "dominant_format": "...", "key_insight": "..." },
+    { "platform": "linkedin", "signal": "...", "posts_per_week": "...", "growth_rate": "...", "dominant_format": "...", "key_insight": "..." }
+  ],
+  "trends": [
+    { "id": "t1", "name": "subtendência", "classification": "Emergente|Crescendo|Alto Momentum|Saturado", "description": "2 frases", "growth_rate": "+X%", "why_trending": "1 frase", "platforms": ["tiktok"] },
+    { "id": "t2", "name": "...", "classification": "...", "description": "...", "growth_rate": "...", "why_trending": "...", "platforms": ["instagram"] },
+    { "id": "t3", "name": "...", "classification": "...", "description": "...", "growth_rate": "...", "why_trending": "...", "platforms": ["linkedin"] }
+  ],
+  "creator_search": [
+    { "id": "cs1", "platform": "instagram", "platform_search_url": "https://www.instagram.com/explore/tags/HASHTAG/", "hashtags": ["#tag1", "#tag2"], "keyword_searches": ["termo1", "termo2"], "archetype": "1 frase descrevendo o tipo de criador", "what_to_look_for": "1 frase", "size_range": "10K–500K", "best_search_tip": "1 frase" },
+    { "id": "cs2", "platform": "tiktok", "platform_search_url": "https://www.tiktok.com/tag/HASHTAG", "hashtags": ["#tag1"], "keyword_searches": ["termo1"], "archetype": "...", "what_to_look_for": "...", "size_range": "...", "best_search_tip": "..." },
+    { "id": "cs3", "platform": "youtube", "platform_search_url": "https://www.youtube.com/results?search_query=TERM", "hashtags": [], "keyword_searches": ["termo1", "termo2"], "archetype": "...", "what_to_look_for": "...", "size_range": "...", "best_search_tip": "..." }
+  ],
+  "content_searches": [
+    { "id": "s1", "platform": "instagram", "theme": "nome do subtema", "description": "1 frase", "search_url": "https://www.instagram.com/explore/tags/HASHTAG/", "search_term": "#hashtag", "why_relevant": "1 frase" },
+    { "id": "s2", "platform": "tiktok", "theme": "...", "description": "...", "search_url": "https://www.tiktok.com/tag/HASHTAG", "search_term": "...", "why_relevant": "..." },
+    { "id": "s3", "platform": "youtube", "theme": "...", "description": "...", "search_url": "https://www.youtube.com/results?search_query=TERM", "search_term": "...", "why_relevant": "..." },
+    { "id": "s4", "platform": "linkedin", "theme": "...", "description": "...", "search_url": "https://www.linkedin.com/search/results/content/?keywords=TERM", "search_term": "...", "why_relevant": "..." },
+    { "id": "s5", "platform": "instagram", "theme": "...", "description": "...", "search_url": "...", "search_term": "...", "why_relevant": "..." }
+  ],
+  "patterns": {
+    "recurring_hooks": [
+      { "hook": "tipo", "type": "lista|contrário|história|dados|problema|pergunta", "frequency": "X%", "example": "frase gancho em português", "platforms": ["platform"] },
+      { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] },
+      { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] }
+    ],
+    "narrative_styles": [
+      { "style": "nome", "frequency": "X%", "description": "1 frase", "why_works": "1 frase" },
+      { "style": "...", "frequency": "...", "description": "...", "why_works": "..." }
+    ],
+    "emerging_topics": ["subtópico1", "subtópico2", "subtópico3", "subtópico4"]
+  },
+  "content_gaps": [
+    { "id": "g1", "gap": "lacuna específica", "description": "1 frase", "opportunity_level": "Alta|Média|Baixa", "platforms": ["platform"] },
+    { "id": "g2", "gap": "...", "description": "...", "opportunity_level": "...", "platforms": ["..."] }
+  ],
+  "opportunities": [
+    { "id": "o1", "title": "título do conteúdo", "description": "2 frases", "hook": "tipo", "hook_example": "frase exata em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "potential": "Very High|High|Medium", "why_now": "1 frase" },
+    { "id": "o2", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." },
+    { "id": "o3", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." }
+  ],
+  "ideas": [
+    { "id": "i1", "title": "título da ideia", "hook": "tipo", "hook_suggestion": "frase de abertura em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "priority": "high|medium|low", "angle": "diferencial em 1 frase" },
+    { "id": "i2", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
+    { "id": "i3", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
+    { "id": "i4", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
+    { "id": "i5", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." }
+  ]
+}`
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 8192,
+      system: 'You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const { handleApiError } = await import('../../utils/apiError.js')
+    await handleApiError(response)
+  }
+
+  const data = await response.json()
+  const raw = data.content?.[0]?.text || ''
+  const match = raw.match(/\{[\s\S]*/)
+  if (!match) throw new Error('Resposta da IA não contém JSON válido')
+  return repairAndParseJSON(match[0])
 }
 
-// ─── Real YouTube video card ──────────────────────────────────────────────────
+function repairAndParseJSON(raw) {
+  // Fix obvious trailing-comma mistakes first
+  let s = raw.replace(/,(\s*[}\]])/g, '$1')
+  // Try clean parse
+  try { return JSON.parse(s) } catch { /* continue to repair */ }
 
-function VideoCard({ video }) {
-  const fmt = (n) => {
-    if (!n) return '—'
-    const num = parseInt(n)
-    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M'
-    if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K'
-    return String(num)
+  // Walk the string tracking open brackets (respecting strings and escapes)
+  // so we can close any unclosed structures after truncation
+  const stack = []
+  let inStr = false, esc = false
+  let lastSafeIdx = 0 // last position that was a complete value boundary
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i]
+    if (esc) { esc = false; continue }
+    if (ch === '\\' && inStr) { esc = true; continue }
+    if (ch === '"') { inStr = !inStr; continue }
+    if (inStr) continue
+    if (ch === '{' || ch === '[') { stack.push(ch === '{' ? '}' : ']') }
+    else if (ch === '}' || ch === ']') {
+      if (stack.length) stack.pop()
+      lastSafeIdx = i // after closing a bracket we're at a safe boundary
+    }
   }
 
-  const relativeDate = (iso) => {
-    if (!iso) return ''
-    const diff = (Date.now() - new Date(iso)) / 1000
-    if (diff < 3600) return `${Math.round(diff / 60)}min atrás`
-    if (diff < 86400) return `${Math.round(diff / 3600)}h atrás`
-    if (diff < 2592000) return `${Math.round(diff / 86400)}d atrás`
-    if (diff < 31536000) return `${Math.round(diff / 2592000)}m atrás`
-    return `${Math.round(diff / 31536000)}a atrás`
-  }
+  // Truncate to last safe boundary, close open structures
+  let trimmed = s.slice(0, lastSafeIdx + 1)
+  trimmed = trimmed.replace(/,(\s*)$/, '$1') // remove trailing comma
+  trimmed += stack.reverse().join('')
+  trimmed = trimmed.replace(/,(\s*[}\]])/g, '$1')
 
+  return JSON.parse(trimmed)
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+function SignalBadge({ signal, size = 'sm' }) {
+  const color = SIGNAL_COLORS[signal] || SIGNAL_COLORS['Fraco']
+  const dot = SIGNAL_DOTS[signal] || 'bg-gray-400'
   return (
-    <div className="card p-4 space-y-3 hover:border-orange-300 transition-colors">
-      {/* Thumbnail */}
-      {video.thumbnail && (
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100">
-          <img
-            src={video.thumbnail}
-            alt={video.videoTitle}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
-            YouTube
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      {signal}
+    </span>
+  )
+}
+
+function PlatformSignalCard({ ps }) {
+  const meta = PLATFORM_META[ps.platform] || { emoji: '🌐', color: 'from-gray-600 to-gray-700', text: 'text-white', label: ps.platform }
+  return (
+    <div className="card overflow-hidden">
+      <div className={`bg-gradient-to-br ${meta.color} p-3`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{meta.emoji}</span>
+            <span className={`text-xs font-bold ${meta.text}`}>{meta.label}</span>
           </div>
+          <SignalBadge signal={ps.signal} />
+        </div>
+      </div>
+      <div className="p-3 space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-gray-400">Posts/semana</span>
+          <span className="font-semibold text-gray-700">{ps.posts_per_week}</span>
+        </div>
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-gray-400">Crescimento</span>
+          <span className="font-semibold text-emerald-600">{ps.growth_rate}</span>
+        </div>
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-gray-400">Formato líder</span>
+          <span className="font-semibold text-gray-700">{ps.dominant_format}</span>
+        </div>
+        <div className="pt-1 border-t border-gray-100">
+          <p className="text-[11px] text-gray-500 leading-relaxed">{ps.key_insight}</p>
         </div>
       )}
 
@@ -119,403 +383,1017 @@ function VideoCard({ video }) {
   )
 }
 
-// ─── Opportunity card ─────────────────────────────────────────────────────────
-
-function OpportunityCard({ opp, onSave }) {
+function TrendCard({ trend }) {
   const [expanded, setExpanded] = useState(false)
+  const color = SIGNAL_COLORS[trend.classification] || SIGNAL_COLORS['Emergente']
   return (
-    <div className="card p-4 space-y-3 hover:border-orange-300 transition-all">
-      <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold text-gray-900 leading-snug flex-1">{opp.title}</h4>
-        <span className={`chip border shrink-0 ${opp.potential === 'Very High' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : opp.potential === 'High' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-          {opp.potential}
-        </span>
+    <div className="card p-4 space-y-2 hover:border-orange-200 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <h4 className="text-sm font-semibold text-gray-900 flex-1 leading-snug">{trend.name}</h4>
+        <SignalBadge signal={trend.classification} />
       </div>
-
       <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[11px] font-semibold text-emerald-600">{trend.growth_rate}</span>
+        {trend.platforms?.map((p) => <PlatformBadge key={p} platform={p} />)}
+      </div>
+      {expanded && (
+        <div className="space-y-2 animate-fade-in">
+          <p className="text-xs text-gray-500 leading-relaxed">{trend.description}</p>
+          <div className="bg-orange-50 rounded-lg p-2.5">
+            <p className="text-[10px] font-semibold text-orange-600 mb-0.5">Por que está crescendo</p>
+            <p className="text-xs text-gray-700">{trend.why_trending}</p>
+          </div>
+        </div>
+      )}
+      <button onClick={() => setExpanded((e) => !e)} className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-orange-500 font-medium transition-colors">
+        {expanded ? <><ChevronUp size={11} /> Menos</> : <><ChevronDown size={11} /> Ver análise</>}
+      </button>
+    </div>
+  )
+}
+
+function CreatorCard({ creator }) {
+  const meta = PLATFORM_META[creator.platform]
+  const isSearchSuggestion = creator.verified === false
+  return (
+    <div className={`card p-4 flex items-start gap-3 hover:border-orange-300 transition-colors ${isSearchSuggestion ? 'border-dashed border-gray-200 bg-gray-50/50' : ''}`}>
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm ${isSearchSuggestion ? 'bg-gradient-to-br from-gray-400 to-gray-500' : 'bg-gradient-to-br from-orange-500 to-orange-600'}`}>
+        {creator.name.charAt(0)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className={`text-sm font-semibold truncate ${isSearchSuggestion ? 'text-gray-500' : 'text-gray-900'}`}>{creator.name}</span>
+          <span className="text-sm" title={creator.platform}>{meta?.emoji || '🌐'}</span>
+          {isSearchSuggestion
+            ? <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 border border-amber-200 font-medium shrink-0">Sugestão de busca</span>
+            : <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 font-medium shrink-0">IA confirmou nicho</span>
+          }
+          {creator.profile_url && (
+            <a href={creator.profile_url} target="_blank" rel="noopener noreferrer"
+              className="text-gray-300 hover:text-orange-500 transition-colors shrink-0"
+              onClick={(e) => e.stopPropagation()} title={isSearchSuggestion ? 'Buscar no Google' : 'Ver perfil'}>
+              <ExternalLink size={13} />
+            </a>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-400 mb-1">{creator.handle} · {creator.followers} seguidores · {creator.avg_engagement} eng.</p>
+        <p className="text-[11px] text-gray-600 mb-2 leading-relaxed">{creator.niche}</p>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {(creator.recent_topics || []).slice(0, 3).map((t) => (
+            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{t}</span>
+          ))}
+        </div>
+        {creator.why_relevant && (
+          <div className={`rounded-lg p-2 border ${isSearchSuggestion ? 'bg-amber-50 border-amber-100' : 'bg-orange-50 border-orange-100'}`}>
+            <p className={`text-[10px] leading-relaxed ${isSearchSuggestion ? 'text-amber-700' : 'text-orange-700'}`}>
+              {isSearchSuggestion ? '🔍' : '💡'} {creator.why_relevant}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ExamplePostCard({ post }) {
+  const meta = PLATFORM_META[post.platform]
+  return (
+    <div className="card p-4 space-y-2.5 hover:border-orange-300 transition-colors">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm">{meta?.emoji || '🌐'}</span>
+        <span className="text-[11px] font-medium text-gray-600">{meta?.label || post.platform}</span>
+        <FormatBadge format={post.format} />
+        {post.url && (
+          <a href={post.url} target="_blank" rel="noopener noreferrer"
+            className="ml-auto flex items-center gap-1 text-[11px] text-gray-400 hover:text-orange-500 transition-colors"
+          >
+            <ExternalLink size={11} /> Ver
+          </a>
+        )}
+      </div>
+      <h4 className="text-sm font-semibold text-gray-900 leading-snug">{post.title}</h4>
+      <p className="text-[11px] text-gray-500">por <span className="font-medium">{post.creator}</span></p>
+      {post.hook && (
+        <div className="bg-orange-50 border border-orange-100 rounded-lg p-2">
+          <p className="text-[10px] text-orange-600 font-semibold mb-0.5">Gancho usado</p>
+          <p className="text-xs text-gray-700 italic">"{post.hook}"</p>
+        </div>
+      )}
+      {post.engagement && (
+        <p className="text-[11px] text-gray-400 flex items-center gap-1">
+          <Eye size={10} /> {post.engagement}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function HookCard({ hook }) {
+  return (
+    <div className="card p-4 space-y-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-xs font-semibold text-gray-800">{hook.hook}</span>
+        <span className={`chip border text-[10px] ${SIGNAL_COLORS['Emergente']}`}>{hook.frequency}</span>
+      </div>
+      <div className="flex gap-1">
+        {(hook.platforms || []).map((p) => <PlatformBadge key={p} platform={p} />)}
+      </div>
+      <div className="bg-orange-50 border border-orange-100 rounded-lg p-2.5">
+        <p className="text-[10px] text-orange-600 font-semibold mb-1 uppercase tracking-wide flex items-center gap-1">
+          <Zap size={9} /> Exemplo exato
+        </p>
+        <p className="text-xs text-gray-700 italic leading-relaxed">"{hook.example}"</p>
+      </div>
+    </div>
+  )
+}
+
+function OpportunityCard({ opp, onSave, saved }) {
+  const [expanded, setExpanded] = useState(false)
+  const addFavorite = useStore((s) => s.addFavorite)
+  const favorites = useStore((s) => s.favorites)
+  const isFav = favorites.some((f) => f.type === 'insight' && f.title === opp.title)
+  const toggleFav = (e) => {
+    e.stopPropagation()
+    if (!isFav) addFavorite({ type: 'insight', title: opp.title, content: [opp.description, opp.hook_example ? `\nGancho: "${opp.hook_example}"` : '', opp.why_now ? `\nPor que agora: ${opp.why_now}` : ''].filter(Boolean).join(''), source: 'Creator Insights · Oportunidades' })
+  }
+  return (
+    <div className={`card p-4 space-y-3 hover:border-orange-300 transition-all ${saved ? 'opacity-60' : ''}`}>
+      {saved && (
+        <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-medium">
+          <Check size={12} /> Salvo no Hub
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="text-sm font-semibold text-gray-900 flex-1 leading-snug">{opp.title}</h4>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={toggleFav} title={isFav ? 'Nos favoritos' : 'Salvar nos favoritos'} className={`p-1 rounded-lg transition-colors ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
+            <Heart size={13} className={isFav ? 'fill-current' : ''} />
+          </button>
+          <span className={`chip border text-[10px] ${POTENTIAL_COLORS[opp.potential] || POTENTIAL_COLORS['Medium']}`}>
+            {POTENTIAL_LABELS[opp.potential] || opp.potential}
+          </span>
+        </div>
+      </div>
+      <div className="flex gap-1.5 flex-wrap">
         <PlatformBadge platform={opp.platform} />
         <FormatBadge format={opp.format} />
-        {opp.hook && <span className="chip bg-amber-100 text-amber-700 border border-amber-200">{opp.hook}</span>}
+        {opp.hook && <span className="chip bg-amber-100 text-amber-700 border border-amber-200 text-[10px]">{opp.hook}</span>}
       </div>
-
+      {opp.hook_example && (
+        <div className="bg-orange-50 border border-orange-100 rounded-lg p-2.5">
+          <p className="text-[10px] font-semibold text-orange-600 mb-1 flex items-center gap-1"><Zap size={9} /> Gancho sugerido</p>
+          <p className="text-xs text-gray-700 italic">"{opp.hook_example}"</p>
+        </div>
+      )}
       {expanded && (
         <div className="space-y-2 animate-fade-in">
           <p className="text-xs text-gray-500 leading-relaxed">{opp.description}</p>
           {opp.content_gap && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-[11px] text-gray-500 font-medium mb-0.5">Gap de conteúdo:</p>
+            <div className="bg-gray-50 rounded-lg p-2.5">
+              <p className="text-[10px] font-semibold text-gray-500 mb-0.5">Lacuna preenchida</p>
               <p className="text-xs text-gray-600">{opp.content_gap}</p>
             </div>
           )}
-          {opp.hook_example && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <p className="text-[11px] text-orange-600 font-medium mb-0.5">Exemplo de hook:</p>
-              <p className="text-xs text-gray-700 italic">"{opp.hook_example}"</p>
+          {opp.why_now && (
+            <div className="bg-blue-50 rounded-lg p-2.5">
+              <p className="text-[10px] font-semibold text-blue-600 mb-0.5">Por que agora</p>
+              <p className="text-xs text-gray-700">{opp.why_now}</p>
             </div>
           )}
         </div>
       )}
-
       <div className="flex items-center justify-between pt-1 border-t border-gray-100">
         <button onClick={() => setExpanded((x) => !x)} className="btn-ghost text-xs py-1 px-2">
-          {expanded ? <><ChevronUp size={12} /> Menos</> : <><ChevronDown size={12} /> Detalhes</>}
+          {expanded ? <><ChevronUp size={11} /> Menos</> : <><ChevronDown size={11} /> Detalhes</>}
         </button>
-        <button onClick={() => onSave(opp)} className="btn-primary text-xs py-1.5 px-3">
-          <Plus size={12} /> Salvar ideia
+        <button
+          onClick={() => onSave(opp)}
+          disabled={saved}
+          className={saved ? 'flex items-center gap-1 text-xs text-emerald-600 font-medium' : 'btn-primary text-xs py-1.5 px-3'}
+        >
+          {saved ? <><Check size={11} /> Salvo</> : <><Plus size={11} /> Salvar Ideia</>}
         </button>
       </div>
     </div>
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+function IdeaCard({ idea, onSave, saved }) {
+  const addFavorite = useStore((s) => s.addFavorite)
+  const favorites = useStore((s) => s.favorites)
+  const isFav = favorites.some((f) => f.type === 'insight' && f.title === idea.title)
+  const toggleFav = () => {
+    if (!isFav) addFavorite({ type: 'insight', title: idea.title, content: [idea.hook_suggestion ? `Gancho: "${idea.hook_suggestion}"` : '', idea.angle ? `\nÂngulo: ${idea.angle}` : '', idea.format ? `\nFormato: ${idea.format}` : ''].filter(Boolean).join(''), source: 'Creator Insights · Ideias' })
+  }
+  return (
+    <div className={`card p-4 space-y-3 hover:border-orange-300 transition-all ${saved ? 'opacity-60' : ''}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="chip border text-[10px] bg-orange-100 text-orange-700 border-orange-200 capitalize">{idea.hook}</span>
+          <span className={`chip border text-[10px] ${idea.priority === 'high' ? 'bg-red-100 text-red-600 border-red-200' : idea.priority === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+            {idea.priority === 'high' ? 'Alta' : idea.priority === 'medium' ? 'Média' : 'Baixa'}
+          </span>
+        </div>
+        <button onClick={toggleFav} title={isFav ? 'Nos favoritos' : 'Salvar nos favoritos'} className={`p-1 rounded-lg transition-colors ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
+          <Heart size={13} className={isFav ? 'fill-current' : ''} />
+        </button>
+      </div>
+      <h4 className="text-sm font-semibold text-gray-900 leading-snug">{idea.title}</h4>
+      {idea.hook_suggestion && (
+        <div className="bg-orange-50 border border-orange-100 rounded-lg p-2.5">
+          <p className="text-[10px] font-semibold text-orange-600 mb-1 flex items-center gap-1"><Zap size={9} /> Hook de abertura</p>
+          <p className="text-xs text-gray-700 italic">"{idea.hook_suggestion}"</p>
+        </div>
+      )}
+      {idea.angle && (
+        <p className="text-[11px] text-gray-500 leading-relaxed">
+          <span className="font-semibold text-gray-600">Ângulo: </span>{idea.angle}
+        </p>
+      )}
+      <div className="flex gap-1.5 flex-wrap">
+        <PlatformBadge platform={idea.platform} />
+        <FormatBadge format={idea.format} />
+      </div>
+      <div className="pt-1 border-t border-gray-100">
+        <button
+          onClick={() => onSave(idea)}
+          disabled={saved}
+          className={saved ? 'flex items-center gap-1.5 text-xs text-emerald-600 font-medium' : 'btn-primary text-xs w-full justify-center py-2'}
+        >
+          {saved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar no Hub</>}
+        </button>
+      </div>
+    </div>
+  )
+}
 
+// ─── Tabs config ───────────────────────────────────────────────────────────────
+const RESULT_TABS = [
+  { id: 'overview',      label: 'Visão Geral',         icon: BarChart2 },
+  { id: 'creators',      label: 'Onde Buscar',         icon: Users },
+  { id: 'content',       label: 'Buscar Conteúdo',     icon: Search },
+  { id: 'patterns',      label: 'Padrões',             icon: TrendingUp },
+  { id: 'gaps',          label: 'Lacunas',             icon: Filter },
+  { id: 'opportunities', label: 'Oportunidades',       icon: Lightbulb },
+  { id: 'ideas',         label: 'Ideias',              icon: Sparkles },
+]
+
+// ─── Main component ────────────────────────────────────────────────────────────
 export default function TrendRadar() {
   const setTrendResults = useStore((s) => s.setTrendResults)
   const trendResults    = useStore((s) => s.trendResults)
+  const insights        = useStore((s) => s.insights)
   const addIdea         = useStore((s) => s.addIdea)
 
-  const aiSettings         = useAIStore((s) => s.getSettings())
-  const isAIConfigured     = useAIStore((s) => s.isConfigured())
-  const youtubeApiKey      = useAIStore((s) => s.youtubeApiKey)
-  const isYoutubeConfigured = useAIStore((s) => s.isYoutubeConfigured())
-
-  const [topic, setTopic]     = useState('')
-  const [loading, setLoading] = useState(false)
+  const [topic, setTopic]       = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [loadPhase, setLoadPhase] = useState(0)
+  const [error, setError]       = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
   const [savedIds, setSavedIds] = useState(new Set())
-  const [errors, setErrors]   = useState({ youtube: '', ai: '' })
+  const [creatorPlatformFilter, setCreatorPlatformFilter] = useState('all')
+  const [creatorSearch, setCreatorSearch] = useState('')
+  const [ytResults, setYtResults] = useState([])
+  const [ytLoading, setYtLoading] = useState(false)
+  const [ytError, setYtError] = useState(null)
+  const [ytSearched, setYtSearched] = useState(false)
 
-  const SUGGESTED = [
-    'marketing de conteúdo', 'IA para criadores', 'empreendedorismo digital',
-    'personal branding', 'criador de conteúdo', 'solopreneur',
-  ]
+  const addFavorite = useStore((s) => s.addFavorite)
+  const favorites   = useStore((s) => s.favorites)
+  const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
+  const hasYtKey  = !!localStorage.getItem(LS_YOUTUBE)
 
-  const nothingConfigured = !isYoutubeConfigured && !isAIConfigured
+  const handleYouTubeSearch = async () => {
+    const ytKey = localStorage.getItem(LS_YOUTUBE)
+    if (!ytKey || !trendResults?.topic) return
+    setYtLoading(true)
+    setYtError(null)
+    setYtSearched(true)
+    try {
+      const results = await searchYouTubeChannels(trendResults.topic, ytKey)
+      setYtResults(results)
+    } catch (e) {
+      setYtError(e.message)
+    } finally {
+      setYtLoading(false)
+    }
+  }
 
   const handleSearch = async () => {
     if (!topic.trim()) return
     setLoading(true)
-    setErrors({ youtube: '', ai: '' })
+    setError(null)
+    setLoadPhase(0)
+    setActiveTab('overview')
+    setYtResults([])
+    setYtSearched(false)
+    setYtError(null)
 
-    let youtubeResults = []
-    let aiData = null
-    const newErrors = { youtube: '', ai: '' }
+    const phaseInterval = setInterval(() => {
+      setLoadPhase((p) => (p < LOADING_PHASES.length - 1 ? p + 1 : p))
+    }, 600)
 
-    // ── 1. Real YouTube search ──────────────────────────────────────────────
-    if (isYoutubeConfigured) {
-      try {
-        youtubeResults = await youtubeSearch(youtubeApiKey, topic.trim())
-      } catch (err) {
-        newErrors.youtube = `Não foi possível acessar dados reais do YouTube: ${err.message}`
-      }
-    }
+    try {
+      const apiKey = localStorage.getItem('cio-anthropic-key')
+      if (!apiKey) throw new Error('Chave Anthropic não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
-    // ── 2. AI opportunity analysis ──────────────────────────────────────────
-    if (isAIConfigured) {
-      try {
-        aiData = await aiTrendSearch(aiSettings, topic.trim())
-      } catch (err) {
-        newErrors.ai = `Análise de IA indisponível: ${err.message}`
-      }
-    }
-
-    setErrors(newErrors)
-
-    // Only store results if we got actual data from at least one real source
-    const hasRealData = youtubeResults.length > 0 || aiData !== null
-
-    if (hasRealData) {
-      setTrendResults({
-        topic: topic.trim(),
-        searched_at: new Date().toISOString(),
-        videos: youtubeResults,
-        opportunities: aiData?.opportunities || [],
-        patterns: {
-          recurring_hooks: aiData?.recurring_hooks || [],
-          emerging_topics: aiData?.emerging_topics || [],
-        },
-        youtube_powered: youtubeResults.length > 0,
-        ai_powered: aiData !== null,
-      })
+      const results = await callClaudeForTrends(apiKey, topic.trim(), insights)
+      setTrendResults(results)
       setSavedIds(new Set())
+    } catch (e) {
+      setError(e.message || 'Erro ao analisar tendências')
+    } finally {
+      clearInterval(phaseInterval)
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleSaveOpp = (opp) => {
+    const parts = [
+      opp.description,
+      opp.hook_example ? `\n\nGancho: ${opp.hook_example}` : '',
+      opp.content_gap ? `\nLacuna: ${opp.content_gap}` : '',
+      opp.why_now ? `\nPor que agora: ${opp.why_now}` : '',
+    ]
     addIdea({
       title: opp.title,
-      description: opp.description,
-      topic: trendResults?.topic || opp.hook,
+      description: parts.filter(Boolean).join(''),
+      topic: trendResults?.topic,
       format: opp.format,
-      hook_type: opp.hook?.toLowerCase().replace(' hook', '') || 'list',
+      hook_type: opp.hook?.toLowerCase(),
       platform: opp.platform,
       priority: opp.potential === 'Very High' ? 'high' : opp.potential === 'High' ? 'medium' : 'low',
       status: 'idea',
-      tags: ['trend', trendResults?.topic].filter(Boolean),
+      tags: ['tendencia', trendResults?.topic].filter(Boolean),
     })
     setSavedIds((s) => new Set([...s, opp.id]))
   }
 
+  const handleSaveIdea = (idea) => {
+    const parts = [
+      idea.angle ? `Ângulo: ${idea.angle}` : '',
+      idea.hook_suggestion ? `\n\nGancho sugerido: ${idea.hook_suggestion}` : '',
+      idea.format ? `\nFormato: ${idea.format}` : '',
+      idea.platform ? `\nPlataforma: ${idea.platform}` : '',
+    ]
+    addIdea({
+      title: idea.title,
+      description: parts.filter(Boolean).join(''),
+      topic: trendResults?.topic,
+      format: idea.format,
+      hook_type: idea.hook,
+      platform: idea.platform,
+      priority: idea.priority || 'medium',
+      status: 'idea',
+      tags: ['tendencia', trendResults?.topic].filter(Boolean),
+    })
+    setSavedIds((s) => new Set([...s, idea.id]))
+  }
+
+  const handleSaveAllIdeas = () => {
+    ;(trendResults?.ideas || []).forEach((idea) => {
+      if (!savedIds.has(idea.id)) handleSaveIdea(idea)
+    })
+  }
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
-      {/* Search */}
-      <div className="card p-6 space-y-4">
-        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange-100">
-              <Radar size={18} className="text-orange-500" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-gray-900">Explorar Referências Reais</h2>
-              <p className="text-xs text-gray-400">Busca vídeos reais do YouTube + análise de oportunidades via IA</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {isYoutubeConfigured && (
-              <span className="chip bg-red-100 text-red-700 border border-red-200 flex items-center gap-1">
-                <Youtube size={10} /> YouTube ativo
-              </span>
-            )}
-            {isAIConfigured && (
-              <span className="chip bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-1">
-                <Zap size={10} /> IA ativa
-              </span>
-            )}
-            {nothingConfigured && (
-              <NavLink to="/settings" className="chip bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 hover:bg-amber-200 transition-colors">
-                <Settings size={10} /> Configurar APIs
-              </NavLink>
-            )}
+      {/* ── Search card ─────────────────────────────────────────────────────── */}
+      <div className="card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-md shadow-orange-200">
+            <Radar size={18} className="text-white" />
           </div>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Creator Insights · Radar de Tendências</h2>
+            <p className="text-xs text-gray-400">Detecta criadores, padrões, lacunas e oportunidades em 5 plataformas com IA</p>
+          </div>
+          {hasApiKey ? (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+              <Brain size={9} /> IA Real Ativa
+            </span>
+          ) : (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
+              <KeyRound size={9} /> Chave necessária
+            </span>
+          )}
         </div>
 
         <div className="flex gap-2">
           <input
             className="input flex-1"
-            placeholder='Ex: "marketing de conteúdo", "criador de conteúdo", "empreendedorismo"'
+            placeholder='"IA nos negócios", "marca pessoal", "carreira em tecnologia"...'
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !nothingConfigured && handleSearch()}
           />
-          <button
-            onClick={handleSearch}
-            disabled={loading || !topic.trim() || nothingConfigured}
-            className="btn-primary shrink-0 min-w-[120px]"
-          >
-            {loading ? <><Loader2 size={14} className="animate-spin" /> Buscando...</> : <><Search size={14} /> Analisar</>}
+          <button onClick={handleSearch} disabled={loading || !topic.trim()} className="btn-primary shrink-0 min-w-[130px]">
+            {loading
+              ? <><Loader2 size={14} className="animate-spin" /> Analisando...</>
+              : <><Brain size={14} /> Analisar</>
+            }
           </button>
         </div>
 
-        {/* Suggestions */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] text-gray-400">Sugestões:</span>
+          <span className="text-[11px] text-gray-400">Tente:</span>
           {SUGGESTED.map((s) => (
-            <button
-              key={s}
-              onClick={() => setTopic(s)}
-              className="text-[11px] px-2 py-1 rounded-md bg-gray-100 hover:bg-orange-100 hover:text-orange-700 text-gray-500 transition-colors"
-            >
+            <button key={s} onClick={() => setTopic(s)}
+              className="text-[11px] px-2 py-1 rounded-md bg-gray-100 hover:bg-orange-100 hover:text-orange-700 text-gray-500 transition-colors">
               {s}
             </button>
           ))}
         </div>
+
+        {!hasApiKey && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-700">
+              <span className="font-semibold">Configure sua chave Anthropic</span> para ativar o Creator Insights completo — análise real de tendências, criadores, padrões e oportunidades com IA.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* "Nothing configured" banner */}
-      {nothingConfigured && (
-        <div className="card p-6 flex flex-col items-center gap-4 text-center border-amber-200 bg-amber-50">
-          <AlertCircle size={28} className="text-amber-500" />
-          <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-1">APIs não configuradas</h3>
-            <p className="text-xs text-gray-500 max-w-sm">
-              Configure pelo menos uma API para ver dados reais:
-              <br />
-              <strong>YouTube API Key</strong> para buscar vídeos reais de criadores,
-              <br />
-              <strong>AI API Key</strong> para analisar oportunidades de conteúdo.
-            </p>
-          </div>
-          <NavLink to="/settings" className="btn-primary text-xs">
-            <Settings size={12} /> Ir para Configurações
-          </NavLink>
-        </div>
-      )}
-
-      {/* Error banners */}
-      {(errors.youtube || errors.ai) && !loading && (
-        <div className="space-y-2">
-          {errors.youtube && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
-              <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-red-600">{errors.youtube}</p>
-            </div>
-          )}
-          {errors.ai && (
-            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
-              <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-700">{errors.ai}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Loading state */}
+      {/* ── Loading ──────────────────────────────────────────────────────────── */}
       {loading && (
-        <div className="card p-12 flex flex-col items-center gap-4">
+        <div className="card p-14 flex flex-col items-center gap-5">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
-            <Radar size={20} className="absolute inset-0 m-auto text-orange-500 animate-pulse" />
+            <div className="w-20 h-20 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+            <Radar size={24} className="absolute inset-0 m-auto text-orange-500 animate-pulse" />
           </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-800 mb-1">
-              {isYoutubeConfigured && isAIConfigured
-                ? 'Buscando vídeos reais e analisando com IA...'
-                : isYoutubeConfigured
-                ? 'Buscando vídeos reais no YouTube...'
-                : 'IA analisando oportunidades de conteúdo...'}
-            </p>
-            <p className="text-xs text-gray-400">Aguardando dados reais para "{topic}"</p>
+          <div className="text-center space-y-3">
+            <p className="text-base font-semibold text-gray-800">{LOADING_PHASES[loadPhase]}</p>
+            <div className="flex justify-center gap-1.5">
+              {LOADING_PHASES.map((_, i) => (
+                <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i <= loadPhase ? 'bg-orange-500 w-8' : 'bg-gray-200 w-4'}`} />
+              ))}
+            </div>
+            <p className="text-xs text-gray-400">Analisando "{topic}" em TikTok, Instagram, YouTube, LinkedIn e X</p>
           </div>
         </div>
       )}
 
-      {/* Results */}
-      {!loading && trendResults && (
-        <div className="space-y-6 animate-slide-up">
-          {/* Summary bar */}
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-orange-50 border border-orange-200">
-            <Radar size={16} className="text-orange-500 shrink-0" />
+      {/* ── Error ────────────────────────────────────────────────────────────── */}
+      {!loading && error && (
+        <div className="p-4 rounded-xl border border-red-200 bg-red-50 flex items-start gap-3">
+          <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-700">Erro na análise</p>
+            <p className="text-xs text-red-500 mt-0.5">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Results ──────────────────────────────────────────────────────────── */}
+      {!loading && !error && trendResults && (
+        <div className="space-y-5 animate-slide-up">
+
+          {/* Summary banner */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shadow-md shadow-orange-200">
+                <span className="text-xl font-black text-white">{trendResults.signal_score || '—'}</span>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Score de Tendência</p>
+                <SignalBadge signal={trendResults.overall_signal} />
+              </div>
+            </div>
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium text-gray-700">Resultados para </span>
-              <span className="text-sm font-bold text-orange-600">"{trendResults.topic}"</span>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {trendResults.youtube_powered && (
-                  <span className="chip bg-red-100 text-red-700 border border-red-200 text-[10px]">
-                    <Youtube size={9} /> Dados reais do YouTube
-                  </span>
+              <p className="text-sm font-semibold text-gray-800">
+                Resultados para <span className="text-orange-600">"{trendResults.topic}"</span>
+              </p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                {trendResults.creator_search?.length} plataformas · {trendResults.content_searches?.length} temas para buscar · {trendResults.trends?.length} tendências · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
+              </p>
+            </div>
+            {insights.length > 0 && (
+              <span className="flex items-center gap-1 text-[10px] font-medium bg-purple-100 text-purple-700 border border-purple-200 px-2 py-1 rounded-lg">
+                <Sparkles size={10} /> Personalizado com seus insights
+              </span>
+            )}
+          </div>
+
+          {/* Tab navigation */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+            {RESULT_TABS.map(({ id, label, icon: Icon }) => {
+              const counts = {
+                overview: trendResults.trends?.length,
+                carousel: null,
+                creators: trendResults.creator_search?.length,
+                content: trendResults.content_searches?.length,
+                patterns: trendResults.patterns?.recurring_hooks?.length,
+                gaps: trendResults.content_gaps?.length,
+                opportunities: trendResults.opportunities?.length,
+                ideas: trendResults.ideas?.length,
+              }
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 ${
+                    activeTab === id
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Icon size={12} /> {label}
+                  {counts[id] > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${activeTab === id ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-500'}`}>
+                      {counts[id]}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* ── Tab: Visão Geral ─────────────────────────────────────────────── */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Platform signals */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Globe size={15} className="text-orange-500" /> Sinal por Plataforma
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {(trendResults.platform_signals || []).map((ps) => (
+                    <PlatformSignalCard key={ps.platform} ps={ps} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Detected trends */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <TrendingUp size={15} className="text-emerald-500" /> Tendências Detectadas
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {(trendResults.trends || []).map((trend) => <TrendCard key={trend.id} trend={trend} />)}
+                </div>
+              </div>
+
+              {/* Emerging topics cloud */}
+              {trendResults.patterns?.emerging_topics?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Hash size={15} className="text-blue-500" /> Subtópicos Emergentes
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {trendResults.patterns.emerging_topics.map((t, i) => (
+                      <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 text-gray-700 font-medium">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Tab: Onde Buscar Criadores ───────────────────────────────────── */}
+          {activeTab === 'creators' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Users size={15} className="text-blue-500" /> Como Encontrar Criadores Reais
+                </h3>
+              </div>
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-700">
+                <span className="shrink-0 mt-0.5">ℹ️</span>
+                <span>A IA não tem acesso a dados reais de redes sociais. Em vez de inventar perfis, aqui estão <strong>estratégias de busca por plataforma</strong> para você encontrar criadores reais que fazem conteúdo sobre <strong>{trendResults.topic}</strong>.</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(trendResults.creator_search || []).map((cs) => {
+                  const meta = PLATFORM_META[cs.platform]
+                  return (
+                    <div key={cs.id} className="card p-4 space-y-3 hover:border-blue-300 transition-colors">
+                      {/* Platform header */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{meta?.emoji || '🌐'}</span>
+                        <span className="text-sm font-semibold text-gray-900">{meta?.label || cs.platform}</span>
+                        {cs.platform_search_url && (
+                          <a href={cs.platform_search_url} target="_blank" rel="noopener noreferrer"
+                            className="ml-auto flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded-lg transition-colors">
+                            <ExternalLink size={10} /> Abrir busca
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Archetype */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tipo de criador a procurar</p>
+                        <p className="text-xs text-gray-700 leading-relaxed">{cs.archetype}</p>
+                      </div>
+
+                      {/* Hashtags */}
+                      {cs.hashtags?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Hashtags para buscar</p>
+                          <div className="flex flex-wrap gap-1">
+                            {cs.hashtags.map((h) => {
+                              const term = h.replace(/^#/, '')
+                              const searchUrls = {
+                                instagram: `https://www.instagram.com/explore/tags/${term}/`,
+                                tiktok: `https://www.tiktok.com/tag/${term}`,
+                                linkedin: `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(h)}`,
+                                youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(h)}`,
+                                twitter: `https://x.com/search?q=${encodeURIComponent(h)}&f=live`,
+                              }
+                              const url = searchUrls[cs.platform] || `https://www.google.com/search?q=${encodeURIComponent(h + ' ' + cs.platform)}`
+                              return (
+                                <a key={h} href={url} target="_blank" rel="noopener noreferrer"
+                                  className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200 font-medium transition-colors">
+                                  {h}
+                                </a>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Keyword searches */}
+                      {cs.keyword_searches?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Termos de busca</p>
+                          <div className="flex flex-wrap gap-1">
+                            {cs.keyword_searches.map((kw) => {
+                              const searchUrls = {
+                                instagram: `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(kw)}`,
+                                tiktok: `https://www.tiktok.com/search?q=${encodeURIComponent(kw)}`,
+                                linkedin: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(kw)}`,
+                                youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(kw)}`,
+                                twitter: `https://x.com/search?q=${encodeURIComponent(kw)}&f=user`,
+                              }
+                              const url = searchUrls[cs.platform] || `https://www.google.com/search?q=${encodeURIComponent(kw + ' ' + cs.platform)}`
+                              return (
+                                <a key={kw} href={url} target="_blank" rel="noopener noreferrer"
+                                  className="text-[10px] px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 font-medium transition-colors flex items-center gap-0.5">
+                                  <Search size={8} /> {kw}
+                                </a>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* What to look for + tip */}
+                      <div className="bg-orange-50 rounded-lg p-2.5 border border-orange-100 space-y-1.5">
+                        {cs.size_range && <p className="text-[10px] text-orange-600 font-semibold">🎯 Faixa ideal: {cs.size_range}</p>}
+                        {cs.what_to_look_for && <p className="text-[10px] text-orange-700 leading-relaxed">{cs.what_to_look_for}</p>}
+                        {cs.best_search_tip && <p className="text-[10px] text-orange-600 italic leading-relaxed">💡 {cs.best_search_tip}</p>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* ── YouTube real channels ── */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Youtube size={15} className="text-red-500" /> Canais Reais no YouTube
+                    {ytResults.length > 0 && <span className="text-[11px] text-gray-400 font-normal">· {ytResults.length} encontrados</span>}
+                  </h4>
+                  {hasYtKey ? (
+                    <button
+                      onClick={handleYouTubeSearch}
+                      disabled={ytLoading}
+                      className="flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                    >
+                      {ytLoading ? <><Loader2 size={12} className="animate-spin" /> Buscando...</> : <><Youtube size={12} /> {ytSearched ? 'Buscar novamente' : 'Buscar canais reais'}</>}
+                    </button>
+                  ) : (
+                    <a href="/settings" className="text-[11px] text-red-500 hover:underline flex items-center gap-1">
+                      <KeyRound size={11} /> Configure a chave YouTube em Configurações
+                    </a>
+                  )}
+                </div>
+
+                {ytError && (
+                  <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-[11px] text-red-700">
+                    <AlertCircle size={13} className="shrink-0 mt-0.5" /> {ytError}
+                  </div>
                 )}
-                {trendResults.ai_powered && (
-                  <span className="chip bg-violet-100 text-violet-700 border border-violet-200 text-[10px]">
-                    <Zap size={9} /> Análise IA
-                  </span>
+
+                {ytSearched && !ytLoading && ytResults.length === 0 && !ytError && (
+                  <p className="text-[11px] text-gray-400 text-center py-4">Nenhum canal encontrado para este tema no YouTube.</p>
+                )}
+
+                {ytResults.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {ytResults.map((ch) => (
+                      <a key={ch.id} href={ch.channel_url} target="_blank" rel="noopener noreferrer"
+                        className="card p-4 flex items-start gap-3 hover:border-red-300 transition-colors group">
+                        {ch.thumbnail
+                          ? <img src={ch.thumbnail} alt={ch.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100" />
+                          : <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-sm font-bold text-red-600 shrink-0">{ch.name.charAt(0)}</div>
+                        }
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-sm font-semibold text-gray-900 truncate group-hover:text-red-700 transition-colors">{ch.name}</span>
+                            <span className="text-red-400 shrink-0"><Youtube size={12} /></span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 mb-1.5">{ch.subscribers} inscritos · {ch.videos} vídeos</p>
+                          {ch.description && (
+                            <p className="text-[11px] text-gray-600 leading-relaxed line-clamp-2">{ch.description}</p>
+                          )}
+                          <div className="mt-2 flex items-center gap-1 text-[10px] text-red-500 font-medium">
+                            <ExternalLink size={9} /> Ver canal
+                          </div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {!ytSearched && (
+                  <div className="flex items-start gap-2 bg-gray-50 border border-dashed border-gray-200 rounded-xl px-3 py-3 text-[11px] text-gray-500">
+                    <Youtube size={13} className="text-red-400 shrink-0 mt-0.5" />
+                    <span>{hasYtKey ? 'Clique em "Buscar canais reais" para buscar criadores reais do YouTube sobre este tema.' : 'Configure sua chave da YouTube Data API em Configurações para ver criadores reais.'}</span>
+                  </div>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
-              {trendResults.videos?.length > 0 && (
-                <span>{trendResults.videos.length} vídeos reais</span>
-              )}
-              {trendResults.opportunities?.length > 0 && (
-                <span>{trendResults.opportunities.length} oportunidades</span>
-              )}
-            </div>
-          </div>
+          )}
 
-          {/* Section 1: Real YouTube videos */}
-          {trendResults.videos?.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Youtube size={15} className="text-red-500" />
-                <h3 className="text-sm font-semibold text-gray-900">Vídeos Reais Encontrados</h3>
-                <span className="text-[11px] text-gray-400 ml-1">— clique para validar na fonte</span>
+          {/* ── Tab: Buscar Conteúdo ─────────────────────────────────────────── */}
+          {activeTab === 'content' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Search size={15} className="text-purple-500" /> Temas para Explorar
+                </h3>
+              </div>
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-700">
+                <span className="shrink-0 mt-0.5">ℹ️</span>
+                <span>Cada card abaixo é um <strong>ângulo ou subtema</strong> que aparece no universo de <strong>{trendResults.topic}</strong>. Clique em "Abrir busca" para ver posts reais sobre esse tema na plataforma.</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {trendResults.videos.map((v) => <VideoCard key={v.id} video={v} />)}
-              </div>
-            </div>
-          )}
-
-          {/* No YouTube results state */}
-          {trendResults.youtube_powered === false && isYoutubeConfigured && (
-            <div className="card p-4 border-dashed text-center">
-              <p className="text-xs text-gray-400">Nenhum vídeo encontrado no YouTube para este tópico.</p>
-            </div>
-          )}
-
-          {/* Section 2: AI Patterns */}
-          {(trendResults.patterns?.recurring_hooks?.length > 0 || trendResults.patterns?.emerging_topics?.length > 0) && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={15} className="text-emerald-500" />
-                <h3 className="text-sm font-semibold text-gray-900">Padrões de Conteúdo</h3>
-                <span className="chip bg-violet-100 text-violet-700 border border-violet-200 text-[10px]">
-                  <Zap size={9} /> Gerado pela IA
-                </span>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {trendResults.patterns?.recurring_hooks?.length > 0 && (
-                  <div className="card p-4">
-                    <h4 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">Hooks Recorrentes</h4>
-                    <div className="space-y-2">
-                      {trendResults.patterns.recurring_hooks.map((h, i) => (
-                        <div key={i} className="p-2.5 rounded-lg bg-gray-50">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-gray-800">{h.hook}</span>
-                            {h.frequency && <span className="text-[10px] text-orange-600 font-bold">{h.frequency}</span>}
-                          </div>
-                          {h.example && <p className="text-[11px] text-gray-400 italic">{h.example}</p>}
+                {(trendResults.content_searches || []).map((cs) => {
+                  const meta = PLATFORM_META[cs.platform]
+                  const isFav = favorites.some((f) => f.type === 'search' && f.title === cs.theme)
+                  return (
+                    <div key={cs.id} className="card p-4 space-y-2.5 hover:border-purple-300 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{meta?.emoji || '🌐'}</span>
+                        <span className="text-[11px] font-medium text-gray-500">{meta?.label || cs.platform}</span>
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <button
+                            onClick={() => !isFav && addFavorite({ type: 'search', title: cs.theme, search_term: cs.search_term, url: cs.search_url, content: cs.description || '', why_relevant: cs.why_relevant || '', source: `Creator Insights · ${meta?.label || cs.platform}` })}
+                            title={isFav ? 'Nos favoritos' : 'Salvar nos favoritos'}
+                            className={`p-1 rounded-lg transition-colors ${isFav ? 'text-purple-500' : 'text-gray-300 hover:text-purple-400'}`}
+                          >
+                            <Bookmark size={13} className={isFav ? 'fill-current' : ''} />
+                          </button>
+                          {cs.search_url && (
+                            <a href={cs.search_url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[10px] font-medium text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded-lg transition-colors shrink-0">
+                              <ExternalLink size={10} /> Abrir busca
+                            </a>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{cs.theme}</p>
+                        {cs.search_term && (
+                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 font-medium mb-2">
+                            🔍 {cs.search_term}
+                          </span>
+                        )}
+                        {cs.description && <p className="text-[11px] text-gray-600 leading-relaxed">{cs.description}</p>}
+                      </div>
+                      {cs.why_relevant && (
+                        <div className="bg-orange-50 rounded-lg p-2 border border-orange-100">
+                          <p className="text-[10px] text-orange-700 leading-relaxed">💡 {cs.why_relevant}</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {trendResults.patterns?.emerging_topics?.length > 0 && (
-                  <div className="card p-4">
-                    <h4 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">Tópicos Emergentes</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {trendResults.patterns.emerging_topics.map((t, i) => (
-                        <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 text-gray-700">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* Section 3: AI Opportunities */}
-          {trendResults.opportunities?.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb size={15} className="text-amber-500" />
-                <h3 className="text-sm font-semibold text-gray-900">Oportunidades de Conteúdo</h3>
-                <span className="text-[11px] text-gray-400 ml-1">— salve direto no Hub de Ideias</span>
+          {/* ── Tab: Padrões ─────────────────────────────────────────────────── */}
+          {activeTab === 'patterns' && trendResults.patterns && (
+            <div className="space-y-6">
+              {/* Recurring hooks */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <MessageSquare size={15} className="text-orange-500" /> Ganchos Recorrentes
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(trendResults.patterns.recurring_hooks || []).map((h, i) => <HookCard key={i} hook={h} />)}
+                </div>
+              </div>
+
+              {/* Narrative styles */}
+              {trendResults.patterns.narrative_styles?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <BookOpen size={15} className="text-blue-500" /> Estilos Narrativos
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {trendResults.patterns.narrative_styles.map((style, i) => (
+                      <div key={i} className="card p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-800">{style.style}</span>
+                          <span className="text-[11px] font-bold text-blue-600">{style.frequency}</span>
+                        </div>
+                        {style.description && <p className="text-[11px] text-gray-500 leading-relaxed">{style.description}</p>}
+                        {style.why_works && (
+                          <div className="bg-blue-50 rounded-lg p-2">
+                            <p className="text-[10px] text-blue-600 font-semibold mb-0.5">Por que funciona</p>
+                            <p className="text-xs text-gray-600">{style.why_works}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Retention techniques */}
+              {trendResults.patterns.retention_techniques?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Eye size={15} className="text-emerald-500" /> Técnicas de Retenção
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {trendResults.patterns.retention_techniques.map((rt, i) => (
+                      <div key={i} className="card p-4 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-emerald-700">{i + 1}</span>
+                          </div>
+                          <span className="text-xs font-semibold text-gray-800">{rt.technique}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">{rt.description}</p>
+                        {rt.example && (
+                          <div className="bg-orange-50 border border-orange-100 rounded-lg p-2">
+                            <p className="text-[10px] text-orange-600 font-semibold mb-0.5">Exemplo</p>
+                            <p className="text-xs text-gray-700 italic">"{rt.example}"</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dominant formats */}
+              {trendResults.patterns.dominant_formats?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Layout size={15} className="text-purple-500" /> Formatos Dominantes por Plataforma
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {trendResults.patterns.dominant_formats.map((pf, i) => (
+                      <div key={i} className="card p-4">
+                        <PlatformBadge platform={pf.platform} />
+                        <div className="mt-3 space-y-2">
+                          {(pf.formats || []).map((f, j) => (
+                            <div key={j} className="flex items-center justify-between text-[11px]">
+                              <span className="text-gray-600">{f.format}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={f.trend?.startsWith('+') ? 'text-emerald-600 font-medium' : 'text-red-500'}>{f.trend}</span>
+                                <span className="text-gray-400">{f.dominance}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Tab: Lacunas ─────────────────────────────────────────────────── */}
+          {activeTab === 'gaps' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                  <Target size={15} className="text-red-500" /> Lacunas de Conteúdo
+                </h3>
+                <p className="text-xs text-gray-400 mb-4">Perspectivas e ângulos subexplorados — oportunidades para se diferenciar</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(trendResults.content_gaps || []).map((gap) => (
+                    <div key={gap.id} className="card p-4 space-y-3 hover:border-orange-200 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                          <Target size={14} className="text-orange-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className="text-sm font-semibold text-gray-900 leading-snug">{gap.gap}</h4>
+                            <span className={`chip border shrink-0 text-[10px] ${GAP_COLORS[gap.opportunity_level] || GAP_COLORS['Média']}`}>
+                              {gap.opportunity_level}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 leading-relaxed">{gap.description}</p>
+                          {gap.platforms?.length > 0 && (
+                            <div className="flex gap-1 mt-2">
+                              {gap.platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Tab: Oportunidades ───────────────────────────────────────────── */}
+          {activeTab === 'opportunities' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Lightbulb size={15} className="text-amber-500" /> Oportunidades de Conteúdo
+                  <span className="text-[11px] text-gray-400 font-normal">· salve diretamente no Hub de Ideias</span>
+                </h3>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {trendResults.opportunities.map((opp) => (
-                  <div key={opp.id} className="relative">
-                    {savedIds.has(opp.id) && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-emerald-600/90 rounded-xl backdrop-blur-sm">
-                        <span className="text-white font-semibold text-sm">✓ Salvo no Hub de Ideias</span>
-                      </div>
-                    )}
-                    <OpportunityCard opp={opp} onSave={handleSaveOpp} />
-                  </div>
+                {(trendResults.opportunities || []).map((opp) => (
+                  <OpportunityCard
+                    key={opp.id}
+                    opp={opp}
+                    onSave={handleSaveOpp}
+                    saved={savedIds.has(opp.id)}
+                  />
                 ))}
               </div>
             </div>
           )}
+
+          {/* ── Tab: Ideias ──────────────────────────────────────────────────── */}
+          {activeTab === 'ideas' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Sparkles size={15} className="text-orange-500" /> Ideias Prontas para Criar
+                  {savedIds.size > 0 && <span className="text-xs text-emerald-600 font-normal">{savedIds.size} salvas</span>}
+                </h3>
+                <button onClick={handleSaveAllIdeas} className="btn-ghost text-xs border border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                  <Check size={12} /> Salvar Todas
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {(trendResults.ideas || []).map((idea) => (
+                  <IdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    onSave={handleSaveIdea}
+                    saved={savedIds.has(idea.id)}
+                  />
+                ))}
+              </div>
+              {savedIds.size > 0 && (
+                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center gap-3">
+                  <Check size={16} className="text-emerald-500 shrink-0" />
+                  <p className="text-sm text-emerald-700">
+                    <span className="font-semibold">{savedIds.size} {savedIds.size === 1 ? 'ideia salva' : 'ideias salvas'}</span> — visíveis no Hub de Ideias.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && !trendResults && !nothingConfigured && (
+      {/* ── Empty state ───────────────────────────────────────────────────── */}
+      {!loading && !error && !trendResults && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-4">
-            <Radar size={28} className="text-orange-500" />
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 border border-orange-200 flex items-center justify-center mb-5 shadow-sm">
+            <Radar size={32} className="text-orange-500" />
           </div>
-          <h3 className="text-gray-700 font-semibold mb-2">Digite um tópico para começar</h3>
-          <p className="text-gray-400 text-sm max-w-sm">
-            {isYoutubeConfigured
-              ? 'Buscará vídeos reais do YouTube com métricas e links diretos para validação.'
-              : 'A IA irá analisar oportunidades de conteúdo para o seu nicho.'}
+          <h3 className="text-gray-800 font-semibold text-base mb-2">Digite um tópico para ativar o radar</h3>
+          <p className="text-gray-400 text-sm max-w-md leading-relaxed">
+            O Creator Insights vai descobrir criadores relevantes, padrões de conteúdo, lacunas estratégicas e gerar ideias prontas para executar — tudo em segundos com IA.
           </p>
+
+          <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl">
+            {[
+              { icon: Users, label: 'Onde buscar', desc: 'hashtags e buscas reais por plataforma' },
+              { icon: TrendingUp, label: 'Padrões detectados', desc: 'hooks, formatos, narrativas' },
+              { icon: Target, label: 'Lacunas de conteúdo', desc: 'ângulos inexplorados' },
+              { icon: Sparkles, label: 'Ideias geradas', desc: 'prontas para o Hub' },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="card p-3 text-center space-y-1">
+                <Icon size={18} className="text-orange-400 mx-auto" />
+                <p className="text-xs font-semibold text-gray-700">{label}</p>
+                <p className="text-[10px] text-gray-400">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
