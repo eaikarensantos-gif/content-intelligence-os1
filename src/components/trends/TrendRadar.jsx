@@ -314,71 +314,7 @@ function PlatformSignalCard({ ps }) {
         <div className="pt-1 border-t border-gray-100">
           <p className="text-[11px] text-gray-500 leading-relaxed">{ps.key_insight}</p>
         </div>
-      )}
-
-      {/* Title */}
-      <a
-        href={video.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block text-sm font-semibold text-gray-900 leading-snug hover:text-orange-600 transition-colors line-clamp-2"
-        title={video.videoTitle}
-      >
-        {video.videoTitle}
-      </a>
-
-      {/* Channel */}
-      <div className="flex items-center justify-between">
-        <a
-          href={video.channelUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-gray-500 hover:text-orange-600 transition-colors flex items-center gap-1 truncate"
-        >
-          <Youtube size={11} className="text-red-500 shrink-0" />
-          <span className="truncate">{video.name}</span>
-        </a>
-        {video.publishedAt && (
-          <span className="text-[10px] text-gray-400 shrink-0 ml-2">{relativeDate(video.publishedAt)}</span>
-        )}
       </div>
-
-      {/* Metrics */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {video.viewCount && (
-          <div className="flex items-center gap-1 text-[11px] text-gray-500">
-            <Eye size={11} className="text-blue-400" />
-            <span>{fmt(video.viewCount)} views</span>
-          </div>
-        )}
-        {video.likeCount && (
-          <div className="flex items-center gap-1 text-[11px] text-gray-500">
-            <ThumbsUp size={11} className="text-emerald-400" />
-            <span>{fmt(video.likeCount)} likes</span>
-          </div>
-        )}
-        {video.commentCount && (
-          <div className="flex items-center gap-1 text-[11px] text-gray-500">
-            <MessageCircle size={11} className="text-orange-400" />
-            <span>{fmt(video.commentCount)}</span>
-          </div>
-        )}
-        {video.engagementRate && (
-          <span className="text-[11px] text-emerald-600 font-medium ml-auto">
-            {video.engagementRate} eng.
-          </span>
-        )}
-      </div>
-
-      {/* Direct link */}
-      <a
-        href={video.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1.5 text-[11px] text-orange-600 hover:text-orange-700 font-medium"
-      >
-        <Link2 size={11} /> Abrir original para validar
-      </a>
     </div>
   )
 }
