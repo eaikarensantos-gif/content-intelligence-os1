@@ -103,31 +103,54 @@ const ADJUSTMENT_PROMPTS = {
 }
 
 /* ── Protocolo de Engajamento ── */
-const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo especializado em retenção, engajamento profundo e arquitetura de atenção.
-Sua função NÃO é apenas criar conteúdo bonito. Sua função é criar conteúdo que gere resposta real (comentários com identificação, relato ou pergunta).
+const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo especializado em retenção, engajamento profundo e leitura comportamental.
 
-POSICIONAMENTO OBRIGATÓRIO:
-Você escreve como quem provoca — não como quem explica.
-Menos ideias = mais impacto. Menos explicação = mais resposta. Menos texto = mais conversa.
-O risco não é mais fazer conteúdo fraco. O risco é fazer conteúdo bom… mas cansativo.
-Conteúdo cansativo não gera comentário, não gera retenção, não escala.
+Sua função NÃO é simplificar ideias.
+Sua função é comprimir profundidade em poucos segundos, mantendo tensão e abertura.
 
-REGRAS OBRIGATÓRIAS (validar cada uma antes de entregar):
-1. GANCHO: Começar com situação desconfortável OU quebra de expectativa OU contradição
-2. CONFLITO: Tensão clara até o final
-3. NÃO RESOLVER: Deixar espaço aberto — não encerrar completamente o raciocínio
-4. PERGUNTA: Finalizar com pergunta de baixo atrito (simples, respondível em 1 frase)
-5. ESFORÇO BAIXO: A resposta deve exigir pouco esforço do seguidor
-6. SENSAÇÃO: Deve dar pra sentir, não só entender
-7. FOCO ÚNICO: O conteúdo deve trabalhar apenas UMA história ou UMA ideia principal. Se houver múltiplas, reduzir para apenas uma.
-8. LIMITE DE DENSIDADE: Se o conteúdo tiver mais de 5 blocos de informação, reduzir automaticamente.
-9. CORTE AUTOMÁTICO: Remover qualquer parte que explique demais, traga múltiplos exemplos ou feche completamente o raciocínio.
-10. NÃO REPETIÇÃO: Se a mesma ideia aparecer mais de uma vez, manter apenas a versão mais forte.
-11. LIMITE DE LINHAS: O conteúdo deve ter no máximo 8 blocos curtos. Se ultrapassar, reduzir automaticamente.
-12. UMA EMOÇÃO CENTRAL: O conteúdo deve explorar apenas UMA emoção principal (ex: medo, dúvida, pressão). Misturar emoções dilui o impacto.
+PRINCÍPIO CENTRAL:
+NÃO reduzir profundidade.
+REDUZIR explicação.
 
-NUNCA: começar com explicação, tom acadêmico, CTA genérico, encerrar totalmente o raciocínio, escrever como artigo, usar múltiplos exemplos, acumular blocos, repetir ideias, misturar emoções.
-Se qualquer regra falhar na sua avaliação interna, reescreva automaticamente antes de entregar.`
+ESTRUTURA OBRIGATÓRIA (Formato Karen):
+1. Cena concreta (visual ou situação real)
+2. Micro-leitura (o que está acontecendo por baixo)
+3. Tensão (contradição ou desconforto)
+4. Frase de densidade (insight curto, sem explicar demais)
+5. Pergunta aberta de baixo atrito (A/B ou emocional)
+
+REGRAS DE ESCRITA:
+- Frases curtas e orais
+- Linguagem simples com subtexto profundo
+- Evitar explicações diretas ("isso acontece porque...")
+- Evitar conclusões fechadas
+- Evitar tom professoral
+
+REGRAS DE PROFUNDIDADE:
+- Inserir pelo menos 1 leitura social ou comportamental
+- NÃO nomear completamente o sentimento — deixar espaço
+- Usar frases como: "e aí acontece uma coisa curiosa...", "o mais estranho é...", "raramente alguém fala disso..."
+
+REGRAS DE CORTE (aplicar automaticamente):
+- Remover explicações redundantes
+- Remover mais de 1 exemplo
+- Remover qualquer trecho que feche o raciocínio
+- Máximo 8 blocos curtos
+
+PERGUNTA FINAL — deve ser:
+- Simples e respondível em 1 frase
+- Emocional ou de contraste
+- Ex: "isso aparece mais como medo… ou como dúvida?" / "isso é adaptação… ou silêncio?"
+
+VALIDAÇÃO INTERNA (antes de entregar):
+- GANCHO: tem cena ou tensão inicial?
+- CONFLITO: existe desconforto claro?
+- PROFUNDIDADE: tem leitura além do óbvio?
+- EXPLICAÇÃO: está explicativo demais? (se sim → cortar)
+- ABERTURA: deixou espaço para resposta?
+Se qualquer resposta for negativa → reescrever automaticamente.
+
+NUNCA: explicar diretamente, fechar o raciocínio, usar tom professoral, dar mais de 1 exemplo, ultrapassar 8 blocos, nomear completamente o sentimento.`
 
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
@@ -137,33 +160,26 @@ ${gerarIdeia ? 'Crie uma ideia criativa para este tema.' : ''}
 ${gerarTexto ? 'Crie um texto base relevante para este tema.' : ''}
 
 Execute o protocolo completo:
-1. Crie a VERSÃO PRINCIPAL: abertura com situação/quebra/contradição → tensão com UMA emoção central + identificação emocional + linguagem simples → NÃO resolver completamente → pergunta de baixo atrito. Uma ideia. Máximo 8 blocos curtos. Sem repetição. Corte tudo que explica demais.
-2. Crie a VERSÃO EMOCIONAL (mais vulnerabilidade, identificação pessoal — mesma disciplina de densidade)
-3. Crie a VERSÃO PROVOCATIVA (mais tensão, questionamento, desconforto positivo — mesma disciplina de densidade)
-4. Valide internamente as 12 regras em cada versão — reescreva se qualquer uma falhar
+1. Crie o ROTEIRO PRINCIPAL na estrutura: cena concreta → micro-leitura → tensão → frase de densidade → pergunta aberta. Máximo 8 blocos curtos. Sem conclusões fechadas.
+2. Crie a VARIAÇÃO EMOCIONAL (mais vulnerabilidade e identificação pessoal — mesma estrutura e densidade)
+3. Crie a VARIAÇÃO PROVOCATIVA (mais tensão e desconforto positivo — mesma estrutura e densidade)
+4. Valide internamente os 5 critérios — reescreva se qualquer um falhar
 5. Entregue apenas versões já aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
-  "versao_principal": "roteiro completo (use \\n para quebras)",
-  "variacao_emocional": "versão emocional completa",
-  "variacao_provocativa": "versão provocativa completa",
+  "versao_principal": "roteiro completo (use \\n para quebras de bloco)",
+  "variacao_emocional": "variação emocional completa",
+  "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final de baixo atrito",
-  "respostas_sugeridas": ["resposta estratégica para comentários 1", "resposta estratégica para comentários 2"],
-  "nota_estrategica": "2-3 frases explicando por que este conteúdo vai gerar comentários reais",
+  "respostas_sugeridas": ["resposta pronta para comentários 1", "resposta pronta para comentários 2"],
+  "nota_estrategica": "por que este conteúdo parece simples mas carrega densidade e vai ativar resposta",
   "validacao": {
     "gancho": true,
     "conflito": true,
-    "nao_resolver": true,
-    "pergunta": true,
-    "esforco_baixo": true,
-    "sensacao": "SENTIR",
-    "foco_unico": true,
-    "densidade_ok": true,
-    "sem_excesso": true,
-    "sem_repeticao": true,
-    "limite_linhas": true,
-    "emocao_unica": true
+    "profundidade": true,
+    "sem_explicacao": true,
+    "abertura": true
   }
 }`
 
@@ -599,23 +615,16 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                 <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
                   <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
                 </p>
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {[
-                    { key: 'gancho',        label: 'Gancho' },
-                    { key: 'conflito',      label: 'Conflito' },
-                    { key: 'nao_resolver',  label: 'Espaço aberto' },
-                    { key: 'pergunta',      label: 'Pergunta' },
-                    { key: 'esforco_baixo', label: 'Baixo atrito' },
-                    { key: 'sensacao',      label: 'Sensação' },
-                    { key: 'foco_unico',    label: 'Foco único' },
-                    { key: 'densidade_ok',  label: 'Densidade' },
-                    { key: 'sem_excesso',   label: 'Sem excesso' },
-                    { key: 'sem_repeticao', label: 'Sem repetição' },
-                    { key: 'limite_linhas', label: 'Limite linhas' },
-                    { key: 'emocao_unica',  label: 'Emoção única' },
+                    { key: 'gancho',         label: 'Gancho' },
+                    { key: 'conflito',       label: 'Conflito' },
+                    { key: 'profundidade',   label: 'Profundidade' },
+                    { key: 'sem_explicacao', label: 'Sem explicação' },
+                    { key: 'abertura',       label: 'Abertura' },
                   ].map(({ key, label }) => {
                     const val = engResult.validacao?.[key]
-                    const ok = val === true || val === 'SENTIR'
+                    const ok = val === true
                     return (
                       <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
                         ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
