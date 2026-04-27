@@ -394,7 +394,7 @@ export default function ContentBrain() {
   ]
 
   return (
-    <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5 animate-fade-in">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5 animate-fade-in">
       {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-6 text-white shadow-lg">
         <div className="relative z-10">
