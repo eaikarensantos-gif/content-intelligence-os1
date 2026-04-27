@@ -184,6 +184,91 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
+/* ── Protocolo de Carrossel ── */
+const CAROUSEL_SYSTEM = `Você é um estrategista de conteúdo que escreve como alguém que pensa — não como alguém que monta estrutura.
+
+Sua função NÃO é organizar informação.
+Sua função é conduzir um raciocínio de forma natural, progressiva e envolvente.
+
+PRINCÍPIO CENTRAL:
+Cada slide deve parecer uma continuação natural do pensamento — não uma estrutura montada.
+
+PROIBIÇÕES ABSOLUTAS — NUNCA usar:
+- Títulos com dois pontos
+- "não é X, é Y" / "o mais curioso é" / "ninguém fala disso" / "a verdade é" / "o segredo é"
+- Listas em escadinha repetitiva
+- Frases de efeito genéricas
+- Tom professoral ou linguagem genérica
+- Explicação óbvia
+- Palavras: insight, essencial, fundamental, crucial, revolucionário, inspirador, otimizar, significativo, navegar, mergulhar
+
+ESTRUTURA DOS SLIDES (6 a 8 slides):
+1. Slide 1 → frase direta ou pergunta simples (entra sem avisar o tema)
+2. Slide 2 → situação concreta (real, específica, não abstrata)
+3. Slide 3 → aprofundamento leve (acrescenta, não repete)
+4. Slide 4 → mudança de perspectiva (virada — mas sem anunciar)
+5. Slide 5 → tensão ou incômodo (implícito, não didático)
+6. Slide 6 → leitura curta (observação, não conclusão)
+7. Slide 7 → fechamento aberto (não resolve, não conclui)
+8. Slide 8 → pergunta (opcional — só se for natural)
+
+REGRAS DE ESCRITA:
+- Frases curtas — uma ideia por slide
+- Escrever como fala — oral, sem formalidade
+- Evitar palavras bonitas sem função
+- Evitar explicar demais
+
+REGRAS DE PROGRESSÃO:
+- Cada slide acrescenta algo novo
+- Nenhum slide repete o anterior
+- Nenhum slide antecipa a conclusão
+- A pessoa deve querer ver o próximo
+
+PERGUNTA FINAL:
+- Soar como conversa, não como enquete
+- Simples, que a pessoa responde sem esforço
+- Que abre espaço, não fecha
+
+VALIDAÇÃO INTERNA (antes de entregar):
+- Algum slide parece fórmula ou template?
+- Tem repetição de estrutura entre slides?
+- Tem palavra genérica ou frase pronta?
+- Parece escrito ou parece pensado?
+Se parecer artificial em qualquer ponto → reescrever completamente.
+
+CRITÉRIO FINAL: Se parecer template → falhou. Se parecer pensamento em sequência → passou. Se parecer algo que alguém diria em voz alta → ideal.`
+
+const buildCarouselPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
+TEMA: ${tema}
+${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
+${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
+${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não abstrata.' : ''}
+${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
+
+Execute o protocolo:
+1. Crie o CARROSSEL PRINCIPAL com 6 a 8 slides. Cada slide: uma ideia, progressão real, sem repetição, sem antecipar conclusão.
+2. Crie a LEGENDA CURTA do post (natural, não explicativa — como quem está comentando algo, não divulgando).
+3. Valide internamente os 4 critérios — reescreva se qualquer um falhar.
+4. Entregue apenas versão aprovada.
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "slides": [
+    { "numero": 1, "texto": "texto do slide 1" },
+    { "numero": 2, "texto": "texto do slide 2" }
+  ],
+  "legenda": "legenda curta e natural para o post",
+  "pergunta_final": "apenas a pergunta final — natural, como conversa",
+  "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
+  "nota_estrategica": "em 2 frases: por que este carrossel vai prender e gerar resposta",
+  "validacao": {
+    "sem_formula": true,
+    "sem_repeticao": true,
+    "sem_palavra_generica": true,
+    "parece_pensado": true
+  }
+}`
+
 /* ── Componente Principal ── */
 export default function UnifiedCreator() {
   const navigate = useNavigate()
@@ -219,7 +304,8 @@ export default function UnifiedCreator() {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'engagement'
+  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel'
+  // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
   const [engIdeia, setEngIdeia] = useState('')
   const [engTexto, setEngTexto] = useState('')
@@ -231,6 +317,16 @@ export default function UnifiedCreator() {
   const [engCopied, setEngCopied] = useState(null)
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
+  // Carrossel
+  const [carTema, setCarTema] = useState('')
+  const [carIdeia, setCarIdeia] = useState('')
+  const [carTexto, setCarTexto] = useState('')
+  const [carGerarIdeia, setCarGerarIdeia] = useState(false)
+  const [carGerarTexto, setCarGerarTexto] = useState(false)
+  const [carLoading, setCarLoading] = useState(false)
+  const [carResult, setCarResult] = useState(null)
+  const [carError, setCarError] = useState(null)
+  const [carCopied, setCarCopied] = useState(null)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -457,6 +553,45 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     }
   }
 
+  const generateCarousel = async () => {
+    if (!carTema.trim()) return
+    if (!apiKey) { setCarError('Configure sua API key em Analytics > Configurações'); return }
+    setCarLoading(true)
+    setCarError(null)
+    setCarResult(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 5000,
+          system: CAROUSEL_SYSTEM,
+          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setCarResult(JSON.parse(match[0]))
+    } catch (err) {
+      setCarError(err.message)
+    } finally {
+      setCarLoading(false)
+    }
+  }
+
+  const handleCarCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setCarCopied(key)
+    setTimeout(() => setCarCopied(null), 2000)
+  }
+
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
@@ -497,7 +632,13 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
             mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
-          <MessageCircle size={13} /> Protocolo de Engajamento
+          <MessageCircle size={13} /> Reels
+        </button>
+        <button onClick={() => setMode('carousel')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <LayoutGrid size={13} /> Carrossel
         </button>
       </div>
 
@@ -737,6 +878,224 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
               <button onClick={generateEngagement} disabled={engLoading}
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
                 <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar protocolo
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Formulário de Carrossel ── */}
+      {mode === 'carousel' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shrink-0">
+                <LayoutGrid size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
+                <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
+              </div>
+            </div>
+
+            {/* Tema */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tema <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={carTema}
+                onChange={e => setCarTema(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateCarousel()}
+                placeholder="Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho..."
+                className="input text-sm w-full"
+              />
+            </div>
+
+            {/* Ideia */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Ideia <span className="text-gray-300">(opcional)</span>
+                </label>
+                <button onClick={() => setCarGerarIdeia(v => !v)}
+                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
+                    carGerarIdeia ? 'bg-orange-100 border-orange-300 text-orange-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Sparkles size={10} /> {carGerarIdeia ? 'Gerar com IA ✓' : 'Gerar com IA'}
+                </button>
+              </div>
+              {!carGerarIdeia && (
+                <textarea value={carIdeia} onChange={e => setCarIdeia(e.target.value)}
+                  rows={2} placeholder="Um ângulo, situação ou entrada específica para o carrossel..."
+                  className="input text-sm w-full resize-none" />
+              )}
+              {carGerarIdeia && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-600">
+                  <Sparkles size={12} /> A IA vai criar uma ideia específica para o tema
+                </div>
+              )}
+            </div>
+
+            {/* Texto Base */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Texto base <span className="text-gray-300">(opcional)</span>
+                </label>
+                <button onClick={() => setCarGerarTexto(v => !v)}
+                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
+                    carGerarTexto ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Sparkles size={10} /> {carGerarTexto ? 'Gerar com IA ✓' : 'Gerar com IA'}
+                </button>
+              </div>
+              {!carGerarTexto && (
+                <textarea value={carTexto} onChange={e => setCarTexto(e.target.value)}
+                  rows={3} placeholder="Cole um texto, rascunho ou ideia que queira transformar em carrossel..."
+                  className="input text-sm w-full resize-none" />
+              )}
+              {carGerarTexto && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-600">
+                  <Sparkles size={12} /> A IA vai criar um texto base para o tema
+                </div>
+              )}
+            </div>
+
+            {carError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{carError}</div>
+            )}
+
+            <button onClick={generateCarousel} disabled={carLoading || !carTema.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg shadow-orange-200 disabled:opacity-40 disabled:cursor-not-allowed">
+              {carLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando carrossel...</> : <><LayoutGrid size={15} /> Gerar Carrossel</>}
+            </button>
+          </div>
+
+          {/* ── Output do Carrossel ── */}
+          {carResult && (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* Validação */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                  <ShieldCheck size={12} className="text-emerald-500" /> Validação
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { key: 'sem_formula',         label: 'Sem fórmula' },
+                    { key: 'sem_repeticao',        label: 'Sem repetição' },
+                    { key: 'sem_palavra_generica', label: 'Sem genérico' },
+                    { key: 'parece_pensado',       label: 'Parece pensado' },
+                  ].map(({ key, label }) => {
+                    const ok = carResult.validacao?.[key] === true
+                    return (
+                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
+                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                      )}>
+                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
+                        <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Slides */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid size={13} className="text-orange-500" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Slides ({carResult.slides?.length})</span>
+                  </div>
+                  <button onClick={() => handleCarCopy((carResult.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'), 'slides')}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                    {carCopied === 'slides' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar todos</>}
+                  </button>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {(carResult.slides || []).map((slide) => (
+                    <div key={slide.numero} className="flex items-start gap-3 px-4 py-3 group hover:bg-orange-50/30 transition-colors">
+                      <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[11px] font-bold text-orange-600">{slide.numero}</span>
+                      </div>
+                      <p className="flex-1 text-sm text-gray-800 leading-relaxed">{slide.texto}</p>
+                      <button onClick={() => handleCarCopy(slide.texto, `slide-${slide.numero}`)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
+                        {carCopied === `slide-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pergunta Final */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 p-5 text-white shadow-lg shadow-orange-200">
+                <div className="relative z-10">
+                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
+                    <Quote size={10} /> Pergunta Final
+                  </p>
+                  <p className="text-base font-bold leading-snug">{carResult.pergunta_final}</p>
+                  <button onClick={() => handleCarCopy(carResult.pergunta_final, 'car-pergunta')}
+                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                    {carCopied === 'car-pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                  </button>
+                </div>
+                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
+              </div>
+
+              {/* Legenda */}
+              {carResult.legenda && (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase">Legenda do Post</span>
+                    <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                      {carCopied === 'car-legenda' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="p-4 text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
+                </div>
+              )}
+
+              {/* Respostas Sugeridas */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
+                  <MessageCircle size={12} className="text-orange-500" /> Respostas para Comentários
+                </p>
+                <div className="space-y-2">
+                  {(carResult.respostas_sugeridas || []).map((resp, i) => (
+                    <div key={i} className="flex items-start gap-3 group">
+                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[10px] font-bold text-orange-600">{i + 1}</span>
+                      </div>
+                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
+                      <button onClick={() => handleCarCopy(resp, `car-resp-${i}`)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all mt-2 shrink-0">
+                        {carCopied === `car-resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nota Estratégica */}
+              {carResult.nota_estrategica && (
+                <div className="bg-gradient-to-r from-orange-50 to-rose-50 rounded-2xl border border-orange-200 p-4 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                    <Brain size={15} className="text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-orange-600 uppercase mb-1">Nota Estratégica</p>
+                    <p className="text-sm text-orange-800 leading-relaxed">{carResult.nota_estrategica}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Regenerar */}
+              <button onClick={generateCarousel} disabled={carLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
+                <RefreshCw size={13} className={carLoading ? 'animate-spin' : ''} /> Regenerar carrossel
               </button>
             </div>
           )}
