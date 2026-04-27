@@ -133,6 +133,17 @@ REGRAS DE LINGUAGEM:
 - Evitar generalizações amplas
 - Evitar qualquer frase que pareça "impactante demais"
 
+AJUSTE FINO DE TOM (proteção de risco):
+O tema pode ser sensível. O risco não é o tema — é o tom.
+- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X", "as pessoas fazem Y")
+- Evitar culpados nomeados — explícitos ou implícitos
+- Preferir entrada observacional e acolhedora:
+  → "tem uma coisa que acontece…"
+  → "já reparou que…"
+  → "muita gente passa por isso…"
+  → "às vezes a gente…"
+- Descrever o fenômeno sem atribuir culpa a ninguém
+
 REGRAS DE CORTE (aplicar automaticamente):
 - Remover repetição de ideia
 - Remover explicação excessiva
@@ -217,6 +228,17 @@ REGRAS DE ESCRITA:
 - Escrever como fala — oral, sem formalidade
 - Evitar palavras bonitas sem função
 - Evitar explicar demais
+
+AJUSTE FINO DE TOM (proteção de risco):
+O tema pode ser sensível. O risco não é o tema — é o tom.
+- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X", "as pessoas fazem Y")
+- Evitar culpados nomeados — explícitos ou implícitos
+- Preferir entrada observacional e acolhedora:
+  → "tem uma coisa que acontece…"
+  → "já reparou que…"
+  → "muita gente passa por isso…"
+  → "às vezes a gente…"
+- Descrever o fenômeno sem atribuir culpa a ninguém
 
 REGRAS DE PROGRESSÃO:
 - Cada slide acrescenta algo novo
