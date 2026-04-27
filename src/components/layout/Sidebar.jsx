@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool, Mic,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, ShieldAlert, Scissors, Activity,
+  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
+  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
   Brain, Sun, Moon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -34,16 +34,13 @@ const NAV_GROUPS = [
     id: 'ferramentas',
     label: 'Ferramentas',
     children: [
-      { to: '/authenticity', icon: ShieldAlert, label: 'Crítico de Autenticidade' },
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
-      { to: '/video-editor', icon: Scissors, label: 'Editor de Cortes' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade' },
     ],
   },
 ]
 
 const BOTTOM_NAV = [
-  { to: '/brand-voice', icon: Mic, label: 'Minha Voz' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
   { to: '/security', icon: Shield, label: 'Registro de Acessos' },
 ]
