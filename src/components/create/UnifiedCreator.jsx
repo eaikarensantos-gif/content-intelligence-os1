@@ -106,15 +106,22 @@ const ADJUSTMENT_PROMPTS = {
 const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo especializado em retenção, engajamento profundo e arquitetura de atenção.
 Sua função NÃO é apenas criar conteúdo bonito. Sua função é criar conteúdo que gere resposta real (comentários com identificação, relato ou pergunta).
 
-REGRAS OBRIGATÓRIAS (validar cada uma):
+POSICIONAMENTO OBRIGATÓRIO:
+Você escreve como quem provoca — não como quem explica.
+Menos conteúdo. Mais precisão. Mais espaço.
+
+REGRAS OBRIGATÓRIAS (validar cada uma antes de entregar):
 1. GANCHO: Começar com situação desconfortável OU quebra de expectativa OU contradição
 2. CONFLITO: Tensão clara até o final
 3. NÃO RESOLVER: Deixar espaço aberto — não encerrar completamente o raciocínio
 4. PERGUNTA: Finalizar com pergunta de baixo atrito (simples, respondível em 1 frase)
 5. ESFORÇO BAIXO: A resposta deve exigir pouco esforço do seguidor
 6. SENSAÇÃO: Deve dar pra sentir, não só entender
+7. FOCO ÚNICO: O conteúdo deve trabalhar apenas UMA história ou UMA ideia principal. Se houver múltiplas, reduzir para apenas uma.
+8. LIMITE DE DENSIDADE: Se o conteúdo tiver mais de 5 blocos de informação, reduzir automaticamente.
+9. CORTE AUTOMÁTICO: Remover qualquer parte que explique demais, traga múltiplos exemplos ou feche completamente o raciocínio.
 
-NUNCA: começar com explicação, tom acadêmico, CTA genérico, encerrar totalmente o raciocínio, escrever como artigo.
+NUNCA: começar com explicação, tom acadêmico, CTA genérico, encerrar totalmente o raciocínio, escrever como artigo, usar múltiplos exemplos, acumular blocos de informação.
 Se qualquer regra falhar na sua avaliação interna, reescreva automaticamente antes de entregar.`
 
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
@@ -125,10 +132,10 @@ ${gerarIdeia ? 'Crie uma ideia criativa para este tema.' : ''}
 ${gerarTexto ? 'Crie um texto base relevante para este tema.' : ''}
 
 Execute o protocolo completo:
-1. Crie a VERSÃO PRINCIPAL seguindo a estrutura: abertura com situação/quebra/contradição → tensão + identificação emocional + linguagem simples → NÃO resolver completamente → pergunta de baixo atrito
-2. Crie a VERSÃO EMOCIONAL (mais vulnerabilidade, identificação pessoal)
-3. Crie a VERSÃO PROVOCATIVA (mais tensão, questionamento, desconforto positivo)
-4. Valide internamente as 6 regras em cada versão — reescreva se falhar
+1. Crie a VERSÃO PRINCIPAL: abertura com situação/quebra/contradição → tensão + identificação emocional + linguagem simples → NÃO resolver completamente → pergunta de baixo atrito. Trabalhe apenas UMA ideia. Máximo 5 blocos. Corte tudo que explica demais.
+2. Crie a VERSÃO EMOCIONAL (mais vulnerabilidade, identificação pessoal — mesma densidade mínima)
+3. Crie a VERSÃO PROVOCATIVA (mais tensão, questionamento, desconforto positivo — mesma densidade mínima)
+4. Valide internamente as 9 regras em cada versão — reescreva se qualquer uma falhar
 5. Entregue apenas versões já aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
@@ -145,7 +152,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
     "nao_resolver": true,
     "pergunta": true,
     "esforco_baixo": true,
-    "sensacao": "SENTIR"
+    "sensacao": "SENTIR",
+    "foco_unico": true,
+    "densidade_ok": true,
+    "sem_excesso": true
   }
 }`
 
@@ -581,14 +591,17 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                 <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
                   <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-9 gap-2">
                   {[
-                    { key: 'gancho',       label: 'Gancho' },
-                    { key: 'conflito',     label: 'Conflito' },
-                    { key: 'nao_resolver', label: 'Espaço aberto' },
-                    { key: 'pergunta',     label: 'Pergunta' },
-                    { key: 'esforco_baixo',label: 'Baixo atrito' },
-                    { key: 'sensacao',     label: 'Sensação' },
+                    { key: 'gancho',        label: 'Gancho' },
+                    { key: 'conflito',      label: 'Conflito' },
+                    { key: 'nao_resolver',  label: 'Espaço aberto' },
+                    { key: 'pergunta',      label: 'Pergunta' },
+                    { key: 'esforco_baixo', label: 'Baixo atrito' },
+                    { key: 'sensacao',      label: 'Sensação' },
+                    { key: 'foco_unico',    label: 'Foco único' },
+                    { key: 'densidade_ok',  label: 'Densidade' },
+                    { key: 'sem_excesso',   label: 'Sem excesso' },
                   ].map(({ key, label }) => {
                     const val = engResult.validacao?.[key]
                     const ok = val === true || val === 'SENTIR'
