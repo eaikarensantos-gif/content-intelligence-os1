@@ -108,7 +108,9 @@ Sua função NÃO é apenas criar conteúdo bonito. Sua função é criar conte�
 
 POSICIONAMENTO OBRIGATÓRIO:
 Você escreve como quem provoca — não como quem explica.
-Menos conteúdo. Mais precisão. Mais espaço.
+Menos ideias = mais impacto. Menos explicação = mais resposta. Menos texto = mais conversa.
+O risco não é mais fazer conteúdo fraco. O risco é fazer conteúdo bom… mas cansativo.
+Conteúdo cansativo não gera comentário, não gera retenção, não escala.
 
 REGRAS OBRIGATÓRIAS (validar cada uma antes de entregar):
 1. GANCHO: Começar com situação desconfortável OU quebra de expectativa OU contradição
@@ -120,8 +122,11 @@ REGRAS OBRIGATÓRIAS (validar cada uma antes de entregar):
 7. FOCO ÚNICO: O conteúdo deve trabalhar apenas UMA história ou UMA ideia principal. Se houver múltiplas, reduzir para apenas uma.
 8. LIMITE DE DENSIDADE: Se o conteúdo tiver mais de 5 blocos de informação, reduzir automaticamente.
 9. CORTE AUTOMÁTICO: Remover qualquer parte que explique demais, traga múltiplos exemplos ou feche completamente o raciocínio.
+10. NÃO REPETIÇÃO: Se a mesma ideia aparecer mais de uma vez, manter apenas a versão mais forte.
+11. LIMITE DE LINHAS: O conteúdo deve ter no máximo 8 blocos curtos. Se ultrapassar, reduzir automaticamente.
+12. UMA EMOÇÃO CENTRAL: O conteúdo deve explorar apenas UMA emoção principal (ex: medo, dúvida, pressão). Misturar emoções dilui o impacto.
 
-NUNCA: começar com explicação, tom acadêmico, CTA genérico, encerrar totalmente o raciocínio, escrever como artigo, usar múltiplos exemplos, acumular blocos de informação.
+NUNCA: começar com explicação, tom acadêmico, CTA genérico, encerrar totalmente o raciocínio, escrever como artigo, usar múltiplos exemplos, acumular blocos, repetir ideias, misturar emoções.
 Se qualquer regra falhar na sua avaliação interna, reescreva automaticamente antes de entregar.`
 
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
@@ -132,10 +137,10 @@ ${gerarIdeia ? 'Crie uma ideia criativa para este tema.' : ''}
 ${gerarTexto ? 'Crie um texto base relevante para este tema.' : ''}
 
 Execute o protocolo completo:
-1. Crie a VERSÃO PRINCIPAL: abertura com situação/quebra/contradição → tensão + identificação emocional + linguagem simples → NÃO resolver completamente → pergunta de baixo atrito. Trabalhe apenas UMA ideia. Máximo 5 blocos. Corte tudo que explica demais.
-2. Crie a VERSÃO EMOCIONAL (mais vulnerabilidade, identificação pessoal — mesma densidade mínima)
-3. Crie a VERSÃO PROVOCATIVA (mais tensão, questionamento, desconforto positivo — mesma densidade mínima)
-4. Valide internamente as 9 regras em cada versão — reescreva se qualquer uma falhar
+1. Crie a VERSÃO PRINCIPAL: abertura com situação/quebra/contradição → tensão com UMA emoção central + identificação emocional + linguagem simples → NÃO resolver completamente → pergunta de baixo atrito. Uma ideia. Máximo 8 blocos curtos. Sem repetição. Corte tudo que explica demais.
+2. Crie a VERSÃO EMOCIONAL (mais vulnerabilidade, identificação pessoal — mesma disciplina de densidade)
+3. Crie a VERSÃO PROVOCATIVA (mais tensão, questionamento, desconforto positivo — mesma disciplina de densidade)
+4. Valide internamente as 12 regras em cada versão — reescreva se qualquer uma falhar
 5. Entregue apenas versões já aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
@@ -155,7 +160,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
     "sensacao": "SENTIR",
     "foco_unico": true,
     "densidade_ok": true,
-    "sem_excesso": true
+    "sem_excesso": true,
+    "sem_repeticao": true,
+    "limite_linhas": true,
+    "emocao_unica": true
   }
 }`
 
@@ -591,7 +599,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                 <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
                   <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-9 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {[
                     { key: 'gancho',        label: 'Gancho' },
                     { key: 'conflito',      label: 'Conflito' },
@@ -602,6 +610,9 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                     { key: 'foco_unico',    label: 'Foco único' },
                     { key: 'densidade_ok',  label: 'Densidade' },
                     { key: 'sem_excesso',   label: 'Sem excesso' },
+                    { key: 'sem_repeticao', label: 'Sem repetição' },
+                    { key: 'limite_linhas', label: 'Limite linhas' },
+                    { key: 'emocao_unica',  label: 'Emoção única' },
                   ].map(({ key, label }) => {
                     const val = engResult.validacao?.[key]
                     const ok = val === true || val === 'SENTIR'
