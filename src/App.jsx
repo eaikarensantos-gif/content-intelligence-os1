@@ -9,7 +9,6 @@ import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
 import SocialDashboard from './components/analytics/SocialDashboard'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
-import VideoEditor from './components/video/VideoEditor'
 import ThoughtCapture from './components/thoughts/ThoughtCapture'
 import TextStudio from './components/text/TextStudio'
 import IdeaGenerator from './components/generate/IdeaGenerator'
@@ -25,10 +24,8 @@ import AdManager from './components/ads/AdManager'
 import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
-import BrandVoiceSetup from './components/brand/BrandVoiceSetup'
 import ContentBrain from './components/brain/ContentBrain'
 import SupabaseSettings from './components/settings/SupabaseSettings'
-import AuthenticityAnalyzer from './components/authenticity/AuthenticityAnalyzer'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 // PricingManager is embedded inside AdManager
@@ -82,7 +79,6 @@ export default function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<SocialDashboard />} />
             <Route path="/video" element={<VideoAnalyzer />} />
-            <Route path="/video-editor" element={<VideoEditor />} />
             <Route path="/create" element={<UnifiedCreator />} />
             <Route path="/create-legacy" element={<CreateContent />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />
@@ -94,10 +90,8 @@ export default function App() {
             {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/reports" element={<PerformanceReport />} />
-            <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
-            <Route path="/authenticity" element={<AuthenticityAnalyzer />} />
             <Route path="/brain" element={<ContentBrain />} />
           </Routes>
         </Layout>
