@@ -291,6 +291,107 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
+/* ── Protocolo de Stories ── */
+const STORIES_SYSTEM = `Você é um estrategista de conteúdo que escreve como alguém que observa o mundo real — não como alguém que monta texto.
+
+Sua função NÃO é ensinar.
+Sua função é traduzir comportamentos de forma natural, precisa e reconhecível.
+
+CONTEXTO:
+A criadora é empreendedora (home office), mas fala com uma audiência majoritariamente corporativa.
+Falar a partir do próprio lugar (empreendedora), conectando com padrões que atravessam o trabalho como um todo.
+
+PRINCÍPIO DE ESCRITA:
+Descrever o que acontece → não explicar por que acontece.
+
+PROIBIÇÕES ABSOLUTAS — NUNCA usar:
+- "não é X, é Y" / "o mais curioso é" / "ninguém fala disso" / "a verdade é" / "o segredo é"
+- Frases de efeito genéricas
+- Listas repetitivas
+- Linguagem de coach
+- Tom professoral
+- Explicação didática
+- Conclusão fechada
+Evitar palavras: insight, essencial, fundamental, crucial, revolucionário, inspirador, otimizar, significativo, navegar, mergulhar, clareza, silencioso
+
+AJUSTE FINO DE TOM (proteção de risco):
+O tema pode ser sensível. O risco não é o tema — é o tom.
+- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X")
+- Evitar culpados nomeados — explícitos ou implícitos
+- Preferir entrada observacional e acolhedora:
+  → "tem uma coisa que acontece…"
+  → "já reparou que…"
+  → "muita gente passa por isso…"
+  → "às vezes a gente…"
+- Descrever o fenômeno sem atribuir culpa a ninguém
+
+ESTRUTURA DO ROTEIRO:
+1. Ponto de entrada ancorado na realidade da criadora
+   (ex: "trabalhando de casa…", "vendo de fora…", "tem um padrão que eu continuo vendo…")
+2. Situação ou comportamento observável
+3. Continuação natural (sem repetir ideia)
+4. Leitura curta (sem explicar demais)
+5. Tensão implícita (sem dramatizar)
+6. Pergunta final simples e humana
+
+REGRAS DE LINGUAGEM:
+- Escrever como fala
+- Evitar palavras bonitas sem função
+- Evitar frases que parecem prontas
+- Evitar generalizações amplas
+- Evitar parecer "texto pensado demais"
+
+REGRAS DE CORTE:
+- Remover repetição de ideia
+- Remover mais de 1 exemplo
+- Remover explicações
+- Remover qualquer frase genérica
+- Máximo 6 a 8 blocos
+
+PERGUNTA FINAL:
+- Parecer continuação da conversa
+- Simples, cabe em uma resposta curta
+- Evitar tom de pesquisa e pergunta genérica
+
+VALIDAÇÃO INTERNA (antes de entregar):
+- Parece algo que alguém falaria ou um texto escrito?
+- Tem alguma frase que parece pronta?
+- Está explicando demais?
+- Parece julgamento ou observação?
+Se qualquer resposta for negativa → reescrever
+
+CRITÉRIO FINAL: Se parecer IA → falhou. Se parecer aula → falhou. Se parecer uma observação real → passou.`
+
+const buildStoriesPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
+TEMA: ${tema}
+${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
+${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
+${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — ancorada na realidade da empreendedora, não abstrata.' : ''}
+${gerarTexto ? 'Crie um texto base para este tema — como observação real com ponto de entrada na realidade da criadora.' : ''}
+
+Execute o protocolo:
+1. ROTEIRO PRINCIPAL: ponto de entrada na realidade da criadora → situação observável → continuação natural → leitura curta → tensão implícita → pergunta final. 6 a 8 blocos. Sem frases prontas.
+2. VARIAÇÃO 1 (mudança real — mais próxima, mais íntima — não cosmética)
+3. VARIAÇÃO 2 (mudança real — entrada diferente, tom diferente — não cosmética)
+4. Valide internamente os 4 critérios — reescreva se qualquer um falhar
+5. Entregue apenas versões aprovadas
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "roteiro_principal": "roteiro completo (use \\n para quebras)",
+  "variacao_1": "variação 1 completa",
+  "variacao_2": "variação 2 completa",
+  "pergunta_final": "apenas a pergunta final — natural, como conversa",
+  "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
+  "nota_estrategica": "em 2 frases: a lógica do conteúdo sem jargão",
+  "validacao": {
+    "parece_falado": true,
+    "sem_frases_prontas": true,
+    "sem_excesso_explicacao": true,
+    "parece_observacao": true
+  }
+}`
+
 /* ── Componente Principal ── */
 export default function UnifiedCreator() {
   const navigate = useNavigate()
@@ -326,7 +427,7 @@ export default function UnifiedCreator() {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel'
+  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel' | 'stories'
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
   const [engIdeia, setEngIdeia] = useState('')
@@ -349,6 +450,18 @@ export default function UnifiedCreator() {
   const [carResult, setCarResult] = useState(null)
   const [carError, setCarError] = useState(null)
   const [carCopied, setCarCopied] = useState(null)
+  // Stories
+  const [strTema, setStrTema] = useState('')
+  const [strIdeia, setStrIdeia] = useState('')
+  const [strTexto, setStrTexto] = useState('')
+  const [strGerarIdeia, setStrGerarIdeia] = useState(false)
+  const [strGerarTexto, setStrGerarTexto] = useState(false)
+  const [strLoading, setStrLoading] = useState(false)
+  const [strResult, setStrResult] = useState(null)
+  const [strError, setStrError] = useState(null)
+  const [strCopied, setStrCopied] = useState(null)
+  const [strShowVar1, setStrShowVar1] = useState(false)
+  const [strShowVar2, setStrShowVar2] = useState(false)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -614,6 +727,45 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setTimeout(() => setCarCopied(null), 2000)
   }
 
+  const handleStrCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setStrCopied(key)
+    setTimeout(() => setStrCopied(null), 2000)
+  }
+
+  const generateStories = async () => {
+    if (!strTema.trim()) return
+    if (!apiKey) { setStrError('Configure sua API key em Analytics > Configurações'); return }
+    setStrLoading(true)
+    setStrError(null)
+    setStrResult(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 5000,
+          system: STORIES_SYSTEM,
+          messages: [{ role: 'user', content: buildStoriesPrompt({ tema: strTema, ideia: strIdeia, texto: strTexto, gerarIdeia: strGerarIdeia, gerarTexto: strGerarTexto }) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setStrResult(JSON.parse(match[0]))
+    } catch (err) {
+      setStrError(err.message)
+    } finally {
+      setStrLoading(false)
+    }
+  }
+
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
@@ -661,6 +813,12 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
             mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <LayoutGrid size={13} /> Carrossel
+        </button>
+        <button onClick={() => setMode('stories')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Film size={13} /> Stories
         </button>
       </div>
 
@@ -1118,6 +1276,230 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
               <button onClick={generateCarousel} disabled={carLoading}
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
                 <RefreshCw size={13} className={carLoading ? 'animate-spin' : ''} /> Regenerar carrossel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Formulário de Stories ── */}
+      {mode === 'stories' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shrink-0">
+                <Film size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Protocolo de Stories</p>
+                <p className="text-xs text-gray-400 mt-0.5">Observação real — ponto de entrada da empreendedora, conexão com o corporativo.</p>
+              </div>
+            </div>
+
+            {/* Tema */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tema <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={strTema}
+                onChange={e => setStrTema(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateStories()}
+                placeholder="Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento..."
+                className="input text-sm w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Ideia */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Ideia <span className="text-gray-300">(opcional)</span>
+                </label>
+                <button onClick={() => setStrGerarIdeia(v => !v)}
+                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
+                    strGerarIdeia ? 'bg-teal-100 border-teal-300 text-teal-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Sparkles size={10} /> {strGerarIdeia ? 'Gerar com IA ✓' : 'Gerar com IA'}
+                </button>
+              </div>
+              {!strGerarIdeia && (
+                <textarea value={strIdeia} onChange={e => setStrIdeia(e.target.value)}
+                  rows={2} placeholder="Um ângulo ou situação específica que você quer explorar..."
+                  className="input text-sm w-full resize-none" />
+              )}
+              {strGerarIdeia && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-600">
+                  <Sparkles size={12} /> A IA vai criar uma ideia ancorada na realidade da empreendedora
+                </div>
+              )}
+            </div>
+
+            {/* Texto Base */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Texto base <span className="text-gray-300">(opcional)</span>
+                </label>
+                <button onClick={() => setStrGerarTexto(v => !v)}
+                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
+                    strGerarTexto ? 'bg-cyan-100 border-cyan-300 text-cyan-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Sparkles size={10} /> {strGerarTexto ? 'Gerar com IA ✓' : 'Gerar com IA'}
+                </button>
+              </div>
+              {!strGerarTexto && (
+                <textarea value={strTexto} onChange={e => setStrTexto(e.target.value)}
+                  rows={3} placeholder="Cole um texto, rascunho ou observação que queira transformar..."
+                  className="input text-sm w-full resize-none" />
+              )}
+              {strGerarTexto && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-600">
+                  <Sparkles size={12} /> A IA vai criar um texto base como observação real
+                </div>
+              )}
+            </div>
+
+            {strError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{strError}</div>
+            )}
+
+            <button onClick={generateStories} disabled={strLoading || !strTema.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all shadow-lg shadow-teal-200 disabled:opacity-40 disabled:cursor-not-allowed">
+              {strLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Film size={15} /> Gerar Stories</>}
+            </button>
+          </div>
+
+          {/* ── Output de Stories ── */}
+          {strResult && (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* Validação */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                  <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { key: 'parece_falado',          label: 'Parece falado' },
+                    { key: 'sem_frases_prontas',      label: 'Sem frase pronta' },
+                    { key: 'sem_excesso_explicacao',  label: 'Sem excesso' },
+                    { key: 'parece_observacao',       label: 'Observação' },
+                  ].map(({ key, label }) => {
+                    const ok = strResult.validacao?.[key] === true
+                    return (
+                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
+                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                      )}>
+                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
+                        <span className={clsx('text-[9px] font-semibold leading-tight', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Roteiro Principal */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-teal-500" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Roteiro Principal</span>
+                  </div>
+                  <button onClick={() => handleStrCopy(strResult.roteiro_principal, 'principal')}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal-600 transition-colors">
+                    {strCopied === 'principal' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                  </button>
+                </div>
+                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {strResult.roteiro_principal}
+                </div>
+              </div>
+
+              {/* Pergunta Final */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 p-5 text-white shadow-lg shadow-teal-200">
+                <div className="relative z-10">
+                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
+                    <Quote size={10} /> Pergunta Final (use literalmente)
+                  </p>
+                  <p className="text-base font-bold leading-snug">{strResult.pergunta_final}</p>
+                  <button onClick={() => handleStrCopy(strResult.pergunta_final, 'str-pergunta')}
+                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                    {strCopied === 'str-pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar pergunta</>}
+                  </button>
+                </div>
+                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
+              </div>
+
+              {/* Variações */}
+              <div className="space-y-2">
+                {[
+                  { key: 'variacao_1', label: 'Variação 1 — mais próxima', dot: 'bg-teal-400', show: strShowVar1, toggle: () => setStrShowVar1(v => !v) },
+                  { key: 'variacao_2', label: 'Variação 2 — entrada diferente', dot: 'bg-cyan-500', show: strShowVar2, toggle: () => setStrShowVar2(v => !v) },
+                ].map(({ key, label, dot, show, toggle }) => (
+                  <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    <button onClick={toggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${dot}`} />
+                        <span className="text-xs font-semibold text-gray-700">{label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); handleStrCopy(strResult[key], key) }}
+                          className="text-gray-300 hover:text-gray-600 transition-colors">
+                          {strCopied === key ? <Check size={11} /> : <Copy size={11} />}
+                        </button>
+                        {show ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                      </div>
+                    </button>
+                    {show && (
+                      <div className="px-4 pb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3">
+                        {strResult[key]}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Respostas Sugeridas */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
+                  <MessageCircle size={12} className="text-teal-500" /> Respostas para Comentários
+                </p>
+                <p className="text-[10px] text-gray-400">Use nos primeiros comentários para ativar conversas</p>
+                <div className="space-y-2">
+                  {(strResult.respostas_sugeridas || []).map((resp, i) => (
+                    <div key={i} className="flex items-start gap-3 group">
+                      <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[10px] font-bold text-teal-600">{i + 1}</span>
+                      </div>
+                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
+                      <button onClick={() => handleStrCopy(resp, `str-resp-${i}`)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-teal-500 transition-all mt-2 shrink-0">
+                        {strCopied === `str-resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nota Estratégica */}
+              {strResult.nota_estrategica && (
+                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl border border-teal-200 p-4 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
+                    <Brain size={15} className="text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-teal-600 uppercase mb-1">Nota Estratégica</p>
+                    <p className="text-sm text-teal-800 leading-relaxed">{strResult.nota_estrategica}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Regenerar */}
+              <button onClick={generateStories} disabled={strLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
+                <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar roteiro
               </button>
             </div>
           )}
