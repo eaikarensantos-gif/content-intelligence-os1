@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import {
-  Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight,
+  Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
+  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -101,6 +102,53 @@ const ADJUSTMENT_PROMPTS = {
   more_practical: 'Reescreva de forma MAIS PRÁTICA — dê passos concretos, exemplos reais, frameworks acionáveis.',
 }
 
+/* ── Protocolo de Engajamento ── */
+const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo especializado em retenção, engajamento profundo e arquitetura de atenção.
+Sua função NÃO é apenas criar conteúdo bonito. Sua função é criar conteúdo que gere resposta real (comentários com identificação, relato ou pergunta).
+
+REGRAS OBRIGATÓRIAS (validar cada uma):
+1. GANCHO: Começar com situação desconfortável OU quebra de expectativa OU contradição
+2. CONFLITO: Tensão clara até o final
+3. NÃO RESOLVER: Deixar espaço aberto — não encerrar completamente o raciocínio
+4. PERGUNTA: Finalizar com pergunta de baixo atrito (simples, respondível em 1 frase)
+5. ESFORÇO BAIXO: A resposta deve exigir pouco esforço do seguidor
+6. SENSAÇÃO: Deve dar pra sentir, não só entender
+
+NUNCA: começar com explicação, tom acadêmico, CTA genérico, encerrar totalmente o raciocínio, escrever como artigo.
+Se qualquer regra falhar na sua avaliação interna, reescreva automaticamente antes de entregar.`
+
+const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
+TEMA: ${tema}
+${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
+${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
+${gerarIdeia ? 'Crie uma ideia criativa para este tema.' : ''}
+${gerarTexto ? 'Crie um texto base relevante para este tema.' : ''}
+
+Execute o protocolo completo:
+1. Crie a VERSÃO PRINCIPAL seguindo a estrutura: abertura com situação/quebra/contradição → tensão + identificação emocional + linguagem simples → NÃO resolver completamente → pergunta de baixo atrito
+2. Crie a VERSÃO EMOCIONAL (mais vulnerabilidade, identificação pessoal)
+3. Crie a VERSÃO PROVOCATIVA (mais tensão, questionamento, desconforto positivo)
+4. Valide internamente as 6 regras em cada versão — reescreva se falhar
+5. Entregue apenas versões já aprovadas
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "versao_principal": "roteiro completo (use \\n para quebras)",
+  "variacao_emocional": "versão emocional completa",
+  "variacao_provocativa": "versão provocativa completa",
+  "pergunta_final": "apenas a pergunta final de baixo atrito",
+  "respostas_sugeridas": ["resposta estratégica para comentários 1", "resposta estratégica para comentários 2"],
+  "nota_estrategica": "2-3 frases explicando por que este conteúdo vai gerar comentários reais",
+  "validacao": {
+    "gancho": true,
+    "conflito": true,
+    "nao_resolver": true,
+    "pergunta": true,
+    "esforco_baixo": true,
+    "sensacao": "SENTIR"
+  }
+}`
+
 /* ── Componente Principal ── */
 export default function UnifiedCreator() {
   const navigate = useNavigate()
@@ -129,11 +177,25 @@ export default function UnifiedCreator() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [banCandidate, setBanCandidate] = useState(null)
   const [banPosition, setBanPosition] = useState({ x: 0, y: 0 })
-  const [inspiration, setInspiration] = useState(null) // Referência/Inspiração do explorador
+  const [inspiration, setInspiration] = useState(null)
   const [brandViolations, setBrandViolations] = useState([])
   const [showLinter, setShowLinter] = useState(false)
   const linterTimeoutRef = useRef(null)
   const inputRef = useRef(null)
+
+  // ── Modo Engajamento ──
+  const [mode, setMode] = useState('studio') // 'studio' | 'engagement'
+  const [engTema, setEngTema] = useState('')
+  const [engIdeia, setEngIdeia] = useState('')
+  const [engTexto, setEngTexto] = useState('')
+  const [engGerarIdeia, setEngGerarIdeia] = useState(false)
+  const [engGerarTexto, setEngGerarTexto] = useState(false)
+  const [engLoading, setEngLoading] = useState(false)
+  const [engResult, setEngResult] = useState(null)
+  const [engError, setEngError] = useState(null)
+  const [engCopied, setEngCopied] = useState(null)
+  const [engShowEmocional, setEngShowEmocional] = useState(false)
+  const [engShowProvocativo, setEngShowProvocativo] = useState(false)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -316,6 +378,50 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     }
   }
 
+  const handleEngCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setEngCopied(key)
+    setTimeout(() => setEngCopied(null), 2000)
+  }
+
+  const generateEngagement = async () => {
+    if (!engTema.trim()) return
+    if (!apiKey) { setEngError('Configure sua API key em Analytics > Configurações'); return }
+    setEngLoading(true)
+    setEngError(null)
+    setEngResult(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 5000,
+          system: ENGAGEMENT_SYSTEM,
+          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setEngResult(JSON.parse(match[0]))
+    } catch (err) {
+      setEngError(err.message)
+    } finally {
+      setEngLoading(false)
+    }
+  }
+
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
@@ -344,7 +450,268 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         )}
       </div>
 
-      {/* ── Input principal ── */}
+      {/* ── Seletor de modo ── */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+        <button onClick={() => setMode('studio')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'studio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <PenTool size={13} /> Studio Livre
+        </button>
+        <button onClick={() => setMode('engagement')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <MessageCircle size={13} /> Protocolo de Engajamento
+        </button>
+      </div>
+
+      {/* ── Formulário de Engajamento ── */}
+      {mode === 'engagement' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+                <MessageCircle size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Protocolo Anti-Emoji</p>
+                <p className="text-xs text-gray-400 mt-0.5">Gera roteiro otimizado para comentários reais — não emojis</p>
+              </div>
+            </div>
+
+            {/* Tema */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tema <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={engTema}
+                onChange={e => setEngTema(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateEngagement()}
+                placeholder="Ex: solidão na carreira, síndrome da impostora, burnout disfarçado de produtividade..."
+                className="input text-sm w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Ideia */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Ideia <span className="text-gray-300">(opcional)</span>
+                </label>
+                <button onClick={() => setEngGerarIdeia(v => !v)}
+                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
+                    engGerarIdeia
+                      ? 'bg-violet-100 border-violet-300 text-violet-700'
+                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Sparkles size={10} />
+                  {engGerarIdeia ? 'Gerar com IA ✓' : 'Gerar com IA'}
+                </button>
+              </div>
+              {!engGerarIdeia && (
+                <textarea
+                  value={engIdeia}
+                  onChange={e => setEngIdeia(e.target.value)}
+                  rows={2}
+                  placeholder="Uma ideia ou ângulo específico que você quer explorar..."
+                  className="input text-sm w-full resize-none"
+                />
+              )}
+              {engGerarIdeia && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-50 border border-violet-200 text-xs text-violet-600">
+                  <Sparkles size={12} /> A IA vai criar uma ideia criativa para o tema
+                </div>
+              )}
+            </div>
+
+            {/* Texto Base */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Texto base <span className="text-gray-300">(opcional)</span>
+                </label>
+                <button onClick={() => setEngGerarTexto(v => !v)}
+                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
+                    engGerarTexto
+                      ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Sparkles size={10} />
+                  {engGerarTexto ? 'Gerar com IA ✓' : 'Gerar com IA'}
+                </button>
+              </div>
+              {!engGerarTexto && (
+                <textarea
+                  value={engTexto}
+                  onChange={e => setEngTexto(e.target.value)}
+                  rows={3}
+                  placeholder="Cole um texto, trecho, post ou rascunho que queira transformar..."
+                  className="input text-sm w-full resize-none"
+                />
+              )}
+              {engGerarTexto && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-600">
+                  <Sparkles size={12} /> A IA vai criar um texto base relevante para o tema
+                </div>
+              )}
+            </div>
+
+            {engError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{engError}</div>
+            )}
+
+            <button
+              onClick={generateEngagement}
+              disabled={engLoading || !engTema.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando protocolo...</> : <><Zap size={15} /> Gerar Protocolo</>}
+            </button>
+          </div>
+
+          {/* ── Output de Engajamento ── */}
+          {engResult && (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* Validação */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                  <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {[
+                    { key: 'gancho',       label: 'Gancho' },
+                    { key: 'conflito',     label: 'Conflito' },
+                    { key: 'nao_resolver', label: 'Espaço aberto' },
+                    { key: 'pergunta',     label: 'Pergunta' },
+                    { key: 'esforco_baixo',label: 'Baixo atrito' },
+                    { key: 'sensacao',     label: 'Sensação' },
+                  ].map(({ key, label }) => {
+                    const val = engResult.validacao?.[key]
+                    const ok = val === true || val === 'SENTIR'
+                    return (
+                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
+                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                      )}>
+                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
+                        <span className={clsx('text-[9px] font-semibold leading-tight', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Versão Principal */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-violet-500" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Versão Principal (otimizada)</span>
+                  </div>
+                  <button onClick={() => handleEngCopy(engResult.versao_principal, 'principal')}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-violet-600 transition-colors">
+                    {engCopied === 'principal' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                  </button>
+                </div>
+                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {engResult.versao_principal}
+                </div>
+              </div>
+
+              {/* Pergunta Final */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg shadow-orange-200">
+                <div className="relative z-10">
+                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
+                    <Quote size={10} /> Pergunta Final (use literalmente)
+                  </p>
+                  <p className="text-base font-bold leading-snug">{engResult.pergunta_final}</p>
+                  <button onClick={() => handleEngCopy(engResult.pergunta_final, 'pergunta')}
+                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                    {engCopied === 'pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar pergunta</>}
+                  </button>
+                </div>
+                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
+              </div>
+
+              {/* Variações */}
+              <div className="space-y-2">
+                {[
+                  { key: 'variacao_emocional',    label: 'Variação Emocional',    color: 'rose',   dot: 'bg-rose-500',   show: engShowEmocional,    toggle: () => setEngShowEmocional(v => !v) },
+                  { key: 'variacao_provocativa',   label: 'Variação Provocativa',  color: 'indigo', dot: 'bg-indigo-500', show: engShowProvocativo,   toggle: () => setEngShowProvocativo(v => !v) },
+                ].map(({ key, label, color, dot, show, toggle }) => (
+                  <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    <button onClick={toggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${dot}`} />
+                        <span className="text-xs font-semibold text-gray-700">{label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); handleEngCopy(engResult[key], key) }}
+                          className="text-gray-300 hover:text-gray-600 transition-colors">
+                          {engCopied === key ? <Check size={11} /> : <Copy size={11} />}
+                        </button>
+                        {show ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                      </div>
+                    </button>
+                    {show && (
+                      <div className="px-4 pb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3">
+                        {engResult[key]}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Respostas Sugeridas */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
+                  <MessageCircle size={12} className="text-violet-500" /> Respostas para Comentários
+                </p>
+                <p className="text-[10px] text-gray-400">Use nos primeiros comentários para ativar conversas</p>
+                <div className="space-y-2">
+                  {(engResult.respostas_sugeridas || []).map((resp, i) => (
+                    <div key={i} className="flex items-start gap-3 group">
+                      <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[10px] font-bold text-violet-600">{i + 1}</span>
+                      </div>
+                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
+                      <button onClick={() => handleEngCopy(resp, `resp-${i}`)}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-violet-500 transition-all mt-2 shrink-0">
+                        {engCopied === `resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nota Estratégica */}
+              {engResult.nota_estrategica && (
+                <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl border border-violet-200 p-4 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                    <Brain size={15} className="text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-violet-600 uppercase mb-1">Nota Estratégica</p>
+                    <p className="text-sm text-violet-800 leading-relaxed">{engResult.nota_estrategica}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Regenerar */}
+              <button onClick={generateEngagement} disabled={engLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
+                <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar protocolo
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Input principal (Studio Livre) ── */}
+      {mode === 'studio' && (<>
       <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4 shadow-sm">
         <textarea
           ref={inputRef}
@@ -717,6 +1084,8 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
           )}
         </div>
       )}
+
+      </>)} {/* fim mode === 'studio' */}
 
       {/* Reference Explorer */}
       <ReferenceExplorer
