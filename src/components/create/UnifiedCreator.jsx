@@ -1120,6 +1120,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   Analisar temperaturas
                 </button>
               )}
+              {savedThemes.length > 0 && (
+                <button
+                  onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
+                >
+                  <X size={11} /> Limpar todos
+                </button>
+              )}
             </div>
 
             {/* Temas Sugeridos — accordion por categoria */}
