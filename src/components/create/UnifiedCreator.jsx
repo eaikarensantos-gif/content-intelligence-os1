@@ -295,6 +295,64 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
+/* ── Temas Sugeridos para Carrossel ── */
+const TEMAS_CARROSSEL = [
+  {
+    categoria: 'Carreira',
+    temas: [
+      'Medo de ser demitido sem avisar',
+      'Ficar em emprego ruim por medo do desconhecido',
+      'Ser promovido e não se sentir pronto',
+      'Pedir aumento e ter medo da resposta',
+      'Aceitar proposta nova sem contar pra ninguém antes',
+      'Sentir que o mercado passou por você',
+    ],
+  },
+  {
+    categoria: 'Maturidade Profissional',
+    temas: [
+      'Perfeccionismo que trava mais do que entrega',
+      'Procrastinar numa tarefa que você sabe fazer',
+      'Síndrome do impostor em cargo de liderança',
+      'Não conseguir pedir ajuda sem se sentir fraco',
+      'Trabalhar demais pra provar que merece estar ali',
+      'Fingir que entendeu pra não parecer perdido',
+    ],
+  },
+  {
+    categoria: 'Tomada de Decisão',
+    temas: [
+      'Paralisação por análise — quando dados não ajudam a decidir',
+      'Decidir sob pressão e se arrepender depois',
+      'Mudar de opinião e não saber como falar',
+      'Deixar o outro decidir pra não errar sozinho',
+      'Adiar uma decisão esperando o momento certo',
+      'Tomar decisão certa da forma errada',
+    ],
+  },
+  {
+    categoria: 'Dinâmicas Corporativas',
+    temas: [
+      'Reunião que todos balançam a cabeça mas ninguém age',
+      'Concordar em público e discordar no corredor',
+      'Gestor que pede autonomia mas controla tudo',
+      'Feedback que não muda nada mas precisa ser dado',
+      'Política de escritório que ninguém admite jogar',
+      'Entregar bem e não ser visto',
+    ],
+  },
+  {
+    categoria: 'IA e Futuro do Trabalho',
+    temas: [
+      'Usar IA no trabalho e não contar pra ninguém',
+      'Medo de ser substituído por automação',
+      'IA que entrega mais rápido do que você explica o que quer',
+      'Não saber até onde vai o seu trabalho e onde começa o da IA',
+      'Atualizar as habilidades sem saber o que vai durar',
+    ],
+  },
+]
+
 /* ── Componente Principal ── */
 export default function UnifiedCreator() {
   const navigate = useNavigate()
@@ -344,6 +402,7 @@ export default function UnifiedCreator() {
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
   // Carrossel
+  const [carOpenCategory, setCarOpenCategory] = useState(null)
   const [carTema, setCarTema] = useState('')
   const [carIdeia, setCarIdeia] = useState('')
   const [carTexto, setCarTexto] = useState('')
@@ -921,6 +980,40 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
                 <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
+              </div>
+            </div>
+
+            {/* Temas Sugeridos */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Temas Sugeridos</p>
+              <div className="space-y-1.5">
+                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+                  const isOpen = carOpenCategory === categoria
+                  return (
+                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setCarOpenCategory(isOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
+                      >
+                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
+                      </button>
+                      {isOpen && (
+                        <div className="px-3 py-2 space-y-1 bg-white">
+                          {temas.map(tema => (
+                            <button
+                              key={tema}
+                              onClick={() => { setCarTema(tema); setCarOpenCategory(null) }}
+                              className="w-full text-left text-xs text-gray-600 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                            >
+                              {tema}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
