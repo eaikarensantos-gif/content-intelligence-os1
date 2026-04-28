@@ -842,15 +842,20 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 
   const addTheme = () => {
-    const t = newThemeInput.trim()
-    if (!t || savedThemes.some(s => s.tema === t)) return
-    const entry = {
-      id: Date.now(), tema: t, temperatura: null, motivo: null,
-      fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
-    }
-    setSavedThemes(prev => [entry, ...prev])
+    const existing = new Set(savedThemes.map(s => s.tema))
+    const now = new Date().toISOString().slice(0, 10)
+    const entries = newThemeInput
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t.length > 0 && !existing.has(t))
+      .map((t, i) => ({
+        id: Date.now() + i, tema: t, temperatura: null, motivo: null,
+        fonte: 'manual', criadoEm: now,
+      }))
+    if (entries.length === 0) return
+    setSavedThemes(prev => [...entries, ...prev])
     setNewThemeInput('')
-    analyzeTemperatures([entry])
+    analyzeTemperatures(entries)
   }
 
   const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
