@@ -564,6 +564,7 @@ export default function UnifiedCreator() {
   const [newThemeInput, setNewThemeInput] = useState('')
   const [showThemesPanel, setShowThemesPanel] = useState(true)
   const [expandingThemes, setExpandingThemes] = useState(false)
+  const [categorizingThemes, setCategorizingThemes] = useState(false)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -983,19 +984,58 @@ Responda EXCLUSIVAMENTE com JSON válido:
     }
   }
 
-  const addTheme = () => {
+  const addTheme = async () => {
     const existing = new Set(savedThemes.map(s => s.tema))
     const now = new Date().toISOString().slice(0, 10)
-    const entries = newThemeInput
+    const novos = newThemeInput
       .split(',')
-      .map(t => t.trim())
+      .map(t => t.replace(/^[\s–\-•]+/, '').trim())
       .filter(t => t.length > 0 && !existing.has(t))
-      .map((t, i) => ({
-        id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now,
-      }))
-    if (entries.length === 0) return
-    setSavedThemes(prev => [...entries, ...prev])
+    if (novos.length === 0) return
     setNewThemeInput('')
+    setCategorizingThemes(true)
+
+    const categorias = ['Carreira', 'Maturidade Profissional', 'Tomada de Decisão', 'Dinâmicas Corporativas', 'IA e Futuro do Trabalho']
+
+    let classificados = novos.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now }))
+
+    if (apiKey) {
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 400,
+            system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
+Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
+Regras:
+- IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
+- Reuniões, gestores, liderança, política de escritório, equipe, hierarquia → "Dinâmicas Corporativas"
+- Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
+- Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
+- Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`,
+            messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
+          }),
+        })
+        const data = await res.json()
+        const text = data.content?.[0]?.text || ''
+        const match = text.match(/\[[\s\S]*\]/)
+        if (match) {
+          const parsed = JSON.parse(match[0])
+          classificados = novos.map((t, i) => ({
+            id: Date.now() + i,
+            tema: t,
+            categoria: parsed.find(p => p.tema === t)?.categoria || categorizeTheme(t),
+            fonte: 'manual',
+            criadoEm: now,
+          }))
+        }
+      } catch { /* usa fallback regex */ }
+    }
+
+    setSavedThemes(prev => [...classificados, ...prev])
+    setCategorizingThemes(false)
   }
 
   const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
@@ -1112,10 +1152,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
               />
               <button
                 onClick={addTheme}
-                disabled={!newThemeInput.trim()}
-                className="px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40 shrink-0"
+                disabled={!newThemeInput.trim() || categorizingThemes}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40 shrink-0"
               >
-                + Adicionar
+                {categorizingThemes ? <><Loader2 size={11} className="animate-spin" /> Classificando...</> : '+ Adicionar'}
               </button>
               <button
                 onClick={expandThemes}
