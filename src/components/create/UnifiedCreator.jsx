@@ -538,6 +538,7 @@ export default function UnifiedCreator() {
   const [strShowVar2, setStrShowVar2] = useState(false)
 
   // ── Banco de Temas ──
+  const [bankOpenCategory, setBankOpenCategory] = useState(null)
   const [savedThemes, setSavedThemes] = useState(() => {
     try {
       const raw = JSON.parse(localStorage.getItem('cio-saved-themes') || '[]')
@@ -934,6 +935,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
   const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
 
+  const addThemeFromSuggestion = (tema) => {
+    const existing = new Set(savedThemes.map(s => s.tema))
+    if (existing.has(tema)) return
+    const entry = { id: Date.now(), tema, temperatura: null, motivo: null, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }
+    setSavedThemes(prev => [entry, ...prev])
+    analyzeTemperatures([entry])
+    setBankOpenCategory(null)
+  }
+
   const expandThemes = async () => {
     if (!apiKey || savedThemes.length === 0) return
     setExpandingThemes(true)
@@ -1060,6 +1070,53 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   Analisar temperaturas
                 </button>
               )}
+            </div>
+
+            {/* Temas Sugeridos — accordion por categoria */}
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Sugestões por categoria</p>
+              <div className="space-y-1.5">
+                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+                  const isOpen = bankOpenCategory === categoria
+                  const alreadySaved = new Set(savedThemes.map(s => s.tema))
+                  return (
+                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
+                      >
+                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
+                      </button>
+                      {isOpen && (
+                        <div className="px-3 py-2 space-y-1 bg-white">
+                          {temas.map(tema => {
+                            const saved = alreadySaved.has(tema)
+                            return (
+                              <button
+                                key={tema}
+                                onClick={() => !saved && addThemeFromSuggestion(tema)}
+                                disabled={saved}
+                                className={clsx(
+                                  'w-full text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2',
+                                  saved
+                                    ? 'text-gray-300 cursor-default'
+                                    : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                                )}
+                              >
+                                <span>{tema}</span>
+                                {saved
+                                  ? <Check size={11} className="text-orange-400 shrink-0" />
+                                  : <Plus size={11} className="text-gray-300 shrink-0" />}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Table */}
