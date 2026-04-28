@@ -541,18 +541,24 @@ export default function UnifiedCreator() {
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
+
+  const categorizeTheme = (tema) => {
+    const t = tema.toLowerCase()
+    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|dados|machine|llm|prompt/.test(t)) return 'IA e Futuro do Trabalho'
+    if (/reuni[aã]o|gestor|empresa|corporat|chefe|pol[ií]tica|feedback|equipe|\btime\b|cargo|hierarquia|escrit[oó]rio|demiss|colega/.test(t)) return 'Dinâmicas Corporativas'
+    if (/decid|decis[aã]o|escolha|op[çc][aã]o|dilema|paralisa|risco|incerteza|\bsair\b|\bficar\b|mudan[çc]a/.test(t)) return 'Tomada de Decisão'
+    if (/perfeccion|procrastin|impostor|s[ií]ndrome|ansiedade|burnout|valida[çc]|inseguran[çc]|merecer|autoconfian|reconhecimento/.test(t)) return 'Maturidade Profissional'
+    return 'Carreira'
+  }
+
   const [savedThemes, setSavedThemes] = useState(() => {
     try {
       const raw = JSON.parse(localStorage.getItem('cio-saved-themes') || '[]')
-      // migrate old string-array format
       if (raw.length > 0 && typeof raw[0] === 'string') {
-        return raw.map((t, i) => ({
-          id: Date.now() + i,
-          tema: t, temperatura: null, motivo: null,
-          fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
-        }))
+        return raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       }
-      return raw
+      // migrar itens sem categoria
+      return raw.map(item => ({ ...item, categoria: item.categoria || 'Carreira' }))
     } catch { return [] }
   })
   const [newThemeInput, setNewThemeInput] = useState('')
@@ -985,24 +991,20 @@ Responda EXCLUSIVAMENTE com JSON válido:
       .map(t => t.trim())
       .filter(t => t.length > 0 && !existing.has(t))
       .map((t, i) => ({
-        id: Date.now() + i, tema: t, temperatura: null, motivo: null,
-        fonte: 'manual', criadoEm: now,
+        id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now,
       }))
     if (entries.length === 0) return
     setSavedThemes(prev => [...entries, ...prev])
     setNewThemeInput('')
-    analyzeTemperatures(entries)
   }
 
   const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
 
-  const addThemeFromSuggestion = (tema) => {
+  const addThemeFromSuggestion = (tema, categoria) => {
     const existing = new Set(savedThemes.map(s => s.tema))
     if (existing.has(tema)) return
-    const entry = { id: Date.now(), tema, temperatura: null, motivo: null, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }
+    const entry = { id: Date.now(), tema, categoria, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }
     setSavedThemes(prev => [entry, ...prev])
-    analyzeTemperatures([entry])
-    setBankOpenCategory(null)
   }
 
   const expandThemes = async () => {
@@ -1105,7 +1107,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 value={newThemeInput}
                 onChange={e => setNewThemeInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addTheme()}
-                placeholder="Novo tema..."
+                placeholder="Adicione temas separados por vírgula..."
                 className="input text-xs flex-1 py-1.5"
               />
               <button
@@ -1123,145 +1125,85 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                 Expandir com IA
               </button>
-              {savedThemes.some(t => !t.temperatura || t.temperatura === null) && (
-                <button
-                  onClick={() => analyzeTemperatures(savedThemes.filter(t => !t.temperatura))}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors shrink-0"
-                >
-                  Analisar temperaturas
-                </button>
-              )}
               {savedThemes.length > 0 && (
                 <button
                   onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
                 >
-                  <X size={11} /> Limpar todos
+                  <X size={11} /> Limpar
                 </button>
               )}
             </div>
 
-            {/* Temas Sugeridos — accordion por categoria */}
-            <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Sugestões por categoria</p>
-              <div className="space-y-1.5">
-                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
-                  const isOpen = bankOpenCategory === categoria
-                  const alreadySaved = new Set(savedThemes.map(s => s.tema))
-                  return (
-                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
-                        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
-                      >
-                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
-                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
-                      </button>
-                      {isOpen && (
-                        <div className="px-3 py-2 space-y-1 bg-white">
-                          {temas.map(tema => {
-                            const saved = alreadySaved.has(tema)
-                            return (
-                              <button
-                                key={tema}
-                                onClick={() => !saved && addThemeFromSuggestion(tema)}
-                                disabled={saved}
-                                className={clsx(
-                                  'w-full text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2',
-                                  saved
-                                    ? 'text-gray-300 cursor-default'
-                                    : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
-                                )}
-                              >
-                                <span>{tema}</span>
-                                {saved
-                                  ? <Check size={11} className="text-orange-400 shrink-0" />
-                                  : <Plus size={11} className="text-gray-300 shrink-0" />}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            {/* Accordion por categoria — temas salvos + sugestões */}
+            <div className="px-4 py-3 space-y-1.5">
+              {TEMAS_CARROSSEL.map(({ categoria, temas: sugestoes }) => {
+                const isOpen = bankOpenCategory === categoria
+                const savedInCat = savedThemes.filter(s => s.categoria === categoria)
+                const savedSet = new Set(savedThemes.map(s => s.tema))
+                const sugestoesNaoSalvas = sugestoes.filter(t => !savedSet.has(t))
+                const totalCount = savedInCat.length
+                return (
+                  <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
+                    >
+                      <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                      <div className="flex items-center gap-2">
+                        {totalCount > 0 && (
+                          <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{totalCount}</span>
+                        )}
+                        {isOpen ? <ChevronUp size={13} className="text-orange-500" /> : <ChevronDown size={13} className="text-gray-400" />}
+                      </div>
+                    </button>
 
-            {/* Table */}
-            {savedThemes.length === 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-6">Nenhum tema salvo ainda</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-8">#</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Tema</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-20 hidden sm:table-cell">Fonte</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-24 hidden sm:table-cell">Data</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-32">Temperatura</th>
-                      <th className="px-4 py-2 w-8" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {savedThemes.map((item, i) => (
-                      <tr key={item.id} className="group hover:bg-orange-50/30 transition-colors">
-                        <td className="px-4 py-3 text-gray-300 font-medium">{i + 1}</td>
-                        <td className="px-4 py-3">
+                    {isOpen && (
+                      <div className="bg-white px-3 py-2 space-y-1">
+                        {/* Temas salvos nesta categoria */}
+                        {savedInCat.map(item => (
+                          <div key={item.id} className="flex items-center gap-1.5 group">
+                            <button
+                              onClick={() => applyTheme(item.tema)}
+                              className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
+                            >
+                              {item.tema}
+                            </button>
+                            <button
+                              onClick={() => removeTheme(item.id)}
+                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Separador só se tiver salvos e sugestões */}
+                        {savedInCat.length > 0 && sugestoesNaoSalvas.length > 0 && (
+                          <div className="border-t border-gray-100 my-1.5" />
+                        )}
+
+                        {/* Sugestões não salvas */}
+                        {sugestoesNaoSalvas.map(tema => (
                           <button
-                            onClick={() => applyTheme(item.tema)}
-                            className="text-left font-medium text-gray-800 hover:text-orange-600 transition-colors leading-snug"
+                            key={tema}
+                            onClick={() => addThemeFromSuggestion(tema, categoria)}
+                            className="w-full text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
                           >
-                            {item.tema}
+                            <span>{tema}</span>
+                            <Plus size={11} className="text-gray-300 shrink-0" />
                           </button>
-                          {item.motivo && (
-                            <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{item.motivo}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 hidden sm:table-cell">
-                          <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded',
-                            item.fonte === 'ia'
-                              ? 'bg-violet-50 text-violet-500'
-                              : 'bg-gray-100 text-gray-400'
-                          )}>
-                            {item.fonte === 'ia' ? 'IA' : 'Manual'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{item.criadoEm}</td>
-                        <td className="px-4 py-3">
-                          {item.temperatura === 'analyzing' && (
-                            <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                              <Loader2 size={9} className="animate-spin" /> Analisando
-                            </span>
-                          )}
-                          {item.temperatura === 'quente' && (
-                            <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">🔥 Quente</span>
-                          )}
-                          {item.temperatura === 'morno' && (
-                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">🌡️ Morno</span>
-                          )}
-                          {item.temperatura === 'frio' && (
-                            <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">❄️ Frio</span>
-                          )}
-                          {!item.temperatura && (
-                            <span className="text-[10px] text-gray-300">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => removeTheme(item.id)}
-                            className="text-gray-300 hover:text-red-500 transition-colors"
-                          >
-                            <X size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        ))}
+
+                        {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (
+                          <p className="text-[11px] text-gray-300 text-center py-2">Todos adicionados</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
