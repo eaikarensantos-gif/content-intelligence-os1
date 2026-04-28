@@ -465,7 +465,18 @@ export default function UnifiedCreator() {
 
   // ── Banco de Temas ──
   const [savedThemes, setSavedThemes] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cio-saved-themes') || '[]') } catch { return [] }
+    try {
+      const raw = JSON.parse(localStorage.getItem('cio-saved-themes') || '[]')
+      // migrate old string-array format
+      if (raw.length > 0 && typeof raw[0] === 'string') {
+        return raw.map((t, i) => ({
+          id: Date.now() + i,
+          tema: t, temperatura: null, motivo: null,
+          fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
+        }))
+      }
+      return raw
+    } catch { return [] }
   })
   const [newThemeInput, setNewThemeInput] = useState('')
   const [showThemesPanel, setShowThemesPanel] = useState(true)
@@ -778,21 +789,71 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     }
   }
 
-  const applyTheme = (theme) => {
-    if (mode === 'engagement') setEngTema(theme)
-    else if (mode === 'carousel') setCarTema(theme)
-    else if (mode === 'stories') setStrTema(theme)
-    else setInput(theme)
+  const applyTheme = (tema) => {
+    if (mode === 'engagement') setEngTema(tema)
+    else if (mode === 'carousel') setCarTema(tema)
+    else if (mode === 'stories') setStrTema(tema)
+    else setInput(tema)
+  }
+
+  const analyzeTemperatures = async (targets) => {
+    if (!apiKey || targets.length === 0) return
+    setSavedThemes(prev => prev.map(t =>
+      targets.some(tg => tg.id === t.id) ? { ...t, temperatura: 'analyzing' } : t
+    ))
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
+
+Temperatura:
+- quente: alto potencial viral agora, gera forte identificação, timely
+- morno: relevante mas sem urgência
+- frio: evergreen, pouco senso de urgência
+
+Seja honesto e crítico. Não infle. Considere ressonância emocional, compartilhabilidade e identificação da audiência.
+
+Temas:
+${targets.map(t => `- ${t.tema}`).join('\n')}
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{"resultados": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta e seca"}]}` }],
+        }),
+      })
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      if (match) {
+        const results = JSON.parse(match[0]).resultados || []
+        setSavedThemes(prev => prev.map(t => {
+          if (!targets.some(tg => tg.id === t.id)) return t
+          const r = results.find(r => r.tema === t.tema)
+          return r ? { ...t, temperatura: r.temperatura, motivo: r.motivo } : { ...t, temperatura: null }
+        }))
+      }
+    } catch {
+      setSavedThemes(prev => prev.map(t =>
+        targets.some(tg => tg.id === t.id) ? { ...t, temperatura: null } : t
+      ))
+    }
   }
 
   const addTheme = () => {
     const t = newThemeInput.trim()
-    if (!t || savedThemes.includes(t)) return
-    setSavedThemes(prev => [t, ...prev])
+    if (!t || savedThemes.some(s => s.tema === t)) return
+    const entry = {
+      id: Date.now(), tema: t, temperatura: null, motivo: null,
+      fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
+    }
+    setSavedThemes(prev => [entry, ...prev])
     setNewThemeInput('')
+    analyzeTemperatures([entry])
   }
 
-  const removeTheme = (theme) => setSavedThemes(prev => prev.filter(t => t !== theme))
+  const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
 
   const expandThemes = async () => {
     if (!apiKey || savedThemes.length === 0) return
@@ -803,26 +864,37 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 600,
-          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional.
+          max_tokens: 800,
+          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
 
-Com base nesta lista de temas que a criadora já tem:
-${savedThemes.map(t => `- ${t}`).join('\n')}
+Lista atual de temas da criadora:
+${savedThemes.map(t => `- ${t.tema}`).join('\n')}
 
-Gere 5 novos temas relacionados — específicos, concretos, com potencial de gerar identificação. Não repita os existentes. Sem linguagem de coach. Cada tema deve ser uma situação real ou observação concreta. Curtos (máx 8 palavras cada).
+Gere 5 novos temas relacionados — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
+
+Temperatura:
+- quente: alto potencial viral agora, forte identificação
+- morno: relevante mas sem urgência
+- frio: evergreen, menos imediato
 
 Responda EXCLUSIVAMENTE com JSON válido:
-{"temas": ["tema 1", "tema 2", "tema 3", "tema 4", "tema 5"]}` }],
+{"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
         }),
       })
       const data = await res.json()
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
-        const parsed = JSON.parse(match[0])
-        const novos = (parsed.temas || []).filter(t => !savedThemes.includes(t))
+        const existing = new Set(savedThemes.map(t => t.tema))
+        const novos = (JSON.parse(match[0]).temas || [])
+          .filter(t => !existing.has(t.tema))
+          .map(t => ({
+            id: Date.now() + Math.random(),
+            tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
+            fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
+          }))
         setSavedThemes(prev => [...prev, ...novos])
       }
-    } catch { /* silently fail */ }
+    } catch { /* silent */ }
     finally { setExpandingThemes(false) }
   }
 
@@ -876,55 +948,113 @@ Responda EXCLUSIVAMENTE com JSON válido:
         </button>
 
         {showThemesPanel && (
-          <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
-            {/* Adicionar tema */}
-            <div className="flex gap-2">
+          <div className="border-t border-gray-100">
+            {/* Actions bar */}
+            <div className="flex gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/40">
               <input
                 value={newThemeInput}
                 onChange={e => setNewThemeInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addTheme()}
-                placeholder="Adicionar tema..."
+                placeholder="Novo tema..."
                 className="input text-xs flex-1 py-1.5"
               />
               <button
                 onClick={addTheme}
                 disabled={!newThemeInput.trim()}
-                className="px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40"
+                className="px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40 shrink-0"
               >
                 + Adicionar
               </button>
               <button
                 onClick={expandThemes}
                 disabled={expandingThemes || savedThemes.length === 0}
-                title="A IA sugere novos temas a partir da sua lista"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
               >
                 {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                 Expandir com IA
               </button>
+              {savedThemes.some(t => !t.temperatura || t.temperatura === null) && (
+                <button
+                  onClick={() => analyzeTemperatures(savedThemes.filter(t => !t.temperatura))}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors shrink-0"
+                >
+                  Analisar temperaturas
+                </button>
+              )}
             </div>
 
-            {/* Lista de temas */}
+            {/* Table */}
             {savedThemes.length === 0 ? (
-              <p className="text-[11px] text-gray-400 text-center py-2">Nenhum tema salvo ainda</p>
+              <p className="text-[11px] text-gray-400 text-center py-6">Nenhum tema salvo ainda</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {savedThemes.map((theme) => (
-                  <div key={theme} className="group flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => applyTheme(theme)}
-                      className="px-2.5 py-1 text-xs text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
-                    >
-                      {theme}
-                    </button>
-                    <button
-                      onClick={() => removeTheme(theme)}
-                      className="pr-2 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-8">#</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Tema</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-20 hidden sm:table-cell">Fonte</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-24 hidden sm:table-cell">Data</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-32">Temperatura</th>
+                      <th className="px-4 py-2 w-8" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {savedThemes.map((item, i) => (
+                      <tr key={item.id} className="group hover:bg-orange-50/30 transition-colors">
+                        <td className="px-4 py-3 text-gray-300 font-medium">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => applyTheme(item.tema)}
+                            className="text-left font-medium text-gray-800 hover:text-orange-600 transition-colors leading-snug"
+                          >
+                            {item.tema}
+                          </button>
+                          {item.motivo && (
+                            <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{item.motivo}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                            item.fonte === 'ia'
+                              ? 'bg-violet-50 text-violet-500'
+                              : 'bg-gray-100 text-gray-400'
+                          )}>
+                            {item.fonte === 'ia' ? 'IA' : 'Manual'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{item.criadoEm}</td>
+                        <td className="px-4 py-3">
+                          {item.temperatura === 'analyzing' && (
+                            <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                              <Loader2 size={9} className="animate-spin" /> Analisando
+                            </span>
+                          )}
+                          {item.temperatura === 'quente' && (
+                            <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">🔥 Quente</span>
+                          )}
+                          {item.temperatura === 'morno' && (
+                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">🌡️ Morno</span>
+                          )}
+                          {item.temperatura === 'frio' && (
+                            <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">❄️ Frio</span>
+                          )}
+                          {!item.temperatura && (
+                            <span className="text-[10px] text-gray-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => removeTheme(item.id)}
+                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all"
+                          >
+                            <X size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
