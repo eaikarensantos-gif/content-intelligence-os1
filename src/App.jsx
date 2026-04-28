@@ -22,6 +22,7 @@ import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import TaskBoard from './components/tasks/TaskBoard'
+import NaomiStudio from './components/naomi/NaomiStudio'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
+            <Route path="/naomi" element={<NaomiStudio />} />
           </Routes>
         </Layout>
       </BrowserRouter>
