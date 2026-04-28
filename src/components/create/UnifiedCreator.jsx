@@ -803,22 +803,33 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
           system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
 
-REGRA DO HOOK:
-O hook não descreve o que vai acontecer no carrossel. Ele captura um estado interno que a pessoa reconhece em si mesma e não consegue ignorar.
+PRINCÍPIO CENTRAL:
+O hook não pode ser conceito. Tem que ser situação + comportamento.
+A pessoa para porque se reconheceu numa cena, não porque achou a frase bonita.
 
-CRITÉRIOS:
-- Faz a pessoa parar porque se reconheceu, não porque ficou curiosa sobre o que vem a seguir
-- Curto — entre 8 e 18 palavras
-- Tom oral, como quem mandou um áudio para um par sênior
-- Sem ponto de exclamação, sem maiúsculas dramáticas, sem "você já..."
-- Não pode ser pergunta direta nem afirmação óbvia
-- Proibido: "ninguém fala sobre", "a verdade é", "o segredo", "você precisa saber", clickbait, superlativo
+ANTES (errado):
+→ conceito abstrato que cabe em qualquer contexto
+→ parece frase de Pinterest
+→ não cria imagem na cabeça
+
+DEPOIS (certo):
+→ situação concreta que a pessoa já viveu
+→ comportamento real que ela reconhece em si mesma
+→ cria uma cena visual imediata
 
 EXEMPLOS DO QUE FUNCIONA:
-- "tem uma postura que você adota no trabalho que nunca vai admitir em voz alta"
-- "fingir que entendeu é uma habilidade que ninguém lista no currículo"
-- "tem um tipo de procrastinação que parece responsabilidade"
-- "às vezes a decisão certa e a decisão segura não são a mesma coisa"
+- "você já pensou em sair… e ficou mesmo assim?"
+- "tem gente que reclama do trabalho todo dia… mas não consegue sair"
+- "tem decisão que a gente adia… e chama de 'pensar melhor'"
+- "ficar também é uma escolha mesmo quando parece que não é"
+- "segunda-feira chega e você já sabe que não queria estar ali"
+
+REGRAS:
+- Curto — entre 6 e 18 palavras. Pode ter quebra de linha com "…"
+- Tom oral. Como quem falou isso num áudio, não escreveu num post
+- Proibido: "ninguém fala sobre", "a verdade é", "o segredo", "você precisa saber", superlativo, exclamação, maiúsculas dramáticas
+- Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
+- Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
 Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
