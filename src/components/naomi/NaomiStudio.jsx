@@ -29,7 +29,7 @@ FIXED RULES — NEVER BREAK:
 - Black wired keyboard only
 - Naomi's expression is always flat
 - Karen never looks at the camera when in frame
-- Video prompts in Brazilian Portuguese
+- ALL text content in Brazilian Portuguese — scene directions, camera descriptions, on-screen text, video prompts, captions, titles. Only the JSON keys stay in English.
 
 Respond EXCLUSIVELY with valid JSON.`
 
@@ -53,7 +53,7 @@ TOOL FORMAT NOTE: ${tool.note}
 ${hasPhoto ? 'A photo reference has been provided. Use it as visual reference for Naomi\'s positioning and the scene environment.' : ''}
 
 Deliver all five sections:
-1. SCENE DIRECTION: 2–4 numbered scenes. Each: duration in seconds, action description, camera position, karen_in_frame true/false.
+1. SCENE DIRECTION: 2–4 cenas numeradas. Cada uma: duração em segundos, descrição da ação em português, posição e instrução de câmera em português, karen_in_frame true/false.
 2. VIDEO PROMPT: Em português. Include Naomi's complete physical reference. Calibrated for ${tool.label}. State total runtime. No Apple devices.
 3. ON-SCREEN TEXT: Per scene. Simple font style. Screen position. Entry timing in seconds from scene start.
 4. POST CAPTION: Brazilian Portuguese. Naomi's voice, first person. Dry HR tone. HR jargon applied to the domestic or professional context. No motivation. No drama. Ends with data, dry observation, or HR jargon.
