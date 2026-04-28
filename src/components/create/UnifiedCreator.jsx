@@ -195,70 +195,77 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
-/* ── Protocolo de Carrossel ── */
-const CAROUSEL_SYSTEM = `Você é um estrategista de conteúdo que escreve como alguém que pensa — não como alguém que monta estrutura.
+/* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
+const CAROUSEL_SYSTEM = `Você é um gerador de carrossel para Karen Santos. Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+Seu trabalho não é criar conteúdo bonito. É criar conteúdo que faz a pessoa escrever mais de uma linha nos comentários.
 
-Sua função NÃO é organizar informação.
-Sua função é conduzir um raciocínio de forma natural, progressiva e envolvente.
+OBJETIVO DE ENGAJAMENTO:
+O carrossel deve gerar comentários do tipo:
+- "eu faço isso e nem percebo"
+- "aconteceu comigo semana passada, foi exatamente assim"
+- "como você lidaria quando não dá pra falar?"
+- "acho que isso tem a ver com..."
 
-PRINCÍPIO CENTRAL:
-Cada slide deve parecer uma continuação natural do pensamento — não uma estrutura montada.
+NÃO é aceitável gerar conteúdo que resulte em: "amei", "arrasou", emoji, "verdade", "é isso", "acontece muito hoje em dia".
+A diferença: o primeiro grupo exige que a pessoa se coloque. O segundo permite consumo passivo.
 
-PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- Títulos com dois pontos
-- "não é X, é Y" / "o mais curioso é" / "ninguém fala disso" / "a verdade é" / "o segredo é"
-- Listas em escadinha repetitiva
-- Frases de efeito genéricas
-- Tom professoral ou linguagem genérica
-- Explicação óbvia
-- Palavras: insight, essencial, fundamental, crucial, revolucionário, inspirador, otimizar, significativo, navegar, mergulhar
+REGRA DE ENTRADA — antes de gerar qualquer slide, responda internamente:
+"Qual é a tensão interna que a pessoa carrega sobre esse tema — não o que acontece com ela, mas o que ela sente sobre o que faz ou deixa de fazer?"
+Essa tensão é o slide 1. Não a cena externa. Não o contexto. A tensão.
 
-ESTRUTURA DOS SLIDES (6 a 8 slides):
-1. Slide 1 → frase direta ou pergunta simples (entra sem avisar o tema)
-2. Slide 2 → situação concreta (real, específica, não abstrata)
-3. Slide 3 → aprofundamento leve (acrescenta, não repete)
-4. Slide 4 → mudança de perspectiva (virada — mas sem anunciar)
-5. Slide 5 → tensão ou incômodo (implícito, não didático)
-6. Slide 6 → leitura curta (observação, não conclusão)
-7. Slide 7 → fechamento aberto (não resolve, não conclui)
-8. Slide 8 → pergunta (opcional — só se for natural)
+ESTRUTURA DOS SLIDES:
+Slide 1 — Estado, não cena. A pessoa precisa se reconhecer antes de ver a história.
+  ❌ "Tem uma reunião que todo mundo sai balançando a cabeça que sim"
+  ✅ "Tem uma postura que você adota no trabalho que você nunca vai admitir em voz alta"
+  O slide 1 é sobre o estado interno. Curto. Sem explicação.
 
-REGRAS DE ESCRITA:
-- Frases curtas — uma ideia por slide
-- Escrever como fala — oral, sem formalidade
-- Evitar palavras bonitas sem função
-- Evitar explicar demais
+Slides 2 a 5 — Sequência causal, não descrição. Cada slide puxa o próximo por causa e consequência.
+  Pergunta de controle: "Esse slide avança o raciocínio ou apenas descreve mais do mesmo?" Se descreve → corte ou reescreva.
 
-AJUSTE FINO DE TOM (proteção de risco):
-O tema pode ser sensível. O risco não é o tema — é o tom.
-- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X", "as pessoas fazem Y")
-- Evitar culpados nomeados — explícitos ou implícitos
-- Preferir entrada observacional e acolhedora:
-  → "tem uma coisa que acontece…"
-  → "já reparou que…"
-  → "muita gente passa por isso…"
-  → "às vezes a gente…"
-- Descrever o fenômeno sem atribuir culpa a ninguém
+Slide 6 — Virada sem resolução. Tensão máxima. Não resolve. Não conclui. Deixa o incômodo no ar.
 
-REGRAS DE PROGRESSÃO:
-- Cada slide acrescenta algo novo
-- Nenhum slide repete o anterior
-- Nenhum slide antecipa a conclusão
-- A pessoa deve querer ver o próximo
+Slide 7 — Abertura, não fechamento. Observação seca que deixa espaço para a pessoa completar com a experiência dela.
+  ❌ "A gente sai da sala fingindo que sabe pra onde está indo" (fecha, conclui, emocional)
+  ✅ "E a reunião seguinte começa do mesmo jeito" (observação seca, deixa espaço)
 
-PERGUNTA FINAL:
-- Soar como conversa, não como enquete
-- Simples, que a pessoa responde sem esforço
-- Que abre espaço, não fecha
+PERGUNTA FINAL — não pode ser de confirmação:
+  ❌ Perguntas proibidas: "Já saíram de uma reunião assim?", "Se identificou?", "Concorda?"
+  ✅ Perguntas obrigatórias: "Qual foi a sua saída na hora?", "Você voltou a perguntar depois ou deixou pra lá?", "Quando foi a última vez que isso aconteceu com você?"
+  A diferença: a primeira pede sim ou não. A segunda pede uma história.
 
-VALIDAÇÃO INTERNA (antes de entregar):
-- Algum slide parece fórmula ou template?
-- Tem repetição de estrutura entre slides?
-- Tem palavra genérica ou frase pronta?
-- Parece escrito ou parece pensado?
-Se parecer artificial em qualquer ponto → reescrever completamente.
+VOCABULÁRIO E RITMO:
+- Palavras curtas. Se o texto parecer "bonito", simplifique.
+- Ritmo: misture uma frase longa de explicação com uma curta de fechamento. Nunca três frases curtas seguidas.
+- Tom: oralidade real. Escreva como se estivesse mandando um áudio para um par sênior.
+- Transições aceitas: "O ponto é...", "Na prática...", "O que acontece aqui é..."
 
-CRITÉRIO FINAL: Se parecer template → falhou. Se parecer pensamento em sequência → passou. Se parecer algo que alguém diria em voz alta → ideal.`
+LISTA NEGRA — ESTRUTURAS PROIBIDAS:
+- "Não é sobre X, é sobre Y" → oposição falsa, parece template
+- Três ou mais frases curtas em sequência → ritmo de sermão de coach
+- Travessões para dar impacto → artificialidade
+- "Mindset", "Propósito", "Transformação" → jargão vago
+- "Vamos juntos?", "Concorda?" → fecha a conversa
+- Nota estratégica com "vulnerabilidade universal" → critério de conta motivacional
+
+CRITÉRIOS DE VALIDAÇÃO — rode os quatro testes antes de entregar:
+Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
+Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
+Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
+Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+
+LEGENDA:
+Uma linha. Observação seca ou dado. Não resume o carrossel, não entrega a conclusão.
+  ❌ "aquela sensação de estar perdido mas fingir que entendeu tudo..."
+  ✅ "fingir que entendeu é uma habilidade que ninguém lista no currículo"
+
+RESPOSTAS PARA COMENTÁRIOS:
+Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fundo.
+  Pessoa: "já passei por isso" → Karen: "o que te fez perceber na hora?"
+As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
+
+TESTE DE SANIDADE FINAL:
+Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
+Se você leu e pensou "isso vai incomodar alguém" → provavelmente funcionou.`
 
 const buildCarouselPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
@@ -267,27 +274,35 @@ ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
 
-Execute o protocolo:
-1. Crie o CARROSSEL PRINCIPAL com 6 a 8 slides. Cada slide: uma ideia, progressão real, sem repetição, sem antecipar conclusão.
-2. Crie a LEGENDA CURTA do post (natural, não explicativa — como quem está comentando algo, não divulgando).
-3. Valide internamente os 4 critérios — reescreva se qualquer um falhar.
-4. Entregue apenas versão aprovada.
+Execute o protocolo completo:
+1. Responda internamente: "Qual é a tensão interna que a pessoa carrega sobre esse tema?"
+2. Gere 7 slides seguindo a estrutura (estado → causal → virada → abertura).
+3. Rode os 4 testes de validação. Se qualquer um reprovar → reescreva do zero.
+4. Entregue apenas a versão aprovada.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
   "slides": [
-    { "numero": 1, "texto": "texto do slide 1" },
-    { "numero": 2, "texto": "texto do slide 2" }
+    { "numero": 1, "texto": "estado interno — 1 frase" },
+    { "numero": 2, "texto": "causa ou contexto — 1 a 2 frases" },
+    { "numero": 3, "texto": "desenvolvimento causal" },
+    { "numero": 4, "texto": "aprofundamento" },
+    { "numero": 5, "texto": "tensão chegando" },
+    { "numero": 6, "texto": "virada sem resolução" },
+    { "numero": 7, "texto": "observação seca — deixa espaço" }
   ],
-  "legenda": "legenda curta e natural para o post",
-  "pergunta_final": "apenas a pergunta final — natural, como conversa",
-  "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 2 frases: por que este carrossel vai prender e gerar resposta",
+  "legenda": "1 linha — observação seca ou dado, sem resumir o carrossel",
+  "pergunta_final": "pergunta que pede relato, não confirmação",
+  "respostas_sugeridas": [
+    "pergunta que puxa mais fundo 1",
+    "pergunta que puxa mais fundo 2",
+    "pergunta que puxa mais fundo 3"
+  ],
   "validacao": {
-    "sem_formula": true,
-    "sem_repeticao": true,
-    "sem_palavra_generica": true,
-    "parece_pensado": true
+    "deixa_espaco": true,
+    "comentario_comeca_com_eu": true,
+    "nao_parece_coach": true,
+    "so_karen_diria": true
   }
 }`
 
@@ -392,6 +407,64 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
+/* ── Temas Sugeridos para Carrossel ── */
+const TEMAS_CARROSSEL = [
+  {
+    categoria: 'Carreira',
+    temas: [
+      'Medo de ser demitido sem avisar',
+      'Ficar em emprego ruim por medo do desconhecido',
+      'Ser promovido e não se sentir pronto',
+      'Pedir aumento e ter medo da resposta',
+      'Aceitar proposta nova sem contar pra ninguém antes',
+      'Sentir que o mercado passou por você',
+    ],
+  },
+  {
+    categoria: 'Maturidade Profissional',
+    temas: [
+      'Perfeccionismo que trava mais do que entrega',
+      'Procrastinar numa tarefa que você sabe fazer',
+      'Síndrome do impostor em cargo de liderança',
+      'Não conseguir pedir ajuda sem se sentir fraco',
+      'Trabalhar demais pra provar que merece estar ali',
+      'Fingir que entendeu pra não parecer perdido',
+    ],
+  },
+  {
+    categoria: 'Tomada de Decisão',
+    temas: [
+      'Paralisação por análise — quando dados não ajudam a decidir',
+      'Decidir sob pressão e se arrepender depois',
+      'Mudar de opinião e não saber como falar',
+      'Deixar o outro decidir pra não errar sozinho',
+      'Adiar uma decisão esperando o momento certo',
+      'Tomar decisão certa da forma errada',
+    ],
+  },
+  {
+    categoria: 'Dinâmicas Corporativas',
+    temas: [
+      'Reunião que todos balançam a cabeça mas ninguém age',
+      'Concordar em público e discordar no corredor',
+      'Gestor que pede autonomia mas controla tudo',
+      'Feedback que não muda nada mas precisa ser dado',
+      'Política de escritório que ninguém admite jogar',
+      'Entregar bem e não ser visto',
+    ],
+  },
+  {
+    categoria: 'IA e Futuro do Trabalho',
+    temas: [
+      'Usar IA no trabalho e não contar pra ninguém',
+      'Medo de ser substituído por automação',
+      'IA que entrega mais rápido do que você explica o que quer',
+      'Não saber até onde vai o seu trabalho e onde começa o da IA',
+      'Atualizar as habilidades sem saber o que vai durar',
+    ],
+  },
+]
+
 /* ── Componente Principal ── */
 export default function UnifiedCreator() {
   const navigate = useNavigate()
@@ -441,6 +514,7 @@ export default function UnifiedCreator() {
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
   // Carrossel
+  const [carOpenCategory, setCarOpenCategory] = useState(null)
   const [carTema, setCarTema] = useState('')
   const [carIdeia, setCarIdeia] = useState('')
   const [carTexto, setCarTexto] = useState('')
@@ -1347,6 +1421,40 @@ Responda EXCLUSIVAMENTE com JSON válido:
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
                 <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
+              </div>
+            </div>
+
+            {/* Temas Sugeridos */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Temas Sugeridos</p>
+              <div className="space-y-1.5">
+                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+                  const isOpen = carOpenCategory === categoria
+                  return (
+                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setCarOpenCategory(isOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
+                      >
+                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
+                      </button>
+                      {isOpen && (
+                        <div className="px-3 py-2 space-y-1 bg-white">
+                          {temas.map(tema => (
+                            <button
+                              key={tema}
+                              onClick={() => { setCarTema(tema); setCarOpenCategory(null) }}
+                              className="w-full text-left text-xs text-gray-600 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                            >
+                              {tema}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
