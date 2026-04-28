@@ -1046,9 +1046,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => removeTheme(item.id)}
-                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all"
+                            className="text-gray-300 hover:text-red-500 transition-colors"
                           >
-                            <X size={12} />
+                            <X size={13} />
                           </button>
                         </td>
                       </tr>
