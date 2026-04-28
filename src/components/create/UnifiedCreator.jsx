@@ -275,34 +275,66 @@ ${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não ab
 ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
 
 Execute o protocolo completo:
-1. Responda internamente: "Qual é a tensão interna que a pessoa carrega sobre esse tema?"
-2. Gere 7 slides seguindo a estrutura (estado → causal → virada → abertura).
-3. Rode os 4 testes de validação. Se qualquer um reprovar → reescreva do zero.
-4. Entregue apenas a versão aprovada.
+1. Identifique a tensão interna central do tema.
+2. Gere as 3 versões abaixo. Cada versão tem a MESMA tensão, ângulo diferente.
+3. Rode o teste de sanidade final nas 3 versões e nas 3 perguntas finais.
+   - Se alguma versão parecer "bonita" → reescreva
+   - Se as 3 perguntas finais forem variações da mesma frase → reescreva
+4. Entregue apenas versões aprovadas.
+
+ESTRUTURA DE CADA VERSÃO (slides do carrossel):
+- slide 1: abertura — estado interno (1 frase, a pessoa se reconhece)
+- slides 2-4: desenvolvimento causal (cada slide avança o raciocínio, não descreve)
+- slide 5: virada sem resolução (tensão máxima, não conclui)
+- pergunta_final: exige posicionamento, não confirmação
+
+VERSÃO PRINCIPAL → entrada direta, raciocínio progressivo
+VARIAÇÃO EMOCIONAL → mesma tensão, ângulo cotidiano, ritmo mais lento
+VARIAÇÃO PROVOCATIVA → mesma tensão, sem suavização, nomeia o problema diretamente
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
-  "slides": [
-    { "numero": 1, "texto": "estado interno — 1 frase" },
-    { "numero": 2, "texto": "causa ou contexto — 1 a 2 frases" },
-    { "numero": 3, "texto": "desenvolvimento causal" },
-    { "numero": 4, "texto": "aprofundamento" },
-    { "numero": 5, "texto": "tensão chegando" },
-    { "numero": 6, "texto": "virada sem resolução" },
-    { "numero": 7, "texto": "observação seca — deixa espaço" }
-  ],
-  "legenda": "1 linha — observação seca ou dado, sem resumir o carrossel",
-  "pergunta_final": "pergunta que pede relato, não confirmação",
-  "respostas_sugeridas": [
-    "pergunta que puxa mais fundo 1",
-    "pergunta que puxa mais fundo 2",
-    "pergunta que puxa mais fundo 3"
+  "versao_principal": {
+    "slides": [
+      { "numero": 1, "texto": "abertura — estado interno" },
+      { "numero": 2, "texto": "desenvolvimento causal" },
+      { "numero": 3, "texto": "aprofundamento" },
+      { "numero": 4, "texto": "tensão chegando" },
+      { "numero": 5, "texto": "virada sem resolução" }
+    ],
+    "pergunta_final": "pergunta que exige posicionamento"
+  },
+  "variacao_emocional": {
+    "slides": [
+      { "numero": 1, "texto": "abertura cotidiana" },
+      { "numero": 2, "texto": "desenvolvimento mais próximo, mais íntimo" },
+      { "numero": 3, "texto": "aprofundamento" },
+      { "numero": 4, "texto": "tensão implícita" },
+      { "numero": 5, "texto": "virada sem resolução" }
+    ],
+    "pergunta_final": "pergunta diferente da principal"
+  },
+  "variacao_provocativa": {
+    "slides": [
+      { "numero": 1, "texto": "abertura que nomeia o problema diretamente" },
+      { "numero": 2, "texto": "desenvolvimento sem suavização" },
+      { "numero": 3, "texto": "aprofundamento direto" },
+      { "numero": 4, "texto": "tensão máxima" },
+      { "numero": 5, "texto": "virada sem resolução — a mais incômoda das três" }
+    ],
+    "pergunta_final": "a pergunta mais exigente das três"
+  },
+  "legenda": "1 linha — observação seca ou dado, sem resumir",
+  "comentarios": [
+    { "comentario": "o que a pessoa provavelmente vai escrever", "resposta": "pergunta que puxa mais fundo" },
+    { "comentario": "segundo comentário provável", "resposta": "pergunta que puxa mais fundo" },
+    { "comentario": "terceiro comentário provável", "resposta": "pergunta que puxa mais fundo" }
   ],
   "validacao": {
     "deixa_espaco": true,
-    "comentario_comeca_com_eu": true,
     "nao_parece_coach": true,
-    "so_karen_diria": true
+    "so_karen_diria": true,
+    "perguntas_diferentes": true
   }
 }`
 
@@ -518,6 +550,7 @@ export default function UnifiedCreator() {
   const [carTema, setCarTema] = useState('')
   const [carHooks, setCarHooks] = useState([])
   const [carHooksLoading, setCarHooksLoading] = useState(false)
+  const [carActiveVersion, setCarActiveVersion] = useState('principal')
   const [carIdeia, setCarIdeia] = useState('')
   const [carTexto, setCarTexto] = useState('')
   const [carGerarIdeia, setCarGerarIdeia] = useState(false)
@@ -1668,73 +1701,78 @@ Responda EXCLUSIVAMENTE com JSON válido:
           {carResult && (
             <div className="space-y-4 animate-fade-in">
 
-              {/* Validação */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
-                  <ShieldCheck size={12} className="text-emerald-500" /> Validação
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { key: 'sem_formula',         label: 'Sem fórmula' },
-                    { key: 'sem_repeticao',        label: 'Sem repetição' },
-                    { key: 'sem_palavra_generica', label: 'Sem genérico' },
-                    { key: 'parece_pensado',       label: 'Parece pensado' },
-                  ].map(({ key, label }) => {
-                    const ok = carResult.validacao?.[key] === true
-                    return (
-                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
-                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-                      )}>
-                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
-                        <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Slides */}
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center gap-2">
-                    <LayoutGrid size={13} className="text-orange-500" />
-                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Slides ({carResult.slides?.length})</span>
-                  </div>
-                  <button onClick={() => handleCarCopy((carResult.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'), 'slides')}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                    {carCopied === 'slides' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar todos</>}
-                  </button>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {(carResult.slides || []).map((slide) => (
-                    <div key={slide.numero} className="flex items-start gap-3 px-4 py-3 group hover:bg-orange-50/30 transition-colors">
-                      <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[11px] font-bold text-orange-600">{slide.numero}</span>
-                      </div>
-                      <p className="flex-1 text-sm text-gray-800 leading-relaxed">{slide.texto}</p>
-                      <button onClick={() => handleCarCopy(slide.texto, `slide-${slide.numero}`)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
-                        {carCopied === `slide-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
-                      </button>
+              {/* Abas de versão */}
+              {(() => {
+                const versions = [
+                  { key: 'principal',   label: 'Principal',   data: carResult.versao_principal },
+                  { key: 'emocional',   label: 'Emocional',   data: carResult.variacao_emocional },
+                  { key: 'provocativa', label: 'Provocativa', data: carResult.variacao_provocativa },
+                ]
+                const active = versions.find(v => v.key === carActiveVersion) || versions[0]
+                return (
+                  <>
+                    {/* Tabs */}
+                    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                      {versions.map(v => (
+                        <button key={v.key} onClick={() => setCarActiveVersion(v.key)}
+                          className={clsx('flex-1 py-2 rounded-lg text-xs font-semibold transition-all',
+                            carActiveVersion === v.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                          )}>
+                          {v.label}
+                        </button>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Pergunta Final */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 p-5 text-white shadow-lg shadow-orange-200">
-                <div className="relative z-10">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
-                    <Quote size={10} /> Pergunta Final
-                  </p>
-                  <p className="text-base font-bold leading-snug">{carResult.pergunta_final}</p>
-                  <button onClick={() => handleCarCopy(carResult.pergunta_final, 'car-pergunta')}
-                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
-                    {carCopied === 'car-pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                  </button>
-                </div>
-                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
-              </div>
+                    {/* Slides da versão ativa */}
+                    {active.data && (
+                      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                          <div className="flex items-center gap-2">
+                            <LayoutGrid size={13} className="text-orange-500" />
+                            <span className="text-[10px] font-semibold text-gray-700 uppercase">Slides — {active.label}</span>
+                          </div>
+                          <button onClick={() => handleCarCopy(
+                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n') + '\n\n' + active.data.pergunta_final,
+                            `slides-${active.key}`
+                          )} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                            {carCopied === `slides-${active.key}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
+                          </button>
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                          {(active.data.slides || []).map((slide) => (
+                            <div key={slide.numero} className="flex items-start gap-3 px-4 py-3 group hover:bg-orange-50/30 transition-colors">
+                              <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                                <span className="text-[11px] font-bold text-orange-600">{slide.numero}</span>
+                              </div>
+                              <p className="flex-1 text-sm text-gray-800 leading-relaxed">{slide.texto}</p>
+                              <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
+                                {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Pergunta final da versão */}
+                        {active.data.pergunta_final && (
+                          <div className="border-t border-gray-100 bg-gradient-to-r from-orange-500 to-rose-500 p-4">
+                            <p className="text-[10px] font-semibold text-white/70 uppercase mb-1.5 flex items-center gap-1.5">
+                              <Quote size={10} /> Pergunta Final
+                            </p>
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="text-sm font-bold text-white leading-snug">{active.data.pergunta_final}</p>
+                              <button onClick={() => handleCarCopy(active.data.pergunta_final, `pergunta-${active.key}`)}
+                                className="shrink-0 flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg transition-all">
+                                {carCopied === `pergunta-${active.key}` ? <Check size={10} /> : <Copy size={10} />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
 
               {/* Legenda */}
               {carResult.legenda && (
@@ -1750,36 +1788,56 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
               )}
 
-              {/* Respostas Sugeridas */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
-                  <MessageCircle size={12} className="text-orange-500" /> Respostas para Comentários
-                </p>
-                <div className="space-y-2">
-                  {(carResult.respostas_sugeridas || []).map((resp, i) => (
-                    <div key={i} className="flex items-start gap-3 group">
-                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[10px] font-bold text-orange-600">{i + 1}</span>
+              {/* Respostas para Comentários */}
+              {(carResult.comentarios || []).length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
+                    <MessageCircle size={12} className="text-orange-500" /> Respostas para Comentários
+                  </p>
+                  <div className="space-y-3">
+                    {carResult.comentarios.map((item, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] font-semibold text-gray-400 shrink-0 mt-0.5">Comentário</span>
+                          <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed flex-1 italic">"{item.comentario}"</p>
+                        </div>
+                        <div className="flex items-start gap-2 group">
+                          <span className="text-[10px] font-semibold text-orange-500 shrink-0 mt-0.5">Karen</span>
+                          <p className="text-xs text-gray-800 bg-orange-50 rounded-lg px-3 py-2 leading-relaxed flex-1 font-medium">{item.resposta}</p>
+                          <button onClick={() => handleCarCopy(item.resposta, `comentario-${i}`)}
+                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1.5">
+                            {carCopied === `comentario-${i}` ? <Check size={11} /> : <Copy size={11} />}
+                          </button>
+                        </div>
                       </div>
-                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
-                      <button onClick={() => handleCarCopy(resp, `car-resp-${i}`)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all mt-2 shrink-0">
-                        {carCopied === `car-resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nota Estratégica */}
-              {carResult.nota_estrategica && (
-                <div className="bg-gradient-to-r from-orange-50 to-rose-50 rounded-2xl border border-orange-200 p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                    <Brain size={15} className="text-orange-600" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-orange-600 uppercase mb-1">Nota Estratégica</p>
-                    <p className="text-sm text-orange-800 leading-relaxed">{carResult.nota_estrategica}</p>
+                </div>
+              )}
+
+              {/* Validação */}
+              {carResult.validacao && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                    <ShieldCheck size={12} className="text-emerald-500" /> Validação
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { key: 'deixa_espaco',      label: 'Deixa espaço' },
+                      { key: 'nao_parece_coach',  label: 'Não é coach' },
+                      { key: 'so_karen_diria',    label: 'Só Karen diria' },
+                      { key: 'perguntas_diferentes', label: 'Perguntas distintas' },
+                    ].map(({ key, label }) => {
+                      const ok = carResult.validacao?.[key] === true
+                      return (
+                        <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
+                          ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                        )}>
+                          <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
+                          <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}
