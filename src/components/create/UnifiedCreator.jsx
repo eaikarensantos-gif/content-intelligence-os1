@@ -516,6 +516,8 @@ export default function UnifiedCreator() {
   // Carrossel
   const [carOpenCategory, setCarOpenCategory] = useState(null)
   const [carTema, setCarTema] = useState('')
+  const [carHooks, setCarHooks] = useState([])
+  const [carHooksLoading, setCarHooksLoading] = useState(false)
   const [carIdeia, setCarIdeia] = useState('')
   const [carTexto, setCarTexto] = useState('')
   const [carGerarIdeia, setCarGerarIdeia] = useState(false)
@@ -783,6 +785,54 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
       setEngError(err.message)
     } finally {
       setEngLoading(false)
+    }
+  }
+
+  const generateHooks = async () => {
+    if (!apiKey) { return }
+    setCarHooksLoading(true)
+    setCarHooks([])
+    try {
+      const tema = carTema.trim() || 'carreira e maturidade profissional'
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 600,
+          system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
+Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
+
+REGRA DO HOOK:
+O hook não descreve o que vai acontecer no carrossel. Ele captura um estado interno que a pessoa reconhece em si mesma e não consegue ignorar.
+
+CRITÉRIOS:
+- Faz a pessoa parar porque se reconheceu, não porque ficou curiosa sobre o que vem a seguir
+- Curto — entre 8 e 18 palavras
+- Tom oral, como quem mandou um áudio para um par sênior
+- Sem ponto de exclamação, sem maiúsculas dramáticas, sem "você já..."
+- Não pode ser pergunta direta nem afirmação óbvia
+- Proibido: "ninguém fala sobre", "a verdade é", "o segredo", "você precisa saber", clickbait, superlativo
+
+EXEMPLOS DO QUE FUNCIONA:
+- "tem uma postura que você adota no trabalho que nunca vai admitir em voz alta"
+- "fingir que entendeu é uma habilidade que ninguém lista no currículo"
+- "tem um tipo de procrastinação que parece responsabilidade"
+- "às vezes a decisão certa e a decisão segura não são a mesma coisa"
+
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
+          messages: [{ role: 'user', content: `Tema: ${tema}` }],
+        }),
+      })
+      const data = await res.json()
+      const text = data.content?.[0]?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        setCarHooks(parsed.hooks || [])
+      }
+    } catch { /* silencioso */ } finally {
+      setCarHooksLoading(false)
     }
   }
 
@@ -1517,16 +1567,40 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
             {/* Tema */}
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
-                Tema <span className="text-red-400">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  Tema <span className="text-red-400">*</span>
+                </label>
+                <button
+                  onClick={() => { generateHooks(); setCarHooks([]) }}
+                  disabled={carHooksLoading}
+                  className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
+                >
+                  {carHooksLoading ? <Loader2 size={10} className="animate-spin" /> : <Flame size={10} />}
+                  {carHooksLoading ? 'Gerando...' : 'Gerar hooks'}
+                </button>
+              </div>
               <input
                 value={carTema}
-                onChange={e => setCarTema(e.target.value)}
+                onChange={e => { setCarTema(e.target.value); setCarHooks([]) }}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateCarousel()}
                 placeholder="Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho..."
                 className="input text-sm w-full"
               />
+              {carHooks.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-[10px] text-gray-400 font-medium mb-1">Clique para usar como tema do slide 1:</p>
+                  {carHooks.map((hook, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setCarTema(hook); setCarHooks([]) }}
+                      className="w-full text-left text-xs text-gray-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 px-3 py-2 rounded-lg transition-colors leading-snug"
+                    >
+                      {hook}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Ideia */}
