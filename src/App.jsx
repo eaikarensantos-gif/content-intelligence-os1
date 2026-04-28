@@ -18,17 +18,13 @@ import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
 import AccessLog from './components/auth/AccessLog'
 import AdManager from './components/ads/AdManager'
-// import ContentArchetypes from './components/archetypes/ContentArchetypes' // arquivado
-// import BriefingStudio from './components/brand/BriefingStudio' // arquivado
-// import PostAnalyzer from './components/post-analyzer/PostAnalyzer' // arquivado
 import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
-import ContentBrain from './components/brain/ContentBrain'
+import TaskBoard from './components/tasks/TaskBoard'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
-// PricingManager is embedded inside AdManager
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -92,7 +88,7 @@ export default function App() {
             <Route path="/reports" element={<PerformanceReport />} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
-            <Route path="/brain" element={<ContentBrain />} />
+            <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
           </Routes>
         </Layout>
       </BrowserRouter>

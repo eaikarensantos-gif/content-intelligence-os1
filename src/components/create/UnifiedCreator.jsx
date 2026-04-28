@@ -463,9 +463,21 @@ export default function UnifiedCreator() {
   const [strShowVar1, setStrShowVar1] = useState(false)
   const [strShowVar2, setStrShowVar2] = useState(false)
 
+  // ── Banco de Temas ──
+  const [savedThemes, setSavedThemes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cio-saved-themes') || '[]') } catch { return [] }
+  })
+  const [newThemeInput, setNewThemeInput] = useState('')
+  const [showThemesPanel, setShowThemesPanel] = useState(true)
+  const [expandingThemes, setExpandingThemes] = useState(false)
+
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
   useEffect(() => { inputRef.current?.focus() }, [])
+
+  useEffect(() => {
+    localStorage.setItem('cio-saved-themes', JSON.stringify(savedThemes))
+  }, [savedThemes])
 
   // ── Brand Linter com debounce ──
   useEffect(() => {
@@ -766,6 +778,54 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     }
   }
 
+  const applyTheme = (theme) => {
+    if (mode === 'engagement') setEngTema(theme)
+    else if (mode === 'carousel') setCarTema(theme)
+    else if (mode === 'stories') setStrTema(theme)
+    else setInput(theme)
+  }
+
+  const addTheme = () => {
+    const t = newThemeInput.trim()
+    if (!t || savedThemes.includes(t)) return
+    setSavedThemes(prev => [t, ...prev])
+    setNewThemeInput('')
+  }
+
+  const removeTheme = (theme) => setSavedThemes(prev => prev.filter(t => t !== theme))
+
+  const expandThemes = async () => {
+    if (!apiKey || savedThemes.length === 0) return
+    setExpandingThemes(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 600,
+          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional.
+
+Com base nesta lista de temas que a criadora já tem:
+${savedThemes.map(t => `- ${t}`).join('\n')}
+
+Gere 5 novos temas relacionados — específicos, concretos, com potencial de gerar identificação. Não repita os existentes. Sem linguagem de coach. Cada tema deve ser uma situação real ou observação concreta. Curtos (máx 8 palavras cada).
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{"temas": ["tema 1", "tema 2", "tema 3", "tema 4", "tema 5"]}` }],
+        }),
+      })
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        const novos = (parsed.temas || []).filter(t => !savedThemes.includes(t))
+        setSavedThemes(prev => [...prev, ...novos])
+      }
+    } catch { /* silently fail */ }
+    finally { setExpandingThemes(false) }
+  }
+
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
@@ -790,6 +850,83 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
             <Zap size={14} />
             Inspirado em referência
             <button onClick={() => setInspiration(null)} className="ml-1 hover:text-orange-900">✕</button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Banco de Temas ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <button
+          onClick={() => setShowThemesPanel(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Layers size={14} className="text-orange-500" />
+            <span className="text-xs font-semibold text-gray-700">Banco de Temas</span>
+            {savedThemes.length > 0 && (
+              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                {savedThemes.length}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-gray-400">clique para usar no campo Tema</span>
+            {showThemesPanel ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+          </div>
+        </button>
+
+        {showThemesPanel && (
+          <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+            {/* Adicionar tema */}
+            <div className="flex gap-2">
+              <input
+                value={newThemeInput}
+                onChange={e => setNewThemeInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addTheme()}
+                placeholder="Adicionar tema..."
+                className="input text-xs flex-1 py-1.5"
+              />
+              <button
+                onClick={addTheme}
+                disabled={!newThemeInput.trim()}
+                className="px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40"
+              >
+                + Adicionar
+              </button>
+              <button
+                onClick={expandThemes}
+                disabled={expandingThemes || savedThemes.length === 0}
+                title="A IA sugere novos temas a partir da sua lista"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40"
+              >
+                {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                Expandir com IA
+              </button>
+            </div>
+
+            {/* Lista de temas */}
+            {savedThemes.length === 0 ? (
+              <p className="text-[11px] text-gray-400 text-center py-2">Nenhum tema salvo ainda</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {savedThemes.map((theme) => (
+                  <div key={theme} className="group flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => applyTheme(theme)}
+                      className="px-2.5 py-1 text-xs text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                    >
+                      {theme}
+                    </button>
+                    <button
+                      onClick={() => removeTheme(theme)}
+                      className="pr-2 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
