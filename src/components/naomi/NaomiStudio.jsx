@@ -29,7 +29,7 @@ FIXED RULES — NEVER BREAK:
 - Black wired keyboard only
 - Naomi's expression is always flat
 - Karen never looks at the camera when in frame
-- All video prompts in English
+- Video prompts in Brazilian Portuguese
 
 Respond EXCLUSIVELY with valid JSON.`
 
@@ -54,7 +54,7 @@ ${hasPhoto ? 'A photo reference has been provided. Use it as visual reference fo
 
 Deliver all five sections:
 1. SCENE DIRECTION: 2–4 numbered scenes. Each: duration in seconds, action description, camera position, karen_in_frame true/false.
-2. VIDEO PROMPT: In English. Include Naomi's complete physical reference in every prompt. Calibrated for ${tool.label}. State total runtime. No Apple devices.
+2. VIDEO PROMPT: Em português. Include Naomi's complete physical reference. Calibrated for ${tool.label}. State total runtime. No Apple devices.
 3. ON-SCREEN TEXT: Per scene. Simple font style. Screen position. Entry timing in seconds from scene start.
 4. POST CAPTION: Brazilian Portuguese. Naomi's voice, first person. Dry HR tone. HR jargon applied to the domestic or professional context. No motivation. No drama. Ends with data, dry observation, or HR jargon.
 5. SITUATIONAL TITLE: If the context calls for it, suggest a temporary title beyond "HR Manager". Examples: Food Welfare Analyst, Overtime Compliance Officer, Unused Benefits Auditor, Domestic Compliance Coordinator.
@@ -66,7 +66,7 @@ Respond EXCLUSIVELY with valid JSON:
   "scene_direction": [
     { "scene": 1, "duration_seconds": 3, "action": "...", "camera": "...", "karen_in_frame": false }
   ],
-  "video_prompt": "Full English prompt for ${tool.label}...",
+  "video_prompt": "Prompt completo em português para ${tool.label}...",
   "onscreen_text": [
     { "scene": 1, "text": "...", "font": "...", "position": "...", "timing": "..." }
   ],
@@ -94,6 +94,9 @@ export default function NaomiStudio() {
   const [suggestLoading, setSuggestLoading] = useState(false)
   const [showScenes, setShowScenes] = useState(true)
   const [showText, setShowText] = useState(false)
+  const [translatedPrompt, setTranslatedPrompt] = useState(null)
+  const [translating, setTranslating] = useState(false)
+  const [showEnglish, setShowEnglish] = useState(false)
   const photoRef = useRef(null)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
@@ -141,6 +144,8 @@ export default function NaomiStudio() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setTranslatedPrompt(null)
+    setShowEnglish(false)
 
     try {
       const messages = []
@@ -179,6 +184,26 @@ export default function NaomiStudio() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const translatePrompt = async () => {
+    if (!apiKey || !result?.video_prompt) return
+    setTranslating(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: `Translate this video generation prompt from Portuguese to English. Keep all technical terms, character descriptions, camera instructions, and formatting intact. Return ONLY the translated prompt, no preamble:\n\n${result.video_prompt}` }],
+        }),
+      })
+      const data = await res.json()
+      const text = data.content?.[0]?.text?.trim() || ''
+      if (text) { setTranslatedPrompt(text); setShowEnglish(true) }
+    } catch { /* silent */ }
+    finally { setTranslating(false) }
   }
 
   return (
@@ -384,13 +409,41 @@ export default function NaomiStudio() {
                   Video Prompt — {VIDEO_TOOLS.find(t => t.id === videoTool)?.label}
                 </span>
               </div>
-              <button onClick={() => handleCopy(result.video_prompt, 'prompt')}
-                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-slate-700 transition-colors">
-                {copied === 'prompt' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-              </button>
+              <div className="flex items-center gap-2">
+                {/* PT / EN toggle */}
+                {!translatedPrompt ? (
+                  <button
+                    onClick={translatePrompt}
+                    disabled={translating}
+                    className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 transition-all disabled:opacity-40"
+                  >
+                    {translating ? <Loader2 size={9} className="animate-spin" /> : <span className="text-[9px]">🇺🇸</span>}
+                    Traduzir para inglês
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setShowEnglish(false)}
+                      className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-md transition-all',
+                        !showEnglish ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                      )}
+                    >PT</button>
+                    <button
+                      onClick={() => setShowEnglish(true)}
+                      className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-md transition-all',
+                        showEnglish ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                      )}
+                    >EN</button>
+                  </div>
+                )}
+                <button onClick={() => handleCopy(showEnglish && translatedPrompt ? translatedPrompt : result.video_prompt, 'prompt')}
+                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-slate-700 transition-colors">
+                  {copied === 'prompt' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                </button>
+              </div>
             </div>
             <div className="p-4 bg-slate-50 font-mono text-xs text-slate-700 leading-relaxed whitespace-pre-wrap rounded-b-2xl">
-              {result.video_prompt}
+              {showEnglish && translatedPrompt ? translatedPrompt : result.video_prompt}
             </div>
           </div>
 
