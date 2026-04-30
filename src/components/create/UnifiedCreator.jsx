@@ -339,105 +339,83 @@ Responda EXCLUSIVAMENTE com JSON válido:
 }`
 
 /* ── Protocolo de Stories ── */
-const STORIES_SYSTEM = `Você é um estrategista de conteúdo que escreve como alguém que observa o mundo real — não como alguém que monta texto.
+const BASE_STORIES_SYSTEM = `— IDENTIDADE —
 
-Sua função NÃO é ensinar.
-Sua função é traduzir comportamentos de forma natural, precisa e reconhecível.
+Você é um gerador de roteiros de stories para Instagram.
 
-CONTEXTO:
-A criadora é empreendedora (home office), mas fala com uma audiência majoritariamente corporativa.
-Falar a partir do próprio lugar (empreendedora), conectando com padrões que atravessam o trabalho como um todo.
+A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.
 
-PRINCÍPIO DE ESCRITA:
-Descrever o que acontece → não explicar por que acontece.
 
-PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- "não é X, é Y" / "o mais curioso é" / "ninguém fala disso" / "a verdade é" / "o segredo é"
-- Frases de efeito genéricas
-- Listas repetitivas
-- Linguagem de coach
-- Tom professoral
-- Explicação didática
-- Conclusão fechada
-Evitar palavras: insight, essencial, fundamental, crucial, revolucionário, inspirador, otimizar, significativo, navegar, mergulhar, clareza, silencioso
+— CONTEXTO DA GERAÇÃO —
 
-AJUSTE FINO DE TOM (proteção de risco):
-O tema pode ser sensível. O risco não é o tema — é o tom.
-- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X")
-- Evitar culpados nomeados — explícitos ou implícitos
-- Preferir entrada observacional e acolhedora:
-  → "tem uma coisa que acontece…"
-  → "já reparou que…"
-  → "muita gente passa por isso…"
-  → "às vezes a gente…"
-- Descrever o fenômeno sem atribuir culpa a ninguém
+Tema escolhido: {tema}
+Estrutura solicitada: {estrutura}
 
-ESTRUTURA DO ROTEIRO:
-1. Ponto de entrada ancorado na realidade da criadora
-   (ex: "trabalhando de casa…", "vendo de fora…", "tem um padrão que eu continuo vendo…")
-2. Situação ou comportamento observável
-3. Continuação natural (sem repetir ideia)
-4. Leitura curta (sem explicar demais)
-5. Tensão implícita (sem dramatizar)
-6. Pergunta final simples e humana
+Siga rigorosamente as instruções da estrutura solicitada.
 
-REGRAS DE LINGUAGEM:
-- Escrever como fala
-- Evitar palavras bonitas sem função
-- Evitar frases que parecem prontas
-- Evitar generalizações amplas
-- Evitar parecer "texto pensado demais"
 
-REGRAS DE CORTE:
-- Remover repetição de ideia
-- Remover mais de 1 exemplo
-- Remover explicações
-- Remover qualquer frase genérica
-- Máximo 6 a 8 blocos
+— VOZ E TOM —
 
-PERGUNTA FINAL:
-- Parecer continuação da conversa
-- Simples, cabe em uma resposta curta
-- Evitar tom de pesquisa e pergunta genérica
+A autora fala como conversa. Não como post.
+Escreva como ela falaria em voz alta, não como ela escreveria num artigo.
 
-VALIDAÇÃO INTERNA (antes de entregar):
-- Parece algo que alguém falaria ou um texto escrito?
-- Tem alguma frase que parece pronta?
-- Está explicando demais?
-- Parece julgamento ou observação?
-Se qualquer resposta for negativa → reescrever
+Referências de tom correto:
+- "Trabalhando aqui de casa, vi uma coisa acontecer direto."
+- "Num cliente meu semana passada..."
+- "Tenho uma opinião sobre isso que muita gente não concorda."
 
-CRITÉRIO FINAL: Se parecer IA → falhou. Se parecer aula → falhou. Se parecer uma observação real → passou.`
 
-const buildStoriesPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
-TEMA: ${tema}
-${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
-${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
-${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — ancorada na realidade da empreendedora, não abstrata.' : ''}
-${gerarTexto ? 'Crie um texto base para este tema — como observação real com ponto de entrada na realidade da criadora.' : ''}
+— REGRAS GLOBAIS OBRIGATÓRIAS —
 
-Execute o protocolo:
-1. ROTEIRO PRINCIPAL: ponto de entrada na realidade da criadora → situação observável → continuação natural → leitura curta → tensão implícita → pergunta final. 6 a 8 blocos. Sem frases prontas.
-2. VARIAÇÃO 1 (mudança real — mais próxima, mais íntima — não cosmética)
-3. VARIAÇÃO 2 (mudança real — entrada diferente, tom diferente — não cosmética)
-4. Valide internamente os 4 critérios — reescreva se qualquer um falhar
-5. Entregue apenas versões aprovadas
+Frases: máximo 15 palavras cada. Sem exceção.
+Parágrafos: 1 a 2 frases. Nunca blocos longos.
+Pontuação: ponto final e vírgula apenas. Sem exclamação. Sem reticências dramáticas.
+Vocabulário: NUNCA USE → transformador, poderoso, incrível, surpreendente, real talk, verdade, jornada, propósito, impacto, engajamento, entregar valor.
 
-Responda EXCLUSIVAMENTE com JSON válido:
-{
-  "roteiro_principal": "roteiro completo (use \\n para quebras)",
-  "variacao_1": "variação 1 completa",
-  "variacao_2": "variação 2 completa",
-  "pergunta_final": "apenas a pergunta final — natural, como conversa",
-  "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 2 frases: a lógica do conteúdo sem jargão",
-  "validacao": {
-    "parece_falado": true,
-    "sem_frases_prontas": true,
-    "sem_excesso_explicacao": true,
-    "parece_observacao": true
-  }
-}`
+
+— PROIBIÇÕES ABSOLUTAS —
+
+NUNCA coloque título no início do texto.
+NUNCA escreva introdução ou contextualização antes do stories.
+NUNCA termine com CTA genérico ("me conta nos comentários", "compartilhe com alguém").
+NUNCA use moral explícita ("o que aprendo com isso é...", "isso me ensinou que...").
+NUNCA use ponto de exclamação.
+NUNCA invente dados, estatísticas ou estudos.
+
+
+— AUTOVERIFICAÇÃO ANTES DE ENTREGAR —
+
+Antes de retornar o texto, verifique internamente:
+1. Alguma frase passa de 15 palavras? → reescreva.
+2. Tem exclamação? → remova.
+3. Tem palavra da lista proibida? → substitua.
+4. Tem moral explícita no final? → apague essa parte.
+5. Começa com título ou introdução? → remova.
+
+Se tudo passar: entregue apenas o texto do stories, sem comentários, sem explicações, sem "aqui está o texto:".`
+
+const STORIES_STRUCTURES = {
+  observacao: {
+    label: 'Observação',
+    desc: 'Algo que a autora viu acontecer de fora do ambiente corporativo',
+    prompt: 'Escreva como uma observação feita de fora do ambiente corporativo. Comece com uma situação que a autora viu acontecer. Desenvolva o que essa situação revela sobre um padrão maior. Termine com uma pergunta ou constatação seca, sem moral.',
+  },
+  caso_real: {
+    label: 'Caso real',
+    desc: 'Situação de cliente (sem nomear)',
+    prompt: 'Escreva a partir de um caso de cliente, sem nomear. Comece diretamente na situação. Mostre o que aconteceu. Termine com o que a autora percebeu — não o que ela "aprendeu".',
+  },
+  opiniao: {
+    label: 'Opinião divergente',
+    desc: 'Uma posição que muita gente não concorda',
+    prompt: 'Escreva como uma opinião que a autora tem e que muita gente não concorda. Declare a opinião no início sem esconder. Desenvolva o raciocínio que a leva a essa posição. Não suavize no final.',
+  },
+  padrao: {
+    label: 'Padrão que repete',
+    desc: 'Um padrão que continua aparecendo nos ambientes observados',
+    prompt: 'Escreva sobre um padrão que a autora continua vendo nos ambientes que ela observa. Seja específica na descrição do padrão. Termine com uma pergunta genuína que a autora ainda não sabe responder.',
+  },
+}
 
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
@@ -561,16 +539,11 @@ export default function UnifiedCreator() {
   const [carCopied, setCarCopied] = useState(null)
   // Stories
   const [strTema, setStrTema] = useState('')
-  const [strIdeia, setStrIdeia] = useState('')
-  const [strTexto, setStrTexto] = useState('')
-  const [strGerarIdeia, setStrGerarIdeia] = useState(false)
-  const [strGerarTexto, setStrGerarTexto] = useState(false)
+  const [strEstrutura, setStrEstrutura] = useState('observacao')
   const [strLoading, setStrLoading] = useState(false)
   const [strResult, setStrResult] = useState(null)
   const [strError, setStrError] = useState(null)
-  const [strCopied, setStrCopied] = useState(null)
-  const [strShowVar1, setStrShowVar1] = useState(false)
-  const [strShowVar2, setStrShowVar2] = useState(false)
+  const [strCopied, setStrCopied] = useState(false)
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
@@ -926,27 +899,32 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setTimeout(() => setCarCopied(null), 2000)
   }
 
-  const handleStrCopy = (text, key) => {
-    navigator.clipboard.writeText(text)
-    setStrCopied(key)
-    setTimeout(() => setStrCopied(null), 2000)
+  const handleStrCopy = () => {
+    if (!strResult) return
+    navigator.clipboard.writeText(strResult)
+    setStrCopied(true)
+    setTimeout(() => setStrCopied(false), 2000)
   }
 
   const generateStories = async () => {
     if (!strTema.trim()) return
-    if (!apiKey) { setStrError('Configure sua API key em Analytics > Configurações'); return }
+    if (!apiKey) { setStrError('Configure sua API key em Configurações'); return }
     setStrLoading(true)
     setStrError(null)
     setStrResult(null)
     try {
+      const estrutura = STORIES_STRUCTURES[strEstrutura] || STORIES_STRUCTURES.observacao
+      const systemPrompt = BASE_STORIES_SYSTEM
+        .replace('{tema}', strTema)
+        .replace('{estrutura}', estrutura.prompt)
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 5000,
-          system: STORIES_SYSTEM,
-          messages: [{ role: 'user', content: buildStoriesPrompt({ tema: strTema, ideia: strIdeia, texto: strTexto, gerarIdeia: strGerarIdeia, gerarTexto: strGerarTexto }) }],
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
       })
       if (!res.ok) {
@@ -954,10 +932,9 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('Resposta inválida da IA')
-      setStrResult(JSON.parse(match[0]))
+      const text = data.content?.[0]?.text?.trim() || ''
+      if (!text) throw new Error('Resposta inválida da IA')
+      setStrResult(text)
     } catch (err) {
       setStrError(err.message)
     } finally {
@@ -1881,54 +1858,28 @@ Responda EXCLUSIVAMENTE com JSON válido:
               />
             </div>
 
-            {/* Ideia */}
+            {/* Estrutura */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Ideia <span className="text-gray-300">(opcional)</span>
-                </label>
-                <button onClick={() => setStrGerarIdeia(v => !v)}
-                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
-                    strGerarIdeia ? 'bg-teal-100 border-teal-300 text-teal-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                  )}>
-                  <Sparkles size={10} /> {strGerarIdeia ? 'Gerar com IA ✓' : 'Gerar com IA'}
-                </button>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                Estrutura <span className="text-red-400">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(STORIES_STRUCTURES).map(([key, s]) => (
+                  <button
+                    key={key}
+                    onClick={() => setStrEstrutura(key)}
+                    className={clsx(
+                      'text-left px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                      strEstrutura === key
+                        ? 'bg-teal-50 border-teal-400 text-teal-800'
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                    )}
+                  >
+                    <div className="font-semibold">{s.label}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
+                  </button>
+                ))}
               </div>
-              {!strGerarIdeia && (
-                <textarea value={strIdeia} onChange={e => setStrIdeia(e.target.value)}
-                  rows={2} placeholder="Um ângulo ou situação específica que você quer explorar..."
-                  className="input text-sm w-full resize-none" />
-              )}
-              {strGerarIdeia && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-600">
-                  <Sparkles size={12} /> A IA vai criar uma ideia ancorada na realidade da empreendedora
-                </div>
-              )}
-            </div>
-
-            {/* Texto Base */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Texto base <span className="text-gray-300">(opcional)</span>
-                </label>
-                <button onClick={() => setStrGerarTexto(v => !v)}
-                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
-                    strGerarTexto ? 'bg-cyan-100 border-cyan-300 text-cyan-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                  )}>
-                  <Sparkles size={10} /> {strGerarTexto ? 'Gerar com IA ✓' : 'Gerar com IA'}
-                </button>
-              </div>
-              {!strGerarTexto && (
-                <textarea value={strTexto} onChange={e => setStrTexto(e.target.value)}
-                  rows={3} placeholder="Cole um texto, rascunho ou observação que queira transformar..."
-                  className="input text-sm w-full resize-none" />
-              )}
-              {strGerarTexto && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-cyan-50 border border-cyan-200 text-xs text-cyan-600">
-                  <Sparkles size={12} /> A IA vai criar um texto base como observação real
-                </div>
-              )}
             </div>
 
             {strError && (
@@ -1945,126 +1896,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
           {strResult && (
             <div className="space-y-4 animate-fade-in">
 
-              {/* Validação */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
-                  <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { key: 'parece_falado',          label: 'Parece falado' },
-                    { key: 'sem_frases_prontas',      label: 'Sem frase pronta' },
-                    { key: 'sem_excesso_explicacao',  label: 'Sem excesso' },
-                    { key: 'parece_observacao',       label: 'Observação' },
-                  ].map(({ key, label }) => {
-                    const ok = strResult.validacao?.[key] === true
-                    return (
-                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
-                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-                      )}>
-                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
-                        <span className={clsx('text-[9px] font-semibold leading-tight', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Roteiro Principal */}
+              {/* Texto gerado */}
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-teal-500" />
-                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Roteiro Principal</span>
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">
+                      Stories — {STORIES_STRUCTURES[strEstrutura]?.label}
+                    </span>
                   </div>
-                  <button onClick={() => handleStrCopy(strResult.roteiro_principal, 'principal')}
+                  <button onClick={handleStrCopy}
                     className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal-600 transition-colors">
-                    {strCopied === 'principal' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    {strCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
                   </button>
                 </div>
                 <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {strResult.roteiro_principal}
+                  {strResult}
                 </div>
               </div>
-
-              {/* Pergunta Final */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 p-5 text-white shadow-lg shadow-teal-200">
-                <div className="relative z-10">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
-                    <Quote size={10} /> Pergunta Final (use literalmente)
-                  </p>
-                  <p className="text-base font-bold leading-snug">{strResult.pergunta_final}</p>
-                  <button onClick={() => handleStrCopy(strResult.pergunta_final, 'str-pergunta')}
-                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
-                    {strCopied === 'str-pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar pergunta</>}
-                  </button>
-                </div>
-                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
-              </div>
-
-              {/* Variações */}
-              <div className="space-y-2">
-                {[
-                  { key: 'variacao_1', label: 'Variação 1 — mais próxima', dot: 'bg-teal-400', show: strShowVar1, toggle: () => setStrShowVar1(v => !v) },
-                  { key: 'variacao_2', label: 'Variação 2 — entrada diferente', dot: 'bg-cyan-500', show: strShowVar2, toggle: () => setStrShowVar2(v => !v) },
-                ].map(({ key, label, dot, show, toggle }) => (
-                  <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                    <button onClick={toggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${dot}`} />
-                        <span className="text-xs font-semibold text-gray-700">{label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); handleStrCopy(strResult[key], key) }}
-                          className="text-gray-300 hover:text-gray-600 transition-colors">
-                          {strCopied === key ? <Check size={11} /> : <Copy size={11} />}
-                        </button>
-                        {show ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-                      </div>
-                    </button>
-                    {show && (
-                      <div className="px-4 pb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3">
-                        {strResult[key]}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Respostas Sugeridas */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
-                  <MessageCircle size={12} className="text-teal-500" /> Respostas para Comentários
-                </p>
-                <p className="text-[10px] text-gray-400">Use nos primeiros comentários para ativar conversas</p>
-                <div className="space-y-2">
-                  {(strResult.respostas_sugeridas || []).map((resp, i) => (
-                    <div key={i} className="flex items-start gap-3 group">
-                      <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[10px] font-bold text-teal-600">{i + 1}</span>
-                      </div>
-                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
-                      <button onClick={() => handleStrCopy(resp, `str-resp-${i}`)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-teal-500 transition-all mt-2 shrink-0">
-                        {strCopied === `str-resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nota Estratégica */}
-              {strResult.nota_estrategica && (
-                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl border border-teal-200 p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
-                    <Brain size={15} className="text-teal-600" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-teal-600 uppercase mb-1">Nota Estratégica</p>
-                    <p className="text-sm text-teal-800 leading-relaxed">{strResult.nota_estrategica}</p>
-                  </div>
-                </div>
-              )}
 
               {/* Regenerar */}
               <button onClick={generateStories} disabled={strLoading}
