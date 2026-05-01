@@ -112,6 +112,8 @@ PROIBIDO (nunca use estas frases ou variações delas):
 - "a verdade é que"
 - "o segredo de..."
 - "X dicas para..."
+- "não é sobre X, é sobre Y" e qualquer oposição falsa nesse formato
+- Referências a anos específicos no argumento ("em 2025", "em 2024") — escreva de forma atemporal
 - Listas genéricas sem substância, linguagem corporativa, emojis em excesso
 - Conteúdo genérico que qualquer pessoa poderia escrever
 - Palestra motivacional, clickbait ou marketing genérico

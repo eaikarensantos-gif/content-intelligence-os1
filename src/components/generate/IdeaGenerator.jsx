@@ -102,6 +102,8 @@ PROIBIDO — ABSOLUTAMENTE:
 - Palavras: "vibe", "diquinhas", "transformador", "jornada", "propósito", "missão de vida", "autêntico"
 - "isso vai mudar tudo", "o erro que 90% cometem", "ninguém te conta isso"
 - "a verdade é que", "o segredo de...", "X dicas para...", "Como fazer..."
+- "não é sobre X, é sobre Y" e qualquer variação desta estrutura de oposição falsa
+- Referências a anos específicos no corpo do argumento ("em 2025", "em 2024", "nos últimos anos de...") — escreva como observação atemporal, não como manchete datada
 - Tom de guru, coaching vazio, copywriting motivacional
 - Conteúdos sobre produtividade pessoal, rotina de manhã, gestão de tempo, lifestyle
 - Referências a criadores de finanças pessoais, coaching ou autoajuda

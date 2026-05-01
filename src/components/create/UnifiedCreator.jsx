@@ -111,7 +111,8 @@ PRINCÍPIO CENTRAL:
 Escrever como alguém que observou algo específico — não como quem está ensinando.
 
 PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- Frases: "não é só X, é Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Frases: "não é só X, é Y" / "não é sobre X, é sobre Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
 - Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
 - Listas em escadinha repetitiva
 - Frases de efeito genéricas
@@ -240,6 +241,7 @@ VOCABULÁRIO E RITMO:
 
 LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Não é sobre X, é sobre Y" → oposição falsa, parece template
+- Referências a anos específicos ("em 2025", "em 2024") → datado, parece artigo de blog
 - Três ou mais frases curtas em sequência → ritmo de sermão de coach
 - Travessões para dar impacto → artificialidade
 - "Mindset", "Propósito", "Transformação" → jargão vago
