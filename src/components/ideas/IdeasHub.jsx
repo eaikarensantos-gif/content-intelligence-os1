@@ -147,7 +147,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
           const colIdeas = columnIdeas(col.id)
           const confirming = confirmCol === col.id
           return (
-            <div key={col.id} className={`group/col flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
+            <div key={col.id} className={`flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
               <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80 rounded-t-xl">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
@@ -176,7 +176,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
                     ) : (
                       <button
                         onClick={() => setConfirmCol(col.id)}
-                        className="p-1 rounded opacity-0 group-hover/col:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                        className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
                         title={`Excluir todos de "${col.label}"`}
                       >
                         <Trash2 size={11} />
