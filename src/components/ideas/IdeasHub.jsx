@@ -126,20 +126,29 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
 }
 
 // ─── Visualização Kanban ──────────────────────────────────────────────────────
-function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
+function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDeleteAll }) {
+  const [confirmCol, setConfirmCol] = useState(null)
+
   const onDragEnd = ({ destination, draggableId }) => {
     if (!destination) return
     updateIdea(draggableId, { status: destination.droppableId })
   }
   const columnIdeas = (colId) => ideas.filter((i) => i.status === colId)
 
+  const handleDeleteAll = (colId) => {
+    onDeleteAll(colId)
+    setConfirmCol(null)
+  }
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 min-h-[60vh]">
         {KANBAN_COLUMNS.map((col) => {
           const colIdeas = columnIdeas(col.id)
+          const confirming = confirmCol === col.id
           return (
             <div key={col.id} className={`flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
+              {/* Cabeçalho */}
               <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80 rounded-t-xl">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
@@ -147,6 +156,8 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
                 </div>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.count_bg}`}>{colIdeas.length}</span>
               </div>
+
+              {/* Cards */}
               <Droppable droppableId={col.id}>
                 {(provided, snapshot) => (
                   <div
@@ -179,6 +190,38 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
                   </div>
                 )}
               </Droppable>
+
+              {/* Rodapé — excluir tudo da coluna */}
+              {colIdeas.length > 0 && (
+                <div className="px-2 pb-2 pt-1 border-t border-gray-200/60">
+                  {confirming ? (
+                    <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      <span className="text-[11px] text-red-600 font-medium">Excluir {colIdeas.length} {colIdeas.length === 1 ? 'ideia' : 'ideias'}?</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteAll(col.id)}
+                          className="text-[11px] font-semibold text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          onClick={() => setConfirmCol(null)}
+                          className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmCol(col.id)}
+                      className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-400 hover:text-red-500 hover:bg-red-50 py-1.5 rounded-lg border border-transparent hover:border-red-200 transition-all"
+                    >
+                      <Trash2 size={11} /> Excluir tudo da coluna
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
@@ -1067,11 +1110,12 @@ const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeasHub() {
   const navigate          = useNavigate()
-  const ideas             = useStore((s) => s.ideas)
-  const addIdea           = useStore((s) => s.addIdea)
-  const updateIdea        = useStore((s) => s.updateIdea)
-  const deleteIdea        = useStore((s) => s.deleteIdea)
-  const convertIdeaToPost = useStore((s) => s.convertIdeaToPost)
+  const ideas                = useStore((s) => s.ideas)
+  const addIdea              = useStore((s) => s.addIdea)
+  const updateIdea           = useStore((s) => s.updateIdea)
+  const deleteIdea           = useStore((s) => s.deleteIdea)
+  const deleteIdeasByStatus  = useStore((s) => s.deleteIdeasByStatus)
+  const convertIdeaToPost    = useStore((s) => s.convertIdeaToPost)
 
   const [tab, setTab]                       = useState('kanban')
   const [formOpen, setFormOpen]             = useState(false)
@@ -1260,7 +1304,7 @@ export default function IdeasHub() {
             <button onClick={() => openNew()} className="btn-primary mt-4"><Plus size={14} /> Criar Primeira Ideia</button>
           </div>
         ) : (
-          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} onTagClick={handleTagClick} onDelete={deleteIdea} />
+          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} onTagClick={handleTagClick} onDelete={deleteIdea} onDeleteAll={deleteIdeasByStatus} />
         )
       )}
 

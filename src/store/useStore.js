@@ -139,6 +139,9 @@ const useStore = create(
         dbDeleteIdea(id)
       },
 
+      deleteIdeasByStatus: (status) =>
+        set((s) => ({ ideas: s.ideas.filter((i) => i.status !== status) })),
+
       convertIdeaToPost: (ideaId) => {
         const idea = get().ideas.find((i) => i.id === ideaId)
         if (!idea) return
