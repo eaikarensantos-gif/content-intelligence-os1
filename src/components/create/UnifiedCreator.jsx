@@ -273,12 +273,13 @@ Critérios obrigatórios:
 - Nomeia um momento, situação ou comportamento específico (não "reuniões em geral" → "a próxima reunião onde você sentir que não entendeu")
 - Tem uma instrução que a pessoa pode recusar — se parecer fácil demais, é raso
 - Produz um resultado observável: a pessoa saberá se fez ou não fez
-- Máximo 3 frases. Sem introdução ("Este exercício vai te ajudar a..."), sem conclusão moral
+- Sem introdução motivacional ("Este exercício vai te ajudar a...") e sem conclusão moral no final
+- Pode ter entre 3 e 6 frases: contexto da situação + instrução específica + o que observar ou registrar
 
 Escala de profundidade — teste o exercício gerado:
   Raso: "Anote 3 situações onde você sentiu síndrome do impostor esta semana."
-  Médio: "Identifique uma entrega que você está travando por perfeccionismo e defina o mínimo aceitável para entregar amanhã."
-  Profundo: "Escolha uma tarefa que você está 'quase terminando' há mais de 3 dias. Defina um horário de entrega para amanhã — não o ideal, o possível. Envie incompleto se necessário e observe o que acontece internamente."
+  Médio: "Identifique uma entrega que você está travando por perfeccionismo e defina o mínimo aceitável para entregar amanhã. Escreva esse mínimo em uma frase antes de abrir o arquivo."
+  Profundo: "Escolha uma tarefa que você está 'quase terminando' há mais de 3 dias. Defina um horário de entrega para amanhã — não o ideal, o possível. Antes de entregar, escreva em uma linha o que ainda falta e por que você está segurando. Envie assim mesmo e observe o que acontece internamente depois."
 
 Se o exercício que você gerou se encaixa em 'Raso' → reescreva. Entregue apenas a partir de 'Médio'.
 
