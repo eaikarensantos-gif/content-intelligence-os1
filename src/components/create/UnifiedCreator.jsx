@@ -1798,7 +1798,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
           {/* ── Output do Carrossel ── */}
           {carResult && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-3 animate-fade-in">
 
               {/* Abas de versão */}
               {(() => {
@@ -1824,26 +1824,27 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
                     {/* Slides da versão ativa */}
                     {active.data && (
-                      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                          <div className="flex items-center gap-2">
-                            <LayoutGrid size={13} className="text-orange-500" />
-                            <span className="text-[10px] font-semibold text-gray-700 uppercase">Slides — {active.label}</span>
-                          </div>
+                      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Slides</span>
                           <button onClick={() => handleCarCopy(
-                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n') + '\n\n' + active.data.pergunta_final,
+                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'),
                             `slides-${active.key}`
                           )} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
                             {carCopied === `slides-${active.key}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
                           </button>
                         </div>
-                        <div className="divide-y divide-gray-100">
-                          {(active.data.slides || []).map((slide) => (
-                            <div key={slide.numero} className="flex items-start gap-3 px-4 py-3 group hover:bg-orange-50/30 transition-colors">
-                              <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                                <span className="text-[11px] font-bold text-orange-600">{slide.numero}</span>
+                        <div className="px-4 pb-3 space-y-0">
+                          {(active.data.slides || []).map((slide, idx) => (
+                            <div key={slide.numero} className="relative flex gap-3 group py-2">
+                              {/* linha conectora */}
+                              {idx < (active.data.slides?.length ?? 0) - 1 && (
+                                <div className="absolute left-[13px] top-8 bottom-0 w-px bg-gray-100" />
+                              )}
+                              <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0 mt-0.5 z-10">
+                                <span className="text-[10px] font-bold text-orange-500">{slide.numero}</span>
                               </div>
-                              <p className="flex-1 text-sm text-gray-800 leading-relaxed">{slide.texto}</p>
+                              <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5">{slide.texto}</p>
                               <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
                                 className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
                                 {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
@@ -1851,127 +1852,135 @@ Responda EXCLUSIVAMENTE com JSON válido:
                             </div>
                           ))}
                         </div>
-
-                        {/* Pergunta final da versão */}
-                        {active.data.pergunta_final && (
-                          <div className="border-t border-gray-100 bg-gradient-to-r from-orange-500 to-rose-500 p-4">
-                            <p className="text-[10px] font-semibold text-white/70 uppercase mb-1.5 flex items-center gap-1.5">
-                              <Quote size={10} /> Pergunta Final
-                            </p>
-                            <div className="flex items-start justify-between gap-3">
-                              <p className="text-sm font-bold text-white leading-snug">{active.data.pergunta_final}</p>
-                              <button onClick={() => handleCarCopy(active.data.pergunta_final, `pergunta-${active.key}`)}
-                                className="shrink-0 flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg transition-all">
-                                {carCopied === `pergunta-${active.key}` ? <Check size={10} /> : <Copy size={10} />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </>
                 )
               })()}
 
-              {/* Exercício Prático */}
-              {carResult.exercicio_pratico && (
-                <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-orange-100 bg-orange-50/50">
-                    <div className="flex items-center gap-2">
-                      <Target size={12} className="text-orange-500" />
-                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
-                    </div>
-                    <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                      {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
-                </div>
-              )}
-
-              {/* Legenda */}
-              {carResult.legenda && (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase">Legenda do Post</span>
-                    <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                      {carCopied === 'car-legenda' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
-                </div>
-              )}
-
-              {/* Respostas para Comentários */}
-              {(carResult.comentarios || []).length > 0 && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
-                    <MessageCircle size={12} className="text-orange-500" /> Respostas para Comentários
-                  </p>
-                  <div className="space-y-3">
-                    {carResult.comentarios.map((item, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] font-semibold text-gray-400 shrink-0 mt-0.5">Comentário</span>
-                          <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed flex-1 italic">"{item.comentario}"</p>
+              {/* Exercício Prático + Pergunta Final agrupados */}
+              {(carResult.exercicio_pratico || (() => {
+                const active = [
+                  carResult.versao_principal,
+                  carResult.variacao_emocional,
+                  carResult.variacao_provocativa,
+                ].find((_, i) => ['principal','emocional','provocativa'][i] === carActiveVersion) || carResult.versao_principal
+                return active?.pergunta_final
+              })()) && (
+                <div className="rounded-2xl border border-orange-100 overflow-hidden bg-white">
+                  {carResult.exercicio_pratico && (
+                    <div className="px-4 py-3 group">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Target size={11} className="text-orange-500" />
+                          <span className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide">Exercício Prático</span>
                         </div>
-                        <div className="flex items-start gap-2 group">
-                          <span className="text-[10px] font-semibold text-orange-500 shrink-0 mt-0.5">Karen</span>
-                          <p className="text-xs text-gray-800 bg-orange-50 rounded-lg px-3 py-2 leading-relaxed flex-1 font-medium">{item.resposta}</p>
-                          <button onClick={() => handleCarCopy(item.resposta, `comentario-${i}`)}
-                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1.5">
-                            {carCopied === `comentario-${i}` ? <Check size={11} /> : <Copy size={11} />}
+                        <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
+                          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                          {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
+                    </div>
+                  )}
+
+                  {/* Pergunta Final — abaixo do exercício */}
+                  {(() => {
+                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa }
+                    const pergunta = versions[carActiveVersion]?.pergunta_final || carResult.versao_principal?.pergunta_final
+                    if (!pergunta) return null
+                    return (
+                      <div className="border-t border-orange-100 bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-semibold text-white/70 uppercase flex items-center gap-1.5">
+                            <Quote size={10} /> Pergunta Final
+                          </span>
+                          <button onClick={() => handleCarCopy(pergunta, `pergunta-${carActiveVersion}`)}
+                            className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-all">
+                            {carCopied === `pergunta-${carActiveVersion}` ? <Check size={10} /> : <Copy size={10} />}
                           </button>
                         </div>
+                        <p className="text-sm font-bold text-white leading-snug">{pergunta}</p>
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })()}
                 </div>
               )}
 
               {/* CTA Fechado */}
               {carResult.cta_fechado && (
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 to-gray-700 p-5 text-white shadow-lg">
-                  <div className="relative z-10">
-                    <p className="text-[10px] font-semibold text-white/60 uppercase mb-2 flex items-center gap-1.5">
-                      <ToggleLeft size={11} /> CTA Fechado
-                    </p>
-                    <p className="text-base font-bold leading-snug">{carResult.cta_fechado}</p>
+                <div className="relative overflow-hidden rounded-2xl bg-gray-900 px-4 py-3 text-white">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold text-white/50 uppercase flex items-center gap-1.5">
+                      <ToggleLeft size={10} /> CTA Fechado
+                    </span>
                     <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
-                      className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
-                      {carCopied === 'car-cta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                      className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-all">
+                      {carCopied === 'car-cta' ? <Check size={10} /> : <Copy size={10} />}
                     </button>
                   </div>
-                  <div className="absolute right-0 bottom-0 w-20 h-20 bg-white/5 rounded-full translate-x-6 translate-y-6" />
+                  <p className="text-sm font-bold leading-snug">{carResult.cta_fechado}</p>
                 </div>
               )}
 
-              {/* Validação */}
-              {carResult.validacao && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
-                    <ShieldCheck size={12} className="text-emerald-500" /> Validação
-                  </p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { key: 'deixa_espaco',      label: 'Deixa espaço' },
-                      { key: 'nao_parece_coach',  label: 'Não é coach' },
-                      { key: 'so_karen_diria',    label: 'Só Karen diria' },
-                      { key: 'perguntas_diferentes', label: 'Perguntas distintas' },
-                    ].map(({ key, label }) => {
-                      const ok = carResult.validacao?.[key] === true
-                      return (
-                        <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
-                          ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-                        )}>
-                          <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
-                          <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
+              {/* Legenda + Comentários agrupados */}
+              {(carResult.legenda || (carResult.comentarios || []).length > 0) && (
+                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                  {carResult.legenda && (
+                    <div className="px-4 py-3 flex items-start justify-between gap-3 group">
+                      <div className="flex-1">
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Legenda</span>
+                        <p className="text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
+                      </div>
+                      <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-5">
+                        {carCopied === 'car-legenda' ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  )}
+                  {(carResult.comentarios || []).length > 0 && (
+                    <div className="px-4 py-3 space-y-2.5">
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <MessageCircle size={10} className="text-orange-400" /> Respostas sugeridas
+                      </span>
+                      {carResult.comentarios.map((item, i) => (
+                        <div key={i} className="space-y-1">
+                          <p className="text-xs text-gray-400 italic pl-1">"{item.comentario}"</p>
+                          <div className="flex items-start gap-2 group/resp">
+                            <div className="w-1 rounded-full bg-orange-200 self-stretch shrink-0 mt-0.5" />
+                            <p className="flex-1 text-xs text-gray-700 leading-relaxed">{item.resposta}</p>
+                            <button onClick={() => handleCarCopy(item.resposta, `comentario-${i}`)}
+                              className="opacity-0 group-hover/resp:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0">
+                              {carCopied === `comentario-${i}` ? <Check size={11} /> : <Copy size={11} />}
+                            </button>
+                          </div>
                         </div>
-                      )
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Validação — pills inline */}
+              {carResult.validacao && (
+                <div className="flex items-center gap-2 flex-wrap px-1">
+                  <ShieldCheck size={11} className="text-gray-300 shrink-0" />
+                  {[
+                    { key: 'deixa_espaco',         label: 'Deixa espaço' },
+                    { key: 'nao_parece_coach',      label: 'Não é coach' },
+                    { key: 'so_karen_diria',        label: 'Só Karen diria' },
+                    { key: 'perguntas_diferentes',  label: 'Perguntas distintas' },
+                  ].map(({ key, label }) => {
+                    const ok = carResult.validacao?.[key] === true
+                    return (
+                      <span key={key} className={clsx(
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                        ok ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                      )}>
+                        {ok ? '✓' : '✗'} {label}
+                      </span>
+                    )
+                  })}
                 </div>
               )}
 
