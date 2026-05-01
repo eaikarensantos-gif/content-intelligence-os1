@@ -263,11 +263,25 @@ Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fu
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
 
 EXERCÍCIO PRÁTICO:
-Todo carrossel deve ter um exercício prático relacionado à tensão do tema. O exercício deve:
-- Ser uma ação concreta que a pessoa pode fazer nas próximas 24 horas
-- Não ser motivacional nem genérico ("reflita sobre...", "pense em..." → proibido)
-- Ser específico o suficiente para gerar desconforto real ("Na próxima reunião, quando sentir vontade de acenar que sim sem entender — não acene. Fique quieto. Veja o que acontece.")
-- Ter entre 1 e 3 frases. Nada mais.
+Todo carrossel deve ter um exercício prático gerado a partir da tensão específica do tema — não de uma lição genérica sobre o tema.
+
+Regra de geração: antes de escrever o exercício, complete internamente esta frase:
+"A tensão central desse carrossel é ___. O comportamento concreto que sustenta essa tensão é ___. O exercício força a pessoa a ___."
+Se você não consegue preencher as três lacunas com algo específico → o exercício é genérico. Reescreva.
+
+Critérios obrigatórios:
+- Nomeia um momento, situação ou comportamento específico (não "reuniões em geral" → "a próxima reunião onde você sentir que não entendeu")
+- Tem uma instrução que a pessoa pode recusar — se parecer fácil demais, é raso
+- Produz um resultado observável: a pessoa saberá se fez ou não fez
+- Sem introdução motivacional ("Este exercício vai te ajudar a...") e sem conclusão moral no final
+- Pode ter entre 3 e 6 frases: contexto da situação + instrução específica + o que observar ou registrar
+
+Escala de profundidade — teste o exercício gerado:
+  Raso: "Anote 3 situações onde você sentiu síndrome do impostor esta semana."
+  Médio: "Identifique uma entrega que você está travando por perfeccionismo e defina o mínimo aceitável para entregar amanhã. Escreva esse mínimo em uma frase antes de abrir o arquivo."
+  Profundo: "Escolha uma tarefa que você está 'quase terminando' há mais de 3 dias. Defina um horário de entrega para amanhã — não o ideal, o possível. Antes de entregar, escreva em uma linha o que ainda falta e por que você está segurando. Envie assim mesmo e observe o que acontece internamente depois."
+
+Se o exercício que você gerou se encaixa em 'Raso' → reescreva. Entregue apenas a partir de 'Médio'.
 
 CTA FECHADO:
 Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta. O formato é:
@@ -1166,9 +1180,15 @@ Regras:
   }
 
   const expandThemes = async () => {
-    if (!apiKey || savedThemes.length === 0) return
+    if (!apiKey) return
+    const categoria = bankOpenCategory
+    const temasNaCategoria = categoria ? savedThemes.filter(t => t.categoria === categoria) : savedThemes
+    if (!categoria && savedThemes.length === 0) return
     setExpandingThemes(true)
     try {
+      const contextoCategoria = categoria
+        ? `Categoria focada: "${categoria}"\n\nTemas já existentes nessa categoria:\n${temasNaCategoria.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`
+        : `Temas gerais já existentes:\n${savedThemes.map(t => `- ${t.tema}`).join('\n')}`
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -1177,10 +1197,9 @@ Regras:
           max_tokens: 800,
           messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
 
-Lista atual de temas da criadora:
-${savedThemes.map(t => `- ${t.tema}`).join('\n')}
+${contextoCategoria}
 
-Gere 5 novos temas relacionados — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
+Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
 
 Temperatura:
 - quente: alto potencial viral agora, forte identificação
@@ -1200,6 +1219,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
           .map(t => ({
             id: Date.now() + Math.random(),
             tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
+            categoria: categoria || 'Carreira',
             fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
           }))
         setSavedThemes(prev => [...prev, ...novos])
@@ -1277,11 +1297,11 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </button>
               <button
                 onClick={expandThemes}
-                disabled={expandingThemes || savedThemes.length === 0}
+                disabled={expandingThemes || (!bankOpenCategory && savedThemes.length === 0)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
               >
                 {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                Expandir com IA
+                {bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
               </button>
               {savedThemes.length > 0 && (
                 <button
