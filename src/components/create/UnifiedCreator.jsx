@@ -1516,7 +1516,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               disabled={engLoading || !engTema.trim()}
               className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando protocolo...</> : <><Zap size={15} /> Gerar Protocolo</>}
+              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando conteúdo...</> : <><Zap size={15} /> Gerar Conteúdo</>}
             </button>
           </div>
 
