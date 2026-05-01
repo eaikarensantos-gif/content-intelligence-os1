@@ -556,7 +556,7 @@ export default function UnifiedCreator() {
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
   // Carrossel
-  const [carOpenCategory, setCarOpenCategory] = useState(null)
+
   const [carTema, setCarTema] = useState('')
   const [carHooks, setCarHooks] = useState([])
   const [carHooksLoading, setCarHooksLoading] = useState(false)
@@ -1695,40 +1695,6 @@ Responda EXCLUSIVAMENTE com JSON válido:
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
                 <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
-              </div>
-            </div>
-
-            {/* Temas Sugeridos */}
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Temas Sugeridos</p>
-              <div className="space-y-1.5">
-                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
-                  const isOpen = carOpenCategory === categoria
-                  return (
-                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => setCarOpenCategory(isOpen ? null : categoria)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
-                      >
-                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
-                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
-                      </button>
-                      {isOpen && (
-                        <div className="px-3 py-2 space-y-1 bg-white">
-                          {temas.map(tema => (
-                            <button
-                              key={tema}
-                              onClick={() => { setCarTema(tema); setCarOpenCategory(null) }}
-                              className="w-full text-left text-xs text-gray-600 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              {tema}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
               </div>
             </div>
 
