@@ -263,11 +263,24 @@ Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fu
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
 
 EXERCÍCIO PRÁTICO:
-Todo carrossel deve ter um exercício prático relacionado à tensão do tema. O exercício deve:
-- Ser uma ação concreta que a pessoa pode fazer nas próximas 24 horas
-- Não ser motivacional nem genérico ("reflita sobre...", "pense em..." → proibido)
-- Ser específico o suficiente para gerar desconforto real ("Na próxima reunião, quando sentir vontade de acenar que sim sem entender — não acene. Fique quieto. Veja o que acontece.")
-- Ter entre 1 e 3 frases. Nada mais.
+Todo carrossel deve ter um exercício prático gerado a partir da tensão específica do tema — não de uma lição genérica sobre o tema.
+
+Regra de geração: antes de escrever o exercício, complete internamente esta frase:
+"A tensão central desse carrossel é ___. O comportamento concreto que sustenta essa tensão é ___. O exercício força a pessoa a ___."
+Se você não consegue preencher as três lacunas com algo específico → o exercício é genérico. Reescreva.
+
+Critérios obrigatórios:
+- Nomeia um momento, situação ou comportamento específico (não "reuniões em geral" → "a próxima reunião onde você sentir que não entendeu")
+- Tem uma instrução que a pessoa pode recusar — se parecer fácil demais, é raso
+- Produz um resultado observável: a pessoa saberá se fez ou não fez
+- Máximo 3 frases. Sem introdução ("Este exercício vai te ajudar a..."), sem conclusão moral
+
+Escala de profundidade — teste o exercício gerado:
+  Raso: "Anote 3 situações onde você sentiu síndrome do impostor esta semana."
+  Médio: "Identifique uma entrega que você está travando por perfeccionismo e defina o mínimo aceitável para entregar amanhã."
+  Profundo: "Escolha uma tarefa que você está 'quase terminando' há mais de 3 dias. Defina um horário de entrega para amanhã — não o ideal, o possível. Envie incompleto se necessário e observe o que acontece internamente."
+
+Se o exercício que você gerou se encaixa em 'Raso' → reescreva. Entregue apenas a partir de 'Médio'.
 
 CTA FECHADO:
 Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta. O formato é:
