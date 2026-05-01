@@ -13,7 +13,6 @@ import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
 import * as pdfjsLib from 'pdfjs-dist'
-import ReferenceExplorer from '../explorer/ReferenceExplorer'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
@@ -626,13 +625,6 @@ export default function UnifiedCreator() {
       reader.readAsText(file)
     }
     e.target.value = ''
-  }
-
-  /* ── Handler para inspiração do explorador ── */
-  const handleGenerateScriptFromReference = (script) => {
-    setInspiration(script)
-    setInput(script)
-    inputRef.current?.focus()
   }
 
   /* ── Gerar conteúdo ── */
@@ -2483,11 +2475,6 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
 
       </>)} {/* fim mode === 'studio' */}
 
-      {/* Reference Explorer */}
-      <ReferenceExplorer
-        onSelectReference={handleGenerateScriptFromReference}
-        onGenerateScript={handleGenerateScriptFromReference}
-      />
     </div>
   )
 }
