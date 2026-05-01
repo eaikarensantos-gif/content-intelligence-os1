@@ -18,7 +18,6 @@ import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
 import AccessLog from './components/auth/AccessLog'
 import AdManager from './components/ads/AdManager'
-import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import TaskBoard from './components/tasks/TaskBoard'
@@ -86,7 +85,6 @@ export default function App() {
             <Route path="/ads" element={<AdManager />} />
             {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
-            <Route path="/reports" element={<PerformanceReport />} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
