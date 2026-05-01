@@ -905,26 +905,33 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
 
   const handleCarSaveHub = () => {
     if (!carResult) return
-    const slidesText = (carResult.slides || [])
-      .map(s => `[Slide ${s.numero}] ${s.texto}`)
-      .join('\n\n')
+    const fmtSlides = (version) =>
+      (version?.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n')
     const scriptCompleto = [
-      slidesText,
-      carResult.legenda        ? `\n\n--- LEGENDA ---\n${carResult.legenda}` : '',
-      carResult.pergunta_final ? `\n\n--- PERGUNTA FINAL ---\n${carResult.pergunta_final}` : '',
-      carResult.respostas_sugeridas?.length
-        ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${carResult.respostas_sugeridas.join('\n')}`
+      '=== VERSÃO PRINCIPAL ===\n' + fmtSlides(carResult.versao_principal),
+      carResult.versao_principal?.pergunta_final
+        ? `Pergunta: ${carResult.versao_principal.pergunta_final}` : '',
+      carResult.variacao_emocional
+        ? '\n=== VARIAÇÃO EMOCIONAL ===\n' + fmtSlides(carResult.variacao_emocional)
+          + (carResult.variacao_emocional.pergunta_final ? `\nPergunta: ${carResult.variacao_emocional.pergunta_final}` : '')
         : '',
-      carResult.nota_estrategica
-        ? `\n\n--- NOTA ESTRATÉGICA ---\n${carResult.nota_estrategica}`
+      carResult.variacao_provocativa
+        ? '\n=== VARIAÇÃO PROVOCATIVA ===\n' + fmtSlides(carResult.variacao_provocativa)
+          + (carResult.variacao_provocativa.pergunta_final ? `\nPergunta: ${carResult.variacao_provocativa.pergunta_final}` : '')
         : '',
-    ].filter(Boolean).join('')
+      carResult.legenda
+        ? `\n--- LEGENDA ---\n${carResult.legenda}` : '',
+      carResult.comentarios?.length
+        ? '\n--- COMENTÁRIOS PREVISTOS ---\n' +
+          carResult.comentarios.map(c => `● "${c.comentario}"\n→ ${c.resposta}`).join('\n\n')
+        : '',
+    ].filter(Boolean).join('\n')
     addIdea({
       title: carTema,
-      description: slidesText,
+      description: fmtSlides(carResult.versao_principal),
       script: scriptCompleto,
       caption: carResult.legenda || '',
-      cta: carResult.pergunta_final || '',
+      cta: carResult.versao_principal?.pergunta_final || '',
       format: 'carrossel',
       platform: 'instagram',
       platforms: ['instagram'],
