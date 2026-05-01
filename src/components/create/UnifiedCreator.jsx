@@ -908,10 +908,21 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     const slidesText = (carResult.slides || [])
       .map(s => `[Slide ${s.numero}] ${s.texto}`)
       .join('\n\n')
+    const scriptCompleto = [
+      slidesText,
+      carResult.legenda        ? `\n\n--- LEGENDA ---\n${carResult.legenda}` : '',
+      carResult.pergunta_final ? `\n\n--- PERGUNTA FINAL ---\n${carResult.pergunta_final}` : '',
+      carResult.respostas_sugeridas?.length
+        ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${carResult.respostas_sugeridas.join('\n')}`
+        : '',
+      carResult.nota_estrategica
+        ? `\n\n--- NOTA ESTRATÉGICA ---\n${carResult.nota_estrategica}`
+        : '',
+    ].filter(Boolean).join('')
     addIdea({
       title: carTema,
       description: slidesText,
-      script: slidesText,
+      script: scriptCompleto,
       caption: carResult.legenda || '',
       cta: carResult.pergunta_final || '',
       format: 'carrossel',
@@ -929,9 +940,16 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     if (!engResult) return
     const scriptCompleto = [
       engResult.versao_principal,
-      '\n\n--- VARIAÇÃO EMOCIONAL ---\n' + engResult.variacao_emocional,
-      '\n\n--- VARIAÇÃO PROVOCATIVA ---\n' + engResult.variacao_provocativa,
-    ].join('')
+      engResult.variacao_emocional   ? `\n\n--- VARIAÇÃO EMOCIONAL ---\n${engResult.variacao_emocional}` : '',
+      engResult.variacao_provocativa ? `\n\n--- VARIAÇÃO PROVOCATIVA ---\n${engResult.variacao_provocativa}` : '',
+      engResult.pergunta_final       ? `\n\n--- PERGUNTA FINAL ---\n${engResult.pergunta_final}` : '',
+      engResult.respostas_sugeridas?.length
+        ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${engResult.respostas_sugeridas.join('\n')}`
+        : '',
+      engResult.nota_estrategica
+        ? `\n\n--- NOTA ESTRATÉGICA ---\n${engResult.nota_estrategica}`
+        : '',
+    ].filter(Boolean).join('')
     addIdea({
       title: engTema,
       description: engResult.versao_principal,
