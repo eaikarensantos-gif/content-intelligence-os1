@@ -1873,6 +1873,23 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 )
               })()}
 
+              {/* Exercício Prático */}
+              {carResult.exercicio_pratico && (
+                <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-orange-100 bg-orange-50/50">
+                    <div className="flex items-center gap-2">
+                      <Target size={12} className="text-orange-500" />
+                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
+                    </div>
+                    <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                      {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
+                </div>
+              )}
+
               {/* Legenda */}
               {carResult.legenda && (
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -1911,23 +1928,6 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Exercício Prático */}
-              {carResult.exercicio_pratico && (
-                <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-orange-100 bg-orange-50/50">
-                    <div className="flex items-center gap-2">
-                      <Target size={12} className="text-orange-500" />
-                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
-                    </div>
-                    <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                      {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
                 </div>
               )}
 
