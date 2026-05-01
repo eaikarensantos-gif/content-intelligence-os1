@@ -910,16 +910,13 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       .join('\n\n')
     addIdea({
       title: carTema,
-      description: [
-        slidesText,
-        carResult.legenda ? `\n\n--- LEGENDA ---\n${carResult.legenda}` : '',
-        carResult.pergunta_final ? `\n\n--- PERGUNTA FINAL ---\n${carResult.pergunta_final}` : '',
-        carResult.respostas_sugeridas?.length
-          ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${carResult.respostas_sugeridas.join('\n')}`
-          : '',
-      ].filter(Boolean).join(''),
+      description: slidesText,
+      script: slidesText,
+      caption: carResult.legenda || '',
+      cta: carResult.pergunta_final || '',
       format: 'carrossel',
       platform: 'instagram',
+      platforms: ['instagram'],
       priority: 'medium',
       status: 'ready',
       tags: ['protocolo-carrossel', carTema.toLowerCase().slice(0, 20)],
@@ -930,19 +927,20 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
 
   const handleEngSaveHub = () => {
     if (!engResult) return
+    const scriptCompleto = [
+      engResult.versao_principal,
+      '\n\n--- VARIAÇÃO EMOCIONAL ---\n' + engResult.variacao_emocional,
+      '\n\n--- VARIAÇÃO PROVOCATIVA ---\n' + engResult.variacao_provocativa,
+    ].join('')
     addIdea({
       title: engTema,
-      description: [
-        engResult.versao_principal,
-        `\n\n--- VARIAÇÃO EMOCIONAL ---\n${engResult.variacao_emocional}`,
-        `\n\n--- VARIAÇÃO PROVOCATIVA ---\n${engResult.variacao_provocativa}`,
-        `\n\n--- PERGUNTA FINAL ---\n${engResult.pergunta_final}`,
-        engResult.respostas_sugeridas?.length
-          ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${engResult.respostas_sugeridas.join('\n')}`
-          : '',
-      ].filter(Boolean).join(''),
+      description: engResult.versao_principal,
+      script: scriptCompleto,
+      caption: engResult.pergunta_final || '',
+      cta: (engResult.respostas_sugeridas || []).join('\n'),
       format: 'reel',
       platform: 'instagram',
+      platforms: ['instagram'],
       priority: 'medium',
       status: 'ready',
       tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20)],
