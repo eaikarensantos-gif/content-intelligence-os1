@@ -252,6 +252,22 @@ Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fu
   Pessoa: "já passei por isso" → Karen: "o que te fez perceber na hora?"
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
 
+EXERCÍCIO PRÁTICO:
+Todo carrossel deve ter um exercício prático relacionado à tensão do tema. O exercício deve:
+- Ser uma ação concreta que a pessoa pode fazer nas próximas 24 horas
+- Não ser motivacional nem genérico ("reflita sobre...", "pense em..." → proibido)
+- Ser específico o suficiente para gerar desconforto real ("Na próxima reunião, quando sentir vontade de acenar que sim sem entender — não acene. Fique quieto. Veja o que acontece.")
+- Ter entre 1 e 3 frases. Nada mais.
+
+CTA FECHADO:
+Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta. O formato é:
+  ✅ "Você prefere: saber a verdade tarde ou não saber nunca?"
+  ✅ "Você faz isso: na hora ou guarda pra depois?"
+  ✅ "Isso acontece mais: no começo do projeto ou quando está quase pronto?"
+  ❌ "O que você faz quando isso acontece?" (pergunta aberta — proibida no CTA fechado)
+  ❌ "Conta nos comentários" (vago, sem estrutura binária)
+O CTA fechado é diferente da pergunta final. A pergunta final pede relato. O CTA fechado pede posição.
+
 TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
 Se você leu e pensou "isso vai incomodar alguém" → provavelmente funcionou.`
@@ -267,7 +283,8 @@ Execute o protocolo completo:
 1. Responda internamente: "Qual é a tensão interna que a pessoa carrega sobre esse tema?"
 2. Gere 7 slides seguindo a estrutura (estado → causal → virada → abertura).
 3. Rode os 4 testes de validação. Se qualquer um reprovar → reescreva do zero.
-4. Entregue apenas a versão aprovada.
+4. Gere o exercício prático e o CTA fechado.
+5. Entregue apenas a versão aprovada.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -282,6 +299,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
   ],
   "legenda": "1 linha — observação seca ou dado, sem resumir o carrossel",
   "pergunta_final": "pergunta que pede relato, não confirmação",
+  "exercicio_pratico": "ação concreta e específica — 1 a 3 frases — que a pessoa pode fazer nas próximas 24h",
+  "cta_fechado": "escolha binária — sim ou não / isso ou aquilo — que pede posição, não relato",
   "respostas_sugeridas": [
     "pergunta que puxa mais fundo 1",
     "pergunta que puxa mais fundo 2",
@@ -1197,6 +1216,40 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                   ))}
                 </div>
               </div>
+
+              {/* Exercício Prático */}
+              {carResult.exercicio_pratico && (
+                <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-orange-100 bg-orange-50/50">
+                    <div className="flex items-center gap-2">
+                      <Target size={12} className="text-orange-500" />
+                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
+                    </div>
+                    <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                      {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
+                </div>
+              )}
+
+              {/* CTA Fechado */}
+              {carResult.cta_fechado && (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 to-gray-700 p-5 text-white shadow-lg">
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-semibold text-white/60 uppercase mb-2 flex items-center gap-1.5">
+                      <ToggleLeft size={11} /> CTA Fechado
+                    </p>
+                    <p className="text-base font-bold leading-snug">{carResult.cta_fechado}</p>
+                    <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
+                      className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                      {carCopied === 'car-cta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <div className="absolute right-0 bottom-0 w-20 h-20 bg-white/5 rounded-full translate-x-6 translate-y-6" />
+                </div>
+              )}
 
               {/* Nota Estratégica */}
               {carResult.nota_estrategica && (
