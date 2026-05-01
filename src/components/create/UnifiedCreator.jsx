@@ -539,6 +539,7 @@ export default function UnifiedCreator() {
   const [carCopied, setCarCopied] = useState(null)
   const [carSavedHub, setCarSavedHub] = useState(false)
   const [engSavedHub, setEngSavedHub] = useState(false)
+  const [strSavedHub, setStrSavedHub] = useState(false)
   // Stories
   const [strTema, setStrTema] = useState('')
   const [strEstrutura, setStrEstrutura] = useState('observacao')
@@ -981,12 +982,33 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setTimeout(() => setStrCopied(false), 2000)
   }
 
+  const handleStrSaveHub = () => {
+    if (!strResult) return
+    const estrutura = STORIES_STRUCTURES[strEstrutura]
+    addIdea({
+      title: strTema,
+      description: strResult.slice(0, 300),
+      script: strResult,
+      caption: '',
+      cta: '',
+      format: 'stories',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-stories', estrutura?.label.toLowerCase() || '', strTema.toLowerCase().slice(0, 20)].filter(Boolean),
+      source: `Protocolo de Stories — ${estrutura?.label || ''}`,
+    })
+    setStrSavedHub(true)
+  }
+
   const generateStories = async () => {
     if (!strTema.trim()) return
     if (!apiKey) { setStrError('Configure sua API key em Configurações'); return }
     setStrLoading(true)
     setStrError(null)
     setStrResult(null)
+    setStrSavedHub(false)
     try {
       const estrutura = STORIES_STRUCTURES[strEstrutura] || STORIES_STRUCTURES.observacao
       const systemPrompt = BASE_STORIES_SYSTEM
@@ -2046,11 +2068,39 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
               </div>
 
-              {/* Regenerar */}
-              <button onClick={generateStories} disabled={strLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
-                <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar roteiro
-              </button>
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleStrSaveHub}
+                  disabled={strSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    strSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100'
+                  )}
+                >
+                  {strSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {strSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-teal-600 hover:border-teal-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateStories}
+                  disabled={strLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
             </div>
           )}
         </div>
