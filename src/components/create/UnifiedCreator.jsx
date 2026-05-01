@@ -6,7 +6,7 @@ import {
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
-  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight,
+  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -537,6 +537,8 @@ export default function UnifiedCreator() {
   const [carResult, setCarResult] = useState(null)
   const [carError, setCarError] = useState(null)
   const [carCopied, setCarCopied] = useState(null)
+  const [carSavedHub, setCarSavedHub] = useState(false)
+  const [engSavedHub, setEngSavedHub] = useState(false)
   // Stories
   const [strTema, setStrTema] = useState('')
   const [strEstrutura, setStrEstrutura] = useState('observacao')
@@ -769,6 +771,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngLoading(true)
     setEngError(null)
     setEngResult(null)
+    setEngSavedHub(false)
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -866,6 +869,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarLoading(true)
     setCarError(null)
     setCarResult(null)
+    setCarSavedHub(false)
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -897,6 +901,54 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     navigator.clipboard.writeText(text)
     setCarCopied(key)
     setTimeout(() => setCarCopied(null), 2000)
+  }
+
+  const handleCarSaveHub = () => {
+    if (!carResult) return
+    const slidesText = (carResult.slides || [])
+      .map(s => `[Slide ${s.numero}] ${s.texto}`)
+      .join('\n\n')
+    addIdea({
+      title: carTema,
+      description: [
+        slidesText,
+        carResult.legenda ? `\n\n--- LEGENDA ---\n${carResult.legenda}` : '',
+        carResult.pergunta_final ? `\n\n--- PERGUNTA FINAL ---\n${carResult.pergunta_final}` : '',
+        carResult.respostas_sugeridas?.length
+          ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${carResult.respostas_sugeridas.join('\n')}`
+          : '',
+      ].filter(Boolean).join(''),
+      format: 'carrossel',
+      platform: 'instagram',
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-carrossel', carTema.toLowerCase().slice(0, 20)],
+      source: 'Protocolo de Carrossel',
+    })
+    setCarSavedHub(true)
+  }
+
+  const handleEngSaveHub = () => {
+    if (!engResult) return
+    addIdea({
+      title: engTema,
+      description: [
+        engResult.versao_principal,
+        `\n\n--- VARIAÇÃO EMOCIONAL ---\n${engResult.variacao_emocional}`,
+        `\n\n--- VARIAÇÃO PROVOCATIVA ---\n${engResult.variacao_provocativa}`,
+        `\n\n--- PERGUNTA FINAL ---\n${engResult.pergunta_final}`,
+        engResult.respostas_sugeridas?.length
+          ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${engResult.respostas_sugeridas.join('\n')}`
+          : '',
+      ].filter(Boolean).join(''),
+      format: 'reel',
+      platform: 'instagram',
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20)],
+      source: 'Protocolo Anti-Emoji',
+    })
+    setEngSavedHub(true)
   }
 
   const handleStrCopy = () => {
@@ -1518,11 +1570,39 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
               )}
 
-              {/* Regenerar */}
-              <button onClick={generateEngagement} disabled={engLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
-                <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar protocolo
-              </button>
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleEngSaveHub}
+                  disabled={engSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    engSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100'
+                  )}
+                >
+                  {engSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {engSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-violet-600 hover:border-violet-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateEngagement}
+                  disabled={engLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1819,11 +1899,39 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
               )}
 
-              {/* Regenerar */}
-              <button onClick={generateCarousel} disabled={carLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
-                <RefreshCw size={13} className={carLoading ? 'animate-spin' : ''} /> Regenerar carrossel
-              </button>
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCarSaveHub}
+                  disabled={carSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    carSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'
+                  )}
+                >
+                  {carSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {carSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-orange-600 hover:border-orange-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateCarousel}
+                  disabled={carLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={carLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
             </div>
           )}
         </div>
