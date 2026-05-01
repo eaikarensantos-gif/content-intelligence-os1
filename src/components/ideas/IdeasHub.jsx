@@ -126,26 +126,65 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
 }
 
 // ─── Visualização Kanban ──────────────────────────────────────────────────────
-function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
+function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDeleteAll }) {
+  const [confirmCol, setConfirmCol] = useState(null) // column id being confirmed for bulk delete
+
   const onDragEnd = ({ destination, draggableId }) => {
     if (!destination) return
     updateIdea(draggableId, { status: destination.droppableId })
   }
   const columnIdeas = (colId) => ideas.filter((i) => i.status === colId)
 
+  const handleDeleteAll = (colId) => {
+    onDeleteAll(colId)
+    setConfirmCol(null)
+  }
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 min-h-[60vh]">
         {KANBAN_COLUMNS.map((col) => {
           const colIdeas = columnIdeas(col.id)
+          const confirming = confirmCol === col.id
           return (
-            <div key={col.id} className={`flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
+            <div key={col.id} className={`group/col flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
               <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80 rounded-t-xl">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
                   <span className="text-xs font-semibold text-gray-700">{col.label}</span>
                 </div>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.count_bg}`}>{colIdeas.length}</span>
+                <div className="flex items-center gap-1.5">
+                  {colIdeas.length > 0 && (
+                    confirming ? (
+                      <div className="flex items-center gap-1 animate-fade-in">
+                        <span className="text-[10px] text-red-600 font-medium">Apagar tudo?</span>
+                        <button
+                          onClick={() => handleDeleteAll(col.id)}
+                          className="p-0.5 rounded text-red-500 hover:bg-red-100 transition-colors"
+                          title="Confirmar exclusão"
+                        >
+                          <Check size={11} />
+                        </button>
+                        <button
+                          onClick={() => setConfirmCol(null)}
+                          className="p-0.5 rounded text-gray-400 hover:bg-gray-200 transition-colors"
+                          title="Cancelar"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmCol(col.id)}
+                        className="p-1 rounded opacity-0 group-hover/col:opacity-100 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                        title={`Excluir todos de "${col.label}"`}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )
+                  )}
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.count_bg}`}>{colIdeas.length}</span>
+                </div>
               </div>
               <Droppable droppableId={col.id}>
                 {(provided, snapshot) => (
@@ -1067,11 +1106,12 @@ const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeasHub() {
   const navigate          = useNavigate()
-  const ideas             = useStore((s) => s.ideas)
-  const addIdea           = useStore((s) => s.addIdea)
-  const updateIdea        = useStore((s) => s.updateIdea)
-  const deleteIdea        = useStore((s) => s.deleteIdea)
-  const convertIdeaToPost = useStore((s) => s.convertIdeaToPost)
+  const ideas                = useStore((s) => s.ideas)
+  const addIdea              = useStore((s) => s.addIdea)
+  const updateIdea           = useStore((s) => s.updateIdea)
+  const deleteIdea           = useStore((s) => s.deleteIdea)
+  const deleteIdeasByStatus  = useStore((s) => s.deleteIdeasByStatus)
+  const convertIdeaToPost    = useStore((s) => s.convertIdeaToPost)
 
   const [tab, setTab]                       = useState('kanban')
   const [formOpen, setFormOpen]             = useState(false)
@@ -1260,7 +1300,7 @@ export default function IdeasHub() {
             <button onClick={() => openNew()} className="btn-primary mt-4"><Plus size={14} /> Criar Primeira Ideia</button>
           </div>
         ) : (
-          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} onTagClick={handleTagClick} onDelete={deleteIdea} />
+          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} onTagClick={handleTagClick} onDelete={deleteIdea} onDeleteAll={deleteIdeasByStatus} />
         )
       )}
 
