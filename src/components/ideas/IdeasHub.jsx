@@ -176,7 +176,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
                     ) : (
                       <button
                         onClick={() => setConfirmCol(col.id)}
-                        className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                         title={`Excluir todos de "${col.label}"`}
                       >
                         <Trash2 size={11} />
