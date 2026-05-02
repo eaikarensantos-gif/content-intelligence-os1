@@ -172,6 +172,98 @@ Se houver qualquer sinal de artificialidade → reescrever completamente.
 
 CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
 
+const HOOK_SYSTEM = `Você gera hooks de abertura para reels de Karen Santos.
+
+Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+
+REGRA CENTRAL:
+O hook prende porque é específico e real — não porque promete revelação ou usa drama.
+
+TRÊS TIPOS DE HOOK VÁLIDOS:
+
+Tipo 1 — OBSERVAÇÃO CORTANTE:
+Nomeia algo que a pessoa faz mas nunca colocou em palavras. Sem prometer nada. Sem drama.
+Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
+Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."
+
+Tipo 2 — DADO + LEITURA INESPERADA:
+Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
+Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
+Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."
+
+Tipo 3 — CENA ESPECÍFICA:
+Começa no meio de uma situação concreta que a pessoa reconhece imediatamente. Sem setup, sem contexto.
+Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
+Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."
+
+LISTA NEGRA — NUNCA usar nesses hooks:
+- "Isso aqui ninguém fala"
+- "A verdade que quase me fez desistir"
+- "Você vai se arrepender se ignorar isso"
+- "O segredo que ninguém te conta"
+- "Parece bobo mas muda tudo"
+- Qualquer promessa de revelação
+- Qualquer drama ou urgência artificial
+- Tom de coach ou motivacional
+
+INDICAÇÃO VISUAL — obrigatória em cada hook:
+- Enquadramento: close no rosto / meio corpo / câmera de baixo pra cima / costas virando
+- Texto na tela: o que aparece escrito nos primeiros 2 segundos (pode ser a frase inteira ou só a palavra de impacto)
+- Movimento: estática / zoom lento / corte brusco / pan lateral
+
+INDICAÇÃO SONORA — obrigatória em cada hook:
+- Trilha: sem trilha (só voz) / trilha ambiente baixa / corte brusco de som / silêncio intencional
+- Efeito: nenhum / batida / corte seco
+
+CRITÉRIO DE APROVAÇÃO:
+Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
+Se promete → reprova. Se é específica e reconhecível → aprovado.`
+
+const buildHookPrompt = (tema, roteiro) => `
+TEMA DO REELS: ${tema}
+${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
+
+Gere 3 hooks de abertura para este reels — um de cada tipo.
+
+Cada hook deve:
+- Prender nos primeiros 1-3 segundos
+- Ser compatível com o tom de Karen Santos (analítico, seco, sem floreio)
+- Ter indicação visual e sonora específica
+- NÃO usar clickbait, drama ou promessa de revelação
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "hooks": [
+    {
+      "tipo": "observacao_cortante",
+      "frase": "a frase exata de abertura — 1 linha",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "dado_leitura_inesperada",
+      "frase": "a frase exata de abertura — dado + interpretação",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "cena_especifica",
+      "frase": "a frase exata de abertura — cena concreta, sem setup",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    }
+  ]
+}`
+
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
 ${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
@@ -446,6 +538,10 @@ export default function UnifiedCreator() {
   const [engCopied, setEngCopied] = useState(null)
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
+  const [engHooks, setEngHooks] = useState(null)
+  const [engHookLoading, setEngHookLoading] = useState(false)
+  const [engHookError, setEngHookError] = useState(null)
+  const [engHookCopied, setEngHookCopied] = useState(null)
   // Carrossel
   const [carOpenCategory, setCarOpenCategory] = useState(null)
   const [carTema, setCarTema] = useState('')
@@ -681,6 +777,50 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     } finally {
       setEngLoading(false)
     }
+  }
+
+  const generateHooks = async () => {
+    if (!engTema.trim()) return
+    if (!apiKey) { setEngHookError('Configure sua API key.'); return }
+    setEngHookLoading(true)
+    setEngHookError(null)
+    setEngHooks(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 3000,
+          system: HOOK_SYSTEM,
+          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setEngHooks(JSON.parse(match[0]))
+    } catch (err) {
+      setEngHookError(err.message)
+    } finally {
+      setEngHookLoading(false)
+    }
+  }
+
+  const handleEngHookCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setEngHookCopied(key)
+    setTimeout(() => setEngHookCopied(null), 2000)
   }
 
   const generateCarousel = async () => {
@@ -967,6 +1107,115 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* ── Gerador de Hook ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <Zap size={13} className="text-amber-500" />
+                    <span className="text-xs font-semibold text-gray-700">Hooks de Abertura (0-3s)</span>
+                    <span className="text-[10px] text-gray-400">— o que prende antes do roteiro começar</span>
+                  </div>
+                  <button
+                    onClick={generateHooks}
+                    disabled={engHookLoading}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
+                  >
+                    {engHookLoading
+                      ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
+                      : engHooks
+                        ? <><RefreshCw size={11} /> Regenerar</>
+                        : <><Zap size={11} /> Gerar 3 Hooks</>
+                    }
+                  </button>
+                </div>
+
+                {engHookError && (
+                  <div className="px-4 py-3 text-xs text-red-600 bg-red-50">{engHookError}</div>
+                )}
+
+                {engHooks && (
+                  <div className="divide-y divide-gray-100">
+                    {(engHooks.hooks || []).map((hook, i) => {
+                      const tipoLabel = {
+                        observacao_cortante: 'Observação Cortante',
+                        dado_leitura_inesperada: 'Dado + Leitura Inesperada',
+                        cena_especifica: 'Cena Específica',
+                      }[hook.tipo] || hook.tipo
+
+                      const tipoColor = {
+                        observacao_cortante: 'bg-violet-100 text-violet-700 border-violet-200',
+                        dado_leitura_inesperada: 'bg-blue-100 text-blue-700 border-blue-200',
+                        cena_especifica: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                      }[hook.tipo] || 'bg-gray-100 text-gray-600 border-gray-200'
+
+                      const copyText = [
+                        `FRASE: ${hook.frase}`,
+                        `TEXTO NA TELA: ${hook.texto_na_tela}`,
+                        `ENQUADRAMENTO: ${hook.enquadramento}`,
+                        `MOVIMENTO: ${hook.movimento}`,
+                        `SOM: ${hook.som}`,
+                      ].join('\n')
+
+                      return (
+                        <div key={i} className="px-4 py-4 space-y-3 group">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tipoColor}`}>
+                              {tipoLabel}
+                            </span>
+                            <button
+                              onClick={() => handleEngHookCopy(copyText, `hook-${i}`)}
+                              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
+                            >
+                              {engHookCopied === `hook-${i}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                            </button>
+                          </div>
+
+                          {/* Frase */}
+                          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Frase de abertura</p>
+                            <p className="text-sm font-semibold text-gray-900 leading-snug">"{hook.frase}"</p>
+                          </div>
+
+                          {/* Texto na tela */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Tela</span>
+                            <p className="text-xs text-gray-700">{hook.texto_na_tela}</p>
+                          </div>
+
+                          {/* Enquadramento + movimento */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Câmera</span>
+                            <p className="text-xs text-gray-700">{hook.enquadramento} · {hook.movimento}</p>
+                          </div>
+
+                          {/* Som */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Som</span>
+                            <p className="text-xs text-gray-700">{hook.som}</p>
+                          </div>
+
+                          {/* Por que funciona */}
+                          {hook.por_que_funciona && (
+                            <div className="flex items-start gap-1.5 pt-1 border-t border-gray-100">
+                              <span className="text-[10px] text-gray-300 mt-0.5">→</span>
+                              <p className="text-[11px] text-gray-400 italic">{hook.por_que_funciona}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {!engHooks && !engHookLoading && (
+                  <div className="px-4 py-5 text-center">
+                    <p className="text-xs text-gray-400">
+                      Gere o roteiro primeiro, depois clique em "Gerar 3 Hooks" para receber opções de abertura com indicação visual e sonora.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Respostas Sugeridas */}
