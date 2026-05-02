@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  Brain, Sun, Moon,
+  ClipboardList, Clapperboard, Sun, Moon,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -12,10 +12,12 @@ import useAIStore from '../../store/useAIStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
-  { to: '/brain', icon: Brain, label: 'Content Brain' },
+  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
+  { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
+  { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
 ]
 
 const NAV_GROUPS = [
@@ -23,7 +25,6 @@ const NAV_GROUPS = [
     id: 'inteligencia',
     label: 'Inteligência',
     children: [
-      { to: '/analytics', icon: BarChart2, label: 'Analytics' },
       { to: '/social', icon: Activity, label: 'Social Dashboard' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },

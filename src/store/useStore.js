@@ -131,13 +131,15 @@ const useStore = create(
 
       updateIdea: (id, updates) => {
         set((s) => ({ ideas: s.ideas.map((i) => (i.id === id ? { ...i, ...updates } : i)) }))
-        dbUpdateIdea(id, updates)
       },
 
       deleteIdea: (id) => {
         set((s) => ({ ideas: s.ideas.filter((i) => i.id !== id) }))
         dbDeleteIdea(id)
       },
+
+      deleteIdeasByStatus: (status) =>
+        set((s) => ({ ideas: s.ideas.filter((i) => i.status !== status) })),
 
       convertIdeaToPost: (ideaId) => {
         const idea = get().ideas.find((i) => i.id === ideaId)
@@ -177,7 +179,6 @@ const useStore = create(
           ),
         }))
         dbInsertPost(newPost)
-        dbUpdateIdea(ideaId, { post_id: postId, status: 'draft' })
         return postId
       },
 

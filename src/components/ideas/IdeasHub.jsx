@@ -126,20 +126,29 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
 }
 
 // ─── Visualização Kanban ──────────────────────────────────────────────────────
-function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
+function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDeleteAll }) {
+  const [confirmCol, setConfirmCol] = useState(null)
+
   const onDragEnd = ({ destination, draggableId }) => {
     if (!destination) return
     updateIdea(draggableId, { status: destination.droppableId })
   }
   const columnIdeas = (colId) => ideas.filter((i) => i.status === colId)
 
+  const handleDeleteAll = (colId) => {
+    onDeleteAll(colId)
+    setConfirmCol(null)
+  }
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 min-h-[60vh]">
         {KANBAN_COLUMNS.map((col) => {
           const colIdeas = columnIdeas(col.id)
+          const confirming = confirmCol === col.id
           return (
             <div key={col.id} className={`flex flex-col rounded-xl border min-w-[260px] sm:min-w-[280px] lg:min-w-0 snap-start ${col.color}`}>
+              {/* Cabeçalho */}
               <div className="px-3 py-3 flex items-center justify-between border-b border-gray-200/80 rounded-t-xl">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
@@ -147,6 +156,8 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
                 </div>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.count_bg}`}>{colIdeas.length}</span>
               </div>
+
+              {/* Cards */}
               <Droppable droppableId={col.id}>
                 {(provided, snapshot) => (
                   <div
@@ -179,6 +190,38 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete }) {
                   </div>
                 )}
               </Droppable>
+
+              {/* Rodapé — excluir tudo da coluna */}
+              {colIdeas.length > 0 && (
+                <div className="px-2 pb-2 pt-1 border-t border-gray-200/60">
+                  {confirming ? (
+                    <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      <span className="text-[11px] text-red-600 font-medium">Excluir {colIdeas.length} {colIdeas.length === 1 ? 'ideia' : 'ideias'}?</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteAll(col.id)}
+                          className="text-[11px] font-semibold text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          onClick={() => setConfirmCol(null)}
+                          className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmCol(col.id)}
+                      className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-400 hover:text-red-500 hover:bg-red-50 py-1.5 rounded-lg border border-transparent hover:border-red-200 transition-all"
+                    >
+                      <Trash2 size={11} /> Excluir tudo da coluna
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
@@ -952,7 +995,237 @@ const TABS = [
   { id: 'kanban',   label: 'Quadro',    icon: Kanban },
   { id: 'calendar', label: 'Calendário', icon: Calendar },
   { id: 'order',    label: 'Ordem',     icon: ListOrdered },
+  { id: 'week',     label: 'Semana',    icon: Target },
 ]
+
+// ─── Plano Semanal ────────────────────────────────────────────────────────────
+const WEEK_SLOTS = [
+  {
+    day: 'Segunda',
+    format: 'carrossel',
+    platform: 'instagram',
+    label: 'Carrossel',
+    description: 'Tensão interna — maturidade, decisão, dinâmica corporativa',
+    color: 'border-pink-200 bg-pink-50/40',
+    dot: 'bg-pink-400',
+    badge: 'bg-pink-100 text-pink-700',
+    objective: 'Comentário qualificado de identificação',
+  },
+  {
+    day: 'Quarta',
+    format: 'reel',
+    platform: 'instagram',
+    label: 'Reels',
+    description: 'Observação seca ou desmonte de jargão — topo de funil',
+    color: 'border-purple-200 bg-purple-50/40',
+    dot: 'bg-purple-400',
+    badge: 'bg-purple-100 text-purple-700',
+    objective: 'Alcance — atrai os três perfis',
+  },
+  {
+    day: 'Quinta',
+    format: 'carrossel',
+    platform: 'instagram',
+    label: 'Post / Carrossel',
+    description: 'Dado + contra-intuição ou antes/depois de processo',
+    color: 'border-blue-200 bg-blue-50/40',
+    dot: 'bg-blue-400',
+    badge: 'bg-blue-100 text-blue-700',
+    objective: 'Salvamento e compartilhamento — novos seguidores',
+  },
+  {
+    day: 'Sábado',
+    format: 'reel',
+    platform: 'instagram',
+    label: 'Reels pessoal',
+    description: 'Observação do dia real filtrada pelo posicionamento',
+    color: 'border-orange-200 bg-orange-50/40',
+    dot: 'bg-orange-400',
+    badge: 'bg-orange-100 text-orange-700',
+    objective: 'Humanização — conexão com audiência',
+  },
+]
+
+const DAY_OFFSET = { 'Segunda': 0, 'Quarta': 2, 'Quinta': 3, 'Sábado': 5 }
+
+function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
+  const [weekOffset, setWeekOffset] = useState(0)
+
+  const today = new Date()
+  const dow = today.getDay()
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+  monday.setHours(0, 0, 0, 0)
+
+  const weekStart = new Date(monday)
+  weekStart.setDate(monday.getDate() + weekOffset * 7)
+
+  const getDate = (slot) => {
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + DAY_OFFSET[slot.day])
+    return d.toISOString().slice(0, 10)
+  }
+
+  const weekLabel = () => {
+    const end = new Date(weekStart)
+    end.setDate(weekStart.getDate() + 6)
+    const fmt = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    return `${fmt(weekStart)} — ${fmt(end)}`
+  }
+
+  const getIdea = (slot) => {
+    const dateStr = getDate(slot)
+    return (
+      ideas.find(i => i.scheduled_date === dateStr && (i.format === slot.format || i.platform === slot.platform)) ||
+      ideas.find(i => i.scheduled_date === dateStr) ||
+      null
+    )
+  }
+
+  const handleCreate = (slot) => {
+    addIdea({
+      title: `${slot.label} — ${slot.description.slice(0, 40)}`,
+      format: slot.format,
+      platform: slot.platform,
+      platforms: [slot.platform],
+      status: 'idea',
+      priority: 'medium',
+      scheduled_date: getDate(slot),
+      tags: ['plano-semanal', slot.format],
+      source: 'Plano Semanal',
+    })
+  }
+
+  const handleImpulsar = (idea) => {
+    updateIdea(idea.id, { tags: [...(idea.tags || []).filter(t => t !== 'impulsionar'), 'impulsionar'] })
+  }
+
+  const todayStr = today.toISOString().slice(0, 10)
+  const weekIdeas = WEEK_SLOTS.map(s => getIdea(s)).filter(Boolean)
+  const publishedCount = weekIdeas.filter(i => i.status === 'published').length
+  const readyCount = weekIdeas.filter(i => i.status === 'ready').length
+  const draftCount = weekIdeas.filter(i => i.status === 'draft' || i.status === 'idea').length
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setWeekOffset(w => w - 1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+              <ChevronLeft size={15} />
+            </button>
+            <h3 className="text-sm font-semibold text-gray-800">{weekLabel()}</h3>
+            <button onClick={() => setWeekOffset(w => w + 1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+              <ChevronRight size={15} />
+            </button>
+            {weekOffset !== 0 && (
+              <button onClick={() => setWeekOffset(0)} className="text-[11px] text-orange-600 font-medium hover:underline">
+                Esta semana
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-0.5">4 posts por semana — distribuição estratégica por objetivo</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {publishedCount > 0 && <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">{publishedCount} publicado{publishedCount > 1 ? 's' : ''}</span>}
+          {readyCount > 0 && <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200">{readyCount} pronto{readyCount > 1 ? 's' : ''}</span>}
+          {draftCount > 0 && <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 border border-orange-200">{draftCount} pendente{draftCount > 1 ? 's' : ''}</span>}
+        </div>
+      </div>
+
+      {/* Slots */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {WEEK_SLOTS.map((slot) => {
+          const dateStr = getDate(slot)
+          const idea = getIdea(slot)
+          const isToday = dateStr === todayStr
+          const isPast = dateStr < todayStr
+
+          return (
+            <div key={slot.day} className={`rounded-xl border-2 p-4 space-y-3 transition-all ${slot.color} ${isPast && !idea ? 'opacity-60' : ''}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${slot.dot}`} />
+                  <span className="text-xs font-bold text-gray-800">{slot.day}</span>
+                  {isToday && <span className="text-[9px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full">HOJE</span>}
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${slot.badge}`}>{slot.label}</span>
+              </div>
+
+              <p className="text-[10px] text-gray-400">
+                {new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              </p>
+
+              {idea ? (
+                <div className="bg-white rounded-lg p-3 border border-gray-200 cursor-pointer hover:border-orange-300 transition-all space-y-2" onClick={() => onCardClick(idea)}>
+                  <p className="text-xs font-medium text-gray-800 line-clamp-2">{idea.title}</p>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                      idea.status === 'published' ? 'bg-emerald-100 text-emerald-700' :
+                      idea.status === 'ready' ? 'bg-blue-100 text-blue-700' :
+                      idea.status === 'draft' ? 'bg-gray-100 text-gray-600' :
+                      'bg-orange-100 text-orange-700'
+                    }`}>
+                      {idea.status === 'published' ? 'Publicado' : idea.status === 'ready' ? 'Pronto' : idea.status === 'draft' ? 'Rascunho' : 'Ideia'}
+                    </span>
+                    {idea.status === 'published' && (
+                      <button onClick={(e) => { e.stopPropagation(); handleImpulsar(idea) }} className="text-[10px] text-orange-600 font-medium hover:underline flex items-center gap-0.5">
+                        <TrendingUp size={10} /> Impulsionar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-gray-500 leading-relaxed">{slot.description}</p>
+                  <button onClick={() => handleCreate(slot)} className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-gray-500 border border-dashed border-gray-300 rounded-lg hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50/50 transition-all">
+                    <Plus size={12} /> Criar conteúdo
+                  </button>
+                  <button onClick={() => navigate('/create')} className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[10px] font-medium text-gray-400 hover:text-orange-500 transition-colors">
+                    <Sparkles size={10} /> Gerar com IA
+                  </button>
+                </div>
+              )}
+
+              <div className="pt-1 border-t border-gray-200/60">
+                <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wide">Objetivo</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{slot.objective}</p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Regra de tráfego pago */}
+      <div className="rounded-xl p-4 border border-amber-100 bg-amber-50/30 flex items-start gap-3">
+        <TrendingUp size={15} className="text-amber-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-xs font-semibold text-gray-800 mb-1">Regra de tráfego pago</p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Impulsione 1 post por semana — o de maior engajamento orgânico da semana anterior.
+            R$15–30/dia por 3 dias. Objetivo: alcance e novos seguidores, não conversão.
+            Nunca impulsione post que não performou bem organicamente.
+          </p>
+          <button onClick={() => navigate('/analytics')} className="mt-2 text-[11px] text-amber-600 font-semibold hover:underline flex items-center gap-1">
+            Ver performance da semana passada <ArrowRight size={10} />
+          </button>
+        </div>
+      </div>
+
+      {/* Links rápidos */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[11px] text-gray-400">Criar conteúdo:</span>
+        <button onClick={() => navigate('/create')} className="text-[11px] font-medium text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg border border-orange-200 transition-all flex items-center gap-1">
+          <Sparkles size={11} /> Studio de Criação
+        </button>
+        <button onClick={() => navigate('/generate')} className="text-[11px] font-medium text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition-all flex items-center gap-1">
+          <Zap size={11} /> Gerar Ideias
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // ─── Visualização Ordem de Criação ────────────────────────────────────────────
 function OrderView({ ideas, updateIdea, onCardClick }) {
@@ -1067,11 +1340,12 @@ const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeasHub() {
   const navigate          = useNavigate()
-  const ideas             = useStore((s) => s.ideas)
-  const addIdea           = useStore((s) => s.addIdea)
-  const updateIdea        = useStore((s) => s.updateIdea)
-  const deleteIdea        = useStore((s) => s.deleteIdea)
-  const convertIdeaToPost = useStore((s) => s.convertIdeaToPost)
+  const ideas                = useStore((s) => s.ideas)
+  const addIdea              = useStore((s) => s.addIdea)
+  const updateIdea           = useStore((s) => s.updateIdea)
+  const deleteIdea           = useStore((s) => s.deleteIdea)
+  const deleteIdeasByStatus  = useStore((s) => s.deleteIdeasByStatus)
+  const convertIdeaToPost    = useStore((s) => s.convertIdeaToPost)
 
   const [tab, setTab]                       = useState('kanban')
   const [formOpen, setFormOpen]             = useState(false)
@@ -1260,7 +1534,7 @@ export default function IdeasHub() {
             <button onClick={() => openNew()} className="btn-primary mt-4"><Plus size={14} /> Criar Primeira Ideia</button>
           </div>
         ) : (
-          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} onTagClick={handleTagClick} onDelete={deleteIdea} />
+          <KanbanView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} onTagClick={handleTagClick} onDelete={deleteIdea} onDeleteAll={deleteIdeasByStatus} />
         )
       )}
 
@@ -1272,6 +1546,17 @@ export default function IdeasHub() {
       {/* Visualização Ordem */}
       {tab === 'order' && (
         <OrderView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} />
+      )}
+
+      {/* Visualização Plano Semanal */}
+      {tab === 'week' && (
+        <WeeklyPlan
+          ideas={ideas}
+          addIdea={addIdea}
+          updateIdea={updateIdea}
+          onCardClick={openEdit}
+          navigate={navigate}
+        />
       )}
 
       {/* Link rápido para Gerador de Ideias */}

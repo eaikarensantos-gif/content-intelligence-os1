@@ -6,14 +6,13 @@ import {
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
-  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight,
+  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
 import * as pdfjsLib from 'pdfjs-dist'
-import ReferenceExplorer from '../explorer/ReferenceExplorer'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
@@ -112,7 +111,8 @@ PRINCÍPIO CENTRAL:
 Escrever como alguém que observou algo específico — não como quem está ensinando.
 
 PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- Frases: "não é só X, é Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Frases: "não é só X, é Y" / "não é sobre X, é sobre Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
 - Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
 - Listas em escadinha repetitiva
 - Frases de efeito genéricas
@@ -133,6 +133,17 @@ REGRAS DE LINGUAGEM:
 - Evitar generalizações amplas
 - Evitar qualquer frase que pareça "impactante demais"
 
+AJUSTE FINO DE TOM (proteção de risco):
+O tema pode ser sensível. O risco não é o tema — é o tom.
+- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X", "as pessoas fazem Y")
+- Evitar culpados nomeados — explícitos ou implícitos
+- Preferir entrada observacional e acolhedora:
+  → "tem uma coisa que acontece…"
+  → "já reparou que…"
+  → "muita gente passa por isso…"
+  → "às vezes a gente…"
+- Descrever o fenômeno sem atribuir culpa a ninguém
+
 REGRAS DE CORTE (aplicar automaticamente):
 - Remover repetição de ideia
 - Remover explicação excessiva
@@ -145,14 +156,124 @@ PERGUNTA FINAL:
 - Simples, quase íntima, ou contraste leve
 - Evitar tom de pesquisa ou perguntas genéricas
 
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer", "da próxima vez"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica da própria pessoa
+- A primeira frase acessa a memória. A segunda pede que a pessoa nomeie um comportamento dela.
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última mudança de sistema que chegou no seu trabalho. Você perguntou o porquê antes de começar a usar ou só foi se adaptando?"
+✅ "Lembra de uma decisão que você adiou por semanas. O que te fez agir no final — ou você ainda não agiu?"
+✅ "Pensa no último feedback que você recebeu e não aplicou. O que te impediu?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que acontecer, observe as pessoas ao redor."
+❌ "Tente notar quando isso aparecer na sua semana."
+❌ "Repare na reação dos colegas quando isso acontecer."
+
 VALIDAÇÃO INTERNA (antes de entregar — ser honesto):
 - Parece algo que uma pessoa falaria ou um texto que foi escrito?
 - Tem alguma frase que parece pronta ou genérica?
 - Está explicando demais?
 - Dá espaço pra pessoa completar o pensamento?
+- O exercício acessa memória específica ou é genérico?
 Se houver qualquer sinal de artificialidade → reescrever completamente.
 
 CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
+
+const HOOK_SYSTEM = `Você gera hooks de abertura para reels de Karen Santos.
+
+Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+
+REGRA CENTRAL:
+O hook prende porque é específico e real — não porque promete revelação ou usa drama.
+
+TRÊS TIPOS DE HOOK VÁLIDOS:
+
+Tipo 1 — OBSERVAÇÃO CORTANTE:
+Nomeia algo que a pessoa faz mas nunca colocou em palavras. Sem prometer nada. Sem drama.
+Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
+Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."
+
+Tipo 2 — DADO + LEITURA INESPERADA:
+Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
+Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
+Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."
+
+Tipo 3 — CENA ESPECÍFICA:
+Começa no meio de uma situação concreta que a pessoa reconhece imediatamente. Sem setup, sem contexto.
+Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
+Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."
+
+LISTA NEGRA — NUNCA usar nesses hooks:
+- "Isso aqui ninguém fala"
+- "A verdade que quase me fez desistir"
+- "Você vai se arrepender se ignorar isso"
+- "O segredo que ninguém te conta"
+- "Parece bobo mas muda tudo"
+- Qualquer promessa de revelação
+- Qualquer drama ou urgência artificial
+- Tom de coach ou motivacional
+
+INDICAÇÃO VISUAL — obrigatória em cada hook:
+- Enquadramento: close no rosto / meio corpo / câmera de baixo pra cima / costas virando
+- Texto na tela: o que aparece escrito nos primeiros 2 segundos (pode ser a frase inteira ou só a palavra de impacto)
+- Movimento: estática / zoom lento / corte brusco / pan lateral
+
+INDICAÇÃO SONORA — obrigatória em cada hook:
+- Trilha: sem trilha (só voz) / trilha ambiente baixa / corte brusco de som / silêncio intencional
+- Efeito: nenhum / batida / corte seco
+
+CRITÉRIO DE APROVAÇÃO:
+Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
+Se promete → reprova. Se é específica e reconhecível → aprovado.`
+
+const buildHookPrompt = (tema, roteiro) => `
+TEMA DO REELS: ${tema}
+${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
+
+Gere 3 hooks de abertura para este reels — um de cada tipo.
+
+Cada hook deve:
+- Prender nos primeiros 1-3 segundos
+- Ser compatível com o tom de Karen Santos (analítico, seco, sem floreio)
+- Ter indicação visual e sonora específica
+- NÃO usar clickbait, drama ou promessa de revelação
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "hooks": [
+    {
+      "tipo": "observacao_cortante",
+      "frase": "a frase exata de abertura — 1 linha",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "dado_leitura_inesperada",
+      "frase": "a frase exata de abertura — dado + interpretação",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "cena_especifica",
+      "frase": "a frase exata de abertura — cena concreta, sem setup",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    }
+  ]
+}`
 
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
@@ -165,8 +286,9 @@ Execute o protocolo:
 1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
 2. VARIAÇÃO EMOCIONAL (mudança real — mais próxima, mais íntima — não cosmética)
 3. VARIAÇÃO PROVOCATIVA (mudança real — mais desconfortável, mais direta — não cosmética)
-4. Valide internamente os 4 critérios — reescreva se qualquer um falhar
-5. Entregue apenas versões aprovadas
+4. EXERCÍCIO PRÁTICO: máximo 2 frases. Sempre no passado ou presente imediato. Sempre sobre comportamento próprio. Impossível responder sem memória específica.
+5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
+6. Entregue apenas versões aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -174,13 +296,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "variacao_emocional": "variação emocional completa",
   "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final — natural, como conversa",
+  "exercicio_pratico": "exercício em 2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
   "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 2 frases: o que faz este conteúdo parecer real e por que vai gerar resposta",
+  "nota_estrategica": "em 1 frase: por que a variação provocativa é mais forte que a principal neste tema específico",
   "validacao": {
     "parece_real": true,
     "sem_frases_prontas": true,
     "sem_excesso_explicacao": true,
-    "espaco_aberto": true
+    "espaco_aberto": true,
+    "exercicio_acessa_memoria": true
   }
 }`
 
@@ -230,27 +354,58 @@ VOCABULÁRIO E RITMO:
 
 LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Não é sobre X, é sobre Y" → oposição falsa, parece template
+- Referências a anos específicos ("em 2025", "em 2024") → datado, parece artigo de blog
 - Três ou mais frases curtas em sequência → ritmo de sermão de coach
 - Travessões para dar impacto → artificialidade
 - "Mindset", "Propósito", "Transformação" → jargão vago
 - "Vamos juntos?", "Concorda?" → fecha a conversa
 - Nota estratégica com "vulnerabilidade universal" → critério de conta motivacional
 
-CRITÉRIOS DE VALIDAÇÃO — rode os quatro testes antes de entregar:
-Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
-Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
-Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
-Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Vai na legenda, depois da observação seca de 1 linha
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo? Há quanto tempo?"
+✅ "Lembra de uma decisão que você tomou sob pressão e se arrependeu. O que você sabia antes de decidir que ignorou?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que chegarem com ferramenta nova, observe a reação das pessoas."
+❌ "Tente notar quando isso aparecer no seu trabalho."
 
 LEGENDA:
-Uma linha. Observação seca ou dado. Não resume o carrossel, não entrega a conclusão.
-  ❌ "aquela sensação de estar perdido mas fingir que entendeu tudo..."
-  ✅ "fingir que entendeu é uma habilidade que ninguém lista no currículo"
+Estrutura: 1 linha de observação seca + exercício prático em 2 frases.
+A observação seca não resume o carrossel nem entrega a conclusão.
+O exercício acessa memória específica da pessoa, não pede observação futura.
+
+EXEMPLO DE LEGENDA COMPLETA:
+"implementar sem explicar o porquê cria usuários, não parceiros
+
+Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo?"
 
 RESPOSTAS PARA COMENTÁRIOS:
 Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fundo.
   Pessoa: "já passei por isso" → Karen: "o que te fez perceber na hora?"
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
+
+CTA FECHADO:
+Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta. O formato é:
+  ✅ "Você prefere: saber a verdade tarde ou não saber nunca?"
+  ✅ "Você faz isso: na hora ou guarda pra depois?"
+  ✅ "Isso acontece mais: no começo do projeto ou quando está quase pronto?"
+  ❌ "O que você faz quando isso acontece?" (pergunta aberta — proibida no CTA fechado)
+  ❌ "Conta nos comentários" (vago, sem estrutura binária)
+O CTA fechado é diferente da pergunta final. A pergunta final pede relato. O CTA fechado pede posição.
+
+CRITÉRIOS DE VALIDAÇÃO — rode os cinco testes antes de entregar:
+Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
+Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
+Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
+Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+Teste 5 — Exercício: "O exercício na legenda acessa memória específica ou é genérico/futuro?" Se genérico → reprova.
 
 TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
@@ -264,36 +419,152 @@ ${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não ab
 ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
 
 Execute o protocolo completo:
-1. Responda internamente: "Qual é a tensão interna que a pessoa carrega sobre esse tema?"
-2. Gere 7 slides seguindo a estrutura (estado → causal → virada → abertura).
-3. Rode os 4 testes de validação. Se qualquer um reprovar → reescreva do zero.
-4. Entregue apenas a versão aprovada.
+1. Identifique a tensão interna central do tema.
+2. Gere as 3 versões abaixo. Cada versão tem a MESMA tensão, ângulo diferente.
+3. Rode os 5 testes de validação nas 3 versões e nas 3 perguntas finais.
+   - Se alguma versão parecer "bonita" → reescreva
+   - Se as 3 perguntas finais forem variações da mesma frase → reescreva
+   - Se o exercício for genérico ou futuro → reescreva
+4. Gere o exercício prático e o CTA fechado.
+5. Entregue apenas versões aprovadas.
+
+ESTRUTURA DE CADA VERSÃO (slides do carrossel):
+- slide 1: abertura — estado interno (1 frase, a pessoa se reconhece)
+- slides 2-4: desenvolvimento causal (cada slide avança o raciocínio, não descreve)
+- slide 5: virada sem resolução (tensão máxima, não conclui)
+- pergunta_final: exige posicionamento, não confirmação
+
+VERSÃO PRINCIPAL → entrada direta, raciocínio progressivo
+VARIAÇÃO EMOCIONAL → mesma tensão, ângulo cotidiano, ritmo mais lento
+VARIAÇÃO PROVOCATIVA → mesma tensão, sem suavização, nomeia o problema diretamente
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
-  "slides": [
-    { "numero": 1, "texto": "estado interno — 1 frase" },
-    { "numero": 2, "texto": "causa ou contexto — 1 a 2 frases" },
-    { "numero": 3, "texto": "desenvolvimento causal" },
-    { "numero": 4, "texto": "aprofundamento" },
-    { "numero": 5, "texto": "tensão chegando" },
-    { "numero": 6, "texto": "virada sem resolução" },
-    { "numero": 7, "texto": "observação seca — deixa espaço" }
-  ],
-  "legenda": "1 linha — observação seca ou dado, sem resumir o carrossel",
-  "pergunta_final": "pergunta que pede relato, não confirmação",
-  "respostas_sugeridas": [
-    "pergunta que puxa mais fundo 1",
-    "pergunta que puxa mais fundo 2",
-    "pergunta que puxa mais fundo 3"
+  "versao_principal": {
+    "slides": [
+      { "numero": 1, "texto": "abertura — estado interno" },
+      { "numero": 2, "texto": "desenvolvimento causal" },
+      { "numero": 3, "texto": "aprofundamento" },
+      { "numero": 4, "texto": "tensão chegando" },
+      { "numero": 5, "texto": "virada sem resolução" }
+    ],
+    "pergunta_final": "pergunta que exige posicionamento"
+  },
+  "variacao_emocional": {
+    "slides": [
+      { "numero": 1, "texto": "abertura cotidiana" },
+      { "numero": 2, "texto": "desenvolvimento mais próximo, mais íntimo" },
+      { "numero": 3, "texto": "aprofundamento" },
+      { "numero": 4, "texto": "tensão implícita" },
+      { "numero": 5, "texto": "virada sem resolução" }
+    ],
+    "pergunta_final": "pergunta diferente da principal"
+  },
+  "variacao_provocativa": {
+    "slides": [
+      { "numero": 1, "texto": "abertura que nomeia o problema diretamente" },
+      { "numero": 2, "texto": "desenvolvimento sem suavização" },
+      { "numero": 3, "texto": "aprofundamento direto" },
+      { "numero": 4, "texto": "tensão máxima" },
+      { "numero": 5, "texto": "virada sem resolução — a mais incômoda das três" }
+    ],
+    "pergunta_final": "a pergunta mais exigente das três"
+  },
+  "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
+  "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
+  "cta_fechado": "escolha binária — sim ou não / isso ou aquilo — que pede posição, não relato",
+  "comentarios": [
+    { "comentario": "o que a pessoa provavelmente vai escrever", "resposta": "pergunta que puxa mais fundo" },
+    { "comentario": "segundo comentário provável", "resposta": "pergunta que puxa mais fundo" },
+    { "comentario": "terceiro comentário provável", "resposta": "pergunta que puxa mais fundo" }
   ],
   "validacao": {
     "deixa_espaco": true,
-    "comentario_comeca_com_eu": true,
     "nao_parece_coach": true,
-    "so_karen_diria": true
+    "so_karen_diria": true,
+    "exercicio_acessa_memoria": true,
+    "perguntas_diferentes": true
   }
 }`
+
+/* ── Protocolo de Stories ── */
+const BASE_STORIES_SYSTEM = `— IDENTIDADE —
+
+Você é um gerador de roteiros de stories para Instagram.
+
+A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.
+
+
+— CONTEXTO DA GERAÇÃO —
+
+Tema escolhido: {tema}
+Estrutura solicitada: {estrutura}
+
+Siga rigorosamente as instruções da estrutura solicitada.
+
+
+— VOZ E TOM —
+
+A autora fala como conversa. Não como post.
+Escreva como ela falaria em voz alta, não como ela escreveria num artigo.
+
+Referências de tom correto:
+- "Trabalhando aqui de casa, vi uma coisa acontecer direto."
+- "Num cliente meu semana passada..."
+- "Tenho uma opinião sobre isso que muita gente não concorda."
+
+
+— REGRAS GLOBAIS OBRIGATÓRIAS —
+
+Frases: máximo 15 palavras cada. Sem exceção.
+Parágrafos: 1 a 2 frases. Nunca blocos longos.
+Pontuação: ponto final e vírgula apenas. Sem exclamação. Sem reticências dramáticas.
+Vocabulário: NUNCA USE → transformador, poderoso, incrível, surpreendente, real talk, verdade, jornada, propósito, impacto, engajamento, entregar valor.
+
+
+— PROIBIÇÕES ABSOLUTAS —
+
+NUNCA coloque título no início do texto.
+NUNCA escreva introdução ou contextualização antes do stories.
+NUNCA termine com CTA genérico ("me conta nos comentários", "compartilhe com alguém").
+NUNCA use moral explícita ("o que aprendo com isso é...", "isso me ensinou que...").
+NUNCA use ponto de exclamação.
+NUNCA invente dados, estatísticas ou estudos.
+
+
+— AUTOVERIFICAÇÃO ANTES DE ENTREGAR —
+
+Antes de retornar o texto, verifique internamente:
+1. Alguma frase passa de 15 palavras? → reescreva.
+2. Tem exclamação? → remova.
+3. Tem palavra da lista proibida? → substitua.
+4. Tem moral explícita no final? → apague essa parte.
+5. Começa com título ou introdução? → remova.
+
+Se tudo passar: entregue apenas o texto do stories, sem comentários, sem explicações, sem "aqui está o texto:".`
+
+const STORIES_STRUCTURES = {
+  observacao: {
+    label: 'Observação',
+    desc: 'Algo que a autora viu acontecer de fora do ambiente corporativo',
+    prompt: 'Escreva como uma observação feita de fora do ambiente corporativo. Comece com uma situação que a autora viu acontecer. Desenvolva o que essa situação revela sobre um padrão maior. Termine com uma pergunta ou constatação seca, sem moral.',
+  },
+  caso_real: {
+    label: 'Caso real',
+    desc: 'Situação de cliente (sem nomear)',
+    prompt: 'Escreva a partir de um caso de cliente, sem nomear. Comece diretamente na situação. Mostre o que aconteceu. Termine com o que a autora percebeu — não o que ela "aprendeu".',
+  },
+  opiniao: {
+    label: 'Opinião divergente',
+    desc: 'Uma posição que muita gente não concorda',
+    prompt: 'Escreva como uma opinião que a autora tem e que muita gente não concorda. Declare a opinião no início sem esconder. Desenvolva o raciocínio que a leva a essa posição. Não suavize no final.',
+  },
+  padrao: {
+    label: 'Padrão que repete',
+    desc: 'Um padrão que continua aparecendo nos ambientes observados',
+    prompt: 'Escreva sobre um padrão que a autora continua vendo nos ambientes que ela observa. Seja específica na descrição do padrão. Termine com uma pergunta genuína que a autora ainda não sabe responder.',
+  },
+}
 
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
@@ -388,7 +659,7 @@ export default function UnifiedCreator() {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel'
+  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel' | 'stories'
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
   const [engIdeia, setEngIdeia] = useState('')
@@ -401,9 +672,16 @@ export default function UnifiedCreator() {
   const [engCopied, setEngCopied] = useState(null)
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
+  const [engHooks, setEngHooks] = useState(null)
+  const [engHookLoading, setEngHookLoading] = useState(false)
+  const [engHookError, setEngHookError] = useState(null)
+  const [engHookCopied, setEngHookCopied] = useState(null)
   // Carrossel
-  const [carOpenCategory, setCarOpenCategory] = useState(null)
+
   const [carTema, setCarTema] = useState('')
+  const [carHooks, setCarHooks] = useState([])
+  const [carHooksLoading, setCarHooksLoading] = useState(false)
+  const [carActiveVersion, setCarActiveVersion] = useState('principal')
   const [carIdeia, setCarIdeia] = useState('')
   const [carTexto, setCarTexto] = useState('')
   const [carGerarIdeia, setCarGerarIdeia] = useState(false)
@@ -412,10 +690,51 @@ export default function UnifiedCreator() {
   const [carResult, setCarResult] = useState(null)
   const [carError, setCarError] = useState(null)
   const [carCopied, setCarCopied] = useState(null)
+  const [carSavedHub, setCarSavedHub] = useState(false)
+  const [engSavedHub, setEngSavedHub] = useState(false)
+  const [strSavedHub, setStrSavedHub] = useState(false)
+  // Stories
+  const [strTema, setStrTema] = useState('')
+  const [strEstrutura, setStrEstrutura] = useState('observacao')
+  const [strLoading, setStrLoading] = useState(false)
+  const [strResult, setStrResult] = useState(null)
+  const [strError, setStrError] = useState(null)
+  const [strCopied, setStrCopied] = useState(false)
+
+  // ── Banco de Temas ──
+  const [bankOpenCategory, setBankOpenCategory] = useState(null)
+
+  const categorizeTheme = (tema) => {
+    const t = tema.toLowerCase()
+    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|dados|machine|llm|prompt/.test(t)) return 'IA e Futuro do Trabalho'
+    if (/reuni[aã]o|gestor|empresa|corporat|chefe|pol[ií]tica|feedback|equipe|\btime\b|cargo|hierarquia|escrit[oó]rio|demiss|colega/.test(t)) return 'Dinâmicas Corporativas'
+    if (/decid|decis[aã]o|escolha|op[çc][aã]o|dilema|paralisa|risco|incerteza|\bsair\b|\bficar\b|mudan[çc]a/.test(t)) return 'Tomada de Decisão'
+    if (/perfeccion|procrastin|impostor|s[ií]ndrome|ansiedade|burnout|valida[çc]|inseguran[çc]|merecer|autoconfian|reconhecimento/.test(t)) return 'Maturidade Profissional'
+    return 'Carreira'
+  }
+
+  const [savedThemes, setSavedThemes] = useState(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('cio-saved-themes') || '[]')
+      if (raw.length > 0 && typeof raw[0] === 'string') {
+        return raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
+      }
+      // migrar itens sem categoria
+      return raw.map(item => ({ ...item, categoria: item.categoria || 'Carreira' }))
+    } catch { return [] }
+  })
+  const [newThemeInput, setNewThemeInput] = useState('')
+  const [showThemesPanel, setShowThemesPanel] = useState(true)
+  const [expandingThemes, setExpandingThemes] = useState(false)
+  const [categorizingThemes, setCategorizingThemes] = useState(false)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
   useEffect(() => { inputRef.current?.focus() }, [])
+
+  useEffect(() => {
+    localStorage.setItem('cio-saved-themes', JSON.stringify(savedThemes))
+  }, [savedThemes])
 
   // ── Brand Linter com debounce ──
   useEffect(() => {
@@ -460,13 +779,6 @@ export default function UnifiedCreator() {
       reader.readAsText(file)
     }
     e.target.value = ''
-  }
-
-  /* ── Handler para inspiração do explorador ── */
-  const handleGenerateScriptFromReference = (script) => {
-    setInspiration(script)
-    setInput(script)
-    inputRef.current?.focus()
   }
 
   /* ── Gerar conteúdo ── */
@@ -606,6 +918,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngLoading(true)
     setEngError(null)
     setEngResult(null)
+    setEngSavedHub(false)
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -638,12 +951,116 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     }
   }
 
+  const generateReelsHooks = async () => {
+    if (!engTema.trim()) return
+    if (!apiKey) { setEngHookError('Configure sua API key.'); return }
+    setEngHookLoading(true)
+    setEngHookError(null)
+    setEngHooks(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 3000,
+          system: HOOK_SYSTEM,
+          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setEngHooks(JSON.parse(match[0]))
+    } catch (err) {
+      setEngHookError(err.message)
+    } finally {
+      setEngHookLoading(false)
+    }
+  }
+
+  const handleEngHookCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setEngHookCopied(key)
+    setTimeout(() => setEngHookCopied(null), 2000)
+  }
+
+  const generateHooks = async () => {
+    if (!apiKey) { return }
+    setCarHooksLoading(true)
+    setCarHooks([])
+    try {
+      const tema = carTema.trim() || 'carreira e maturidade profissional'
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 600,
+          system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
+Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
+
+PRINCÍPIO CENTRAL:
+O hook não pode ser conceito. Tem que ser situação + comportamento.
+A pessoa para porque se reconheceu numa cena, não porque achou a frase bonita.
+
+ANTES (errado):
+→ conceito abstrato que cabe em qualquer contexto
+→ parece frase de Pinterest
+→ não cria imagem na cabeça
+
+DEPOIS (certo):
+→ situação concreta que a pessoa já viveu
+→ comportamento real que ela reconhece em si mesma
+→ cria uma cena visual imediata
+
+EXEMPLOS DO QUE FUNCIONA:
+- "você já pensou em sair… e ficou mesmo assim?"
+- "tem gente que reclama do trabalho todo dia… mas não consegue sair"
+- "tem decisão que a gente adia… e chama de 'pensar melhor'"
+- "ficar também é uma escolha mesmo quando parece que não é"
+- "segunda-feira chega e você já sabe que não queria estar ali"
+
+REGRAS:
+- Curto — entre 6 e 18 palavras. Pode ter quebra de linha com "…"
+- Tom oral. Como quem falou isso num áudio, não escreveu num post
+- Proibido: "ninguém fala sobre", "a verdade é", "o segredo", "você precisa saber", superlativo, exclamação, maiúsculas dramáticas
+- Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
+- Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
+
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
+          messages: [{ role: 'user', content: `Tema: ${tema}` }],
+        }),
+      })
+      const data = await res.json()
+      const text = data.content?.[0]?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        setCarHooks(parsed.hooks || [])
+      }
+    } catch { /* silencioso */ } finally {
+      setCarHooksLoading(false)
+    }
+  }
+
   const generateCarousel = async () => {
     if (!carTema.trim()) return
     if (!apiKey) { setCarError('Configure sua API key em Analytics > Configurações'); return }
     setCarLoading(true)
     setCarError(null)
     setCarResult(null)
+    setCarSavedHub(false)
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -677,6 +1094,305 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setTimeout(() => setCarCopied(null), 2000)
   }
 
+  const handleCarSaveHub = () => {
+    if (!carResult) return
+    const fmtSlides = (version) =>
+      (version?.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n')
+    const scriptCompleto = [
+      '=== VERSÃO PRINCIPAL ===\n' + fmtSlides(carResult.versao_principal),
+      carResult.versao_principal?.pergunta_final
+        ? `Pergunta: ${carResult.versao_principal.pergunta_final}` : '',
+      carResult.variacao_emocional
+        ? '\n=== VARIAÇÃO EMOCIONAL ===\n' + fmtSlides(carResult.variacao_emocional)
+          + (carResult.variacao_emocional.pergunta_final ? `\nPergunta: ${carResult.variacao_emocional.pergunta_final}` : '')
+        : '',
+      carResult.variacao_provocativa
+        ? '\n=== VARIAÇÃO PROVOCATIVA ===\n' + fmtSlides(carResult.variacao_provocativa)
+          + (carResult.variacao_provocativa.pergunta_final ? `\nPergunta: ${carResult.variacao_provocativa.pergunta_final}` : '')
+        : '',
+      carResult.legenda
+        ? `\n--- LEGENDA ---\n${carResult.legenda}` : '',
+      carResult.comentarios?.length
+        ? '\n--- COMENTÁRIOS PREVISTOS ---\n' +
+          carResult.comentarios.map(c => `● "${c.comentario}"\n→ ${c.resposta}`).join('\n\n')
+        : '',
+    ].filter(Boolean).join('\n')
+    addIdea({
+      title: carTema,
+      description: fmtSlides(carResult.versao_principal),
+      script: scriptCompleto,
+      caption: carResult.legenda || '',
+      cta: carResult.versao_principal?.pergunta_final || '',
+      format: 'carrossel',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-carrossel', carTema.toLowerCase().slice(0, 20)],
+      source: 'Protocolo de Carrossel',
+    })
+    setCarSavedHub(true)
+  }
+
+  const handleEngSaveHub = () => {
+    if (!engResult) return
+    const scriptCompleto = [
+      engResult.versao_principal,
+      engResult.variacao_emocional   ? `\n\n--- VARIAÇÃO EMOCIONAL ---\n${engResult.variacao_emocional}` : '',
+      engResult.variacao_provocativa ? `\n\n--- VARIAÇÃO PROVOCATIVA ---\n${engResult.variacao_provocativa}` : '',
+      engResult.pergunta_final       ? `\n\n--- PERGUNTA FINAL ---\n${engResult.pergunta_final}` : '',
+      engResult.respostas_sugeridas?.length
+        ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${engResult.respostas_sugeridas.join('\n')}`
+        : '',
+      engResult.nota_estrategica
+        ? `\n\n--- NOTA ESTRATÉGICA ---\n${engResult.nota_estrategica}`
+        : '',
+    ].filter(Boolean).join('')
+    addIdea({
+      title: engTema,
+      description: engResult.versao_principal,
+      script: scriptCompleto,
+      caption: engResult.pergunta_final || '',
+      cta: (engResult.respostas_sugeridas || []).join('\n'),
+      format: 'reel',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20)],
+      source: 'Protocolo Anti-Emoji',
+    })
+    setEngSavedHub(true)
+  }
+
+  const handleStrCopy = () => {
+    if (!strResult) return
+    navigator.clipboard.writeText(strResult)
+    setStrCopied(true)
+    setTimeout(() => setStrCopied(false), 2000)
+  }
+
+  const handleStrSaveHub = () => {
+    if (!strResult) return
+    const estrutura = STORIES_STRUCTURES[strEstrutura]
+    addIdea({
+      title: strTema,
+      description: strResult.slice(0, 300),
+      script: strResult,
+      caption: '',
+      cta: '',
+      format: 'stories',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-stories', estrutura?.label.toLowerCase() || '', strTema.toLowerCase().slice(0, 20)].filter(Boolean),
+      source: `Protocolo de Stories — ${estrutura?.label || ''}`,
+    })
+    setStrSavedHub(true)
+  }
+
+  const generateStories = async () => {
+    if (!strTema.trim()) return
+    if (!apiKey) { setStrError('Configure sua API key em Configurações'); return }
+    setStrLoading(true)
+    setStrError(null)
+    setStrResult(null)
+    setStrSavedHub(false)
+    try {
+      const estrutura = STORIES_STRUCTURES[strEstrutura] || STORIES_STRUCTURES.observacao
+      const systemPrompt = BASE_STORIES_SYSTEM
+        .replace('{tema}', strTema)
+        .replace('{estrutura}', estrutura.prompt)
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: 'Gere o stories agora.' }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const text = data.content?.[0]?.text?.trim() || ''
+      if (!text) throw new Error('Resposta inválida da IA')
+      setStrResult(text)
+    } catch (err) {
+      setStrError(err.message)
+    } finally {
+      setStrLoading(false)
+    }
+  }
+
+  const applyTheme = (tema) => {
+    if (mode === 'engagement') setEngTema(tema)
+    else if (mode === 'carousel') setCarTema(tema)
+    else if (mode === 'stories') setStrTema(tema)
+    else setInput(tema)
+  }
+
+  const analyzeTemperatures = async (targets) => {
+    if (!apiKey || targets.length === 0) return
+    setSavedThemes(prev => prev.map(t =>
+      targets.some(tg => tg.id === t.id) ? { ...t, temperatura: 'analyzing' } : t
+    ))
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
+
+Temperatura:
+- quente: alto potencial viral agora, gera forte identificação, timely
+- morno: relevante mas sem urgência
+- frio: evergreen, pouco senso de urgência
+
+Seja honesto e crítico. Não infle. Considere ressonância emocional, compartilhabilidade e identificação da audiência.
+
+Temas:
+${targets.map(t => `- ${t.tema}`).join('\n')}
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{"resultados": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta e seca"}]}` }],
+        }),
+      })
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      if (match) {
+        const results = JSON.parse(match[0]).resultados || []
+        setSavedThemes(prev => prev.map(t => {
+          if (!targets.some(tg => tg.id === t.id)) return t
+          const r = results.find(r => r.tema === t.tema)
+          return r ? { ...t, temperatura: r.temperatura, motivo: r.motivo } : { ...t, temperatura: null }
+        }))
+      }
+    } catch {
+      setSavedThemes(prev => prev.map(t =>
+        targets.some(tg => tg.id === t.id) ? { ...t, temperatura: null } : t
+      ))
+    }
+  }
+
+  const addTheme = async () => {
+    const existing = new Set(savedThemes.map(s => s.tema))
+    const now = new Date().toISOString().slice(0, 10)
+    const novos = newThemeInput
+      .split(',')
+      .map(t => t.replace(/^[\s–\-•]+/, '').trim())
+      .filter(t => t.length > 0 && !existing.has(t))
+    if (novos.length === 0) return
+    setNewThemeInput('')
+    setCategorizingThemes(true)
+
+    const categorias = ['Carreira', 'Maturidade Profissional', 'Tomada de Decisão', 'Dinâmicas Corporativas', 'IA e Futuro do Trabalho']
+
+    let classificados = novos.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now }))
+
+    if (apiKey) {
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 400,
+            system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
+Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
+Regras:
+- IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
+- Reuniões, gestores, liderança, política de escritório, equipe, hierarquia → "Dinâmicas Corporativas"
+- Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
+- Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
+- Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`,
+            messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
+          }),
+        })
+        const data = await res.json()
+        const text = data.content?.[0]?.text || ''
+        const match = text.match(/\[[\s\S]*\]/)
+        if (match) {
+          const parsed = JSON.parse(match[0])
+          classificados = novos.map((t, i) => ({
+            id: Date.now() + i,
+            tema: t,
+            categoria: parsed.find(p => p.tema === t)?.categoria || categorizeTheme(t),
+            fonte: 'manual',
+            criadoEm: now,
+          }))
+        }
+      } catch { /* usa fallback regex */ }
+    }
+
+    setSavedThemes(prev => [...classificados, ...prev])
+    setCategorizingThemes(false)
+  }
+
+  const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
+
+  const addThemeFromSuggestion = (tema, categoria) => {
+    const existing = new Set(savedThemes.map(s => s.tema))
+    if (existing.has(tema)) return
+    const entry = { id: Date.now(), tema, categoria, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }
+    setSavedThemes(prev => [entry, ...prev])
+  }
+
+  const expandThemes = async () => {
+    if (!apiKey) return
+    const categoria = bankOpenCategory
+    const temasNaCategoria = categoria ? savedThemes.filter(t => t.categoria === categoria) : savedThemes
+    if (!categoria && savedThemes.length === 0) return
+    setExpandingThemes(true)
+    try {
+      const contextoCategoria = categoria
+        ? `Categoria focada: "${categoria}"\n\nTemas já existentes nessa categoria:\n${temasNaCategoria.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`
+        : `Temas gerais já existentes:\n${savedThemes.map(t => `- ${t.tema}`).join('\n')}`
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
+
+${contextoCategoria}
+
+Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
+
+Temperatura:
+- quente: alto potencial viral agora, forte identificação
+- morno: relevante mas sem urgência
+- frio: evergreen, menos imediato
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
+        }),
+      })
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      if (match) {
+        const existing = new Set(savedThemes.map(t => t.tema))
+        const novos = (JSON.parse(match[0]).temas || [])
+          .filter(t => !existing.has(t.tema))
+          .map(t => ({
+            id: Date.now() + Math.random(),
+            tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
+            categoria: categoria || 'Carreira',
+            fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
+          }))
+        setSavedThemes(prev => [...prev, ...novos])
+      }
+    } catch { /* silent */ }
+    finally { setExpandingThemes(false) }
+  }
+
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
@@ -705,6 +1421,136 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         )}
       </div>
 
+      {/* ── Banco de Temas ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <button
+          onClick={() => setShowThemesPanel(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Layers size={14} className="text-orange-500" />
+            <span className="text-xs font-semibold text-gray-700">Banco de Temas</span>
+            {savedThemes.length > 0 && (
+              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                {savedThemes.length}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-gray-400">clique para usar no campo Tema</span>
+            {showThemesPanel ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+          </div>
+        </button>
+
+        {showThemesPanel && (
+          <div className="border-t border-gray-100">
+            {/* Actions bar */}
+            <div className="flex gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/40">
+              <input
+                value={newThemeInput}
+                onChange={e => setNewThemeInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addTheme()}
+                placeholder="Adicione temas separados por vírgula..."
+                className="input text-xs flex-1 py-1.5"
+              />
+              <button
+                onClick={addTheme}
+                disabled={!newThemeInput.trim() || categorizingThemes}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40 shrink-0"
+              >
+                {categorizingThemes ? <><Loader2 size={11} className="animate-spin" /> Classificando...</> : '+ Adicionar'}
+              </button>
+              <button
+                onClick={expandThemes}
+                disabled={expandingThemes || (!bankOpenCategory && savedThemes.length === 0)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
+              >
+                {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                {bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
+              </button>
+              {savedThemes.length > 0 && (
+                <button
+                  onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
+                >
+                  <X size={11} /> Limpar
+                </button>
+              )}
+            </div>
+
+            {/* Accordion por categoria — temas salvos + sugestões */}
+            <div className="px-4 py-3 space-y-1.5">
+              {TEMAS_CARROSSEL.map(({ categoria, temas: sugestoes }) => {
+                const isOpen = bankOpenCategory === categoria
+                const savedInCat = savedThemes.filter(s => s.categoria === categoria)
+                const savedSet = new Set(savedThemes.map(s => s.tema))
+                const sugestoesNaoSalvas = sugestoes.filter(t => !savedSet.has(t))
+                const totalCount = savedInCat.length
+                return (
+                  <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
+                    >
+                      <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                      <div className="flex items-center gap-2">
+                        {totalCount > 0 && (
+                          <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{totalCount}</span>
+                        )}
+                        {isOpen ? <ChevronUp size={13} className="text-orange-500" /> : <ChevronDown size={13} className="text-gray-400" />}
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div className="bg-white px-3 py-2 space-y-1">
+                        {/* Temas salvos nesta categoria */}
+                        {savedInCat.map(item => (
+                          <div key={item.id} className="flex items-center gap-1.5 group">
+                            <button
+                              onClick={() => applyTheme(item.tema)}
+                              className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
+                            >
+                              {item.tema}
+                            </button>
+                            <button
+                              onClick={() => removeTheme(item.id)}
+                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Separador só se tiver salvos e sugestões */}
+                        {savedInCat.length > 0 && sugestoesNaoSalvas.length > 0 && (
+                          <div className="border-t border-gray-100 my-1.5" />
+                        )}
+
+                        {/* Sugestões não salvas */}
+                        {sugestoesNaoSalvas.map(tema => (
+                          <button
+                            key={tema}
+                            onClick={() => addThemeFromSuggestion(tema, categoria)}
+                            className="w-full text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
+                          >
+                            <span>{tema}</span>
+                            <Plus size={11} className="text-gray-300 shrink-0" />
+                          </button>
+                        ))}
+
+                        {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (
+                          <p className="text-[11px] text-gray-300 text-center py-2">Todos adicionados</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Seletor de modo ── */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
         <button onClick={() => setMode('studio')}
@@ -724,6 +1570,12 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
             mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <LayoutGrid size={13} /> Carrossel
+        </button>
+        <button onClick={() => setMode('stories')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Film size={13} /> Stories
         </button>
       </div>
 
@@ -829,7 +1681,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
               disabled={engLoading || !engTema.trim()}
               className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando protocolo...</> : <><Zap size={15} /> Gerar Protocolo</>}
+              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando conteúdo...</> : <><Zap size={15} /> Gerar Conteúdo</>}
             </button>
           </div>
 
@@ -895,6 +1747,23 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                 <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
               </div>
 
+              {/* Exercício Prático */}
+              {engResult.exercicio_pratico && (
+                <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center gap-2">
+                      <Target size={12} className="text-amber-500" />
+                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
+                    </div>
+                    <button onClick={() => handleEngCopy(engResult.exercicio_pratico, 'eng-exercicio')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors">
+                      {engCopied === 'eng-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{engResult.exercicio_pratico}</p>
+                </div>
+              )}
+
               {/* Variações */}
               <div className="space-y-2">
                 {[
@@ -922,6 +1791,115 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* ── Gerador de Hook ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <Zap size={13} className="text-amber-500" />
+                    <span className="text-xs font-semibold text-gray-700">Hooks de Abertura (0-3s)</span>
+                    <span className="text-[10px] text-gray-400">— o que prende antes do roteiro começar</span>
+                  </div>
+                  <button
+                    onClick={generateReelsHooks}
+                    disabled={engHookLoading}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
+                  >
+                    {engHookLoading
+                      ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
+                      : engHooks
+                        ? <><RefreshCw size={11} /> Regenerar</>
+                        : <><Zap size={11} /> Gerar 3 Hooks</>
+                    }
+                  </button>
+                </div>
+
+                {engHookError && (
+                  <div className="px-4 py-3 text-xs text-red-600 bg-red-50">{engHookError}</div>
+                )}
+
+                {engHooks && (
+                  <div className="divide-y divide-gray-100">
+                    {(engHooks.hooks || []).map((hook, i) => {
+                      const tipoLabel = {
+                        observacao_cortante: 'Observação Cortante',
+                        dado_leitura_inesperada: 'Dado + Leitura Inesperada',
+                        cena_especifica: 'Cena Específica',
+                      }[hook.tipo] || hook.tipo
+
+                      const tipoColor = {
+                        observacao_cortante: 'bg-violet-100 text-violet-700 border-violet-200',
+                        dado_leitura_inesperada: 'bg-blue-100 text-blue-700 border-blue-200',
+                        cena_especifica: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                      }[hook.tipo] || 'bg-gray-100 text-gray-600 border-gray-200'
+
+                      const copyText = [
+                        `FRASE: ${hook.frase}`,
+                        `TEXTO NA TELA: ${hook.texto_na_tela}`,
+                        `ENQUADRAMENTO: ${hook.enquadramento}`,
+                        `MOVIMENTO: ${hook.movimento}`,
+                        `SOM: ${hook.som}`,
+                      ].join('\n')
+
+                      return (
+                        <div key={i} className="px-4 py-4 space-y-3 group">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tipoColor}`}>
+                              {tipoLabel}
+                            </span>
+                            <button
+                              onClick={() => handleEngHookCopy(copyText, `hook-${i}`)}
+                              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
+                            >
+                              {engHookCopied === `hook-${i}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                            </button>
+                          </div>
+
+                          {/* Frase */}
+                          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Frase de abertura</p>
+                            <p className="text-sm font-semibold text-gray-900 leading-snug">"{hook.frase}"</p>
+                          </div>
+
+                          {/* Texto na tela */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Tela</span>
+                            <p className="text-xs text-gray-700">{hook.texto_na_tela}</p>
+                          </div>
+
+                          {/* Enquadramento + movimento */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Câmera</span>
+                            <p className="text-xs text-gray-700">{hook.enquadramento} · {hook.movimento}</p>
+                          </div>
+
+                          {/* Som */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Som</span>
+                            <p className="text-xs text-gray-700">{hook.som}</p>
+                          </div>
+
+                          {/* Por que funciona */}
+                          {hook.por_que_funciona && (
+                            <div className="flex items-start gap-1.5 pt-1 border-t border-gray-100">
+                              <span className="text-[10px] text-gray-300 mt-0.5">→</span>
+                              <p className="text-[11px] text-gray-400 italic">{hook.por_que_funciona}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {!engHooks && !engHookLoading && (
+                  <div className="px-4 py-5 text-center">
+                    <p className="text-xs text-gray-400">
+                      Gere o roteiro primeiro, depois clique em "Gerar 3 Hooks" para receber opções de abertura com indicação visual e sonora.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Respostas Sugeridas */}
@@ -959,11 +1937,39 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
                 </div>
               )}
 
-              {/* Regenerar */}
-              <button onClick={generateEngagement} disabled={engLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
-                <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar protocolo
-              </button>
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleEngSaveHub}
+                  disabled={engSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    engSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100'
+                  )}
+                >
+                  {engSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {engSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-violet-600 hover:border-violet-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateEngagement}
+                  disabled={engLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -983,52 +1989,42 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
               </div>
             </div>
 
-            {/* Temas Sugeridos */}
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Temas Sugeridos</p>
-              <div className="space-y-1.5">
-                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
-                  const isOpen = carOpenCategory === categoria
-                  return (
-                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => setCarOpenCategory(isOpen ? null : categoria)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
-                      >
-                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
-                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
-                      </button>
-                      {isOpen && (
-                        <div className="px-3 py-2 space-y-1 bg-white">
-                          {temas.map(tema => (
-                            <button
-                              key={tema}
-                              onClick={() => { setCarTema(tema); setCarOpenCategory(null) }}
-                              className="w-full text-left text-xs text-gray-600 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              {tema}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
             {/* Tema */}
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
-                Tema <span className="text-red-400">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  Tema <span className="text-red-400">*</span>
+                </label>
+                <button
+                  onClick={() => { generateHooks(); setCarHooks([]) }}
+                  disabled={carHooksLoading}
+                  className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
+                >
+                  {carHooksLoading ? <Loader2 size={10} className="animate-spin" /> : <Flame size={10} />}
+                  {carHooksLoading ? 'Gerando...' : 'Gerar hooks'}
+                </button>
+              </div>
               <input
                 value={carTema}
-                onChange={e => setCarTema(e.target.value)}
+                onChange={e => { setCarTema(e.target.value); setCarHooks([]) }}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateCarousel()}
                 placeholder="Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho..."
                 className="input text-sm w-full"
               />
+              {carHooks.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-[10px] text-gray-400 font-medium mb-1">Clique para usar como tema do slide 1:</p>
+                  {carHooks.map((hook, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setCarTema(hook); setCarHooks([]) }}
+                      className="w-full text-left text-xs text-gray-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 px-3 py-2 rounded-lg transition-colors leading-snug"
+                    >
+                      {hook}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Ideia */}
@@ -1093,129 +2089,349 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
 
           {/* ── Output do Carrossel ── */}
           {carResult && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-3 animate-fade-in">
 
-              {/* Validação */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
-                  <ShieldCheck size={12} className="text-emerald-500" /> Validação
-                </p>
-                <div className="grid grid-cols-4 gap-2">
+              {/* Abas de versão */}
+              {(() => {
+                const versions = [
+                  { key: 'principal',   label: 'Principal',   data: carResult.versao_principal },
+                  { key: 'emocional',   label: 'Emocional',   data: carResult.variacao_emocional },
+                  { key: 'provocativa', label: 'Provocativa', data: carResult.variacao_provocativa },
+                ]
+                const active = versions.find(v => v.key === carActiveVersion) || versions[0]
+                return (
+                  <>
+                    {/* Tabs */}
+                    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                      {versions.map(v => (
+                        <button key={v.key} onClick={() => setCarActiveVersion(v.key)}
+                          className={clsx('flex-1 py-2 rounded-lg text-xs font-semibold transition-all',
+                            carActiveVersion === v.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                          )}>
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Slides da versão ativa */}
+                    {active.data && (
+                      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Slides</span>
+                          <button onClick={() => handleCarCopy(
+                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'),
+                            `slides-${active.key}`
+                          )} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                            {carCopied === `slides-${active.key}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
+                          </button>
+                        </div>
+                        <div className="px-4 pb-3 space-y-0">
+                          {(active.data.slides || []).map((slide, idx) => (
+                            <div key={slide.numero} className="relative flex gap-3 group py-2">
+                              {/* linha conectora */}
+                              {idx < (active.data.slides?.length ?? 0) - 1 && (
+                                <div className="absolute left-[13px] top-8 bottom-0 w-px bg-gray-100" />
+                              )}
+                              <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0 mt-0.5 z-10">
+                                <span className="text-[10px] font-bold text-orange-500">{slide.numero}</span>
+                              </div>
+                              <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5">{slide.texto}</p>
+                              <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
+                                {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+
+              {/* Exercício Prático + Pergunta Final agrupados */}
+              {(carResult.exercicio_pratico || (() => {
+                const active = [
+                  carResult.versao_principal,
+                  carResult.variacao_emocional,
+                  carResult.variacao_provocativa,
+                ].find((_, i) => ['principal','emocional','provocativa'][i] === carActiveVersion) || carResult.versao_principal
+                return active?.pergunta_final
+              })()) && (
+                <div className="rounded-2xl border border-orange-100 overflow-hidden bg-white">
+                  {carResult.exercicio_pratico && (
+                    <div className="px-4 py-3 group">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Target size={11} className="text-orange-500" />
+                          <span className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide">Exercício Prático</span>
+                        </div>
+                        <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
+                          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                          {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
+                    </div>
+                  )}
+
+                  {/* Pergunta Final — abaixo do exercício */}
+                  {(() => {
+                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa }
+                    const pergunta = versions[carActiveVersion]?.pergunta_final || carResult.versao_principal?.pergunta_final
+                    if (!pergunta) return null
+                    return (
+                      <div className="border-t border-orange-100 bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-semibold text-white/70 uppercase flex items-center gap-1.5">
+                            <Quote size={10} /> Pergunta Final
+                          </span>
+                          <button onClick={() => handleCarCopy(pergunta, `pergunta-${carActiveVersion}`)}
+                            className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-all">
+                            {carCopied === `pergunta-${carActiveVersion}` ? <Check size={10} /> : <Copy size={10} />}
+                          </button>
+                        </div>
+                        <p className="text-sm font-bold text-white leading-snug">{pergunta}</p>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+
+              {/* CTA Fechado */}
+              {carResult.cta_fechado && (
+                <div className="relative overflow-hidden rounded-2xl bg-gray-900 px-4 py-3 text-white">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold text-white/50 uppercase flex items-center gap-1.5">
+                      <ToggleLeft size={10} /> CTA Fechado
+                    </span>
+                    <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
+                      className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-all">
+                      {carCopied === 'car-cta' ? <Check size={10} /> : <Copy size={10} />}
+                    </button>
+                  </div>
+                  <p className="text-sm font-bold leading-snug">{carResult.cta_fechado}</p>
+                </div>
+              )}
+
+              {/* Legenda + Comentários agrupados */}
+              {(carResult.legenda || (carResult.comentarios || []).length > 0) && (
+                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                  {carResult.legenda && (
+                    <div className="px-4 py-3 flex items-start justify-between gap-3 group">
+                      <div className="flex-1">
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Legenda</span>
+                        <p className="text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
+                      </div>
+                      <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-5">
+                        {carCopied === 'car-legenda' ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  )}
+                  {(carResult.comentarios || []).length > 0 && (
+                    <div className="px-4 py-3 space-y-2.5">
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <MessageCircle size={10} className="text-orange-400" /> Respostas sugeridas
+                      </span>
+                      {carResult.comentarios.map((item, i) => (
+                        <div key={i} className="space-y-1">
+                          <p className="text-xs text-gray-400 italic pl-1">"{item.comentario}"</p>
+                          <div className="flex items-start gap-2 group/resp">
+                            <div className="w-1 rounded-full bg-orange-200 self-stretch shrink-0 mt-0.5" />
+                            <p className="flex-1 text-xs text-gray-700 leading-relaxed">{item.resposta}</p>
+                            <button onClick={() => handleCarCopy(item.resposta, `comentario-${i}`)}
+                              className="opacity-0 group-hover/resp:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0">
+                              {carCopied === `comentario-${i}` ? <Check size={11} /> : <Copy size={11} />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Validação — pills inline */}
+              {carResult.validacao && (
+                <div className="flex items-center gap-2 flex-wrap px-1">
+                  <ShieldCheck size={11} className="text-gray-300 shrink-0" />
                   {[
-                    { key: 'sem_formula',         label: 'Sem fórmula' },
-                    { key: 'sem_repeticao',        label: 'Sem repetição' },
-                    { key: 'sem_palavra_generica', label: 'Sem genérico' },
-                    { key: 'parece_pensado',       label: 'Parece pensado' },
+                    { key: 'deixa_espaco',         label: 'Deixa espaço' },
+                    { key: 'nao_parece_coach',      label: 'Não é coach' },
+                    { key: 'so_karen_diria',        label: 'Só Karen diria' },
+                    { key: 'perguntas_diferentes',  label: 'Perguntas distintas' },
                   ].map(({ key, label }) => {
                     const ok = carResult.validacao?.[key] === true
                     return (
-                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
-                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                      <span key={key} className={clsx(
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                        ok ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
                       )}>
-                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
-                        <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
-                      </div>
+                        {ok ? '✓' : '✗'} {label}
+                      </span>
                     )
                   })}
                 </div>
-              </div>
+              )}
 
-              {/* Slides */}
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCarSaveHub}
+                  disabled={carSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    carSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100'
+                  )}
+                >
+                  {carSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {carSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-orange-600 hover:border-orange-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateCarousel}
+                  disabled={carLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={carLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Formulário de Stories ── */}
+      {mode === 'stories' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shrink-0">
+                <Film size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Protocolo de Stories</p>
+                <p className="text-xs text-gray-400 mt-0.5">Observação real — ponto de entrada da empreendedora, conexão com o corporativo.</p>
+              </div>
+            </div>
+
+            {/* Tema */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tema <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={strTema}
+                onChange={e => setStrTema(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateStories()}
+                placeholder="Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento..."
+                className="input text-sm w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Estrutura */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                Estrutura <span className="text-red-400">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(STORIES_STRUCTURES).map(([key, s]) => (
+                  <button
+                    key={key}
+                    onClick={() => setStrEstrutura(key)}
+                    className={clsx(
+                      'text-left px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                      strEstrutura === key
+                        ? 'bg-teal-50 border-teal-400 text-teal-800'
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                    )}
+                  >
+                    <div className="font-semibold">{s.label}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {strError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{strError}</div>
+            )}
+
+            <button onClick={generateStories} disabled={strLoading || !strTema.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all shadow-lg shadow-teal-200 disabled:opacity-40 disabled:cursor-not-allowed">
+              {strLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Film size={15} /> Gerar Stories</>}
+            </button>
+          </div>
+
+          {/* ── Output de Stories ── */}
+          {strResult && (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* Texto gerado */}
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
                   <div className="flex items-center gap-2">
-                    <LayoutGrid size={13} className="text-orange-500" />
-                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Slides ({carResult.slides?.length})</span>
+                    <span className="w-2 h-2 rounded-full bg-teal-500" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">
+                      Stories — {STORIES_STRUCTURES[strEstrutura]?.label}
+                    </span>
                   </div>
-                  <button onClick={() => handleCarCopy((carResult.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'), 'slides')}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                    {carCopied === 'slides' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar todos</>}
+                  <button onClick={handleStrCopy}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal-600 transition-colors">
+                    {strCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
                   </button>
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {(carResult.slides || []).map((slide) => (
-                    <div key={slide.numero} className="flex items-start gap-3 px-4 py-3 group hover:bg-orange-50/30 transition-colors">
-                      <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[11px] font-bold text-orange-600">{slide.numero}</span>
-                      </div>
-                      <p className="flex-1 text-sm text-gray-800 leading-relaxed">{slide.texto}</p>
-                      <button onClick={() => handleCarCopy(slide.texto, `slide-${slide.numero}`)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
-                        {carCopied === `slide-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
-                      </button>
-                    </div>
-                  ))}
+                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {strResult}
                 </div>
               </div>
 
-              {/* Pergunta Final */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 p-5 text-white shadow-lg shadow-orange-200">
-                <div className="relative z-10">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
-                    <Quote size={10} /> Pergunta Final
-                  </p>
-                  <p className="text-base font-bold leading-snug">{carResult.pergunta_final}</p>
-                  <button onClick={() => handleCarCopy(carResult.pergunta_final, 'car-pergunta')}
-                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
-                    {carCopied === 'car-pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleStrSaveHub}
+                  disabled={strSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    strSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100'
+                  )}
+                >
+                  {strSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {strSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-teal-600 hover:border-teal-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
                   </button>
-                </div>
-                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
+                )}
+                <button
+                  onClick={generateStories}
+                  disabled={strLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
               </div>
-
-              {/* Legenda */}
-              {carResult.legenda && (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase">Legenda do Post</span>
-                    <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                      {carCopied === 'car-legenda' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
-                </div>
-              )}
-
-              {/* Respostas Sugeridas */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
-                  <MessageCircle size={12} className="text-orange-500" /> Respostas para Comentários
-                </p>
-                <div className="space-y-2">
-                  {(carResult.respostas_sugeridas || []).map((resp, i) => (
-                    <div key={i} className="flex items-start gap-3 group">
-                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[10px] font-bold text-orange-600">{i + 1}</span>
-                      </div>
-                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
-                      <button onClick={() => handleCarCopy(resp, `car-resp-${i}`)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all mt-2 shrink-0">
-                        {carCopied === `car-resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nota Estratégica */}
-              {carResult.nota_estrategica && (
-                <div className="bg-gradient-to-r from-orange-50 to-rose-50 rounded-2xl border border-orange-200 p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                    <Brain size={15} className="text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-orange-600 uppercase mb-1">Nota Estratégica</p>
-                    <p className="text-sm text-orange-800 leading-relaxed">{carResult.nota_estrategica}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Regenerar */}
-              <button onClick={generateCarousel} disabled={carLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40">
-                <RefreshCw size={13} className={carLoading ? 'animate-spin' : ''} /> Regenerar carrossel
-              </button>
             </div>
           )}
         </div>
@@ -1598,11 +2814,6 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
 
       </>)} {/* fim mode === 'studio' */}
 
-      {/* Reference Explorer */}
-      <ReferenceExplorer
-        onSelectReference={handleGenerateScriptFromReference}
-        onGenerateScript={handleGenerateScriptFromReference}
-      />
     </div>
   )
 }
