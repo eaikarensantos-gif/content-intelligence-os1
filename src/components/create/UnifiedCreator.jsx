@@ -156,14 +156,124 @@ PERGUNTA FINAL:
 - Simples, quase íntima, ou contraste leve
 - Evitar tom de pesquisa ou perguntas genéricas
 
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer", "da próxima vez"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica da própria pessoa
+- A primeira frase acessa a memória. A segunda pede que a pessoa nomeie um comportamento dela.
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última mudança de sistema que chegou no seu trabalho. Você perguntou o porquê antes de começar a usar ou só foi se adaptando?"
+✅ "Lembra de uma decisão que você adiou por semanas. O que te fez agir no final — ou você ainda não agiu?"
+✅ "Pensa no último feedback que você recebeu e não aplicou. O que te impediu?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que acontecer, observe as pessoas ao redor."
+❌ "Tente notar quando isso aparecer na sua semana."
+❌ "Repare na reação dos colegas quando isso acontecer."
+
 VALIDAÇÃO INTERNA (antes de entregar — ser honesto):
 - Parece algo que uma pessoa falaria ou um texto que foi escrito?
 - Tem alguma frase que parece pronta ou genérica?
 - Está explicando demais?
 - Dá espaço pra pessoa completar o pensamento?
+- O exercício acessa memória específica ou é genérico?
 Se houver qualquer sinal de artificialidade → reescrever completamente.
 
 CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
+
+const HOOK_SYSTEM = `Você gera hooks de abertura para reels de Karen Santos.
+
+Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+
+REGRA CENTRAL:
+O hook prende porque é específico e real — não porque promete revelação ou usa drama.
+
+TRÊS TIPOS DE HOOK VÁLIDOS:
+
+Tipo 1 — OBSERVAÇÃO CORTANTE:
+Nomeia algo que a pessoa faz mas nunca colocou em palavras. Sem prometer nada. Sem drama.
+Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
+Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."
+
+Tipo 2 — DADO + LEITURA INESPERADA:
+Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
+Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
+Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."
+
+Tipo 3 — CENA ESPECÍFICA:
+Começa no meio de uma situação concreta que a pessoa reconhece imediatamente. Sem setup, sem contexto.
+Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
+Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."
+
+LISTA NEGRA — NUNCA usar nesses hooks:
+- "Isso aqui ninguém fala"
+- "A verdade que quase me fez desistir"
+- "Você vai se arrepender se ignorar isso"
+- "O segredo que ninguém te conta"
+- "Parece bobo mas muda tudo"
+- Qualquer promessa de revelação
+- Qualquer drama ou urgência artificial
+- Tom de coach ou motivacional
+
+INDICAÇÃO VISUAL — obrigatória em cada hook:
+- Enquadramento: close no rosto / meio corpo / câmera de baixo pra cima / costas virando
+- Texto na tela: o que aparece escrito nos primeiros 2 segundos (pode ser a frase inteira ou só a palavra de impacto)
+- Movimento: estática / zoom lento / corte brusco / pan lateral
+
+INDICAÇÃO SONORA — obrigatória em cada hook:
+- Trilha: sem trilha (só voz) / trilha ambiente baixa / corte brusco de som / silêncio intencional
+- Efeito: nenhum / batida / corte seco
+
+CRITÉRIO DE APROVAÇÃO:
+Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
+Se promete → reprova. Se é específica e reconhecível → aprovado.`
+
+const buildHookPrompt = (tema, roteiro) => `
+TEMA DO REELS: ${tema}
+${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
+
+Gere 3 hooks de abertura para este reels — um de cada tipo.
+
+Cada hook deve:
+- Prender nos primeiros 1-3 segundos
+- Ser compatível com o tom de Karen Santos (analítico, seco, sem floreio)
+- Ter indicação visual e sonora específica
+- NÃO usar clickbait, drama ou promessa de revelação
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "hooks": [
+    {
+      "tipo": "observacao_cortante",
+      "frase": "a frase exata de abertura — 1 linha",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "dado_leitura_inesperada",
+      "frase": "a frase exata de abertura — dado + interpretação",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "cena_especifica",
+      "frase": "a frase exata de abertura — cena concreta, sem setup",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    }
+  ]
+}`
 
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
@@ -176,8 +286,9 @@ Execute o protocolo:
 1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
 2. VARIAÇÃO EMOCIONAL (mudança real — mais próxima, mais íntima — não cosmética)
 3. VARIAÇÃO PROVOCATIVA (mudança real — mais desconfortável, mais direta — não cosmética)
-4. Valide internamente os 4 critérios — reescreva se qualquer um falhar
-5. Entregue apenas versões aprovadas
+4. EXERCÍCIO PRÁTICO: máximo 2 frases. Sempre no passado ou presente imediato. Sempre sobre comportamento próprio. Impossível responder sem memória específica.
+5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
+6. Entregue apenas versões aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -185,14 +296,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "variacao_emocional": "variação emocional completa",
   "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final — natural, como conversa",
-  "exercicio_pratico": "ação concreta e específica — 3 a 6 frases — contexto da situação + instrução + o que observar. Sem introdução motivacional. Sem conclusão moral.",
+  "exercicio_pratico": "exercício em 2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
   "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 2 frases: o que faz este conteúdo parecer real e por que vai gerar resposta",
+  "nota_estrategica": "em 1 frase: por que a variação provocativa é mais forte que a principal neste tema específico",
   "validacao": {
     "parece_real": true,
     "sem_frases_prontas": true,
     "sem_excesso_explicacao": true,
-    "espaco_aberto": true
+    "espaco_aberto": true,
+    "exercicio_acessa_memoria": true
   }
 }`
 
@@ -249,42 +361,35 @@ LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Vamos juntos?", "Concorda?" → fecha a conversa
 - Nota estratégica com "vulnerabilidade universal" → critério de conta motivacional
 
-CRITÉRIOS DE VALIDAÇÃO — rode os quatro testes antes de entregar:
-Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
-Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
-Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
-Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Vai na legenda, depois da observação seca de 1 linha
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo? Há quanto tempo?"
+✅ "Lembra de uma decisão que você tomou sob pressão e se arrependeu. O que você sabia antes de decidir que ignorou?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que chegarem com ferramenta nova, observe a reação das pessoas."
+❌ "Tente notar quando isso aparecer no seu trabalho."
 
 LEGENDA:
-Uma linha. Observação seca ou dado. Não resume o carrossel, não entrega a conclusão.
-  ❌ "aquela sensação de estar perdido mas fingir que entendeu tudo..."
-  ✅ "fingir que entendeu é uma habilidade que ninguém lista no currículo"
+Estrutura: 1 linha de observação seca + exercício prático em 2 frases.
+A observação seca não resume o carrossel nem entrega a conclusão.
+O exercício acessa memória específica da pessoa, não pede observação futura.
+
+EXEMPLO DE LEGENDA COMPLETA:
+"implementar sem explicar o porquê cria usuários, não parceiros
+
+Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo?"
 
 RESPOSTAS PARA COMENTÁRIOS:
 Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fundo.
   Pessoa: "já passei por isso" → Karen: "o que te fez perceber na hora?"
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
-
-EXERCÍCIO PRÁTICO:
-Todo carrossel deve ter um exercício prático gerado a partir da tensão específica do tema — não de uma lição genérica sobre o tema.
-
-Regra de geração: antes de escrever o exercício, complete internamente esta frase:
-"A tensão central desse carrossel é ___. O comportamento concreto que sustenta essa tensão é ___. O exercício força a pessoa a ___."
-Se você não consegue preencher as três lacunas com algo específico → o exercício é genérico. Reescreva.
-
-Critérios obrigatórios:
-- Nomeia um momento, situação ou comportamento específico (não "reuniões em geral" → "a próxima reunião onde você sentir que não entendeu")
-- Tem uma instrução que a pessoa pode recusar — se parecer fácil demais, é raso
-- Produz um resultado observável: a pessoa saberá se fez ou não fez
-- Sem introdução motivacional ("Este exercício vai te ajudar a...") e sem conclusão moral no final
-- Pode ter entre 3 e 6 frases: contexto da situação + instrução específica + o que observar ou registrar
-
-Escala de profundidade — teste o exercício gerado:
-  Raso: "Anote 3 situações onde você sentiu síndrome do impostor esta semana."
-  Médio: "Identifique uma entrega que você está travando por perfeccionismo e defina o mínimo aceitável para entregar amanhã. Escreva esse mínimo em uma frase antes de abrir o arquivo."
-  Profundo: "Escolha uma tarefa que você está 'quase terminando' há mais de 3 dias. Defina um horário de entrega para amanhã — não o ideal, o possível. Antes de entregar, escreva em uma linha o que ainda falta e por que você está segurando. Envie assim mesmo e observe o que acontece internamente depois."
-
-Se o exercício que você gerou se encaixa em 'Raso' → reescreva. Entregue apenas a partir de 'Médio'.
 
 CTA FECHADO:
 Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta. O formato é:
@@ -294,6 +399,13 @@ Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta.
   ❌ "O que você faz quando isso acontece?" (pergunta aberta — proibida no CTA fechado)
   ❌ "Conta nos comentários" (vago, sem estrutura binária)
 O CTA fechado é diferente da pergunta final. A pergunta final pede relato. O CTA fechado pede posição.
+
+CRITÉRIOS DE VALIDAÇÃO — rode os cinco testes antes de entregar:
+Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
+Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
+Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
+Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+Teste 5 — Exercício: "O exercício na legenda acessa memória específica ou é genérico/futuro?" Se genérico → reprova.
 
 TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
@@ -309,9 +421,10 @@ ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alt
 Execute o protocolo completo:
 1. Identifique a tensão interna central do tema.
 2. Gere as 3 versões abaixo. Cada versão tem a MESMA tensão, ângulo diferente.
-3. Rode o teste de sanidade final nas 3 versões e nas 3 perguntas finais.
+3. Rode os 5 testes de validação nas 3 versões e nas 3 perguntas finais.
    - Se alguma versão parecer "bonita" → reescreva
    - Se as 3 perguntas finais forem variações da mesma frase → reescreva
+   - Se o exercício for genérico ou futuro → reescreva
 4. Gere o exercício prático e o CTA fechado.
 5. Entregue apenas versões aprovadas.
 
@@ -357,8 +470,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
     ],
     "pergunta_final": "a pergunta mais exigente das três"
   },
-  "legenda": "1 linha — observação seca ou dado, sem resumir",
-  "exercicio_pratico": "ação concreta e específica — 1 a 3 frases — que a pessoa pode fazer nas próximas 24h",
+  "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
+  "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
   "cta_fechado": "escolha binária — sim ou não / isso ou aquilo — que pede posição, não relato",
   "comentarios": [
     { "comentario": "o que a pessoa provavelmente vai escrever", "resposta": "pergunta que puxa mais fundo" },
@@ -369,6 +482,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
     "deixa_espaco": true,
     "nao_parece_coach": true,
     "so_karen_diria": true,
+    "exercicio_acessa_memoria": true,
     "perguntas_diferentes": true
   }
 }`
@@ -558,6 +672,10 @@ export default function UnifiedCreator() {
   const [engCopied, setEngCopied] = useState(null)
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
+  const [engHooks, setEngHooks] = useState(null)
+  const [engHookLoading, setEngHookLoading] = useState(false)
+  const [engHookError, setEngHookError] = useState(null)
+  const [engHookCopied, setEngHookCopied] = useState(null)
   // Carrossel
 
   const [carTema, setCarTema] = useState('')
@@ -831,6 +949,50 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     } finally {
       setEngLoading(false)
     }
+  }
+
+  const generateReelsHooks = async () => {
+    if (!engTema.trim()) return
+    if (!apiKey) { setEngHookError('Configure sua API key.'); return }
+    setEngHookLoading(true)
+    setEngHookError(null)
+    setEngHooks(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 3000,
+          system: HOOK_SYSTEM,
+          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setEngHooks(JSON.parse(match[0]))
+    } catch (err) {
+      setEngHookError(err.message)
+    } finally {
+      setEngHookLoading(false)
+    }
+  }
+
+  const handleEngHookCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setEngHookCopied(key)
+    setTimeout(() => setEngHookCopied(null), 2000)
   }
 
   const generateHooks = async () => {
@@ -1629,6 +1791,115 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* ── Gerador de Hook ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <Zap size={13} className="text-amber-500" />
+                    <span className="text-xs font-semibold text-gray-700">Hooks de Abertura (0-3s)</span>
+                    <span className="text-[10px] text-gray-400">— o que prende antes do roteiro começar</span>
+                  </div>
+                  <button
+                    onClick={generateReelsHooks}
+                    disabled={engHookLoading}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
+                  >
+                    {engHookLoading
+                      ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
+                      : engHooks
+                        ? <><RefreshCw size={11} /> Regenerar</>
+                        : <><Zap size={11} /> Gerar 3 Hooks</>
+                    }
+                  </button>
+                </div>
+
+                {engHookError && (
+                  <div className="px-4 py-3 text-xs text-red-600 bg-red-50">{engHookError}</div>
+                )}
+
+                {engHooks && (
+                  <div className="divide-y divide-gray-100">
+                    {(engHooks.hooks || []).map((hook, i) => {
+                      const tipoLabel = {
+                        observacao_cortante: 'Observação Cortante',
+                        dado_leitura_inesperada: 'Dado + Leitura Inesperada',
+                        cena_especifica: 'Cena Específica',
+                      }[hook.tipo] || hook.tipo
+
+                      const tipoColor = {
+                        observacao_cortante: 'bg-violet-100 text-violet-700 border-violet-200',
+                        dado_leitura_inesperada: 'bg-blue-100 text-blue-700 border-blue-200',
+                        cena_especifica: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                      }[hook.tipo] || 'bg-gray-100 text-gray-600 border-gray-200'
+
+                      const copyText = [
+                        `FRASE: ${hook.frase}`,
+                        `TEXTO NA TELA: ${hook.texto_na_tela}`,
+                        `ENQUADRAMENTO: ${hook.enquadramento}`,
+                        `MOVIMENTO: ${hook.movimento}`,
+                        `SOM: ${hook.som}`,
+                      ].join('\n')
+
+                      return (
+                        <div key={i} className="px-4 py-4 space-y-3 group">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tipoColor}`}>
+                              {tipoLabel}
+                            </span>
+                            <button
+                              onClick={() => handleEngHookCopy(copyText, `hook-${i}`)}
+                              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
+                            >
+                              {engHookCopied === `hook-${i}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                            </button>
+                          </div>
+
+                          {/* Frase */}
+                          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Frase de abertura</p>
+                            <p className="text-sm font-semibold text-gray-900 leading-snug">"{hook.frase}"</p>
+                          </div>
+
+                          {/* Texto na tela */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Tela</span>
+                            <p className="text-xs text-gray-700">{hook.texto_na_tela}</p>
+                          </div>
+
+                          {/* Enquadramento + movimento */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Câmera</span>
+                            <p className="text-xs text-gray-700">{hook.enquadramento} · {hook.movimento}</p>
+                          </div>
+
+                          {/* Som */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Som</span>
+                            <p className="text-xs text-gray-700">{hook.som}</p>
+                          </div>
+
+                          {/* Por que funciona */}
+                          {hook.por_que_funciona && (
+                            <div className="flex items-start gap-1.5 pt-1 border-t border-gray-100">
+                              <span className="text-[10px] text-gray-300 mt-0.5">→</span>
+                              <p className="text-[11px] text-gray-400 italic">{hook.por_que_funciona}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {!engHooks && !engHookLoading && (
+                  <div className="px-4 py-5 text-center">
+                    <p className="text-xs text-gray-400">
+                      Gere o roteiro primeiro, depois clique em "Gerar 3 Hooks" para receber opções de abertura com indicação visual e sonora.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Respostas Sugeridas */}
