@@ -12,7 +12,6 @@ const TITLES = {
   '/tasks': { title: 'Tarefas', sub: 'Organize suas tarefas do dia e acompanhe o progresso' },
   '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
   '/archetypes': { title: 'Arquétipos de Conteúdo', sub: 'Extraia padrões de criadores e gere conteúdo baseado em arquétipos' },
-  '/reports': { title: 'Relatórios de Performance', sub: 'Analise dados exportados do Instagram, LinkedIn e TikTok' },
   '/security': { title: 'Registro de Acessos', sub: 'Histórico completo de logins e tentativas' },
   '/create': { title: 'Studio de Criação', sub: 'Escolha como quer começar sua criação' },
   '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
