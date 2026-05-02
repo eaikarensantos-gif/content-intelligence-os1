@@ -185,6 +185,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "variacao_emocional": "variação emocional completa",
   "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final — natural, como conversa",
+  "exercicio_pratico": "ação concreta e específica — 3 a 6 frases — contexto da situação + instrução + o que observar. Sem introdução motivacional. Sem conclusão moral.",
   "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
   "nota_estrategica": "em 2 frases: o que faz este conteúdo parecer real e por que vai gerar resposta",
   "validacao": {
@@ -1583,6 +1584,23 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
                 <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
               </div>
+
+              {/* Exercício Prático */}
+              {engResult.exercicio_pratico && (
+                <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center gap-2">
+                      <Target size={12} className="text-amber-500" />
+                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
+                    </div>
+                    <button onClick={() => handleEngCopy(engResult.exercicio_pratico, 'eng-exercicio')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors">
+                      {engCopied === 'eng-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{engResult.exercicio_pratico}</p>
+                </div>
+              )}
 
               {/* Variações */}
               <div className="space-y-2">
