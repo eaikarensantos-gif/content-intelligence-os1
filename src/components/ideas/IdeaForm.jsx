@@ -452,6 +452,44 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
           </div>
         </div>
 
+        {/* Plano Semanal */}
+        <div>
+          <label className="label">Encaixar na Semana</label>
+          <div className="grid grid-cols-4 gap-1.5 mt-1">
+            {[
+              { day: 'Seg', offset: 0, label: 'Carrossel' },
+              { day: 'Qua', offset: 2, label: 'Reels' },
+              { day: 'Qui', offset: 3, label: 'Post' },
+              { day: 'Sáb', offset: 5, label: 'Reels pessoal' },
+            ].map(({ day, offset, label }) => {
+              const today = new Date()
+              const dow = today.getDay()
+              const monday = new Date(today)
+              monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+              monday.setHours(0, 0, 0, 0)
+              const slotDate = new Date(monday)
+              slotDate.setDate(monday.getDate() + offset)
+              const dateStr = slotDate.toISOString().slice(0, 10)
+              const isSelected = form.scheduled_date === dateStr
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => set('scheduled_date', isSelected ? '' : dateStr)}
+                  className={`flex flex-col items-center py-2 px-1 rounded-xl border text-center transition-all ${
+                    isSelected
+                      ? 'bg-orange-100 border-orange-400 text-orange-700'
+                      : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-orange-300 hover:bg-orange-50'
+                  }`}
+                >
+                  <span className="text-[11px] font-bold">{day}</span>
+                  <span className="text-[9px] text-gray-400 mt-0.5">{label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {/* Data + Tipo de Conteúdo */}
         <div className="grid grid-cols-2 gap-3">
           <div>
