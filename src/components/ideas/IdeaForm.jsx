@@ -469,7 +469,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               monday.setHours(0, 0, 0, 0)
               const slotDate = new Date(monday)
               slotDate.setDate(monday.getDate() + offset)
-              const dateStr = slotDate.toISOString().slice(0, 10)
+              const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+              const dateStr = localDateStr(slotDate)
               const isSelected = form.scheduled_date === dateStr
               return (
                 <button
