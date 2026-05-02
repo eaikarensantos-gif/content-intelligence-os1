@@ -145,11 +145,29 @@ PERGUNTA FINAL:
 - Simples, quase íntima, ou contraste leve
 - Evitar tom de pesquisa ou perguntas genéricas
 
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer", "da próxima vez"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica da própria pessoa
+- A primeira frase acessa a memória. A segunda pede que a pessoa nomeie um comportamento dela.
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última mudança de sistema que chegou no seu trabalho. Você perguntou o porquê antes de começar a usar ou só foi se adaptando?"
+✅ "Lembra de uma decisão que você adiou por semanas. O que te fez agir no final — ou você ainda não agiu?"
+✅ "Pensa no último feedback que você recebeu e não aplicou. O que te impediu?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que acontecer, observe as pessoas ao redor."
+❌ "Tente notar quando isso aparecer na sua semana."
+❌ "Repare na reação dos colegas quando isso acontecer."
+
 VALIDAÇÃO INTERNA (antes de entregar — ser honesto):
 - Parece algo que uma pessoa falaria ou um texto que foi escrito?
 - Tem alguma frase que parece pronta ou genérica?
 - Está explicando demais?
 - Dá espaço pra pessoa completar o pensamento?
+- O exercício acessa memória específica ou é genérico?
 Se houver qualquer sinal de artificialidade → reescrever completamente.
 
 CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
@@ -165,8 +183,9 @@ Execute o protocolo:
 1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
 2. VARIAÇÃO EMOCIONAL (mudança real — mais próxima, mais íntima — não cosmética)
 3. VARIAÇÃO PROVOCATIVA (mudança real — mais desconfortável, mais direta — não cosmética)
-4. Valide internamente os 4 critérios — reescreva se qualquer um falhar
-5. Entregue apenas versões aprovadas
+4. EXERCÍCIO PRÁTICO: máximo 2 frases. Sempre no passado ou presente imediato. Sempre sobre comportamento próprio. Impossível responder sem memória específica.
+5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
+6. Entregue apenas versões aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -174,13 +193,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "variacao_emocional": "variação emocional completa",
   "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final — natural, como conversa",
+  "exercicio_pratico": "exercício em 2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
   "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 2 frases: o que faz este conteúdo parecer real e por que vai gerar resposta",
+  "nota_estrategica": "em 1 frase: por que a variação provocativa é mais forte que a principal neste tema específico",
   "validacao": {
     "parece_real": true,
     "sem_frases_prontas": true,
     "sem_excesso_explicacao": true,
-    "espaco_aberto": true
+    "espaco_aberto": true,
+    "exercicio_acessa_memoria": true
   }
 }`
 
@@ -236,21 +257,42 @@ LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Vamos juntos?", "Concorda?" → fecha a conversa
 - Nota estratégica com "vulnerabilidade universal" → critério de conta motivacional
 
-CRITÉRIOS DE VALIDAÇÃO — rode os quatro testes antes de entregar:
-Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
-Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
-Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
-Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Vai na legenda, depois da observação seca de 1 linha
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo? Há quanto tempo?"
+✅ "Lembra de uma decisão que você tomou sob pressão e se arrependeu. O que você sabia antes de decidir que ignorou?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que chegarem com ferramenta nova, observe a reação das pessoas."
+❌ "Tente notar quando isso aparecer no seu trabalho."
 
 LEGENDA:
-Uma linha. Observação seca ou dado. Não resume o carrossel, não entrega a conclusão.
-  ❌ "aquela sensação de estar perdido mas fingir que entendeu tudo..."
-  ✅ "fingir que entendeu é uma habilidade que ninguém lista no currículo"
+Estrutura: 1 linha de observação seca + exercício prático em 2 frases.
+A observação seca não resume o carrossel nem entrega a conclusão.
+O exercício acessa memória específica da pessoa, não pede observação futura.
+
+EXEMPLO DE LEGENDA COMPLETA:
+"implementar sem explicar o porquê cria usuários, não parceiros
+
+Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo?"
 
 RESPOSTAS PARA COMENTÁRIOS:
 Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fundo.
   Pessoa: "já passei por isso" → Karen: "o que te fez perceber na hora?"
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
+
+CRITÉRIOS DE VALIDAÇÃO — rode os cinco testes antes de entregar:
+Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
+Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
+Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
+Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+Teste 5 — Exercício: "O exercício na legenda acessa memória específica ou é genérico/futuro?" Se genérico → reprova.
 
 TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
@@ -266,8 +308,9 @@ ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alt
 Execute o protocolo completo:
 1. Responda internamente: "Qual é a tensão interna que a pessoa carrega sobre esse tema?"
 2. Gere 7 slides seguindo a estrutura (estado → causal → virada → abertura).
-3. Rode os 4 testes de validação. Se qualquer um reprovar → reescreva do zero.
-4. Entregue apenas a versão aprovada.
+3. Gere a legenda: 1 linha de observação seca + exercício prático em 2 frases no passado ou presente imediato.
+4. Rode os 5 testes de validação. Se qualquer um reprovar → reescreva do zero.
+5. Entregue apenas a versão aprovada.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -280,7 +323,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
     { "numero": 6, "texto": "virada sem resolução" },
     { "numero": 7, "texto": "observação seca — deixa espaço" }
   ],
-  "legenda": "1 linha — observação seca ou dado, sem resumir o carrossel",
+  "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
+  "exercicio_pratico": "apenas o exercício isolado — 2 frases máximo, acessa memória específica",
   "pergunta_final": "pergunta que pede relato, não confirmação",
   "respostas_sugeridas": [
     "pergunta que puxa mais fundo 1",
@@ -291,7 +335,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
     "deixa_espaco": true,
     "comentario_comeca_com_eu": true,
     "nao_parece_coach": true,
-    "so_karen_diria": true
+    "so_karen_diria": true,
+    "exercicio_acessa_memoria": true
   }
 }`
 
