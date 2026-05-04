@@ -122,7 +122,7 @@ Responda APENAS com JSON válido:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 6000,
       system: withAntiAIFilter(`Você é um expert em carrosseis virais para Instagram e LinkedIn. Responda APENAS com JSON válido, sem markdown, sem code blocks.
 
