@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Anthropic from '@anthropic-ai/sdk'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
@@ -18,6 +19,8 @@ import BrandLinterPanel from '../linter/BrandLinterPanel'
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
 const LS_KEY = 'cio-anthropic-key'
+
+const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
 /* ── Master Prompt Karen (do PDF) ── */
 const MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo para Karen Santos (@karensantosperfil).
@@ -721,24 +724,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
 REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavras), virais e persuasivos. Devem gerar curiosidade sem ser clickbait extremista ou apelativo. Pense em títulos que fariam alguém parar o scroll. Nada genérico.`
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          system: ANTI_AI_FILTER,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: [{ type: 'text', text: ANTI_AI_FILTER, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: prompt }],
       })
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-
-      const data = await res.json()
-      const jsonText = data.content?.[0]?.text || ''
+      const jsonText = aiRes.content.find(b => b.type === 'text')?.text || ''
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 
@@ -802,27 +795,13 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngResult(null)
     setEngSavedHub(false)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 5000,
-          system: ENGAGEMENT_SYSTEM,
-          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 5000,
+        system: [{ type: 'text', text: ENGAGEMENT_SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setEngResult(JSON.parse(match[0]))
@@ -839,13 +818,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setCarHooks([])
     try {
       const tema = carTema.trim() || 'carreira e maturidade profissional'
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 600,
-          system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
+      const HOOKS_SYSTEM = `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
 
 PRINCÍPIO CENTRAL:
@@ -876,12 +849,14 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
-          messages: [{ role: 'user', content: `Tema: ${tema}` }],
-        }),
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        system: [{ type: 'text', text: HOOKS_SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: `Tema: ${tema}` }],
       })
-      const data = await res.json()
-      const text = data.content?.[0]?.text || ''
+      const text = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
         const parsed = JSON.parse(match[0])
@@ -900,22 +875,13 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarResult(null)
     setCarSavedHub(false)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 5000,
-          system: CAROUSEL_SYSTEM,
-          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 5000,
+        system: [{ type: 'text', text: CAROUSEL_SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setCarResult(JSON.parse(match[0]))
@@ -1042,22 +1008,13 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const systemPrompt = BASE_STORIES_SYSTEM
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: 'Gere o stories agora.' }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: 'Gere o stories agora.' }],
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      const text = data.content?.[0]?.text?.trim() || ''
+      const text = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
       setStrResult(text)
     } catch (err) {
@@ -1080,13 +1037,10 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       targets.some(tg => tg.id === t.id) ? { ...t, temperatura: 'analyzing' } : t
     ))
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 800,
-          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
 
 Temperatura:
 - quente: alto potencial viral agora, gera forte identificação, timely
@@ -1100,10 +1054,8 @@ ${targets.map(t => `- ${t.tema}`).join('\n')}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"resultados": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta e seca"}]}` }],
-        }),
       })
-      const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const results = JSON.parse(match[0]).resultados || []
         setSavedThemes(prev => prev.map(t => {
@@ -1136,13 +1088,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
     if (apiKey) {
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 400,
-            system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
+        const aiRes = await mkClient(apiKey).messages.create({
+          model: 'claude-haiku-4-5',
+          max_tokens: 400,
+          system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
 - IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
@@ -1150,11 +1099,9 @@ Regras:
 - Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
 - Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
 - Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`,
-            messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
-          }),
+          messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
         })
-        const data = await res.json()
-        const text = data.content?.[0]?.text || ''
+        const text = aiRes.content.find(b => b.type === 'text')?.text || ''
         const match = text.match(/\[[\s\S]*\]/)
         if (match) {
           const parsed = JSON.parse(match[0])
@@ -1192,13 +1139,10 @@ Regras:
       const contextoCategoria = categoria
         ? `Categoria focada: "${categoria}"\n\nTemas já existentes nessa categoria:\n${temasNaCategoria.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`
         : `Temas gerais já existentes:\n${savedThemes.map(t => `- ${t.tema}`).join('\n')}`
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 800,
-          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
 
 ${contextoCategoria}
 
@@ -1211,10 +1155,8 @@ Temperatura:
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
-        }),
       })
-      const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const existing = new Set(savedThemes.map(t => t.tema))
         const novos = (JSON.parse(match[0]).temas || [])
