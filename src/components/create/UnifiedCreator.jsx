@@ -435,6 +435,72 @@ const STORIES_STRUCTURES = {
   },
 }
 
+/* ── Protocolo de Reels ── */
+const BASE_REELS_SYSTEM = `— IDENTIDADE —
+
+Você é um roteirista de reels para Instagram.
+
+A autora é Karen Santos: consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+
+— CONTEXTO DA GERAÇÃO —
+
+Tema: {tema}
+Estrutura: {estrutura}
+
+Siga rigorosamente as instruções da estrutura solicitada.
+
+— VOZ E TOM —
+
+Karen fala como quem observa — não como quem ensina.
+Seco. Direto. Sem motivação.
+Sem exclamação. Sem reticências dramáticas. Sem palavras de impacto forçado.
+
+Referências de tom correto:
+- "Você provavelmente já fez isso."
+- "Não é culpa. É padrão."
+- "A empresa mudou o sistema. Você ainda usa o antigo."
+
+— REGRAS GLOBAIS —
+
+Frases curtas. Máximo 15 palavras cada.
+Blocos de 1 a 2 frases.
+NUNCA usar: transformador, poderoso, incrível, surpreendente, jornada, propósito, impacto, verdade, real talk.
+NUNCA usar ponto de exclamação.
+NUNCA inventar dados ou estatísticas.
+NUNCA colocar moral explícita no final.
+
+— ENTREGA —
+
+Entregue apenas o roteiro. Sem título. Sem introdução. Sem "aqui está o roteiro:". Sem comentários ao final.`
+
+const REELS_STRUCTURES = {
+  personagem: {
+    label: 'Personagem em cena',
+    desc: 'Cena com personagem real que o espectador reconhece',
+    prompt: 'Abra com uma cena onde um personagem específico faz algo que o espectador já fez. Não descreva sentimentos. Descreva o que o personagem FAZ. Desenvolva o que aquele comportamento revela sem nomear o problema. Termine com uma constatação seca — não uma pergunta, não uma lição.',
+  },
+  antes_depois: {
+    label: 'Antes / Depois',
+    desc: 'Contraste entre dois estados sem drama',
+    prompt: 'Mostre dois estados: o de antes e o de depois. Sem drama. Sem celebração. O contraste já é suficiente. O antes é concreto e específico. O depois é igualmente concreto. Nenhum dos dois é melhor ou pior — são apenas diferentes. Termine com o estado de depois, sem comentar.',
+  },
+  bastidor: {
+    label: 'Bastidor real',
+    desc: 'O que acontece por trás de uma decisão ou situação',
+    prompt: 'Mostre o que acontece por trás de uma situação que parece simples por fora. Não revele tudo de uma vez. Vá camada por camada. Cada bloco adiciona uma informação que muda levemente o que o espectador pensava saber. Termine na camada mais interna — sem explicar o que ela significa.',
+  },
+  entrevista: {
+    label: 'Entrevista / Pergunta direta',
+    desc: 'Série de perguntas que revelam um padrão',
+    prompt: 'Faça uma série de perguntas diretas — curtas, sem setup. Cada pergunta revela um aspecto do mesmo padrão. As perguntas não têm resposta no roteiro. O espectador responde internamente. Termine com a pergunta mais desconfortável do conjunto.',
+  },
+  desconstrucao: {
+    label: 'Desconstrução',
+    desc: 'Desmonta uma crença comum sem substituir por outra',
+    prompt: 'Comece com uma crença comum — algo que parece óbvio e aceito. Desmonte-a em etapas. Não substitua por outra crença. Apenas mostre por que a crença não se sustenta quando você olha de perto. Termine sem oferecer alternativa — só o vazio depois da desconstrução.',
+  },
+}
+
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
@@ -565,6 +631,15 @@ export default function UnifiedCreator() {
   const [strResult, setStrResult] = useState(null)
   const [strError, setStrError] = useState(null)
   const [strCopied, setStrCopied] = useState(false)
+
+  // Reels
+  const [reelsTema, setReelsTema] = useState('')
+  const [reelsEstrutura, setReelsEstrutura] = useState('personagem')
+  const [reelsLoading, setReelsLoading] = useState(false)
+  const [reelsResult, setReelsResult] = useState(null)
+  const [reelsError, setReelsError] = useState(null)
+  const [reelsCopied, setReelsCopied] = useState(false)
+  const [reelsSavedHub, setReelsSavedHub] = useState(false)
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
@@ -704,24 +779,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
 REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavras), virais e persuasivos. Devem gerar curiosidade sem ser clickbait extremista ou apelativo. Pense em títulos que fariam alguém parar o scroll. Nada genérico.`
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          system: ANTI_AI_FILTER,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: [{ type: 'text', text: ANTI_AI_FILTER, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: prompt }],
       })
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-
-      const data = await res.json()
-      const jsonText = data.content?.[0]?.text || ''
+      const jsonText = aiRes.content.find(b => b.type === 'text')?.text || ''
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 
@@ -785,27 +850,13 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngResult(null)
     setEngSavedHub(false)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 5000,
-          system: ENGAGEMENT_SYSTEM,
-          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 5000,
+        system: [{ type: 'text', text: ENGAGEMENT_SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setEngResult(JSON.parse(match[0]))
@@ -822,13 +873,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setCarHooks([])
     try {
       const tema = carTema.trim() || 'carreira e maturidade profissional'
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 600,
-          system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
+      const HOOKS_SYSTEM = `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
 
 PRINCÍPIO CENTRAL:
@@ -859,12 +904,14 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
-          messages: [{ role: 'user', content: `Tema: ${tema}` }],
-        }),
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        system: [{ type: 'text', text: HOOKS_SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: `Tema: ${tema}` }],
       })
-      const data = await res.json()
-      const text = data.content?.[0]?.text || ''
+      const text = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
         const parsed = JSON.parse(match[0])
@@ -883,22 +930,13 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarResult(null)
     setCarSavedHub(false)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 5000,
-          system: CAROUSEL_SYSTEM,
-          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 5000,
+        system: [{ type: 'text', text: CAROUSEL_SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setCarResult(JSON.parse(match[0]))
@@ -1025,22 +1063,13 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const systemPrompt = BASE_STORIES_SYSTEM
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: 'Gere o stories agora.' }],
-        }),
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: 'Gere o stories agora.' }],
       })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      const text = data.content?.[0]?.text?.trim() || ''
+      const text = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
       setStrResult(text)
     } catch (err) {
@@ -1050,10 +1079,66 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     }
   }
 
+  const handleReelsCopy = () => {
+    if (!reelsResult) return
+    navigator.clipboard.writeText(reelsResult)
+    setReelsCopied(true)
+    setTimeout(() => setReelsCopied(false), 2000)
+  }
+
+  const handleReelsSaveHub = () => {
+    if (!reelsResult) return
+    const estrutura = REELS_STRUCTURES[reelsEstrutura]
+    addIdea({
+      title: reelsTema,
+      description: reelsResult.slice(0, 300),
+      script: reelsResult,
+      caption: '',
+      cta: '',
+      format: 'reel',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-reels', estrutura?.label.toLowerCase() || '', reelsTema.toLowerCase().slice(0, 20)].filter(Boolean),
+      source: `Protocolo de Reels — ${estrutura?.label || ''}`,
+    })
+    setReelsSavedHub(true)
+  }
+
+  const generateReels = async () => {
+    if (!reelsTema.trim()) return
+    if (!apiKey) { setReelsError('Configure sua API key em Configurações'); return }
+    setReelsLoading(true)
+    setReelsError(null)
+    setReelsResult(null)
+    setReelsSavedHub(false)
+    try {
+      const estrutura = REELS_STRUCTURES[reelsEstrutura] || REELS_STRUCTURES.personagem
+      const systemPrompt = BASE_REELS_SYSTEM
+        .replace('{tema}', reelsTema)
+        .replace('{estrutura}', estrutura.prompt)
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: 'Gere o roteiro de reels agora.' }],
+      })
+      const text = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
+      if (!text) throw new Error('Resposta inválida da IA')
+      setReelsResult(text)
+    } catch (err) {
+      setReelsError(err.message)
+    } finally {
+      setReelsLoading(false)
+    }
+  }
+
   const applyTheme = (tema) => {
     if (mode === 'engagement') setEngTema(tema)
     else if (mode === 'carousel') setCarTema(tema)
     else if (mode === 'stories') setStrTema(tema)
+    else if (mode === 'reels') setReelsTema(tema)
     else setInput(tema)
   }
 
@@ -1063,13 +1148,10 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       targets.some(tg => tg.id === t.id) ? { ...t, temperatura: 'analyzing' } : t
     ))
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 800,
-          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
 
 Temperatura:
 - quente: alto potencial viral agora, gera forte identificação, timely
@@ -1083,10 +1165,8 @@ ${targets.map(t => `- ${t.tema}`).join('\n')}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"resultados": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta e seca"}]}` }],
-        }),
       })
-      const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const results = JSON.parse(match[0]).resultados || []
         setSavedThemes(prev => prev.map(t => {
@@ -1119,13 +1199,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
     if (apiKey) {
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 400,
-            system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
+        const aiRes = await mkClient(apiKey).messages.create({
+          model: 'claude-haiku-4-5',
+          max_tokens: 400,
+          system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
 - IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
@@ -1133,11 +1210,9 @@ Regras:
 - Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
 - Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
 - Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`,
-            messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
-          }),
+          messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
         })
-        const data = await res.json()
-        const text = data.content?.[0]?.text || ''
+        const text = aiRes.content.find(b => b.type === 'text')?.text || ''
         const match = text.match(/\[[\s\S]*\]/)
         if (match) {
           const parsed = JSON.parse(match[0])
@@ -1169,13 +1244,10 @@ Regras:
     if (!apiKey || savedThemes.length === 0) return
     setExpandingThemes(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 800,
-          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
 
 Lista atual de temas da criadora:
 ${savedThemes.map(t => `- ${t.tema}`).join('\n')}
@@ -1189,10 +1261,8 @@ Temperatura:
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
-        }),
       })
-      const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const existing = new Set(savedThemes.map(t => t.tema))
         const novos = (JSON.parse(match[0]).temas || [])
@@ -1391,6 +1461,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
             mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <Film size={13} /> Stories
+        </button>
+        <button onClick={() => setMode('reels')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'reels' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Video size={13} /> Reels
         </button>
       </div>
 
@@ -2144,6 +2220,128 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
                 >
                   <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Formulário de Reels ── */}
+      {mode === 'reels' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shrink-0">
+                <Video size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Protocolo de Reels</p>
+                <p className="text-xs text-gray-400 mt-0.5">Roteiro seco, direto, sem floreio — para quem reconhece a cena.</p>
+              </div>
+            </div>
+
+            {/* Tema */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tema <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={reelsTema}
+                onChange={e => setReelsTema(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateReels()}
+                placeholder="Ex: procrastinação mascarada de planejamento, burnout que parece disciplina..."
+                className="input text-sm w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Estrutura */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                Estrutura <span className="text-red-400">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(REELS_STRUCTURES).map(([key, s]) => (
+                  <button
+                    key={key}
+                    onClick={() => setReelsEstrutura(key)}
+                    className={clsx(
+                      'text-left px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                      reelsEstrutura === key
+                        ? 'bg-purple-50 border-purple-400 text-purple-800'
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                    )}
+                  >
+                    <div className="font-semibold">{s.label}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {reelsError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{reelsError}</div>
+            )}
+
+            <button onClick={generateReels} disabled={reelsLoading || !reelsTema.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-40 disabled:cursor-not-allowed">
+              {reelsLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Video size={15} /> Gerar Reels</>}
+            </button>
+          </div>
+
+          {/* ── Output de Reels ── */}
+          {reelsResult && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">
+                      Reels — {REELS_STRUCTURES[reelsEstrutura]?.label}
+                    </span>
+                  </div>
+                  <button onClick={handleReelsCopy}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-600 transition-colors">
+                    {reelsCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                  </button>
+                </div>
+                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {reelsResult}
+                </div>
+              </div>
+
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReelsSaveHub}
+                  disabled={reelsSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    reelsSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                  )}
+                >
+                  {reelsSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {reelsSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-purple-600 hover:border-purple-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateReels}
+                  disabled={reelsLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={reelsLoading ? 'animate-spin' : ''} /> Regenerar
                 </button>
               </div>
             </div>
