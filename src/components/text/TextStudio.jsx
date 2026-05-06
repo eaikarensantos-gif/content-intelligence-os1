@@ -112,6 +112,8 @@ PROIBIDO (nunca use estas frases ou variações delas):
 - "a verdade é que"
 - "o segredo de..."
 - "X dicas para..."
+- "não é sobre X, é sobre Y" e qualquer oposição falsa nesse formato
+- Referências a anos específicos no argumento ("em 2025", "em 2024") — escreva de forma atemporal
 - Listas genéricas sem substância, linguagem corporativa, emojis em excesso
 - Conteúdo genérico que qualquer pessoa poderia escrever
 - Palestra motivacional, clickbait ou marketing genérico
@@ -145,7 +147,7 @@ Responda SOMENTE com um JSON válido neste formato:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       system: withAntiAIFilter('You are a sharp Brazilian content repurposing expert. Write in natural, conversational Brazilian Portuguese. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER use clickbait like "isso vai mudar tudo". PREFER energizing language: "A parte boa é que...", "Isso me surpreendeu...", "O mais interessante aqui é...". Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.'),
       messages: [{ role: 'user', content: prompt }],

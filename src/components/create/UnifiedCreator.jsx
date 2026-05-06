@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Anthropic from '@anthropic-ai/sdk'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
@@ -18,6 +19,8 @@ import BrandLinterPanel from '../linter/BrandLinterPanel'
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
 const LS_KEY = 'cio-anthropic-key'
+
+const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
 /* ── Master Prompt Karen (do PDF) ── */
 const MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo para Karen Santos (@karensantosperfil).
@@ -111,7 +114,8 @@ PRINCÍPIO CENTRAL:
 Escrever como alguém que observou algo específico — não como quem está ensinando.
 
 PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- Frases: "não é só X, é Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Frases: "não é só X, é Y" / "não é sobre X, é sobre Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
 - Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
 - Listas em escadinha repetitiva
 - Frases de efeito genéricas
@@ -155,14 +159,124 @@ PERGUNTA FINAL:
 - Simples, quase íntima, ou contraste leve
 - Evitar tom de pesquisa ou perguntas genéricas
 
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer", "da próxima vez"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica da própria pessoa
+- A primeira frase acessa a memória. A segunda pede que a pessoa nomeie um comportamento dela.
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última mudança de sistema que chegou no seu trabalho. Você perguntou o porquê antes de começar a usar ou só foi se adaptando?"
+✅ "Lembra de uma decisão que você adiou por semanas. O que te fez agir no final — ou você ainda não agiu?"
+✅ "Pensa no último feedback que você recebeu e não aplicou. O que te impediu?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que acontecer, observe as pessoas ao redor."
+❌ "Tente notar quando isso aparecer na sua semana."
+❌ "Repare na reação dos colegas quando isso acontecer."
+
 VALIDAÇÃO INTERNA (antes de entregar — ser honesto):
 - Parece algo que uma pessoa falaria ou um texto que foi escrito?
 - Tem alguma frase que parece pronta ou genérica?
 - Está explicando demais?
 - Dá espaço pra pessoa completar o pensamento?
+- O exercício acessa memória específica ou é genérico?
 Se houver qualquer sinal de artificialidade → reescrever completamente.
 
 CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
+
+const HOOK_SYSTEM = `Você gera hooks de abertura para reels de Karen Santos.
+
+Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+
+REGRA CENTRAL:
+O hook prende porque é específico e real — não porque promete revelação ou usa drama.
+
+TRÊS TIPOS DE HOOK VÁLIDOS:
+
+Tipo 1 — OBSERVAÇÃO CORTANTE:
+Nomeia algo que a pessoa faz mas nunca colocou em palavras. Sem prometer nada. Sem drama.
+Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
+Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."
+
+Tipo 2 — DADO + LEITURA INESPERADA:
+Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
+Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
+Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."
+
+Tipo 3 — CENA ESPECÍFICA:
+Começa no meio de uma situação concreta que a pessoa reconhece imediatamente. Sem setup, sem contexto.
+Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
+Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."
+
+LISTA NEGRA — NUNCA usar nesses hooks:
+- "Isso aqui ninguém fala"
+- "A verdade que quase me fez desistir"
+- "Você vai se arrepender se ignorar isso"
+- "O segredo que ninguém te conta"
+- "Parece bobo mas muda tudo"
+- Qualquer promessa de revelação
+- Qualquer drama ou urgência artificial
+- Tom de coach ou motivacional
+
+INDICAÇÃO VISUAL — obrigatória em cada hook:
+- Enquadramento: close no rosto / meio corpo / câmera de baixo pra cima / costas virando
+- Texto na tela: o que aparece escrito nos primeiros 2 segundos (pode ser a frase inteira ou só a palavra de impacto)
+- Movimento: estática / zoom lento / corte brusco / pan lateral
+
+INDICAÇÃO SONORA — obrigatória em cada hook:
+- Trilha: sem trilha (só voz) / trilha ambiente baixa / corte brusco de som / silêncio intencional
+- Efeito: nenhum / batida / corte seco
+
+CRITÉRIO DE APROVAÇÃO:
+Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
+Se promete → reprova. Se é específica e reconhecível → aprovado.`
+
+const buildHookPrompt = (tema, roteiro) => `
+TEMA DO REELS: ${tema}
+${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
+
+Gere 3 hooks de abertura para este reels — um de cada tipo.
+
+Cada hook deve:
+- Prender nos primeiros 1-3 segundos
+- Ser compatível com o tom de Karen Santos (analítico, seco, sem floreio)
+- Ter indicação visual e sonora específica
+- NÃO usar clickbait, drama ou promessa de revelação
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "hooks": [
+    {
+      "tipo": "observacao_cortante",
+      "frase": "a frase exata de abertura — 1 linha",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "dado_leitura_inesperada",
+      "frase": "a frase exata de abertura — dado + interpretação",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    },
+    {
+      "tipo": "cena_especifica",
+      "frase": "a frase exata de abertura — cena concreta, sem setup",
+      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
+      "enquadramento": "instrução de câmera específica",
+      "movimento": "instrução de movimento de câmera",
+      "som": "instrução de trilha e efeito sonoro",
+      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
+    }
+  ]
+}`
 
 const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
@@ -175,8 +289,9 @@ Execute o protocolo:
 1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
 2. VARIAÇÃO EMOCIONAL (mudança real — mais próxima, mais íntima — não cosmética)
 3. VARIAÇÃO PROVOCATIVA (mudança real — mais desconfortável, mais direta — não cosmética)
-4. Valide internamente os 4 critérios — reescreva se qualquer um falhar
-5. Entregue apenas versões aprovadas
+4. EXERCÍCIO PRÁTICO: máximo 2 frases. Sempre no passado ou presente imediato. Sempre sobre comportamento próprio. Impossível responder sem memória específica.
+5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
+6. Entregue apenas versões aprovadas
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -184,13 +299,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "variacao_emocional": "variação emocional completa",
   "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final — natural, como conversa",
+  "exercicio_pratico": "ação concreta e específica — 3 a 6 frases — contexto da situação + instrução + o que observar. Sem introdução motivacional. Sem conclusão moral.",
   "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 2 frases: o que faz este conteúdo parecer real e por que vai gerar resposta",
+  "nota_estrategica": "em 1 frase: por que a variação provocativa é mais forte que a principal neste tema específico",
   "validacao": {
     "parece_real": true,
     "sem_frases_prontas": true,
     "sem_excesso_explicacao": true,
-    "espaco_aberto": true
+    "espaco_aberto": true,
+    "exercicio_acessa_memoria": true
   }
 }`
 
@@ -240,34 +357,42 @@ VOCABULÁRIO E RITMO:
 
 LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Não é sobre X, é sobre Y" → oposição falsa, parece template
+- Referências a anos específicos ("em 2025", "em 2024") → datado, parece artigo de blog
 - Três ou mais frases curtas em sequência → ritmo de sermão de coach
 - Travessões para dar impacto → artificialidade
 - "Mindset", "Propósito", "Transformação" → jargão vago
 - "Vamos juntos?", "Concorda?" → fecha a conversa
 - Nota estratégica com "vulnerabilidade universal" → critério de conta motivacional
 
-CRITÉRIOS DE VALIDAÇÃO — rode os quatro testes antes de entregar:
-Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
-Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
-Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
-Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
+- Vai na legenda, depois da observação seca de 1 linha
+- Máximo 2 frases
+- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer"
+- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
+- Deve ser impossível responder sem acessar uma memória específica
+
+EXEMPLOS DE EXERCÍCIO CORRETO:
+✅ "Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo? Há quanto tempo?"
+✅ "Lembra de uma decisão que você tomou sob pressão e se arrependeu. O que você sabia antes de decidir que ignorou?"
+
+EXEMPLOS DE EXERCÍCIO ERRADO:
+❌ "Na próxima vez que chegarem com ferramenta nova, observe a reação das pessoas."
+❌ "Tente notar quando isso aparecer no seu trabalho."
 
 LEGENDA:
-Uma linha. Observação seca ou dado. Não resume o carrossel, não entrega a conclusão.
-  ❌ "aquela sensação de estar perdido mas fingir que entendeu tudo..."
-  ✅ "fingir que entendeu é uma habilidade que ninguém lista no currículo"
+Estrutura: 1 linha de observação seca + exercício prático em 2 frases.
+A observação seca não resume o carrossel nem entrega a conclusão.
+O exercício acessa memória específica da pessoa, não pede observação futura.
+
+EXEMPLO DE LEGENDA COMPLETA:
+"implementar sem explicar o porquê cria usuários, não parceiros
+
+Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo?"
 
 RESPOSTAS PARA COMENTÁRIOS:
 Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fundo.
   Pessoa: "já passei por isso" → Karen: "o que te fez perceber na hora?"
 As respostas devem ser perguntas abertas que pedem mais história, não confirmações ou explicações.
-
-EXERCÍCIO PRÁTICO:
-Todo carrossel deve ter um exercício prático relacionado à tensão do tema. O exercício deve:
-- Ser uma ação concreta que a pessoa pode fazer nas próximas 24 horas
-- Não ser motivacional nem genérico ("reflita sobre...", "pense em..." → proibido)
-- Ser específico o suficiente para gerar desconforto real ("Na próxima reunião, quando sentir vontade de acenar que sim sem entender — não acene. Fique quieto. Veja o que acontece.")
-- Ter entre 1 e 3 frases. Nada mais.
 
 CTA FECHADO:
 Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta. O formato é:
@@ -277,6 +402,13 @@ Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta.
   ❌ "O que você faz quando isso acontece?" (pergunta aberta — proibida no CTA fechado)
   ❌ "Conta nos comentários" (vago, sem estrutura binária)
 O CTA fechado é diferente da pergunta final. A pergunta final pede relato. O CTA fechado pede posição.
+
+CRITÉRIOS DE VALIDAÇÃO — rode os cinco testes antes de entregar:
+Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
+Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
+Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
+Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
+Teste 5 — Exercício: "O exercício na legenda acessa memória específica ou é genérico/futuro?" Se genérico → reprova.
 
 TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
@@ -292,9 +424,10 @@ ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alt
 Execute o protocolo completo:
 1. Identifique a tensão interna central do tema.
 2. Gere as 3 versões abaixo. Cada versão tem a MESMA tensão, ângulo diferente.
-3. Rode o teste de sanidade final nas 3 versões e nas 3 perguntas finais.
+3. Rode os 5 testes de validação nas 3 versões e nas 3 perguntas finais.
    - Se alguma versão parecer "bonita" → reescreva
    - Se as 3 perguntas finais forem variações da mesma frase → reescreva
+   - Se o exercício for genérico ou futuro → reescreva
 4. Gere o exercício prático e o CTA fechado.
 5. Entregue apenas versões aprovadas.
 
@@ -340,8 +473,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
     ],
     "pergunta_final": "a pergunta mais exigente das três"
   },
-  "legenda": "1 linha — observação seca ou dado, sem resumir",
-  "exercicio_pratico": "ação concreta e específica — 1 a 3 frases — que a pessoa pode fazer nas próximas 24h",
+  "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
+  "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
   "cta_fechado": "escolha binária — sim ou não / isso ou aquilo — que pede posição, não relato",
   "comentarios": [
     { "comentario": "o que a pessoa provavelmente vai escrever", "resposta": "pergunta que puxa mais fundo" },
@@ -352,6 +485,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
     "deixa_espaco": true,
     "nao_parece_coach": true,
     "so_karen_diria": true,
+    "exercicio_acessa_memoria": true,
     "perguntas_diferentes": true
   }
 }`
@@ -607,8 +741,12 @@ export default function UnifiedCreator() {
   const [engCopied, setEngCopied] = useState(null)
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
+  const [engHooks, setEngHooks] = useState(null)
+  const [engHookLoading, setEngHookLoading] = useState(false)
+  const [engHookError, setEngHookError] = useState(null)
+  const [engHookCopied, setEngHookCopied] = useState(null)
   // Carrossel
-  const [carOpenCategory, setCarOpenCategory] = useState(null)
+
   const [carTema, setCarTema] = useState('')
   const [carHooks, setCarHooks] = useState([])
   const [carHooksLoading, setCarHooksLoading] = useState(false)
@@ -865,6 +1003,50 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     } finally {
       setEngLoading(false)
     }
+  }
+
+  const generateReelsHooks = async () => {
+    if (!engTema.trim()) return
+    if (!apiKey) { setEngHookError('Configure sua API key.'); return }
+    setEngHookLoading(true)
+    setEngHookError(null)
+    setEngHooks(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 3000,
+          system: HOOK_SYSTEM,
+          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setEngHooks(JSON.parse(match[0]))
+    } catch (err) {
+      setEngHookError(err.message)
+    } finally {
+      setEngHookLoading(false)
+    }
+  }
+
+  const handleEngHookCopy = (text, key) => {
+    navigator.clipboard.writeText(text)
+    setEngHookCopied(key)
+    setTimeout(() => setEngHookCopied(null), 2000)
   }
 
   const generateHooks = async () => {
@@ -1241,18 +1423,23 @@ Regras:
   }
 
   const expandThemes = async () => {
-    if (!apiKey || savedThemes.length === 0) return
+    if (!apiKey) return
+    const categoria = bankOpenCategory
+    const temasNaCategoria = categoria ? savedThemes.filter(t => t.categoria === categoria) : savedThemes
+    if (!categoria && savedThemes.length === 0) return
     setExpandingThemes(true)
     try {
+      const contextoCategoria = categoria
+        ? `Categoria focada: "${categoria}"\n\nTemas já existentes nessa categoria:\n${temasNaCategoria.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`
+        : `Temas gerais já existentes:\n${savedThemes.map(t => `- ${t.tema}`).join('\n')}`
       const aiRes = await mkClient(apiKey).messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 800,
         messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
 
-Lista atual de temas da criadora:
-${savedThemes.map(t => `- ${t.tema}`).join('\n')}
+${contextoCategoria}
 
-Gere 5 novos temas relacionados — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
+Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
 
 Temperatura:
 - quente: alto potencial viral agora, forte identificação
@@ -1270,6 +1457,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
           .map(t => ({
             id: Date.now() + Math.random(),
             tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
+            categoria: categoria || 'Carreira',
             fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
           }))
         setSavedThemes(prev => [...prev, ...novos])
@@ -1347,11 +1535,11 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </button>
               <button
                 onClick={expandThemes}
-                disabled={expandingThemes || savedThemes.length === 0}
+                disabled={expandingThemes || (!bankOpenCategory && savedThemes.length === 0)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
               >
                 {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                Expandir com IA
+                {bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
               </button>
               {savedThemes.length > 0 && (
                 <button
@@ -1572,7 +1760,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               disabled={engLoading || !engTema.trim()}
               className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando protocolo...</> : <><Zap size={15} /> Gerar Protocolo</>}
+              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando conteúdo...</> : <><Zap size={15} /> Gerar Conteúdo</>}
             </button>
           </div>
 
@@ -1638,6 +1826,23 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
               </div>
 
+              {/* Exercício Prático */}
+              {engResult.exercicio_pratico && (
+                <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center gap-2">
+                      <Target size={12} className="text-amber-500" />
+                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
+                    </div>
+                    <button onClick={() => handleEngCopy(engResult.exercicio_pratico, 'eng-exercicio')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors">
+                      {engCopied === 'eng-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{engResult.exercicio_pratico}</p>
+                </div>
+              )}
+
               {/* Variações */}
               <div className="space-y-2">
                 {[
@@ -1665,6 +1870,115 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* ── Gerador de Hook ── */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <Zap size={13} className="text-amber-500" />
+                    <span className="text-xs font-semibold text-gray-700">Hooks de Abertura (0-3s)</span>
+                    <span className="text-[10px] text-gray-400">— o que prende antes do roteiro começar</span>
+                  </div>
+                  <button
+                    onClick={generateReelsHooks}
+                    disabled={engHookLoading}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
+                  >
+                    {engHookLoading
+                      ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
+                      : engHooks
+                        ? <><RefreshCw size={11} /> Regenerar</>
+                        : <><Zap size={11} /> Gerar 3 Hooks</>
+                    }
+                  </button>
+                </div>
+
+                {engHookError && (
+                  <div className="px-4 py-3 text-xs text-red-600 bg-red-50">{engHookError}</div>
+                )}
+
+                {engHooks && (
+                  <div className="divide-y divide-gray-100">
+                    {(engHooks.hooks || []).map((hook, i) => {
+                      const tipoLabel = {
+                        observacao_cortante: 'Observação Cortante',
+                        dado_leitura_inesperada: 'Dado + Leitura Inesperada',
+                        cena_especifica: 'Cena Específica',
+                      }[hook.tipo] || hook.tipo
+
+                      const tipoColor = {
+                        observacao_cortante: 'bg-violet-100 text-violet-700 border-violet-200',
+                        dado_leitura_inesperada: 'bg-blue-100 text-blue-700 border-blue-200',
+                        cena_especifica: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                      }[hook.tipo] || 'bg-gray-100 text-gray-600 border-gray-200'
+
+                      const copyText = [
+                        `FRASE: ${hook.frase}`,
+                        `TEXTO NA TELA: ${hook.texto_na_tela}`,
+                        `ENQUADRAMENTO: ${hook.enquadramento}`,
+                        `MOVIMENTO: ${hook.movimento}`,
+                        `SOM: ${hook.som}`,
+                      ].join('\n')
+
+                      return (
+                        <div key={i} className="px-4 py-4 space-y-3 group">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tipoColor}`}>
+                              {tipoLabel}
+                            </span>
+                            <button
+                              onClick={() => handleEngHookCopy(copyText, `hook-${i}`)}
+                              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
+                            >
+                              {engHookCopied === `hook-${i}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                            </button>
+                          </div>
+
+                          {/* Frase */}
+                          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Frase de abertura</p>
+                            <p className="text-sm font-semibold text-gray-900 leading-snug">"{hook.frase}"</p>
+                          </div>
+
+                          {/* Texto na tela */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Tela</span>
+                            <p className="text-xs text-gray-700">{hook.texto_na_tela}</p>
+                          </div>
+
+                          {/* Enquadramento + movimento */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Câmera</span>
+                            <p className="text-xs text-gray-700">{hook.enquadramento} · {hook.movimento}</p>
+                          </div>
+
+                          {/* Som */}
+                          <div className="flex items-start gap-2">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Som</span>
+                            <p className="text-xs text-gray-700">{hook.som}</p>
+                          </div>
+
+                          {/* Por que funciona */}
+                          {hook.por_que_funciona && (
+                            <div className="flex items-start gap-1.5 pt-1 border-t border-gray-100">
+                              <span className="text-[10px] text-gray-300 mt-0.5">→</span>
+                              <p className="text-[11px] text-gray-400 italic">{hook.por_que_funciona}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {!engHooks && !engHookLoading && (
+                  <div className="px-4 py-5 text-center">
+                    <p className="text-xs text-gray-400">
+                      Gere o roteiro primeiro, depois clique em "Gerar 3 Hooks" para receber opções de abertura com indicação visual e sonora.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Respostas Sugeridas */}
@@ -1751,40 +2065,6 @@ Responda EXCLUSIVAMENTE com JSON válido:
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
                 <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
-              </div>
-            </div>
-
-            {/* Temas Sugeridos */}
-            <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Temas Sugeridos</p>
-              <div className="space-y-1.5">
-                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
-                  const isOpen = carOpenCategory === categoria
-                  return (
-                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => setCarOpenCategory(isOpen ? null : categoria)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
-                      >
-                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
-                        {isOpen ? <ChevronUp size={13} className="text-orange-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
-                      </button>
-                      {isOpen && (
-                        <div className="px-3 py-2 space-y-1 bg-white">
-                          {temas.map(tema => (
-                            <button
-                              key={tema}
-                              onClick={() => { setCarTema(tema); setCarOpenCategory(null) }}
-                              className="w-full text-left text-xs text-gray-600 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              {tema}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
               </div>
             </div>
 
@@ -1888,7 +2168,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
           {/* ── Output do Carrossel ── */}
           {carResult && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-3 animate-fade-in">
 
               {/* Abas de versão */}
               {(() => {
@@ -1914,26 +2194,27 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
                     {/* Slides da versão ativa */}
                     {active.data && (
-                      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                          <div className="flex items-center gap-2">
-                            <LayoutGrid size={13} className="text-orange-500" />
-                            <span className="text-[10px] font-semibold text-gray-700 uppercase">Slides — {active.label}</span>
-                          </div>
+                      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Slides</span>
                           <button onClick={() => handleCarCopy(
-                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n') + '\n\n' + active.data.pergunta_final,
+                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'),
                             `slides-${active.key}`
                           )} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
                             {carCopied === `slides-${active.key}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
                           </button>
                         </div>
-                        <div className="divide-y divide-gray-100">
-                          {(active.data.slides || []).map((slide) => (
-                            <div key={slide.numero} className="flex items-start gap-3 px-4 py-3 group hover:bg-orange-50/30 transition-colors">
-                              <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
-                                <span className="text-[11px] font-bold text-orange-600">{slide.numero}</span>
+                        <div className="px-4 pb-3 space-y-0">
+                          {(active.data.slides || []).map((slide, idx) => (
+                            <div key={slide.numero} className="relative flex gap-3 group py-2">
+                              {/* linha conectora */}
+                              {idx < (active.data.slides?.length ?? 0) - 1 && (
+                                <div className="absolute left-[13px] top-8 bottom-0 w-px bg-gray-100" />
+                              )}
+                              <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0 mt-0.5 z-10">
+                                <span className="text-[10px] font-bold text-orange-500">{slide.numero}</span>
                               </div>
-                              <p className="flex-1 text-sm text-gray-800 leading-relaxed">{slide.texto}</p>
+                              <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5">{slide.texto}</p>
                               <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
                                 className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
                                 {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
@@ -1941,66 +2222,58 @@ Responda EXCLUSIVAMENTE com JSON válido:
                             </div>
                           ))}
                         </div>
-
-                        {/* Pergunta final da versão */}
-                        {active.data.pergunta_final && (
-                          <div className="border-t border-gray-100 bg-gradient-to-r from-orange-500 to-rose-500 p-4">
-                            <p className="text-[10px] font-semibold text-white/70 uppercase mb-1.5 flex items-center gap-1.5">
-                              <Quote size={10} /> Pergunta Final
-                            </p>
-                            <div className="flex items-start justify-between gap-3">
-                              <p className="text-sm font-bold text-white leading-snug">{active.data.pergunta_final}</p>
-                              <button onClick={() => handleCarCopy(active.data.pergunta_final, `pergunta-${active.key}`)}
-                                className="shrink-0 flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg transition-all">
-                                {carCopied === `pergunta-${active.key}` ? <Check size={10} /> : <Copy size={10} />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </>
                 )
               })()}
 
-              {/* Legenda */}
-              {carResult.legenda && (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase">Legenda do Post</span>
-                    <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                      {carCopied === 'car-legenda' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
-                </div>
-              )}
-
-              {/* Respostas para Comentários */}
-              {(carResult.comentarios || []).length > 0 && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
-                    <MessageCircle size={12} className="text-orange-500" /> Respostas para Comentários
-                  </p>
-                  <div className="space-y-3">
-                    {carResult.comentarios.map((item, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] font-semibold text-gray-400 shrink-0 mt-0.5">Comentário</span>
-                          <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed flex-1 italic">"{item.comentario}"</p>
+              {/* Exercício Prático + Pergunta Final agrupados */}
+              {(carResult.exercicio_pratico || (() => {
+                const active = [
+                  carResult.versao_principal,
+                  carResult.variacao_emocional,
+                  carResult.variacao_provocativa,
+                ].find((_, i) => ['principal','emocional','provocativa'][i] === carActiveVersion) || carResult.versao_principal
+                return active?.pergunta_final
+              })()) && (
+                <div className="rounded-2xl border border-orange-100 overflow-hidden bg-white">
+                  {carResult.exercicio_pratico && (
+                    <div className="px-4 py-3 group">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Target size={11} className="text-orange-500" />
+                          <span className="text-[10px] font-semibold text-orange-600 uppercase tracking-wide">Exercício Prático</span>
                         </div>
-                        <div className="flex items-start gap-2 group">
-                          <span className="text-[10px] font-semibold text-orange-500 shrink-0 mt-0.5">Karen</span>
-                          <p className="text-xs text-gray-800 bg-orange-50 rounded-lg px-3 py-2 leading-relaxed flex-1 font-medium">{item.resposta}</p>
-                          <button onClick={() => handleCarCopy(item.resposta, `comentario-${i}`)}
-                            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1.5">
-                            {carCopied === `comentario-${i}` ? <Check size={11} /> : <Copy size={11} />}
+                        <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
+                          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                          {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
+                    </div>
+                  )}
+
+                  {/* Pergunta Final — abaixo do exercício */}
+                  {(() => {
+                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa }
+                    const pergunta = versions[carActiveVersion]?.pergunta_final || carResult.versao_principal?.pergunta_final
+                    if (!pergunta) return null
+                    return (
+                      <div className="border-t border-orange-100 bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-semibold text-white/70 uppercase flex items-center gap-1.5">
+                            <Quote size={10} /> Pergunta Final
+                          </span>
+                          <button onClick={() => handleCarCopy(pergunta, `pergunta-${carActiveVersion}`)}
+                            className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-all">
+                            {carCopied === `pergunta-${carActiveVersion}` ? <Check size={10} /> : <Copy size={10} />}
                           </button>
                         </div>
+                        <p className="text-sm font-bold text-white leading-snug">{pergunta}</p>
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })()}
                 </div>
               )}
 
@@ -2062,6 +2335,67 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       )
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Legenda + Comentários agrupados */}
+              {(carResult.legenda || (carResult.comentarios || []).length > 0) && (
+                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                  {carResult.legenda && (
+                    <div className="px-4 py-3 flex items-start justify-between gap-3 group">
+                      <div className="flex-1">
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Legenda</span>
+                        <p className="text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
+                      </div>
+                      <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
+                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-5">
+                        {carCopied === 'car-legenda' ? <Check size={12} /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  )}
+                  {(carResult.comentarios || []).length > 0 && (
+                    <div className="px-4 py-3 space-y-2.5">
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <MessageCircle size={10} className="text-orange-400" /> Respostas sugeridas
+                      </span>
+                      {carResult.comentarios.map((item, i) => (
+                        <div key={i} className="space-y-1">
+                          <p className="text-xs text-gray-400 italic pl-1">"{item.comentario}"</p>
+                          <div className="flex items-start gap-2 group/resp">
+                            <div className="w-1 rounded-full bg-orange-200 self-stretch shrink-0 mt-0.5" />
+                            <p className="flex-1 text-xs text-gray-700 leading-relaxed">{item.resposta}</p>
+                            <button onClick={() => handleCarCopy(item.resposta, `comentario-${i}`)}
+                              className="opacity-0 group-hover/resp:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0">
+                              {carCopied === `comentario-${i}` ? <Check size={11} /> : <Copy size={11} />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Validação — pills inline */}
+              {carResult.validacao && (
+                <div className="flex items-center gap-2 flex-wrap px-1">
+                  <ShieldCheck size={11} className="text-gray-300 shrink-0" />
+                  {[
+                    { key: 'deixa_espaco',         label: 'Deixa espaço' },
+                    { key: 'nao_parece_coach',      label: 'Não é coach' },
+                    { key: 'so_karen_diria',        label: 'Só Karen diria' },
+                    { key: 'perguntas_diferentes',  label: 'Perguntas distintas' },
+                  ].map(({ key, label }) => {
+                    const ok = carResult.validacao?.[key] === true
+                    return (
+                      <span key={key} className={clsx(
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                        ok ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                      )}>
+                        {ok ? '✓' : '✗'} {label}
+                      </span>
+                    )
+                  })}
                 </div>
               )}
 

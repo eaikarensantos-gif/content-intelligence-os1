@@ -131,7 +131,6 @@ const useStore = create(
 
       updateIdea: (id, updates) => {
         set((s) => ({ ideas: s.ideas.map((i) => (i.id === id ? { ...i, ...updates } : i)) }))
-        dbUpdateIdea(id, updates)
       },
 
       deleteIdea: (id) => {
@@ -180,7 +179,6 @@ const useStore = create(
           ),
         }))
         dbInsertPost(newPost)
-        dbUpdateIdea(ideaId, { post_id: postId, status: 'draft' })
         return postId
       },
 
