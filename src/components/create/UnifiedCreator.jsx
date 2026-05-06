@@ -569,6 +569,72 @@ const STORIES_STRUCTURES = {
   },
 }
 
+/* ── Protocolo de Reels ── */
+const BASE_REELS_SYSTEM = `— IDENTIDADE —
+
+Você é um roteirista de reels para Instagram.
+
+A autora é Karen Santos: consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+
+— CONTEXTO DA GERAÇÃO —
+
+Tema: {tema}
+Estrutura: {estrutura}
+
+Siga rigorosamente as instruções da estrutura solicitada.
+
+— VOZ E TOM —
+
+Karen fala como quem observa — não como quem ensina.
+Seco. Direto. Sem motivação.
+Sem exclamação. Sem reticências dramáticas. Sem palavras de impacto forçado.
+
+Referências de tom correto:
+- "Você provavelmente já fez isso."
+- "Não é culpa. É padrão."
+- "A empresa mudou o sistema. Você ainda usa o antigo."
+
+— REGRAS GLOBAIS —
+
+Frases curtas. Máximo 15 palavras cada.
+Blocos de 1 a 2 frases.
+NUNCA usar: transformador, poderoso, incrível, surpreendente, jornada, propósito, impacto, verdade, real talk.
+NUNCA usar ponto de exclamação.
+NUNCA inventar dados ou estatísticas.
+NUNCA colocar moral explícita no final.
+
+— ENTREGA —
+
+Entregue apenas o roteiro. Sem título. Sem introdução. Sem "aqui está o roteiro:". Sem comentários ao final.`
+
+const REELS_STRUCTURES = {
+  personagem: {
+    label: 'Personagem em cena',
+    desc: 'Cena com personagem real que o espectador reconhece',
+    prompt: 'Abra com uma cena onde um personagem específico faz algo que o espectador já fez. Não descreva sentimentos. Descreva o que o personagem FAZ. Desenvolva o que aquele comportamento revela sem nomear o problema. Termine com uma constatação seca — não uma pergunta, não uma lição.',
+  },
+  antes_depois: {
+    label: 'Antes / Depois',
+    desc: 'Contraste entre dois estados sem drama',
+    prompt: 'Mostre dois estados: o de antes e o de depois. Sem drama. Sem celebração. O contraste já é suficiente. O antes é concreto e específico. O depois é igualmente concreto. Nenhum dos dois é melhor ou pior — são apenas diferentes. Termine com o estado de depois, sem comentar.',
+  },
+  bastidor: {
+    label: 'Bastidor real',
+    desc: 'O que acontece por trás de uma decisão ou situação',
+    prompt: 'Mostre o que acontece por trás de uma situação que parece simples por fora. Não revele tudo de uma vez. Vá camada por camada. Cada bloco adiciona uma informação que muda levemente o que o espectador pensava saber. Termine na camada mais interna — sem explicar o que ela significa.',
+  },
+  entrevista: {
+    label: 'Entrevista / Pergunta direta',
+    desc: 'Série de perguntas que revelam um padrão',
+    prompt: 'Faça uma série de perguntas diretas — curtas, sem setup. Cada pergunta revela um aspecto do mesmo padrão. As perguntas não têm resposta no roteiro. O espectador responde internamente. Termine com a pergunta mais desconfortável do conjunto.',
+  },
+  desconstrucao: {
+    label: 'Desconstrução',
+    desc: 'Desmonta uma crença comum sem substituir por outra',
+    prompt: 'Comece com uma crença comum — algo que parece óbvio e aceito. Desmonte-a em etapas. Não substitua por outra crença. Apenas mostre por que a crença não se sustenta quando você olha de perto. Termine sem oferecer alternativa — só o vazio depois da desconstrução.',
+  },
+}
+
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
@@ -703,6 +769,15 @@ export default function UnifiedCreator() {
   const [strResult, setStrResult] = useState(null)
   const [strError, setStrError] = useState(null)
   const [strCopied, setStrCopied] = useState(false)
+
+  // Reels
+  const [reelsTema, setReelsTema] = useState('')
+  const [reelsEstrutura, setReelsEstrutura] = useState('personagem')
+  const [reelsLoading, setReelsLoading] = useState(false)
+  const [reelsResult, setReelsResult] = useState(null)
+  const [reelsError, setReelsError] = useState(null)
+  const [reelsCopied, setReelsCopied] = useState(false)
+  const [reelsSavedHub, setReelsSavedHub] = useState(false)
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
@@ -1186,10 +1261,66 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     }
   }
 
+  const handleReelsCopy = () => {
+    if (!reelsResult) return
+    navigator.clipboard.writeText(reelsResult)
+    setReelsCopied(true)
+    setTimeout(() => setReelsCopied(false), 2000)
+  }
+
+  const handleReelsSaveHub = () => {
+    if (!reelsResult) return
+    const estrutura = REELS_STRUCTURES[reelsEstrutura]
+    addIdea({
+      title: reelsTema,
+      description: reelsResult.slice(0, 300),
+      script: reelsResult,
+      caption: '',
+      cta: '',
+      format: 'reel',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['protocolo-reels', estrutura?.label.toLowerCase() || '', reelsTema.toLowerCase().slice(0, 20)].filter(Boolean),
+      source: `Protocolo de Reels — ${estrutura?.label || ''}`,
+    })
+    setReelsSavedHub(true)
+  }
+
+  const generateReels = async () => {
+    if (!reelsTema.trim()) return
+    if (!apiKey) { setReelsError('Configure sua API key em Configurações'); return }
+    setReelsLoading(true)
+    setReelsError(null)
+    setReelsResult(null)
+    setReelsSavedHub(false)
+    try {
+      const estrutura = REELS_STRUCTURES[reelsEstrutura] || REELS_STRUCTURES.personagem
+      const systemPrompt = BASE_REELS_SYSTEM
+        .replace('{tema}', reelsTema)
+        .replace('{estrutura}', estrutura.prompt)
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: 'Gere o roteiro de reels agora.' }],
+      })
+      const text = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
+      if (!text) throw new Error('Resposta inválida da IA')
+      setReelsResult(text)
+    } catch (err) {
+      setReelsError(err.message)
+    } finally {
+      setReelsLoading(false)
+    }
+  }
+
   const applyTheme = (tema) => {
     if (mode === 'engagement') setEngTema(tema)
     else if (mode === 'carousel') setCarTema(tema)
     else if (mode === 'stories') setStrTema(tema)
+    else if (mode === 'reels') setReelsTema(tema)
     else setInput(tema)
   }
 
@@ -1518,6 +1649,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
             mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <Film size={13} /> Stories
+        </button>
+        <button onClick={() => setMode('reels')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'reels' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Video size={13} /> Reels
         </button>
       </div>
 
@@ -2140,19 +2277,64 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
               )}
 
-              {/* CTA Fechado */}
-              {carResult.cta_fechado && (
-                <div className="relative overflow-hidden rounded-2xl bg-gray-900 px-4 py-3 text-white">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-white/50 uppercase flex items-center gap-1.5">
-                      <ToggleLeft size={10} /> CTA Fechado
-                    </span>
-                    <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
-                      className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-all">
-                      {carCopied === 'car-cta' ? <Check size={10} /> : <Copy size={10} />}
+              {/* Exercício Prático */}
+              {carResult.exercicio_pratico && (
+                <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-orange-100 bg-orange-50/50">
+                    <div className="flex items-center gap-2">
+                      <Target size={12} className="text-orange-500" />
+                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
+                    </div>
+                    <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
+                      {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
                     </button>
                   </div>
-                  <p className="text-sm font-bold leading-snug">{carResult.cta_fechado}</p>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
+                </div>
+              )}
+
+              {/* CTA Fechado */}
+              {carResult.cta_fechado && (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 to-gray-700 p-5 text-white shadow-lg">
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-semibold text-white/60 uppercase mb-2 flex items-center gap-1.5">
+                      <ToggleLeft size={11} /> CTA Fechado
+                    </p>
+                    <p className="text-base font-bold leading-snug">{carResult.cta_fechado}</p>
+                    <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
+                      className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                      {carCopied === 'car-cta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <div className="absolute right-0 bottom-0 w-20 h-20 bg-white/5 rounded-full translate-x-6 translate-y-6" />
+                </div>
+              )}
+
+              {/* Validação */}
+              {carResult.validacao && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
+                    <ShieldCheck size={12} className="text-emerald-500" /> Validação
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { key: 'deixa_espaco',      label: 'Deixa espaço' },
+                      { key: 'nao_parece_coach',  label: 'Não é coach' },
+                      { key: 'so_karen_diria',    label: 'Só Karen diria' },
+                      { key: 'perguntas_diferentes', label: 'Perguntas distintas' },
+                    ].map(({ key, label }) => {
+                      const ok = carResult.validacao?.[key] === true
+                      return (
+                        <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
+                          ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+                        )}>
+                          <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
+                          <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -2372,6 +2554,128 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
                 >
                   <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Formulário de Reels ── */}
+      {mode === 'reels' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shrink-0">
+                <Video size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Protocolo de Reels</p>
+                <p className="text-xs text-gray-400 mt-0.5">Roteiro seco, direto, sem floreio — para quem reconhece a cena.</p>
+              </div>
+            </div>
+
+            {/* Tema */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tema <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={reelsTema}
+                onChange={e => setReelsTema(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateReels()}
+                placeholder="Ex: procrastinação mascarada de planejamento, burnout que parece disciplina..."
+                className="input text-sm w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Estrutura */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                Estrutura <span className="text-red-400">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(REELS_STRUCTURES).map(([key, s]) => (
+                  <button
+                    key={key}
+                    onClick={() => setReelsEstrutura(key)}
+                    className={clsx(
+                      'text-left px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                      reelsEstrutura === key
+                        ? 'bg-purple-50 border-purple-400 text-purple-800'
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                    )}
+                  >
+                    <div className="font-semibold">{s.label}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {reelsError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{reelsError}</div>
+            )}
+
+            <button onClick={generateReels} disabled={reelsLoading || !reelsTema.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-40 disabled:cursor-not-allowed">
+              {reelsLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Video size={15} /> Gerar Reels</>}
+            </button>
+          </div>
+
+          {/* ── Output de Reels ── */}
+          {reelsResult && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">
+                      Reels — {REELS_STRUCTURES[reelsEstrutura]?.label}
+                    </span>
+                  </div>
+                  <button onClick={handleReelsCopy}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-600 transition-colors">
+                    {reelsCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                  </button>
+                </div>
+                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {reelsResult}
+                </div>
+              </div>
+
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReelsSaveHub}
+                  disabled={reelsSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    reelsSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                  )}
+                >
+                  {reelsSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {reelsSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-purple-600 hover:border-purple-200 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateReels}
+                  disabled={reelsLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={reelsLoading ? 'animate-spin' : ''} /> Regenerar
                 </button>
               </div>
             </div>
