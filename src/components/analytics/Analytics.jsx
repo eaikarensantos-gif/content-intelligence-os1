@@ -151,10 +151,19 @@ function detectBrand(description = '') {
 }
 
 // ── Post Card for the new Posts tab ─────────────────────────────────────────
-function PostCard({ m, onDelete, onTemplate, onGenerate }) {
+function PostCard({ m, onDelete, onTemplate, onGenerate, onImageUpload }) {
   const erColor = m.engagement_rate > 0.04 ? 'bg-emerald-500' : m.engagement_rate > 0.02 ? 'bg-amber-400' : 'bg-gray-300'
   const erTextColor = m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'
   const erBg = m.engagement_rate > 0.04 ? 'bg-emerald-50' : m.engagement_rate > 0.02 ? 'bg-amber-50' : 'bg-gray-50'
+  const imgRef = useRef(null)
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => onImageUpload(m.id, ev.target.result)
+    reader.readAsDataURL(file)
+  }
 
   const fmtDate = (d, time) => {
     if (!d) return '—'
@@ -208,6 +217,16 @@ function PostCard({ m, onDelete, onTemplate, onGenerate }) {
           {m.duration_sec > 0 && <span className="ml-2 text-gray-300">· {m.duration_sec}s</span>}
         </p>
 
+        {/* Post thumbnail */}
+        {m.post_image && (
+          <div className="relative mb-2 group/img cursor-pointer" onClick={() => imgRef.current?.click()}>
+            <img src={m.post_image} alt="print do post" className="w-full h-28 object-cover rounded-lg" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+              <span className="text-white text-[10px] font-semibold">Trocar</span>
+            </div>
+          </div>
+        )}
+
         {/* Description */}
         <p className="text-xs text-gray-700 line-clamp-2 mb-3 min-h-[2rem]">
           {m.description || <span className="text-gray-300 italic">Sem descrição</span>}
@@ -254,6 +273,14 @@ function PostCard({ m, onDelete, onTemplate, onGenerate }) {
           >
             <Wand2 size={10} /> Gerar Similar
           </button>
+          <button
+            onClick={() => imgRef.current?.click()}
+            title={m.post_image ? 'Trocar print' : 'Adicionar print'}
+            className={`flex items-center justify-center px-2 rounded-lg border py-1.5 transition-all ${m.post_image ? 'text-blue-500 border-blue-200 bg-blue-50 hover:bg-blue-100' : 'text-gray-400 border-gray-200 bg-gray-50 hover:bg-gray-100'}`}
+          >
+            <Image size={10} />
+          </button>
+          <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
         </div>
       </div>
     </div>
@@ -1253,6 +1280,7 @@ export default function Analytics() {
                             onDelete={deleteMetric}
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
+                            onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
                           />
                         ))}
                       </div>
@@ -1279,6 +1307,7 @@ export default function Analytics() {
                             onDelete={deleteMetric}
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
+                            onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
                           />
                         ))}
                       </div>
@@ -1305,6 +1334,7 @@ export default function Analytics() {
                             onDelete={deleteMetric}
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
+                            onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
                           />
                         ))}
                       </div>
