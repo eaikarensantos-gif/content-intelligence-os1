@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Anthropic from '@anthropic-ai/sdk'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
@@ -105,6 +105,22 @@ const ADJUSTMENT_PROMPTS = {
 }
 
 /* ── Protocolo de Engajamento ── */
+const REELS_CLICHES = [
+  { id: 'tem-uma-coisa',     pattern: /^tem uma coisa que/i,                       label: 'Abertura clichê',       suggestion: 'Comece com a situação específica diretamente, sem introdução.' },
+  { id: 'voce-ja-sentiu',    pattern: /^você já (sentiu|passou|viveu|percebeu)/i,  label: 'Abertura genérica',     suggestion: 'Substitua por uma cena concreta ou observação direta.' },
+  { id: 'sabe-aquela',       pattern: /^sabe aquela/i,                             label: 'Abertura de coach',     suggestion: 'Comece no meio da situação, sem o setup.' },
+  { id: 'isso-aqui',         pattern: /isso aqui (ninguém|quase ninguém)/i,        label: 'Clickbait disfarçado',  suggestion: 'Remova — soa como promessa de revelação.' },
+  { id: 'a-verdade',         pattern: /a verdade (é que|sobre)/i,                  label: 'Fórmula de coach',      suggestion: 'Proibido no protocolo. Substitua por observação direta.' },
+  { id: 'ninguem-fala',      pattern: /ninguém (fala|te conta|te diz)/i,           label: 'Clickbait',             suggestion: 'Remova — soa como gatilho de curiosidade vazia.' },
+  { id: 'tem-uma-situacao',  pattern: /^tem uma (situação|coisa|realidade|dinâmica)/i, label: 'Abertura vaga',    suggestion: 'Substitua por uma cena específica sem introdução.' },
+  { id: 'voce-vai',          pattern: /você vai (se arrepender|querer|precisar)/i, label: 'Urgência artificial',   suggestion: 'Proibido. Substitua por frase descritiva.' },
+]
+
+function lintReelsOutput(text) {
+  if (!text) return []
+  return REELS_CLICHES.filter(c => c.pattern.test(text.trim()))
+}
+
 const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo com escrita natural, precisa e sem padrões artificiais.
 
 Sua função NÃO é parecer inteligente.
@@ -278,12 +294,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
   ]
 }`
 
-const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
+const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto, bannedPhrases }) => `
 TEMA: ${tema}
 ${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
 ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia criativa para este tema — específica e concreta, não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como observação real, não como artigo.' : ''}
+${bannedPhrases?.length > 0 ? `\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use estas aberturas ou estruturas:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}\nSe qualquer versão começar com uma dessas frases ou variação próxima → reescreva do zero.` : ''}
 
 Execute o protocolo:
 1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
@@ -704,6 +721,9 @@ export default function UnifiedCreator() {
   const bannedWords = useStore(s => s.bannedWords) || []
   const addBannedWord = useStore(s => s.addBannedWord)
   const removeBannedWord = useStore(s => s.removeBannedWord)
+  const bannedPhrases = useStore(s => s.bannedPhrases) || []
+  const addBannedPhrase = useStore(s => s.addBannedPhrase)
+  const removeBannedPhrase = useStore(s => s.removeBannedPhrase)
 
   const [input, setInput] = useState('')
   const [briefing, setBriefing] = useState('')
@@ -739,6 +759,7 @@ export default function UnifiedCreator() {
   const [engResult, setEngResult] = useState(null)
   const [engError, setEngError] = useState(null)
   const [engCopied, setEngCopied] = useState(null)
+  const [engBanInput, setEngBanInput] = useState('')
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
   const [engHooks, setEngHooks] = useState(null)
@@ -992,7 +1013,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         model: 'claude-sonnet-4-6',
         max_tokens: 5000,
         system: [{ type: 'text', text: ENGAGEMENT_SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
+        messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, bannedPhrases }) }],
       })
       const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
@@ -1472,6 +1493,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
     mentora: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', label: 'Mentora' },
   }
 
+  const engLintViolations = useMemo(() => lintReelsOutput(engResult?.versao_principal || ''), [engResult])
+
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
       {/* Header */}
@@ -1687,6 +1710,46 @@ Responda EXCLUSIVAMENTE com JSON válido:
               />
             </div>
 
+            {/* Frases Banidas */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  <X size={10} /> Frases Banidas
+                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={engBanInput}
+                  onChange={e => setEngBanInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && engBanInput.trim()) {
+                      addBannedPhrase(engBanInput.trim())
+                      setEngBanInput('')
+                    }
+                  }}
+                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
+                  className="input text-xs flex-1"
+                />
+                <button
+                  onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all"
+                >
+                  Banir
+                </button>
+              </div>
+              {bannedPhrases.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {bannedPhrases.map(phrase => (
+                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
+                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Ideia */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -1767,6 +1830,40 @@ Responda EXCLUSIVAMENTE com JSON válido:
           {/* ── Output de Engajamento ── */}
           {engResult && (
             <div className="space-y-4 animate-fade-in">
+
+              {/* Linter de clichês */}
+              {engLintViolations.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
+                  <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wide flex items-center gap-1.5">
+                    <AlertCircle size={11} /> Padrões detectados — roteiro precisa de ajuste
+                  </p>
+                  {engLintViolations.map(v => (
+                    <div key={v.id} className="flex items-start gap-2">
+                      <span className="text-[10px] font-semibold text-red-500 shrink-0 mt-0.5">✗</span>
+                      <div className="flex-1">
+                        <p className="text-[11px] font-semibold text-red-700">{v.label}</p>
+                        <p className="text-[10px] text-red-500">{v.suggestion}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const match = (engResult?.versao_principal || '').match(v.pattern)
+                          if (match) addBannedPhrase(match[0])
+                        }}
+                        className="ml-auto text-[10px] text-red-400 hover:text-red-600 font-medium shrink-0 hover:underline"
+                      >
+                        Banir
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={generateEngagement}
+                    disabled={engLoading}
+                    className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
+                  >
+                    <RefreshCw size={12} /> Regenerar sem esses padrões
+                  </button>
+                </div>
+              )}
 
               {/* Validação */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
@@ -2047,6 +2144,31 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
                 >
                   <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
+
+              {/* Dislike com captura de padrão */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const violations = lintReelsOutput(engResult?.versao_principal || '')
+                    const patterns = violations.map(v => {
+                      const match = (engResult?.versao_principal || '').match(v.pattern)
+                      return match ? match[0] : null
+                    }).filter(Boolean)
+                    addDislike({
+                      title: engTema,
+                      hook: engResult?.versao_principal?.slice(0, 100) || '',
+                      reason: 'roteiro com padrões clichê detectados',
+                      patterns,
+                    })
+                    patterns.forEach(p => addBannedPhrase(p))
+                    generateEngagement()
+                  }}
+                  disabled={engLoading}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-orange-600 border border-orange-200 rounded-xl hover:bg-orange-50 transition-colors disabled:opacity-40"
+                >
+                  <ThumbsDown size={13} /> Não gostei — banir padrões e regenerar
                 </button>
               </div>
             </div>
