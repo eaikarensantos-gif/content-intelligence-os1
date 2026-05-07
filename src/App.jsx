@@ -60,6 +60,19 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
+    const resize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }
+    const onInput = (e) => { if (e.target.tagName === 'TEXTAREA') resize(e.target) }
+    const init = () => document.querySelectorAll('textarea').forEach(resize)
+    if (!CSS.supports('field-sizing', 'content')) {
+      document.addEventListener('input', onInput)
+      const obs = new MutationObserver(init)
+      obs.observe(document.body, { childList: true, subtree: true })
+      init()
+      return () => { document.removeEventListener('input', onInput); obs.disconnect() }
+    }
+  }, [])
+
+  useEffect(() => {
     if (isSupabaseConfigured()) loadFromDB()
   }, [])
 
