@@ -106,14 +106,113 @@ const ADJUSTMENT_PROMPTS = {
 
 /* ── Protocolo de Engajamento ── */
 const REELS_CLICHES = [
-  { id: 'tem-uma-coisa',     pattern: /^tem uma coisa que/i,                       label: 'Abertura clichê',       suggestion: 'Comece com a situação específica diretamente, sem introdução.' },
-  { id: 'voce-ja-sentiu',    pattern: /^você já (sentiu|passou|viveu|percebeu)/i,  label: 'Abertura genérica',     suggestion: 'Substitua por uma cena concreta ou observação direta.' },
-  { id: 'sabe-aquela',       pattern: /^sabe aquela/i,                             label: 'Abertura de coach',     suggestion: 'Comece no meio da situação, sem o setup.' },
-  { id: 'isso-aqui',         pattern: /isso aqui (ninguém|quase ninguém)/i,        label: 'Clickbait disfarçado',  suggestion: 'Remova — soa como promessa de revelação.' },
-  { id: 'a-verdade',         pattern: /a verdade (é que|sobre)/i,                  label: 'Fórmula de coach',      suggestion: 'Proibido no protocolo. Substitua por observação direta.' },
-  { id: 'ninguem-fala',      pattern: /ninguém (fala|te conta|te diz)/i,           label: 'Clickbait',             suggestion: 'Remova — soa como gatilho de curiosidade vazia.' },
-  { id: 'tem-uma-situacao',  pattern: /^tem uma (situação|coisa|realidade|dinâmica)/i, label: 'Abertura vaga',    suggestion: 'Substitua por uma cena específica sem introdução.' },
-  { id: 'voce-vai',          pattern: /você vai (se arrepender|querer|precisar)/i, label: 'Urgência artificial',   suggestion: 'Proibido. Substitua por frase descritiva.' },
+  // ── Aberturas clichê ──────────────────────────────────────────────────────
+  {
+    id: 'tem-uma-coisa',
+    pattern: /^tem uma (coisa|situação|realidade|dinâmica|verdade) que/i,
+    label: 'Abertura vaga',
+    suggestion: 'Comece com a situação específica diretamente, sem introdução.',
+  },
+  {
+    id: 'voce-ja-sentiu',
+    pattern: /^você já (sentiu|passou|viveu|percebeu|notou)/i,
+    label: 'Abertura genérica',
+    suggestion: 'Substitua por uma cena concreta ou observação direta.',
+  },
+  {
+    id: 'sabe-aquela',
+    pattern: /^sabe aquela/i,
+    label: 'Abertura de coach',
+    suggestion: 'Comece no meio da situação, sem o setup.',
+  },
+
+  // ── Oposições falsas ──────────────────────────────────────────────────────
+  {
+    id: 'nao-e-sobre',
+    pattern: /não (é|era|foi) sobre .+,? (é|era|foi) sobre/i,
+    label: 'Oposição falsa',
+    suggestion: 'Proibido no protocolo. Use dados ou lógica causal no lugar.',
+  },
+  {
+    id: 'nao-porque-mas-porque',
+    pattern: /não porque .+,? mas porque/i,
+    label: 'Contraste artificial',
+    suggestion: 'Estrutura que parece profunda mas é fórmula. Reescreva direto.',
+  },
+
+  // ── Generalizações filosóficas ────────────────────────────────────────────
+  {
+    id: 'nem-tudo-que',
+    pattern: /nem tudo (que|o que) .+ (é|são|se|vai)/i,
+    label: 'Generalização filosófica',
+    suggestion: 'Troque por observação específica e concreta.',
+  },
+
+  // ── Construções passivas/vitimizantes ─────────────────────────────────────
+  {
+    id: 'a-gente-foi-ensinado',
+    pattern: /a gente foi ensinado (a|que)/i,
+    label: 'Construção passiva',
+    suggestion: 'Proibido. Substitua por observação de comportamento concreto.',
+  },
+  {
+    id: 'fomos-ensinados',
+    pattern: /fomos ensinados (a|que)/i,
+    label: 'Construção passiva',
+    suggestion: 'Proibido. Substitua por observação de comportamento concreto.',
+  },
+  {
+    id: 'ninguem-nos-ensinou',
+    pattern: /ninguém nos ensinou (a|que)/i,
+    label: 'Construção passiva',
+    suggestion: 'Proibido. Substitua por observação de comportamento concreto.',
+  },
+  {
+    id: 'a-gente-cresce-achando',
+    pattern: /a gente cresce achando (que|como)/i,
+    label: 'Generalização de origem',
+    suggestion: 'Muito usado em conteúdo de coach. Substitua por cena específica.',
+  },
+
+  // ── Palavras proibidas ────────────────────────────────────────────────────
+  {
+    id: 'armadilha',
+    pattern: /armadilha/i,
+    label: 'Palavra proibida: armadilha',
+    suggestion: 'Descreva o mecanismo concreto em vez de nomear como armadilha.',
+  },
+  {
+    id: 'silenciosa',
+    pattern: /silencio(sa|so|sos|sas)/i,
+    label: 'Palavra proibida: silenciosa/silencioso',
+    suggestion: 'Substitua por descrição concreta do que está acontecendo.',
+  },
+
+  // ── Clickbait e promessa de revelação ────────────────────────────────────
+  {
+    id: 'isso-aqui-ninguem',
+    pattern: /isso (aqui )?(ninguém|quase ninguém)/i,
+    label: 'Clickbait disfarçado',
+    suggestion: 'Remova — soa como promessa de revelação.',
+  },
+  {
+    id: 'a-verdade',
+    pattern: /a verdade (é que|sobre|é:)/i,
+    label: 'Fórmula de coach',
+    suggestion: 'Proibido no protocolo. Substitua por observação direta.',
+  },
+  {
+    id: 'ninguem-fala',
+    pattern: /ninguém (fala|te conta|te diz) (sobre|isso|que)/i,
+    label: 'Clickbait',
+    suggestion: 'Remova — soa como gatilho de curiosidade vazia.',
+  },
+  {
+    id: 'o-que-ninguem-te-conta',
+    pattern: /o que ninguém te conta/i,
+    label: 'Promessa de revelação',
+    suggestion: 'Proibido. Substitua por observação específica.',
+  },
 ]
 
 function lintReelsOutput(text) {
@@ -132,11 +231,21 @@ Escrever como alguém que observou algo específico — não como quem está ens
 PROIBIÇÕES ABSOLUTAS — NUNCA usar:
 - Frases: "não é só X, é Y" / "não é sobre X, é sobre Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
 - Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
-- Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
+- Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar, armadilha, silenciosa, silencioso
 - Listas em escadinha repetitiva
 - Frases de efeito genéricas
 - Tom professoral ou frases prontas de coach
 - Estrutura previsível
+
+CONSTRUÇÕES DE FRASE PROIBIDAS — nunca use estas estruturas:
+- "não porque X, mas porque Y" → contraste artificial que parece profundo mas é fórmula
+- "não é sobre X, é sobre Y" → oposição falsa
+- "nem tudo que X, Y" → generalização filosófica vaga
+- "a gente foi ensinado a / fomos ensinados que / ninguém nos ensinou que" → construção passiva de coach
+- "a gente cresce achando que" → generalização de origem, muito usada em coaching
+- qualquer uso de "armadilha" → descreva o mecanismo concreto
+- qualquer uso de "silenciosa/silencioso" → descreva o que está acontecendo
+- "o que ninguém te conta" → promessa de revelação vazia
 
 ESTRUTURA DO ROTEIRO:
 1. Situação específica (realista, concreta — não abstrata)
@@ -374,6 +483,13 @@ VOCABULÁRIO E RITMO:
 
 LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Não é sobre X, é sobre Y" → oposição falsa, parece template
+- "não porque X, mas porque Y" → contraste artificial que parece profundo mas é fórmula
+- "nem tudo que X, Y" → generalização filosófica vaga
+- "a gente foi ensinado a / fomos ensinados que / ninguém nos ensinou que" → construção passiva de coach
+- "a gente cresce achando que" → generalização de origem, muito usada em coaching
+- qualquer uso de "armadilha" → descreva o mecanismo concreto
+- qualquer uso de "silenciosa/silencioso" → descreva o que está acontecendo
+- "o que ninguém te conta" → promessa de revelação vazia
 - Referências a anos específicos ("em 2025", "em 2024") → datado, parece artigo de blog
 - Três ou mais frases curtas em sequência → ritmo de sermão de coach
 - Travessões para dar impacto → artificialidade
