@@ -2344,6 +2344,39 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
             </div>
 
+            {/* Frases Banidas */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  <X size={10} /> Frases Banidas
+                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={engBanInput}
+                  onChange={e => setEngBanInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
+                  className="input text-xs flex-1"
+                />
+                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
+                  Banir
+                </button>
+              </div>
+              {bannedPhrases.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {bannedPhrases.map(phrase => (
+                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
+                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Ideia */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -2704,6 +2737,39 @@ Responda EXCLUSIVAMENTE com JSON válido:
               />
             </div>
 
+            {/* Frases Banidas */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  <X size={10} /> Frases Banidas
+                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={engBanInput}
+                  onChange={e => setEngBanInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
+                  className="input text-xs flex-1"
+                />
+                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
+                  Banir
+                </button>
+              </div>
+              {bannedPhrases.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {bannedPhrases.map(phrase => (
+                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
+                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Estrutura */}
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
@@ -2828,6 +2894,39 @@ Responda EXCLUSIVAMENTE com JSON válido:
               />
             </div>
 
+            {/* Frases Banidas */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  <X size={10} /> Frases Banidas
+                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={engBanInput}
+                  onChange={e => setEngBanInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
+                  className="input text-xs flex-1"
+                />
+                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
+                  Banir
+                </button>
+              </div>
+              {bannedPhrases.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {bannedPhrases.map(phrase => (
+                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
+                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Estrutura */}
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
@@ -2946,6 +3045,39 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
             onFix={(oldText, newText) => setInput(prev => prev.replace(oldText, newText))}
           />
         )}
+
+        {/* Frases Banidas */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <X size={10} /> Frases Banidas
+              <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={engBanInput}
+              onChange={e => setEngBanInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+              placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
+              className="input text-xs flex-1"
+            />
+            <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+              className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
+              Banir
+            </button>
+          </div>
+          {bannedPhrases.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {bannedPhrases.map(phrase => (
+                <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                  "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
+                  <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* Formato + Briefing */}
