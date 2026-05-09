@@ -7,7 +7,7 @@ import {
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
-  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
+  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink, Link2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -916,6 +916,15 @@ export default function UnifiedCreator() {
   const [reelsCopied, setReelsCopied] = useState(false)
   const [reelsSavedHub, setReelsSavedHub] = useState(false)
 
+  // Viral Reel
+  const [viralUrl, setViralUrl] = useState('')
+  const [viralDesc, setViralDesc] = useState('')
+  const [viralLoading, setViralLoading] = useState(false)
+  const [viralResult, setViralResult] = useState(null)
+  const [viralError, setViralError] = useState(null)
+  const [viralCopied, setViralCopied] = useState(false)
+  const [viralSavedHub, setViralSavedHub] = useState(false)
+
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
 
@@ -1453,11 +1462,69 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     }
   }
 
+  const generateViralReel = async () => {
+    if (!viralUrl.trim() && !viralDesc.trim()) return
+    if (!apiKey) { setViralError('Configure sua API key em Configurações'); return }
+    setViralLoading(true)
+    setViralError(null)
+    setViralResult(null)
+    setViralSavedHub(false)
+    try {
+      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedPhrases)
+      const bannedBlock = bannedPhrases.length > 0
+        ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS (nunca use no output):\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}`
+        : ''
+      const urlBlock = viralUrl.trim() ? `\nURL do Reel: ${viralUrl.trim()}` : ''
+      const descBlock = viralDesc.trim() ? `\nDescrição do reel (o que acontece, o gancho, o tema, a estrutura):\n${viralDesc.trim()}` : ''
+
+      const systemPrompt = `Você é um estrategista de conteúdo e filmmaker mobile especializado em recriar reels virais adaptados para a voz e audiência de Karen Santos.${voiceCtx}${bannedBlock}`
+
+      const userPrompt = `Analise este reel viral e recrie-o adaptado à voz de Karen Santos.${urlBlock}${descBlock}
+
+Gere uma análise + recriação completa com este JSON:
+{
+  "analise": {
+    "por_que_viraliza": "o que tecnicamente faz esse reel funcionar (gancho, ritmo, estrutura, emoção ativada)",
+    "estrutura_detectada": "como o reel é construído (abertura / desenvolvimento / virada / CTA)",
+    "elemento_chave": "o mecanismo central que gera identificação ou reação",
+    "angulo_original": "o ângulo ou perspectiva que o diferencia"
+  },
+  "recriacao": {
+    "gancho_adaptado": "os 3 primeiros segundos do reel recriado na voz de Karen (texto exato para falar na câmera)",
+    "roteiro_completo": "roteiro cena a cena adaptado para o contexto de carreira + tech, na voz de Karen — seco, direto, sem floreio",
+    "legenda": "legenda para o post no Instagram",
+    "hashtags": ["5", "a", "8", "hashtags", "relevantes"]
+  },
+  "variacoes": [
+    "variação 1 do gancho de abertura (angulo diferente)",
+    "variação 2 do gancho de abertura (tom diferente)",
+    "variação 3 do gancho de abertura (estrutura diferente)"
+  ]
+}`
+
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: userPrompt }],
+      })
+      const raw = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      setViralResult(JSON.parse(match[0]))
+    } catch (err) {
+      setViralError(err.message)
+    } finally {
+      setViralLoading(false)
+    }
+  }
+
   const applyTheme = (tema) => {
     if (mode === 'engagement') setEngTema(tema)
     else if (mode === 'carousel') setCarTema(tema)
     else if (mode === 'stories') setStrTema(tema)
     else if (mode === 'reels') setReelsTema(tema)
+    else if (mode === 'viral') setViralDesc(prev => prev ? prev + '\nTema: ' + tema : 'Tema: ' + tema)
     else setInput(tema)
   }
 
@@ -1794,6 +1861,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
             mode === 'reels' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <Video size={13} /> Reels
+        </button>
+        <button onClick={() => setMode('viral')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'viral' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Link2 size={13} /> Viral
         </button>
       </div>
 
@@ -3013,6 +3086,224 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
                 >
                   <RefreshCw size={13} className={reelsLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Modo Viral Reel ── */}
+      {mode === 'viral' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-5">
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-md shadow-violet-200">
+                <Link2 size={16} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Recriar Reel Viral</p>
+                <p className="text-xs text-gray-400 mt-0.5 leading-snug">
+                  Cole o link do reel que quer recriar — a IA analisa o que o faz viralizar e gera o conteúdo adaptado à sua voz.
+                </p>
+              </div>
+            </div>
+
+            {/* URL */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Link do Instagram Reel <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={viralUrl}
+                onChange={e => setViralUrl(e.target.value)}
+                placeholder="https://www.instagram.com/reel/..."
+                className="input text-sm w-full font-mono"
+                autoFocus
+              />
+            </div>
+
+            {/* Descrição */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                O que acontece no reel? <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                value={viralDesc}
+                onChange={e => setViralDesc(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateViralReel()}
+                rows={4}
+                placeholder={`Descreva o reel com o máximo de detalhes:\n- Qual é o gancho de abertura (primeiros 3s)?\n- Qual é o tema / emoção ativada?\n- Como a estrutura se desenvolve?\n- Qual é o punchline ou CTA final?`}
+                className="input text-sm w-full resize-none"
+              />
+              <p className="text-[10px] text-gray-300 mt-1">Quanto mais detalhe, melhor a recriação. Ctrl+Enter para gerar.</p>
+            </div>
+
+            {/* Frases Banidas */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                  <X size={10} /> Frases Banidas
+                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={engBanInput}
+                  onChange={e => setEngBanInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
+                  className="input text-xs flex-1"
+                />
+                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
+                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
+                  Banir
+                </button>
+              </div>
+              {bannedPhrases.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {bannedPhrases.map(phrase => (
+                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
+                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {viralError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{viralError}</div>
+            )}
+
+            <button
+              onClick={generateViralReel}
+              disabled={viralLoading || (!viralUrl.trim() && !viralDesc.trim())}
+              className="w-full flex items-center justify-center gap-2 py-3.5 text-sm font-bold bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {viralLoading
+                ? <><Loader2 size={15} className="animate-spin" /> Analisando e gerando...</>
+                : <><Link2 size={15} /> Analisar Reel e Gerar Conteúdo</>
+              }
+            </button>
+          </div>
+
+          {/* ── Output ── */}
+          {viralResult && (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* Análise */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 bg-violet-50/60">
+                  <span className="w-2 h-2 rounded-full bg-violet-500" />
+                  <span className="text-[10px] font-semibold text-violet-700 uppercase tracking-wide">Por que esse reel viraliza</span>
+                </div>
+                <div className="p-4 space-y-3">
+                  {[
+                    { label: 'Mecanismo viral', value: viralResult.analise?.por_que_viraliza },
+                    { label: 'Estrutura detectada', value: viralResult.analise?.estrutura_detectada },
+                    { label: 'Elemento-chave', value: viralResult.analise?.elemento_chave },
+                    { label: 'Ângulo original', value: viralResult.analise?.angulo_original },
+                  ].filter(i => i.value).map(item => (
+                    <div key={item.label}>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{item.label}</p>
+                      <p className="text-sm text-gray-700 leading-snug">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recriação */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-purple-50/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Recriação na sua voz</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const rec = viralResult.recriacao
+                      const text = [
+                        rec?.gancho_adaptado && `🎬 GANCHO:\n${rec.gancho_adaptado}`,
+                        rec?.roteiro_completo && `\n📋 ROTEIRO:\n${rec.roteiro_completo}`,
+                        rec?.legenda && `\n✍️ LEGENDA:\n${rec.legenda}`,
+                        rec?.hashtags?.length && `\n${rec.hashtags.join(' ')}`,
+                      ].filter(Boolean).join('\n')
+                      navigator.clipboard.writeText(text)
+                      setViralCopied(true)
+                      setTimeout(() => setViralCopied(false), 2000)
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-600 transition-colors"
+                  >
+                    {viralCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  {viralResult.recriacao?.gancho_adaptado && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wide mb-1.5">Gancho — 0 a 3s</p>
+                      <p className="text-sm font-medium text-purple-900 leading-snug">{viralResult.recriacao.gancho_adaptado}</p>
+                    </div>
+                  )}
+                  {viralResult.recriacao?.roteiro_completo && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Roteiro completo</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{viralResult.recriacao.roteiro_completo}</p>
+                    </div>
+                  )}
+                  {viralResult.recriacao?.legenda && (
+                    <div className="border-t border-gray-100 pt-3">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Legenda</p>
+                      <p className="text-sm text-gray-700 leading-snug">{viralResult.recriacao.legenda}</p>
+                    </div>
+                  )}
+                  {viralResult.recriacao?.hashtags?.length > 0 && (
+                    <p className="text-xs text-blue-500">{viralResult.recriacao.hashtags.join(' ')}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Variações de gancho */}
+              {viralResult.variacoes?.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Variações de abertura</span>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {viralResult.variacoes.map((v, i) => (
+                      <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <span className="text-[10px] font-bold text-amber-500 mt-0.5 shrink-0">{i + 1}</span>
+                        <p className="text-sm text-gray-700 leading-snug">{v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ações */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (viralResult.recriacao?.roteiro_completo) {
+                      setInput(
+                        [viralResult.recriacao.gancho_adaptado, viralResult.recriacao.roteiro_completo]
+                          .filter(Boolean).join('\n\n')
+                      )
+                      setMode('studio')
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl transition-all"
+                >
+                  <PenTool size={13} /> Refinar no Studio
+                </button>
+                <button
+                  onClick={generateViralReel}
+                  disabled={viralLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={viralLoading ? 'animate-spin' : ''} /> Regenerar
                 </button>
               </div>
             </div>
