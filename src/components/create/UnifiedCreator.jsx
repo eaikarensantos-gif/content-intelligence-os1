@@ -1866,7 +1866,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
             mode === 'viral' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
-          <Link2 size={13} /> Viral
+          <Link2 size={13} /> Recriar
         </button>
       </div>
 
@@ -3103,9 +3103,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 <Link2 size={16} className="text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Recriar Reel Viral</p>
+                <p className="text-sm font-bold text-gray-900">Recriar Vídeo Viral</p>
                 <p className="text-xs text-gray-400 mt-0.5 leading-snug">
-                  Cole o link do reel que quer recriar — a IA analisa o que o faz viralizar e gera o conteúdo adaptado à sua voz.
+                  Cole o link do vídeo (Instagram ou TikTok) que quer recriar — a IA analisa o que o faz viralizar e gera o conteúdo adaptado à sua voz.
                 </p>
               </div>
             </div>
@@ -3113,12 +3113,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
             {/* URL */}
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
-                Link do Instagram Reel <span className="text-red-400">*</span>
+                Link do vídeo
+                <span className="text-gray-300 font-normal normal-case">(Instagram ou TikTok)</span>
+                <span className="text-red-400">*</span>
               </label>
               <input
                 value={viralUrl}
                 onChange={e => setViralUrl(e.target.value)}
-                placeholder="https://www.instagram.com/reel/..."
+                placeholder="https://www.instagram.com/reel/... ou https://www.tiktok.com/@usuario/video/..."
                 className="input text-sm w-full font-mono"
                 autoFocus
               />
