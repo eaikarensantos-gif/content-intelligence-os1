@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Sparkles, Lightbulb, X, Check, Copy, RefreshCw,
-  AlertCircle, Plus, Zap, AlignLeft, Mic, TrendingUp,
+  AlertCircle, Plus, Zap, AlignLeft, Mic, TrendingUp, Wand2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -39,6 +39,9 @@ function RevisorPanel() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [rewrittenText, setRewrittenText] = useState('')
+  const [rewriteLoading, setRewriteLoading] = useState(false)
+  const [applied, setApplied] = useState(null)
   const bannedPhrases = useStore((s) => s.bannedPhrases)
 
   const DIMS = [
@@ -47,6 +50,59 @@ function RevisorPanel() {
     { key: 'impacto', label: 'Impacto', icon: Zap, color: 'text-amber-500' },
     { key: 'autenticidade', label: 'Autenticidade', icon: TrendingUp, color: 'text-emerald-500' },
   ]
+
+  function applySuggestion(problema, melhoria, idx) {
+    setText((prev) => {
+      if (prev.includes(problema)) return prev.replace(problema, melhoria)
+      // fuzzy: try trimmed match
+      const trimmed = problema.trim()
+      if (prev.includes(trimmed)) return prev.replace(trimmed, melhoria)
+      return prev
+    })
+    setApplied(idx)
+    setTimeout(() => setApplied(null), 1500)
+  }
+
+  async function rewriteFull() {
+    if (!result?.sugestoes?.length || !text.trim()) return
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { return }
+    setRewriteLoading(true)
+    setRewrittenText('')
+    const suggestionsList = result.sugestoes
+      .map((s, i) => `${i + 1}. Substituir: "${s.problema}" → Por: "${s.melhoria}"`)
+      .join('\n')
+    const bannedList = bannedPhrases.length ? `\nEvite estas frases banidas: ${bannedPhrases.join(', ')}` : ''
+    const prompt = `Reescreva o texto abaixo incorporando as melhorias listadas. Preserve o estilo, voz e estrutura do texto original. Retorne APENAS o texto reescrito, sem introduções, títulos ou explicações.${bannedList}
+
+TEXTO ORIGINAL:
+${text.trim()}
+
+MELHORIAS A INCORPORAR:
+${suggestionsList}`
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      const data = await res.json()
+      setRewrittenText(data.content?.[0]?.text?.trim() || '')
+    } catch {
+      // silent fail
+    } finally {
+      setRewriteLoading(false)
+    }
+  }
 
   const analyze = async () => {
     if (!text.trim()) return
@@ -194,18 +250,62 @@ ${text.trim()}`
                   </div>
                   <div className="px-3 py-2 bg-emerald-50/60">
                     <p className="text-[10px] text-emerald-600 font-medium">Sugestão</p>
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs text-gray-800 font-medium">"{s.melhoria}"</p>
+                    <p className="text-xs text-gray-800 font-medium mb-2">"{s.melhoria}"</p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => applySuggestion(s.problema, s.melhoria, i)}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                          applied === i
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-violet-600 hover:bg-violet-700 text-white'
+                        }`}
+                      >
+                        {applied === i ? <><Check size={10} /> Aplicado!</> : <><Wand2 size={10} /> Aplicar no texto</>}
+                      </button>
                       <button
                         onClick={() => { navigator.clipboard.writeText(s.melhoria); setCopied(i); setTimeout(() => setCopied(false), 1500) }}
-                        className="shrink-0 text-emerald-500 hover:text-emerald-700"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
                       >
-                        {copied === i ? <Check size={11} /> : <Copy size={11} />}
+                        {copied === i ? <Check size={10} /> : <Copy size={10} />} Copiar
                       </button>
                     </div>
                   </div>
                 </div>
               ))}
+
+              <button
+                onClick={rewriteFull}
+                disabled={rewriteLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all mt-1"
+                style={{ background: rewriteLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+              >
+                {rewriteLoading
+                  ? <><RefreshCw size={13} className="animate-spin" /> Reescrevendo...</>
+                  : <><Wand2 size={13} /> Reescrever Roteiro Completo</>}
+              </button>
+
+              {rewrittenText && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-[10px] font-semibold text-violet-600 uppercase tracking-wide">Roteiro Reescrito</p>
+                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-3">
+                    <p className="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{rewrittenText}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(rewrittenText); setCopied('rewrite'); setTimeout(() => setCopied(false), 1500) }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium border border-violet-200 text-violet-700 hover:bg-violet-50 transition-colors"
+                    >
+                      {copied === 'rewrite' ? <><Check size={11} /> Copiado!</> : <><Copy size={11} /> Copiar</>}
+                    </button>
+                    <button
+                      onClick={() => { setText(rewrittenText); setRewrittenText(''); setResult(null) }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+                    >
+                      <Check size={11} /> Usar este texto
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
