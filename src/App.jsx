@@ -1,1 +1,108 @@
-aW1wb3J0IHsgdXNlU3RhdGUsIHVzZUVmZmVjdCB9IGZyb20gJ3JlYWN0JwppbXBvcnQgeyBCcm93c2VyUm91dGVyLCBSb3V0ZXMsIFJvdXRlIH0gZnJvbSAncmVhY3Qtcm91dGVyLWRvbScKaW1wb3J0IExvZ2luR2F0ZSBmcm9tICcuL2NvbXBvbmVudHMvYXV0aC9Mb2dpbkdhdGUnCmltcG9ydCBTaWRlYmFyIGZyb20gJy4vY29tcG9uZW50cy9sYXlvdXQvU2lkZWJhcicKaW1wb3J0IEhlYWRlciBmcm9tICcuL2NvbXBvbmVudHMvbGF5b3V0L0hlYWRlcicKaW1wb3J0IERhc2hib2FyZCBmcm9tICcuL2NvbXBvbmVudHMvZGFzaGJvYXJkL0Rhc2hib2FyZCcKaW1wb3J0IElkZWFzSHViIGZyb20gJy4vY29tcG9uZW50cy9pZGVhcy9JZGVhc0h1YicKaW1wb3J0IFRyZW5kUmFkYXIgZnJvbSAnLi9jb21wb25lbnRzL3RyZW5kcy9UcmVuZFJhZGFyJwppbXBvcnQgQW5hbHl0aWNzIGZyb20gJy4vY29tcG9uZW50cy9hbmFseXRpY3MvQW5hbHl0aWNzJwppbXBvcnQgU29jaWFsRGFzaGJvYXJkIGZyb20gJy4vY29tcG9uZW50cy9hbmFseXRpY3MvU29jaWFsRGFzaGJvYXJkJwppbXBvcnQgVmlkZW9BbmFseXplciBmcm9tICcuL2NvbXBvbmVudHMvdmlkZW8vVmlkZW9BbmFseXplcicKaW1wb3J0IFRob3VnaHRDYXB0dXJlIGZyb20gJy4vY29tcG9uZW50cy90aG91Z2h0cy9UaG91Z2h0Q2FwdHVyZScKaW1wb3J0IFRleHRTdHVkaW8gZnJvbSAnLi9jb21wb25lbnRzL3RleHQvVGV4dFN0dWRpbycKaW1wb3J0IElkZWFHZW5lcmF0b3IgZnJvbSAnLi9jb21wb25lbnRzL2dlbmVyYXRlL0lkZWFHZW5lcmF0b3InCmltcG9ydCBDcmVhdGVDb250ZW50IGZyb20gJy4vY29tcG9uZW50cy9jcmVhdGUvQ3JlYXRlQ29udGVudCcKaW1wb3J0IFVuaWZpZWRDcmVhdG9yIGZyb20gJy4vY29tcG9uZW50cy9jcmVhdGUvVW5pZmllZENyZWF0b3InCmltcG9ydCBQcmVzZW50YXRpb25Nb2RlIGZyb20gJy4vY29tcG9uZW50cy9wcmVzZW50YXRpb24vUHJlc2VudGF0aW9uTW9kZScKaW1wb3J0IENvbnRlbnRETkEgZnJvbSAnLi9jb21wb25lbnRzL2RuYS9Db250ZW50RE5BJwppbXBvcnQgQWNjZXNzTG9nIGZyb20gJy4vY29tcG9uZW50cy9hdXRoL0FjY2Vzc0xvZycKaW1wb3J0IEFkTWFuYWdlciBmcm9tICcuL2NvbXBvbmVudHMvYWRzL0FkTWFuYWdlcicKaW1wb3J0IENhcm91c2VsU3R1ZGlvIGZyb20gJy4vY29tcG9uZW50cy90cmVuZHMvQ2Fyb3VzZWxTdHVkaW8nCmltcG9ydCBGYXZvcml0ZXNEcmF3ZXIgZnJvbSAnLi9jb21wb25lbnRzL2Zhdm9yaXRlcy9GYXZvcml0ZXNQYW5lbCcKaW1wb3J0IEZsb2F0aW5nQWN0aW9ucyBmcm9tICcuL2NvbXBvbmVudHMvZ2xvYmFsL0Zsb2F0aW5nQWN0aW9ucycKaW1wb3J0IFRhc2tCb2FyZCBmcm9tICcuL2NvbXBvbmVudHMvdGFza3MvVGFza0JvYXJkJwppbXBvcnQgTmFvbWlTdHVkaW8gZnJvbSAnLi9jb21wb25lbnRzL25hb21pL05hb21pU3R1ZGlvJwppbXBvcnQgU3VwYWJhc2VTZXR0aW5ncyBmcm9tICcuL2NvbXBvbmVudHMvc2V0dGluZ3MvU3VwYWJhc2VTZXR0aW5ncycKaW1wb3J0IHVzZVN0b3JlIGZyb20gJy4vc3RvcmUvdXNlU3RvcmUnCmltcG9ydCB7IGlzU3VwYWJhc2VDb25maWd1cmVkIH0gZnJvbSAnLi9saWIvc3VwYWJhc2UnCgpmdW5jdGlvbiBMYXlvdXQoeyBjaGlsZHJlbiB9KSB7CiAgY29uc3QgW3NpZGViYXJPcGVuLCBzZXRTaWRlYmFyT3Blbl0gPSB1c2VTdGF0ZShmYWxzZSkKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGgtc2NyZWVuIG92ZXJmbG93LWhpZGRlbiBiZy1ncmF5LTUwIj4KICAgICAgey8qIE1vYmlsZSBiYWNrZHJvcCAqL30KICAgICAge3NpZGViYXJPcGVuICYmICgKICAgICAgICA8ZGl2CiAgICAgICAgICBjbGFzc05hbWU9ImZpeGVkIGluc2V0LTAgei0zMCBiZy1ibGFjay80MCBiYWNrZHJvcC1ibHVyLXNtIGxnOmhpZGRlbiIKICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldFNpZGViYXJPcGVuKGZhbHNlKX0KICAgICAgICAvPgogICAgICApfQoKICAgICAgPFNpZGViYXIgaXNPcGVuPXtzaWRlYmFyT3Blbn0gb25DbG9zZT17KCkgPT4gc2V0U2lkZWJhck9wZW4oZmFsc2UpfSAvPgoKICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXgtMSBmbGV4IGZsZXgtY29sIG1pbi13LTAgb3ZlcmZsb3ctaGlkZGVuIj4KICAgICAgICA8SGVhZGVyIG9uTWVudUNsaWNrPXsoKSA9PiBzZXRTaWRlYmFyT3Blbih0cnVlKX0gLz4KICAgICAgICA8bWFpbiBjbGFzc05hbWU9ImZsZXgtMSBvdmVyZmxvdy15LWF1dG8iPgogICAgICAgICAge2NoaWxkcmVufQogICAgICAgIDwvbWFpbj4KICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KICApCn0KCmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIEFwcCgpIHsKICBjb25zdCBsb2FkRnJvbURCID0gdXNlU3RvcmUoKHMpID0+IHMubG9hZEZyb21EQikKICBjb25zdCB0aGVtZSA9IHVzZVN0b3JlKChzKSA9PiBzLnRoZW1lKQoKICB1c2VFZmZlY3QoKCkgPT4gewogICAgZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LmNsYXNzTGlzdC50b2dnbGUoJ2RhcmsnLCB0aGVtZSA9PT0gJ2RhcmsnKQogIH0sIFt0aGVtZV0pCgogIHVzZUVmZmVjdCgoKSA9PiB7CiAgICBjb25zdCByZXNpemUgPSAoZWwpID0+IHsgZWwuc3R5bGUuaGVpZ2h0ID0gJ2F1dG8nOyBlbC5zdHlsZS5oZWlnaHQgPSBlbC5zY3JvbGxIZWlnaHQgKyAncHgnIH0KICAgIGNvbnN0IG9uSW5wdXQgPSAoZSkgPT4geyBpZiAoZS50YXJnZXQudGFnTmFtZSA9PT0gJ1RFWFRBUkVBJykgcmVzaXplKGUudGFyZ2V0KSB9CiAgICBjb25zdCBpbml0ID0gKCkgPT4gZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgndGV4dGFyZWEnKS5mb3JFYWNoKHJlc2l6ZSkKICAgIGlmICghQ1NTLnN1cHBvcnRzKCdmaWVsZC1zaXppbmcnLCAnY29udGVudCcpKSB7CiAgICAgIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0Jywgb25JbnB1dCkKICAgICAgY29uc3Qgb2JzID0gbmV3IE11dGF0aW9uT2JzZXJ2ZXIoaW5pdCkKICAgICAgb2JzLm9ic2VydmUoZG9jdW1lbnQuYm9keSwgeyBjaGlsZExpc3Q6IHRydWUsIHN1YnRyZWU6IHRydWUgfSkKICAgICAgaW5pdCgpCiAgICAgIHJldHVybiAoKSA9PiB7IGRvY3VtZW50LnJlbW92ZUV2ZW50TGlzdGVuZXIoJ2lucHV0Jywgb25JbnB1dCk7IG9icy5kaXNjb25uZWN0KCkgfQogICAgfQogIH0sIFtdKQoKICB1c2VFZmZlY3QoKCkgPT4gewogICAgaWYgKGlzU3VwYWJhc2VDb25maWd1cmVkKCkpIGxvYWRGcm9tREIoKQogIH0sIFtdKQoKICByZXR1cm4gKAogICAgPExvZ2luR2F0ZT4KICAgICAgPEJyb3dzZXJSb3V0ZXI+CiAgICAgICAgPEZhdm9yaXRlc0RyYXdlciAvPgogICAgICAgIDxGbG9hdGluZ0FjdGlvbnMgLz4KICAgICAgICA8TGF5b3V0PgogICAgICAgICAgPFJvdXRlcz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii8iIGVsZW1lbnQ9ezxEYXNoYm9hcmQgLz59IC8+CiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPSIvaWRlYXMiIGVsZW1lbnQ9ezxJZGVhc0h1YiAvPn0gLz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii90cmVuZHMiIGVsZW1lbnQ9ezxUcmVuZFJhZGFyIC8+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL2FuYWx5dGljcyIgZWxlbWVudD17PEFuYWx5dGljcyAvPn0gLz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii9zb2NpYWwiIGVsZW1lbnQ9ezxTb2NpYWxEYXNoYm9hcmQgLz59IC8+CiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPSIvdmlkZW8iIGVsZW1lbnQ9ezxWaWRlb0FuYWx5emVyIC8+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL2NyZWF0ZSIgZWxlbWVudD17PFVuaWZpZWRDcmVhdG9yIC8+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL2NyZWF0ZS1sZWdhY3kiIGVsZW1lbnQ9ezxDcmVhdGVDb250ZW50IC8+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL3Rob3VnaHRzIiBlbGVtZW50PXs8VGhvdWdodENhcHR1cmUgLz59IC8+CiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPSIvdGV4dCIgZWxlbWVudD17PFRleHRTdHVkaW8gLz59IC8+CiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPSIvZ2VuZXJhdGUiIGVsZW1lbnQ9ezxJZGVhR2VuZXJhdG9yIC8+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL3ByZXNlbnRhdGlvbiIgZWxlbWVudD17PFByZXNlbnRhdGlvbk1vZGUgLz59IC8+CiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPSIvZG5hIiBlbGVtZW50PXs8Q29udGVudEROQSAvPn0gLz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii9hZHMiIGVsZW1lbnQ9ezxBZE1hbmFnZXIgLz59IC8+CiAgICAgICAgICAgIHsvKiAvYXJjaGV0eXBlcywgL2JyaWVmaW5nLCAvcG9zdC1hbmFseXplciDigJQgYXJxdWl2YWRvcyAqL30KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii9jYXJvdXNlbCIgZWxlbWVudD17PGRpdiBjbGFzc05hbWU9InAtNiBhbmltYXRlLWZhZGUtaW4iPjxDYXJvdXNlbFN0dWRpbyAvPjwvZGl2Pn0gLz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii9zZWN1cml0eSIgZWxlbWVudD17PEFjY2Vzc0xvZyAvPn0gLz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii9zZXR0aW5ncyIgZWxlbWVudD17PFN1cGFiYXNlU2V0dGluZ3MgLz59IC8+CiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPSIvdGFza3MiIGVsZW1lbnQ9ezxkaXYgY2xhc3NOYW1lPSJwLTYgYW5pbWF0ZS1mYWRlLWluIj48VGFza0JvYXJkIC8+PC9kaXY+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL25hb21pIiBlbGVtZW50PXs8TmFvbWlTdHVkaW8gLz59IC8+CiAgICAgICAgICA8L1JvdXRlcz4KICAgICAgICA8L0xheW91dD4KICAgICAgPC9Ccm93c2VyUm91dGVyPgogICAgPC9Mb2dpbkdhdGU+CiAgKQp9Cg==
+import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import LoginGate from './components/auth/LoginGate'
+import Sidebar from './components/layout/Sidebar'
+import Header from './components/layout/Header'
+import Dashboard from './components/dashboard/Dashboard'
+import IdeasHub from './components/ideas/IdeasHub'
+import TrendRadar from './components/trends/TrendRadar'
+import Analytics from './components/analytics/Analytics'
+import SocialDashboard from './components/analytics/SocialDashboard'
+import VideoAnalyzer from './components/video/VideoAnalyzer'
+import ThoughtCapture from './components/thoughts/ThoughtCapture'
+import TextStudio from './components/text/TextStudio'
+import IdeaGenerator from './components/generate/IdeaGenerator'
+import CreateContent from './components/create/CreateContent'
+import UnifiedCreator from './components/create/UnifiedCreator'
+import PresentationMode from './components/presentation/PresentationMode'
+import ContentDNA from './components/dna/ContentDNA'
+import AccessLog from './components/auth/AccessLog'
+import AdManager from './components/ads/AdManager'
+import CarouselStudio from './components/trends/CarouselStudio'
+import FavoritesDrawer from './components/favorites/FavoritesPanel'
+import FloatingActions from './components/global/FloatingActions'
+import TaskBoard from './components/tasks/TaskBoard'
+import NaomiStudio from './components/naomi/NaomiStudio'
+import SupabaseSettings from './components/settings/SupabaseSettings'
+import useStore from './store/useStore'
+import { isSupabaseConfigured } from './lib/supabase'
+
+function Layout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default function App() {
+  const loadFromDB = useStore((s) => s.loadFromDB)
+  const theme = useStore((s) => s.theme)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
+
+  useEffect(() => {
+    const resize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }
+    const onInput = (e) => { if (e.target.tagName === 'TEXTAREA') resize(e.target) }
+    const init = () => document.querySelectorAll('textarea').forEach(resize)
+    if (!CSS.supports('field-sizing', 'content')) {
+      document.addEventListener('input', onInput)
+      const obs = new MutationObserver(init)
+      obs.observe(document.body, { childList: true, subtree: true })
+      init()
+      return () => { document.removeEventListener('input', onInput); obs.disconnect() }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isSupabaseConfigured()) loadFromDB()
+  }, [])
+
+  return (
+    <LoginGate>
+      <BrowserRouter>
+        <FavoritesDrawer />
+        <FloatingActions />
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/ideas" element={<IdeasHub />} />
+            <Route path="/trends" element={<TrendRadar />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/social" element={<SocialDashboard />} />
+            <Route path="/video" element={<VideoAnalyzer />} />
+            <Route path="/create" element={<UnifiedCreator />} />
+            <Route path="/create-legacy" element={<CreateContent />} />
+            <Route path="/thoughts" element={<ThoughtCapture />} />
+            <Route path="/text" element={<TextStudio />} />
+            <Route path="/generate" element={<IdeaGenerator />} />
+            <Route path="/presentation" element={<PresentationMode />} />
+            <Route path="/dna" element={<ContentDNA />} />
+            <Route path="/ads" element={<AdManager />} />
+            <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
+            <Route path="/security" element={<AccessLog />} />
+            <Route path="/settings" element={<SupabaseSettings />} />
+            <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
+            <Route path="/naomi" element={<NaomiStudio />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </LoginGate>
+  )
+}
