@@ -3220,9 +3220,58 @@ function CommentAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false)
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState('')
+  const [responses, setResponses] = useState({})
+  const [respondingId, setRespondingId] = useState(null)
+  const [copiedResponseId, setCopiedResponseId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const fileRef = useRef(null)
+
+  const generateResponse = async (comment) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
+    setRespondingId(comment.id)
+    const voiceContext = brandVoice?.prompt
+      ? `\n\nSua voz e estilo:\n${brandVoice.prompt}`
+      : '\n\nSeu estilo: direto, analítico, sem floreio, empático mas sem motivação barata.'
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: `Você é uma criadora de conteúdo respondendo um comentário no Instagram/TikTok.${voiceContext}
+
+COMENTÁRIO RECEBIDO:
+"${comment.text}"
+
+Escreva a RESPOSTA IDEAL para este comentário. Regras:
+- 1 a 3 linhas curtas — nunca um parágrafo longo
+- Parecer escrita por uma pessoa real, não uma marca
+- Validar a experiência ou aprofundar o ponto levantado
+- Pode terminar com uma pergunta que convida mais interação
+- NUNCA usar frases genéricas como "Que ótimo!", "Amei seu comentário!", "Obrigada pelo apoio!"
+- NUNCA usar emojis em excesso (máximo 1, opcional)
+- Tom: autêntico, direto, humano
+
+Retorne APENAS o texto da resposta, sem aspas, sem introdução.`
+          }]
+        })
+      })
+      const data = await resp.json()
+      const text = data.content?.[0]?.text?.trim() || ''
+      setResponses(prev => ({ ...prev, [comment.id]: text }))
+    } catch (e) { setError(e.message) }
+    finally { setRespondingId(null) }
+  }
 
   const addComment = () => {
     if (!commentText.trim()) return
@@ -3435,17 +3484,56 @@ Responda APENAS com JSON válido, sem markdown:
               Limpar todos
             </button>
           </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2 max-h-[480px] overflow-y-auto">
             {comments.map(c => (
-              <div key={c.id} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg group">
-                <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
-                <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
-                <button
-                  onClick={() => removeComment(c.id)}
-                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                >
-                  <X size={13} />
-                </button>
+              <div key={c.id} className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden group">
+                {/* Comment row */}
+                <div className="flex items-start gap-2 px-3 pt-3 pb-2">
+                  <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
+                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
+                  <button
+                    onClick={() => removeComment(c.id)}
+                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-0.5"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                {/* Response area */}
+                <div className="px-3 pb-3">
+                  {responses[c.id] ? (
+                    <div className="mt-1 space-y-2">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                        <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wide mb-1">Resposta ideal</p>
+                        <p className="text-xs text-gray-800 leading-relaxed">{responses[c.id]}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(responses[c.id]); setCopiedResponseId(c.id); setTimeout(() => setCopiedResponseId(null), 1500) }}
+                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        >
+                          {copiedResponseId === c.id ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                        </button>
+                        <button
+                          onClick={() => generateResponse(c)}
+                          disabled={respondingId === c.id}
+                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+                        >
+                          <RefreshCw size={10} className={respondingId === c.id ? 'animate-spin' : ''} /> Gerar outra
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => generateResponse(c)}
+                      disabled={respondingId !== null}
+                      className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+                    >
+                      {respondingId === c.id
+                        ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
+                        : <><MessageSquare size={11} /> Resposta Ideal</>}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
