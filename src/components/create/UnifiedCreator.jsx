@@ -935,6 +935,7 @@ export default function UnifiedCreator() {
   const [revApplied, setRevApplied] = useState(null)
   const [revRewritten, setRevRewritten] = useState('')
   const [revRewriteLoading, setRevRewriteLoading] = useState(false)
+  const [revBanInput, setRevBanInput] = useState('')
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
@@ -1971,6 +1972,38 @@ TEXTO:\n${revText.trim()}`
                     <span className="text-[11px] text-gray-300">{revText.length} caracteres</span>
                     {revText && <button onClick={() => { setRevText(''); setRevResult(null); setRevRewritten(''); setRevError('') }} className="text-[11px] text-gray-400 hover:text-gray-600">Limpar</button>}
                   </div>
+                  {/* Frases Banidas */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                      Frases Banidas <span className="text-gray-300 font-normal">(o revisor vai sinalizar e evitar ao reescrever)</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        value={revBanInput}
+                        onChange={e => setRevBanInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && revBanInput.trim()) { addBannedPhrase(revBanInput.trim()); setRevBanInput('') } }}
+                        placeholder='Ex: "Em resumo", "Não é à toa que..."'
+                        className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-300"
+                      />
+                      <button
+                        onClick={() => { if (revBanInput.trim()) { addBannedPhrase(revBanInput.trim()); setRevBanInput('') } }}
+                        className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                      >
+                        Banir
+                      </button>
+                    </div>
+                    {bannedPhrases.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {bannedPhrases.map(phrase => (
+                          <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                            "{phrase.length > 35 ? phrase.slice(0, 35) + '...' : phrase}"
+                            <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800 shrink-0"><X size={9} /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {revError && (
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
                       <AlertCircle size={14} className="text-red-400 shrink-0" />
