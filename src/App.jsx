@@ -23,6 +23,7 @@ import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import FloatingActions from './components/global/FloatingActions'
 import TaskBoard from './components/tasks/TaskBoard'
 import NaomiStudio from './components/naomi/NaomiStudio'
+import WebClipper from './components/clipper/WebClipper'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import CourseBuilder from './components/courses/CourseBuilder'
 import CourseDetail from './components/courses/CourseDetail'
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
+            <Route path="/clipper" element={<WebClipper />} />
             <Route path="/courses" element={<CourseBuilder />} />
             <Route path="/courses/:courseId" element={<CourseDetail />} />
             <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonEditor />} />
