@@ -25,10 +25,6 @@ import TaskBoard from './components/tasks/TaskBoard'
 import NaomiStudio from './components/naomi/NaomiStudio'
 import WebClipper from './components/clipper/WebClipper'
 import SupabaseSettings from './components/settings/SupabaseSettings'
-import CourseBuilder from './components/courses/CourseBuilder'
-import CourseDetail from './components/courses/CourseDetail'
-import LessonEditor from './components/courses/LessonEditor'
-import GenerateLesson from './components/courses/GenerateLesson'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -106,10 +102,6 @@ export default function App() {
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />
-            <Route path="/courses" element={<CourseBuilder />} />
-            <Route path="/courses/:courseId" element={<CourseDetail />} />
-            <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonEditor />} />
-            <Route path="/gerar-aula" element={<div className="p-6 animate-fade-in"><GenerateLesson /></div>} />
           </Routes>
         </Layout>
       </BrowserRouter>
