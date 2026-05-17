@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  ClipboardList, Clapperboard, Sun, Moon, Scissors, BookOpen,
+  ClipboardList, Clapperboard, Sun, Moon, Scissors,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -19,7 +19,6 @@ const TOP_NAV = [
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/clipper', icon: Scissors, label: 'Web Clipper' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
-  { to: '/courses', icon: BookOpen, label: 'Course Builder' },
 ]
 
 const NAV_GROUPS = [
@@ -146,10 +145,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const renderNavItem = ({ to, icon: Icon, label }, indent = false) => {
     const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation', '/carousel']
     const isCreateGroup = to === '/create'
-    const isCourseGroup = to === '/courses'
-    const forceActive =
-      (isCreateGroup && createSubRoutes.includes(location.pathname)) ||
-      (isCourseGroup && (location.pathname.startsWith('/courses/') || location.pathname === '/gerar-aula'))
+    const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
 
     return (
       <NavLink

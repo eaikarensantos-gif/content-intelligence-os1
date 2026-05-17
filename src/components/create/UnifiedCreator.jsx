@@ -772,57 +772,76 @@ const REELS_STRUCTURES = {
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
-    categoria: 'Carreira',
+    categoria: 'Carreira — Operação Independente Sênior',
     temas: [
-      'Medo de ser demitido sem avisar',
-      'Ficar em emprego ruim por medo do desconhecido',
-      'Ser promovido e não se sentir pronto',
-      'Pedir aumento e ter medo da resposta',
-      'Aceitar proposta nova sem contar pra ninguém antes',
-      'Sentir que o mercado passou por você',
+      'Trabalhar por projeto e explicar isso sem parecer freelancer júnior',
+      'Construir reputação sem depender de um cargo formal',
+      'Precificar o que você sabe sem se sentir ganancioso',
+      'Dizer não para cliente ruim quando o mês está curto',
+      'Sair do modelo CLT e ninguém na família entender',
+      'Quando você é o produto e a marca ao mesmo tempo',
+      'Manter disciplina sem chefe nem estrutura',
+      'A linha entre ser sênior independente e simplesmente estar desempregado',
     ],
   },
   {
-    categoria: 'Maturidade Profissional',
+    categoria: 'IA Estratégica — Rotina Real',
     temas: [
-      'Perfeccionismo que trava mais do que entrega',
-      'Procrastinar numa tarefa que você sabe fazer',
-      'Síndrome do impostor em cargo de liderança',
-      'Não conseguir pedir ajuda sem se sentir fraco',
-      'Trabalhar demais pra provar que merece estar ali',
-      'Fingir que entendeu pra não parecer perdido',
+      'Usar IA no trabalho sem precisar anunciar pra todo mundo',
+      'Prompt que resolveu em 10 minutos o que levaria 3 horas',
+      'IA que faz bem mas ainda precisa de alguém que sabe o que quer',
+      'Quando você para de ter medo da IA e começa a ter medo de quem não usa',
+      'Workflow com IA que ninguém te ensinou — você montou sozinha',
+      'O que muda quando a IA começa a fazer parte do seu processo criativo',
+      'Usar IA para pensar, não para substituir o pensamento',
+      'Automação que liberou tempo — e o que você fez com esse tempo',
     ],
   },
   {
-    categoria: 'Tomada de Decisão',
+    categoria: 'Diversidade — Ambientes Tech e Trabalho',
     temas: [
-      'Paralisação por análise — quando dados não ajudam a decidir',
-      'Decidir sob pressão e se arrepender depois',
-      'Mudar de opinião e não saber como falar',
-      'Deixar o outro decidir pra não errar sozinho',
-      'Adiar uma decisão esperando o momento certo',
-      'Tomar decisão certa da forma errada',
+      'Ser a única mulher negra sênior numa reunião de tech',
+      'Código de conduta que existe no papel e não na prática',
+      'Quando diversidade vira KPI e ninguém fala da inclusão de verdade',
+      'O peso de representar um grupo inteiro toda vez que você fala',
+      'Ambientes que pedem diversidade mas rejeitam quem não se encaixa',
+      'Progressão de carreira quando as regras não foram feitas pra você',
+      'Dupla jornada de provar competência e ainda educar o ambiente',
+      'Estrutura que cansa mais do que o trabalho em si',
     ],
   },
   {
-    categoria: 'Dinâmicas Corporativas',
+    categoria: 'Samsung',
     temas: [
-      'Reunião que todos balançam a cabeça mas ninguém age',
-      'Concordar em público e discordar no corredor',
-      'Gestor que pede autonomia mas controla tudo',
-      'Feedback que não muda nada mas precisa ser dado',
-      'Política de escritório que ninguém admite jogar',
-      'Entregar bem e não ser visto',
+      'O que muda quando você troca de celular e percebe o quanto o aparelho te limita',
+      'Criar conteúdo profissional direto do celular — sem desculpa de setup',
+      'Câmera que acompanha o ritmo de quem não pode parar pra montar estúdio',
+      'Produtividade real: o que o Galaxy fez pela minha rotina de trabalho',
+      'Editar, revisar e publicar tudo pelo celular — o que funcionou',
+      'IA integrada no dispositivo vs IA que você vai buscar fora',
+      'O Galaxy como ferramenta de trabalho sênior — não só de consumo',
     ],
   },
   {
-    categoria: 'IA e Futuro do Trabalho',
+    categoria: 'Outras Publis',
     temas: [
-      'Usar IA no trabalho e não contar pra ninguém',
-      'Medo de ser substituído por automação',
-      'IA que entrega mais rápido do que você explica o que quer',
-      'Não saber até onde vai o seu trabalho e onde começa o da IA',
-      'Atualizar as habilidades sem saber o que vai durar',
+      'Parceria que faz sentido — o que eu avalio antes de aceitar',
+      'Quando o produto entra na rotina antes de eu falar sobre ele',
+      'Publicidade que não quebra a linha editorial — como eu equilibro',
+      'Marca que respeita o processo criativo vale mais do que cachê alto',
+      'O que eu não aceito mais em publicidade depois de anos de conteúdo',
+    ],
+  },
+  {
+    categoria: 'Pessoal / Naomi / Relatable',
+    temas: [
+      'Naomi sendo uma HR manager mais eficiente do que a maioria dos humanos',
+      'A rotina honesta de quem trabalha de casa com um bulldog francês',
+      'Quando a Naomi expressa tudo que você sente mas não pode falar',
+      'Vida real de quem trabalha com conteúdo — sem glamour de influencer',
+      'O que ninguém mostra do trabalho criativo no dia a dia',
+      'Equilíbrio que não existe — e como eu lido com isso de verdade',
+      'Domingo que não desliga e segunda que começa antes do café',
     ],
   },
 ]
@@ -942,11 +961,12 @@ export default function UnifiedCreator() {
 
   const categorizeTheme = (tema) => {
     const t = tema.toLowerCase()
-    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|dados|machine|llm|prompt/.test(t)) return 'IA e Futuro do Trabalho'
-    if (/reuni[aã]o|gestor|empresa|corporat|chefe|pol[ií]tica|feedback|equipe|\btime\b|cargo|hierarquia|escrit[oó]rio|demiss|colega/.test(t)) return 'Dinâmicas Corporativas'
-    if (/decid|decis[aã]o|escolha|op[çc][aã]o|dilema|paralisa|risco|incerteza|\bsair\b|\bficar\b|mudan[çc]a/.test(t)) return 'Tomada de Decisão'
-    if (/perfeccion|procrastin|impostor|s[ií]ndrome|ansiedade|burnout|valida[çc]|inseguran[çc]|merecer|autoconfian|reconhecimento/.test(t)) return 'Maturidade Profissional'
-    return 'Carreira'
+    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|llm|prompt|workflow|ia integrada|processo criativo com ia/.test(t)) return 'IA Estratégica — Rotina Real'
+    if (/samsung|galaxy|celular|dispositivo|câmera|aparelho|setup|editar pelo cel/.test(t)) return 'Samsung'
+    if (/diversidade|inclus[aã]o|representa[çc]|racial|negr|minorias|equidade|ambientes? tech|estrutura que cansa|dupla jornada/.test(t)) return 'Diversidade — Ambientes Tech e Trabalho'
+    if (/naomi|bulldog|franc[eê]s|hr manager|relatable|vida real|domingo|rotina honesta/.test(t)) return 'Pessoal / Naomi / Relatable'
+    if (/publi|parceria|marca|cachê|publicidade|patrocin|sponsor/.test(t)) return 'Outras Publis'
+    return 'Carreira — Operação Independente Sênior'
   }
 
   const [savedThemes, setSavedThemes] = useState(() => {
