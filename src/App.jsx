@@ -20,10 +20,15 @@ import AccessLog from './components/auth/AccessLog'
 import AdManager from './components/ads/AdManager'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
+import FloatingActions from './components/global/FloatingActions'
 import TaskBoard from './components/tasks/TaskBoard'
 import NaomiStudio from './components/naomi/NaomiStudio'
 import WebClipper from './components/clipper/WebClipper'
 import SupabaseSettings from './components/settings/SupabaseSettings'
+import CourseBuilder from './components/courses/CourseBuilder'
+import CourseDetail from './components/courses/CourseDetail'
+import LessonEditor from './components/courses/LessonEditor'
+import GenerateLesson from './components/courses/GenerateLesson'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -32,16 +37,13 @@ function Layout({ children }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto">
@@ -61,6 +63,19 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
+    const resize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }
+    const onInput = (e) => { if (e.target.tagName === 'TEXTAREA') resize(e.target) }
+    const init = () => document.querySelectorAll('textarea').forEach(resize)
+    if (!CSS.supports('field-sizing', 'content')) {
+      document.addEventListener('input', onInput)
+      const obs = new MutationObserver(init)
+      obs.observe(document.body, { childList: true, subtree: true })
+      init()
+      return () => { document.removeEventListener('input', onInput); obs.disconnect() }
+    }
+  }, [])
+
+  useEffect(() => {
     if (isSupabaseConfigured()) loadFromDB()
   }, [])
 
@@ -68,6 +83,7 @@ export default function App() {
     <LoginGate>
       <BrowserRouter>
         <FavoritesDrawer />
+        <FloatingActions />
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -84,13 +100,16 @@ export default function App() {
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/ads" element={<AdManager />} />
-            {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />
+            <Route path="/courses" element={<CourseBuilder />} />
+            <Route path="/courses/:courseId" element={<CourseDetail />} />
+            <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonEditor />} />
+            <Route path="/gerar-aula" element={<div className="p-6 animate-fade-in"><GenerateLesson /></div>} />
           </Routes>
         </Layout>
       </BrowserRouter>

@@ -28,6 +28,7 @@ const useStore = create(
       unseenFavorites: 0,
       hiddenReportTags: [],
       bannedWords: [],
+      bannedPhrases: [],
       theme: 'light',
       brainItems: [],
 
@@ -82,7 +83,10 @@ const useStore = create(
           dislikedContent: [...s.dislikedContent.slice(-49), {
             id: uuidv4(),
             created_at: new Date().toISOString(),
-            ...item,
+            title: item.title || '',
+            hook: item.hook || '',
+            reason: item.reason || '',
+            patterns: item.patterns || [],
           }],
         })),
 
@@ -110,6 +114,14 @@ const useStore = create(
         set((s) => ({ hiddenReportTags: s.hiddenReportTags.filter((t) => t !== tag) })),
 
       clearHiddenReportTags: () => set({ hiddenReportTags: [] }),
+
+      // ── Frases Banidas ────────────────────────────────────
+      addBannedPhrase: (phrase) =>
+        set((s) => ({
+          bannedPhrases: s.bannedPhrases.includes(phrase) ? s.bannedPhrases : [...s.bannedPhrases, phrase],
+        })),
+      removeBannedPhrase: (phrase) =>
+        set((s) => ({ bannedPhrases: s.bannedPhrases.filter((p) => p !== phrase) })),
 
       // ── Palavras Proibidas ─────────────────────────────────
       addBannedWord: (word) =>
@@ -441,6 +453,7 @@ const useStore = create(
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
             ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
             ...(data.bannedWords?.length      ? { bannedWords: data.bannedWords }           : {}),
+            ...(data.bannedPhrases?.length    ? { bannedPhrases: data.bannedPhrases }       : {}),
             ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
             ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
             ...(data.brandVoice ? { brandVoice: data.brandVoice } : {}),
@@ -496,6 +509,7 @@ const useStore = create(
         proposals: s.proposals,
         hiddenReportTags: s.hiddenReportTags,
         bannedWords: s.bannedWords,
+        bannedPhrases: s.bannedPhrases,
         theme: s.theme,
         brainItems: s.brainItems,
         creatorProfile: s.creatorProfile,

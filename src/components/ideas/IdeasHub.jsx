@@ -1051,6 +1051,8 @@ const DAY_OFFSET = { 'Segunda': 0, 'Quarta': 2, 'Quinta': 3, 'Sábado': 5 }
 function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
   const [weekOffset, setWeekOffset] = useState(0)
 
+  const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+
   const today = new Date()
   const dow = today.getDay()
   const monday = new Date(today)
@@ -1063,7 +1065,7 @@ function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
   const getDate = (slot) => {
     const d = new Date(weekStart)
     d.setDate(weekStart.getDate() + DAY_OFFSET[slot.day])
-    return d.toISOString().slice(0, 10)
+    return localDateStr(d)
   }
 
   const weekLabel = () => {
@@ -1100,7 +1102,7 @@ function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
     updateIdea(idea.id, { tags: [...(idea.tags || []).filter(t => t !== 'impulsionar'), 'impulsionar'] })
   }
 
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = localDateStr(today)
   const weekIdeas = WEEK_SLOTS.map(s => getIdea(s)).filter(Boolean)
   const publishedCount = weekIdeas.filter(i => i.status === 'published').length
   const readyCount = weekIdeas.filter(i => i.status === 'ready').length
