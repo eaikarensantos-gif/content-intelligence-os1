@@ -9,6 +9,7 @@ const useStore = create(
   persist(
     (set, get) => ({
       // ── Estado ─────────────────────────────────────────────
+      clips: [],
       ideas: [],
       posts: [],
       metrics: [],
@@ -119,6 +120,31 @@ const useStore = create(
 
       removeBannedWord: (word) =>
         set((s) => ({ bannedWords: s.bannedWords.filter((w) => w !== word) })),
+
+      // ── Web Clips (Segundo Cérebro) ────────────────────────
+      addClip: (clip) =>
+        set((s) => ({
+          clips: [
+            {
+              id: uuidv4(),
+              savedAt: new Date().toISOString(),
+              status: 'inbox',
+              summary: '',
+              tags: [],
+              notes: '',
+              ...clip,
+            },
+            ...s.clips,
+          ],
+        })),
+
+      updateClip: (id, updates) =>
+        set((s) => ({
+          clips: s.clips.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        })),
+
+      deleteClip: (id) =>
+        set((s) => ({ clips: s.clips.filter((c) => c.id !== id) })),
 
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
