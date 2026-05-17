@@ -23,6 +23,7 @@ import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import TaskBoard from './components/tasks/TaskBoard'
 import NaomiStudio from './components/naomi/NaomiStudio'
 import SupabaseSettings from './components/settings/SupabaseSettings'
+import Courses from './components/courses/Courses'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
+            <Route path="/courses" element={<Courses />} />
           </Routes>
         </Layout>
       </BrowserRouter>
