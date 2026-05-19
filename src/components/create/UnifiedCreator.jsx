@@ -1713,7 +1713,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
   async function revisorAnalyze() {
     if (!revText.trim() || !apiKey) { setRevError(!apiKey ? 'Configure sua API key em Configurações.' : ''); return }
     setRevLoading(true); setRevResult(null); setRevError(''); setRevRewritten('')
-    const bannedList = bannedPhrases.length ? `\nFrases banidas para evitar: ${bannedPhrases.join(', ')}` : ''
+    const bannedList = bannedPhrases.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use estas expressões nas sugestões, nem variações delas:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}\nSe uma sugestão contiver qualquer uma dessas frases → reescreva do zero.`
+      : ''
     const prompt = `Você é um revisor especialista em conteúdo para criadores digitais brasileiros. Analise o texto e retorne APENAS um JSON válido:
 {"score":<0-100>,"dimensoes":{"clareza":<0-100>,"tom":<0-100>,"impacto":<0-100>,"autenticidade":<0-100>},"parecer":"<frase resumo>","linguagem_robotica":["<trecho artificial>"],"sugestoes":[{"problema":"<trecho original>","melhoria":"<versão melhorada>"}],"pontos_fortes":["<ponto>"]}
 ${bannedList}
@@ -1722,7 +1724,7 @@ TEXTO:\n${revText.trim()}`
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
       })
       const data = await res.json()
       const raw = data.content?.[0]?.text || ''
@@ -1735,20 +1737,26 @@ TEXTO:\n${revText.trim()}`
 
   function revisorApply(problema, melhoria, idx) {
     setRevText(prev => prev.includes(problema) ? prev.replace(problema, melhoria) : prev.replace(problema.trim(), melhoria))
-    setRevApplied(idx); setTimeout(() => setRevApplied(null), 1500)
+    setRevApplied(idx)
+    setTimeout(() => {
+      setRevResult(prev => prev ? { ...prev, sugestoes: prev.sugestoes.filter((_, i) => i !== idx) } : prev)
+      setRevApplied(null)
+    }, 600)
   }
 
   async function revisorRewrite() {
     if (!revResult?.sugestoes?.length || !apiKey) return
     setRevRewriteLoading(true); setRevRewritten('')
     const list = revResult.sugestoes.map((s, i) => `${i + 1}. "${s.problema}" → "${s.melhoria}"`).join('\n')
-    const bannedList = bannedPhrases.length ? `\nEvite: ${bannedPhrases.join(', ')}` : ''
+    const bannedList = bannedPhrases.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use no texto reescrito:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}`
+      : ''
     const prompt = `Reescreva o texto incorporando as melhorias. Preserve estilo e voz. Retorne APENAS o texto reescrito.${bannedList}\n\nTEXTO:\n${revText.trim()}\n\nMELHORIAS:\n${list}`
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
       })
       const data = await res.json()
       setRevRewritten(data.content?.[0]?.text?.trim() || '')
