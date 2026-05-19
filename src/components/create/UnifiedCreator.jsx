@@ -1713,7 +1713,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
   async function revisorAnalyze() {
     if (!revText.trim() || !apiKey) { setRevError(!apiKey ? 'Configure sua API key em Configurações.' : ''); return }
     setRevLoading(true); setRevResult(null); setRevError(''); setRevRewritten('')
-    const bannedList = bannedPhrases.length ? `\nFrases banidas para evitar: ${bannedPhrases.join(', ')}` : ''
+    const bannedList = bannedPhrases.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use estas expressões nas sugestões, nem variações delas:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}\nSe uma sugestão contiver qualquer uma dessas frases → reescreva do zero.`
+      : ''
     const prompt = `Você é um revisor especialista em conteúdo para criadores digitais brasileiros. Analise o texto e retorne APENAS um JSON válido:
 {"score":<0-100>,"dimensoes":{"clareza":<0-100>,"tom":<0-100>,"impacto":<0-100>,"autenticidade":<0-100>},"parecer":"<frase resumo>","linguagem_robotica":["<trecho artificial>"],"sugestoes":[{"problema":"<trecho original>","melhoria":"<versão melhorada>"}],"pontos_fortes":["<ponto>"]}
 ${bannedList}
@@ -1746,7 +1748,9 @@ TEXTO:\n${revText.trim()}`
     if (!revResult?.sugestoes?.length || !apiKey) return
     setRevRewriteLoading(true); setRevRewritten('')
     const list = revResult.sugestoes.map((s, i) => `${i + 1}. "${s.problema}" → "${s.melhoria}"`).join('\n')
-    const bannedList = bannedPhrases.length ? `\nEvite: ${bannedPhrases.join(', ')}` : ''
+    const bannedList = bannedPhrases.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use no texto reescrito:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}`
+      : ''
     const prompt = `Reescreva o texto incorporando as melhorias. Preserve estilo e voz. Retorne APENAS o texto reescrito.${bannedList}\n\nTEXTO:\n${revText.trim()}\n\nMELHORIAS:\n${list}`
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
