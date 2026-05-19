@@ -1735,7 +1735,11 @@ TEXTO:\n${revText.trim()}`
 
   function revisorApply(problema, melhoria, idx) {
     setRevText(prev => prev.includes(problema) ? prev.replace(problema, melhoria) : prev.replace(problema.trim(), melhoria))
-    setRevApplied(idx); setTimeout(() => setRevApplied(null), 1500)
+    setRevApplied(idx)
+    setTimeout(() => {
+      setRevResult(prev => prev ? { ...prev, sugestoes: prev.sugestoes.filter((_, i) => i !== idx) } : prev)
+      setRevApplied(null)
+    }, 600)
   }
 
   async function revisorRewrite() {
