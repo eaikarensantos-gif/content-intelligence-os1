@@ -46,6 +46,7 @@ Nunca use:
 - Atribuição da falha a uma ausência externa: "se você não conseguiu X, é porque faltou Y", "o problema não era você, era a falta de Z", "ninguém te ensinou que..." — esquiva que remove agência e responsabilidade da análise
 - Negação de culpa como gancho: "a culpa não é sua", "você não errou", "não é por falta de esforço" — abertura que valida antes de informar, padrão de coach motivacional
 - Período composto por coordenação adversativa como estrutura de revelação: "A maioria faz X, mas os melhores fazem Y" — contraste binário que simplifica para parecer insight
+- Estrutura de contraste corretivo (correctio / epanortose): "Não é X. É que Y", "Não é falta de A, é que B", "Não é isso, é aquilo" — nega uma hipótese falsa e apresenta a "causa real" como revelação. Proibida em qualquer formato: gancho, desenvolvimento ou encerramento
 
 ### TESTE DE AUTENTICIDADE
 Antes de entregar qualquer conteúdo, pergunte internamente:
