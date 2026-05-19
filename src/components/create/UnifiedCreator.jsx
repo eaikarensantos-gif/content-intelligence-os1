@@ -1722,7 +1722,7 @@ TEXTO:\n${revText.trim()}`
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
       })
       const data = await res.json()
       const raw = data.content?.[0]?.text || ''
@@ -1748,7 +1748,7 @@ TEXTO:\n${revText.trim()}`
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
       })
       const data = await res.json()
       setRevRewritten(data.content?.[0]?.text?.trim() || '')
