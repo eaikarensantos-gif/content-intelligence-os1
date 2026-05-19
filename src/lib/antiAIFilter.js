@@ -40,6 +40,12 @@ Nunca use:
 - Adjetivos empilhados antes do substantivo ("poderosa ferramenta de transformação pessoal e profissional")
 - Frases que soam profundas mas não dizem nada concreto
 - CTA com reticências e convite para reflexão
+- Paralelismo sintático decorativo: estruturas como "X não é sobre A, é sobre B", "não se trata de X, se trata de Y", "não é X que falta, é Y" — quando usadas só para soar profundo, sem conteúdo novo
+- Coordenação adversativa vazia: "mas no fundo...", "porém o que realmente importa é...", "contudo, o que poucos percebem é..." — contraste que não acrescenta nada, apenas reposiciona o óbvio
+- Negação enfática em série: "Não é X. Não é Y. Não é Z. É W." — lista de negações para criar falsa profundidade antes de chegar no ponto
+- Atribuição da falha a uma ausência externa: "se você não conseguiu X, é porque faltou Y", "o problema não era você, era a falta de Z", "ninguém te ensinou que..." — esquiva que remove agência e responsabilidade da análise
+- Negação de culpa como gancho: "a culpa não é sua", "você não errou", "não é por falta de esforço" — abertura que valida antes de informar, padrão de coach motivacional
+- Período composto por coordenação adversativa como estrutura de revelação: "A maioria faz X, mas os melhores fazem Y" — contraste binário que simplifica para parecer insight
 
 ### TESTE DE AUTENTICIDADE
 Antes de entregar qualquer conteúdo, pergunte internamente:
