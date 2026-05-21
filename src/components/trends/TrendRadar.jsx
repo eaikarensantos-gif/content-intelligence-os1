@@ -137,14 +137,18 @@ CONTENT IDEAS MUST AVOID (apply to "ideas" and "opportunities" arrays):
 - Catastrophist or extremist takes: "a bolha tech acabou", "o fim de [profissão]", "ninguém quer admitir", "[X] está morto"
 - The AI-and-jobs cliché in any form: "IA vai roubar seu emprego", "vai te tornar irrelevante", "sua carreira vai acabar" — this angle is overused and doesn't match the creator's voice
 - Engagement bait titles that exist only to provoke reaction without real substance behind them
+- Negative framing of brands or products: avoid titles like "Por que profissionais NÃO usam X", "A morte de X", "O custo invisível de não ter X", "A ilusão de X" — these frame the topic as a problem rather than an insight
+- Problem-first hooks: never open with what's wrong, what's missing, or what failed — open with what's true, what works, what the professional actually gains
 
 CONTENT IDEAS MUST FAVOR:
+- Constructive, informative framing: what the topic enables, facilitates, or makes possible for the professional
 - Reflective analysis of what's changing in tech careers and what it means
-- Contrarian takes with real argument (going against market consensus)
+- Contrarian takes with real argument (going against market consensus) — but landing on something constructive, not just critical
 - Human/ethical impact of tech decisions on professionals
 - Specific observations from experience, not generic advice
 - Titles that sound like a talk opening or a direct professional conversation — short, with a clear position
 - Hook examples that feel like "something a senior tech professional would say after years of experience"
+- For brand/product topics: show what the product concretely enables in the professional's real workflow — not whether it's good or bad compared to competitors
 
 CRITICAL RULES:
 - ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
@@ -205,12 +209,12 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
     { "id": "g2", "gap": "...", "description": "...", "opportunity_level": "...", "platforms": ["..."] }
   ],
   "opportunities": [
-    { "id": "o1", "title": "título do conteúdo", "description": "2 frases", "hook": "tipo", "hook_example": "frase exata em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "potential": "Very High|High|Medium", "why_now": "1 frase" },
+    { "id": "o1", "title": "título do conteúdo", "description": "2 frases", "hook": "análise|contrário|história|dados|observação|afirmação|provocação", "hook_example": "frase em português — declaração direta, começa pelo fato principal", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "potential": "Very High|High|Medium", "why_now": "1 frase" },
     { "id": "o2", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." },
     { "id": "o3", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." }
   ],
   "ideas": [
-    { "id": "i1", "title": "título da ideia", "hook": "tipo", "hook_suggestion": "frase de abertura em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "priority": "high|medium|low", "angle": "diferencial em 1 frase" },
+    { "id": "i1", "title": "título da ideia", "hook": "análise|contrário|história|dados|observação|afirmação|provocação", "hook_suggestion": "frase de abertura em português — declaração direta, construtiva, começa pelo fato principal", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "priority": "high|medium|low", "angle": "diferencial em 1 frase" },
     { "id": "i2", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
     { "id": "i3", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
     { "id": "i4", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
