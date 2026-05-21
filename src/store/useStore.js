@@ -490,6 +490,7 @@ const useStore = create(
     {
       name: 'content-intelligence-os-v3',
       partialize: (s) => ({
+        clips: s.clips,
         ideas: s.ideas,
         posts: s.posts,
         metrics: s.metrics,
