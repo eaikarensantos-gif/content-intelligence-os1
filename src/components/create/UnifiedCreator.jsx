@@ -574,6 +574,8 @@ ESTRUTURA DE CADA VERSÃO (slides do carrossel):
 VERSÃO PRINCIPAL → entrada direta, raciocínio progressivo
 VARIAÇÃO EMOCIONAL → mesma tensão, ângulo cotidiano, ritmo mais lento
 VARIAÇÃO PROVOCATIVA → mesma tensão, sem suavização, nomeia o problema diretamente
+VARIAÇÃO FRAMEWORK → estrutura mental aplicável ao tema: cada slide constrói um componente do modelo. Sem dados inventados, sem histórias. Slide 1: nomeia o framework com precisão. Slides 2-4: cada slide é um eixo ou elemento do modelo, explicado de forma concisa. Slide 5: o que muda quando você aplica esse framework — consequência concreta, não motivacional.
+VARIAÇÃO DIAGNÓSTICO → ajuda o leitor a identificar em qual estágio ou situação ele está. Sem dados inventados. Cada slide descreve um sinal observável e específico. Slide 1: estabelece o que está sendo diagnosticado. Slides 2-4: cada slide é um indicador observável — comportamento, padrão, reação. Slide 5: o que o conjunto de sinais revela, sem prescrever solução.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -606,6 +608,26 @@ Responda EXCLUSIVAMENTE com JSON válido:
       { "numero": 5, "texto": "virada sem resolução — a mais incômoda das três" }
     ],
     "pergunta_final": "a pergunta mais exigente das três"
+  },
+  "variacao_framework": {
+    "slides": [
+      { "numero": 1, "texto": "nome e definição precisa do framework — o que ele permite ver" },
+      { "numero": 2, "texto": "primeiro eixo ou elemento do modelo" },
+      { "numero": 3, "texto": "segundo eixo ou elemento do modelo" },
+      { "numero": 4, "texto": "terceiro eixo ou elemento — o que diferencia quem aplica de quem não aplica" },
+      { "numero": 5, "texto": "consequência concreta de usar esse framework — mudança observável, não motivacional" }
+    ],
+    "pergunta_final": "pergunta que pede ao leitor para aplicar o framework à própria situação"
+  },
+  "variacao_diagnostico": {
+    "slides": [
+      { "numero": 1, "texto": "o que está sendo diagnosticado — com precisão, sem julgamento" },
+      { "numero": 2, "texto": "primeiro sinal observável — comportamento ou padrão específico" },
+      { "numero": 3, "texto": "segundo sinal — outro indicador concreto" },
+      { "numero": 4, "texto": "terceiro sinal — o mais revelador dos três" },
+      { "numero": 5, "texto": "o que o conjunto de sinais indica — sem prescrever solução" }
+    ],
+    "pergunta_final": "pergunta que pede ao leitor para identificar quantos sinais reconhece na própria situação"
   },
   "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
   "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
@@ -2837,6 +2859,8 @@ TEXTO:\n${revText.trim()}`
                   { key: 'principal',   label: 'Principal',   data: carResult.versao_principal },
                   { key: 'emocional',   label: 'Emocional',   data: carResult.variacao_emocional },
                   { key: 'provocativa', label: 'Provocativa', data: carResult.variacao_provocativa },
+                  ...(carResult.variacao_framework  ? [{ key: 'framework',   label: 'Framework',   data: carResult.variacao_framework }]  : []),
+                  ...(carResult.variacao_diagnostico ? [{ key: 'diagnostico', label: 'Diagnóstico', data: carResult.variacao_diagnostico }] : []),
                 ]
                 const active = versions.find(v => v.key === carActiveVersion) || versions[0]
                 return (
@@ -2891,11 +2915,8 @@ TEXTO:\n${revText.trim()}`
 
               {/* Exercício Prático + Pergunta Final agrupados */}
               {(carResult.exercicio_pratico || (() => {
-                const active = [
-                  carResult.versao_principal,
-                  carResult.variacao_emocional,
-                  carResult.variacao_provocativa,
-                ].find((_, i) => ['principal','emocional','provocativa'][i] === carActiveVersion) || carResult.versao_principal
+                const versionMap = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa, framework: carResult.variacao_framework, diagnostico: carResult.variacao_diagnostico }
+                const active = versionMap[carActiveVersion] || carResult.versao_principal
                 return active?.pergunta_final
               })()) && (
                 <div className="rounded-2xl border border-orange-100 overflow-hidden bg-white">
@@ -2917,7 +2938,7 @@ TEXTO:\n${revText.trim()}`
 
                   {/* Pergunta Final — abaixo do exercício */}
                   {(() => {
-                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa }
+                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa, framework: carResult.variacao_framework, diagnostico: carResult.variacao_diagnostico }
                     const pergunta = versions[carActiveVersion]?.pergunta_final || carResult.versao_principal?.pergunta_final
                     if (!pergunta) return null
                     return (
