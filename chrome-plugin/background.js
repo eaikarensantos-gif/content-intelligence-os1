@@ -66,8 +66,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
 function openClipper(clip) {
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(clip))))
-  const url = `http://localhost:5173/clipper?clip=${encoded}`
-  chrome.tabs.query({ url: 'http://localhost:5173/*' }, (tabs) => {
+  const url = `https://content-intelligence-os1.vercel.app/clipper?clip=${encoded}`
+  chrome.tabs.query({ url: 'https://content-intelligence-os1.vercel.app/*' }, (tabs) => {
     if (tabs.length > 0) {
       chrome.tabs.update(tabs[0].id, { active: true, url })
       chrome.windows.update(tabs[0].windowId, { focused: true })
