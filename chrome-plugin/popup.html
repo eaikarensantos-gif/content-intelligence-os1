@@ -1,192 +1,55 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Teste Relat&#xF3;rio</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      width: 320px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #fff7ed;
-      padding: 12px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-    }
-
-    .header {
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      padding: 14px 16px;
-    }
-
-    .header h1 {
-      color: white;
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .header p {
-      color: rgba(255,255,255,0.80);
-      font-size: 11px;
-      margin-top: 3px;
-    }
-
-    .body { padding: 14px 16px 16px; }
-
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 11px 14px;
-      border: none;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-      transition: opacity 0.15s, transform 0.1s;
-      margin-bottom: 8px;
-    }
-
-    .btn:active { transform: scale(0.98); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      color: white;
-    }
-
-    .btn-secondary {
-      background: #f3f4f6;
-      color: #374151;
-    }
-
-    .btn-primary:hover { opacity: 0.90; }
-    .btn-secondary:hover { background: #e5e7eb; }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 12px 0;
-    }
-
-    .stat {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 20px;
-      font-weight: 800;
-      color: #f97316;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      color: #6b7280;
-      margin-top: 2px;
-    }
-
-    .footer {
-      border-top: 1px solid #f3f4f6;
-      padding: 10px 16px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .footer a {
-      flex: 1;
-      padding: 7px;
-      text-align: center;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 7px;
-      text-decoration: none;
-      color: #6b7280;
-      font-size: 11px;
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-
-    .footer a:hover { background: #fff7ed; border-color: #f97316; color: #ea580c; }
-
-    .status {
-      margin-top: 10px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 600;
-      display: none;
-    }
-
-    .status.success {
-      display: block;
-      background: #d1fae5;
-      color: #047857;
-      border: 1px solid #6ee7b7;
-    }
-
-    .status.error {
-      display: block;
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fca5a5;
-    }
-  </style>
+<meta charset="utf-8">
+<title>Teste</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:300px;font-family:sans-serif;background:#fff7ed;padding:10px}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+.hdr{background:linear-gradient(135deg,#f97316,#ea580c);padding:14px 16px}
+.hdr h1{color:#fff;font-size:14px;font-weight:700}
+.hdr p{color:rgba(255,255,255,.8);font-size:11px;margin-top:3px}
+.bdy{padding:14px 16px}
+.btn{display:block;width:100%;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.btn-p{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+.btn-s{background:#f3f4f6;color:#374151}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.stat{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center}
+.val{font-size:20px;font-weight:800;color:#f97316}
+.lbl{font-size:10px;color:#6b7280;margin-top:2px}
+.ftr{border-top:1px solid #f3f4f6;padding:10px 16px;display:flex;gap:8px}
+.ftr a{flex:1;padding:7px;text-align:center;background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;text-decoration:none;color:#6b7280;font-size:11px;font-weight:600}
+.ftr a:hover{background:#fff7ed;border-color:#f97316;color:#ea580c}
+.msg{margin-top:10px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:none}
+.ok{display:block;background:#d1fae5;color:#047857;border:1px solid #6ee7b7}
+.err{display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+</style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <h1>&#x1F9EA; Teste Relat&#xF3;rio</h1>
-      <p>Clique para adicionar dados de teste e abrir os relat&#xF3;rios.</p>
-    </div>
-
-    <div class="body">
-      <button class="btn btn-primary" id="btnLoadAndOpen">
-        &#x2705; Carregar Dados + Abrir Relat&#xF3;rios
-      </button>
-      <button class="btn btn-secondary" id="btnLoadOnly">
-        &#x1F4E5; Apenas Carregar Dados
-      </button>
-
-      <div class="stats">
-        <div class="stat">
-          <div class="stat-value">10</div>
-          <div class="stat-label">Posts</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">44K</div>
-          <div class="stat-label">Impress&#xF5;es</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">15%</div>
-          <div class="stat-label">Engajamento</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">7.4K</div>
-          <div class="stat-label">Intera&#xE7;&#xF5;es</div>
-        </div>
-      </div>
-
-      <div class="status" id="status"></div>
-    </div>
-
-    <div class="footer">
-      <a href="http://localhost:5173/" target="_blank">&#x1F4CA; Dashboard</a>
-      <a href="http://localhost:5173/reports" target="_blank">&#x1F4C8; Relat&#xF3;rios</a>
-    </div>
+<div class="card">
+  <div class="hdr">
+    <h1 id="titulo"></h1>
+    <p id="subtitulo"></p>
   </div>
-
-  <script src="popup.js"></script>
+  <div class="bdy">
+    <button class="btn btn-p" id="b1"></button>
+    <button class="btn btn-s" id="b2"></button>
+    <div class="grid">
+      <div class="stat"><div class="val">10</div><div class="lbl">Posts</div></div>
+      <div class="stat"><div class="val">44K</div><div class="lbl" id="l1"></div></div>
+      <div class="stat"><div class="val">15%</div><div class="lbl">Engajamento</div></div>
+      <div class="stat"><div class="val">7.4K</div><div class="lbl" id="l2"></div></div>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="ftr">
+    <a href="http://localhost:5173/" target="_blank" id="a1"></a>
+    <a href="http://localhost:5173/reports" target="_blank" id="a2"></a>
+  </div>
+</div>
+<script src="popup.js"></script>
 </body>
 </html>

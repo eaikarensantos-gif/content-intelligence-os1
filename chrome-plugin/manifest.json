@@ -1,34 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Content Intelligence - Web Clipper",
-  "version": "2.0",
-  "description": "Salve artigos, seleções e páginas inteiras no seu segundo cérebro",
-  "permissions": [
-    "storage",
-    "scripting",
-    "activeTab",
-    "tabs"
-  ],
+  "name": "Teste Relatorio - Content Intelligence",
+  "version": "3.0",
+  "description": "Carrega dados de teste nos Relatorios",
+  "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Web Clipper - Segundo Cérebro",
-    "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
-    }
+    "default_title": "Teste Relatorio"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_end"
-    }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "host_permissions": [
-    "<all_urls>"
-  ]
+  "host_permissions": ["<all_urls>"]
 }
