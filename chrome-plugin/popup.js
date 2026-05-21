@@ -1,6 +1,13 @@
 var pageData = null;
 var clipType = 'article';
 
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('t-article').addEventListener('click', function() { setType('article'); });
+  document.getElementById('t-full_page').addEventListener('click', function() { setType('full_page'); });
+  document.getElementById('t-selection').addEventListener('click', function() { setType('selection'); });
+  document.getElementById('save-btn').addEventListener('click', saveClip);
+});
+
 function setType(t) {
   clipType = t;
   ['article', 'full_page', 'selection'].forEach(function(id) {
@@ -100,11 +107,16 @@ chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     document.getElementById('hdr-sub').textContent = pageData.hostname || pageData.url;
 
     var favEl = document.getElementById('fav');
+    var favPh = document.getElementById('fav-ph');
     if (pageData.favicon) {
       favEl.src = pageData.favicon;
+      favEl.addEventListener('error', function() {
+        favEl.style.display = 'none';
+        favPh.style.display = 'block';
+      });
     } else {
       favEl.style.display = 'none';
-      document.getElementById('fav-ph').style.display = 'block';
+      favPh.style.display = 'block';
     }
     document.getElementById('pg-title').textContent = pageData.title || '(sem titulo)';
     document.getElementById('pg-host').textContent = pageData.hostname || pageData.url;
