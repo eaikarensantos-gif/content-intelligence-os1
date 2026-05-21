@@ -135,20 +135,23 @@ const useStore = create(
 
       // ── Web Clips (Segundo Cérebro) ────────────────────────
       addClip: (clip) =>
-        set((s) => ({
-          clips: [
-            {
-              id: uuidv4(),
-              savedAt: new Date().toISOString(),
-              status: 'inbox',
-              summary: '',
-              tags: [],
-              notes: '',
-              ...clip,
-            },
-            ...s.clips,
-          ],
-        })),
+        set((s) => {
+          if (clip.id && s.clips.some((c) => c.id === clip.id)) return s
+          return {
+            clips: [
+              {
+                id: uuidv4(),
+                savedAt: new Date().toISOString(),
+                status: 'inbox',
+                summary: '',
+                tags: [],
+                notes: '',
+                ...clip,
+              },
+              ...s.clips,
+            ],
+          }
+        }),
 
       updateClip: (id, updates) =>
         set((s) => ({
