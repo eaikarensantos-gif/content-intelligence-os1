@@ -49,6 +49,7 @@ const EMPTY = {
   tags: [],                   // array de strings
   scheduled_date: '',
   content_type: 'organic',
+  client: '',
   script: '',                 // roteiro do conteúdo
   caption: '',                // legenda
   cta: '',                    // call to action
@@ -519,6 +520,19 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             </div>
           </div>
         </div>
+
+        {/* Cliente */}
+        {(form.content_type === 'paid' || form.content_type === 'partnership') && (
+          <div>
+            <label className="label">Cliente / Marca</label>
+            <input
+              className="input"
+              placeholder="ex: Samsung, FIAP, orgânico próprio"
+              value={form.client || ''}
+              onChange={(e) => set('client', e.target.value)}
+            />
+          </div>
+        )}
 
         {/* Roteiro */}
         <div>

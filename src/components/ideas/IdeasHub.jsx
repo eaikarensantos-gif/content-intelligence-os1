@@ -93,6 +93,11 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
             {CONTENT_TYPE_LABELS[idea.content_type]}
           </span>
         )}
+        {idea.client && (
+          <span className="chip border text-[9px] bg-amber-100 text-amber-700 border-amber-200">
+            {idea.client}
+          </span>
+        )}
       </div>
 
       {/* Tags dentro do card */}
@@ -1351,6 +1356,7 @@ export default function IdeasHub() {
   const [formOpen, setFormOpen]             = useState(false)
   const [editTarget, setEditTarget]         = useState(null)
   const [search, setSearch]                 = useState('')
+  const [filterClient, setFilterClient]     = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
   const [filterStatus, setFilterStatus]     = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
@@ -1376,6 +1382,7 @@ export default function IdeasHub() {
           !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
+    .filter((i) => !filterClient || i.client === filterClient)
     .sort((a, b) => {
       const dateA = a.scheduled_date || ''
       const dateB = b.scheduled_date || ''
@@ -1454,6 +1461,17 @@ export default function IdeasHub() {
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className="input pl-8" placeholder="Buscar ideias..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
+            {/* Filtro por cliente */}
+            <select
+              className="select text-xs"
+              value={filterClient}
+              onChange={(e) => setFilterClient(e.target.value)}
+            >
+              <option value="">Todos os clientes</option>
+              {[...new Set(ideas.filter((i) => i.client).map((i) => i.client))].sort().map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
             <button
               onClick={() => setShowFilters((f) => !f)}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border transition-all ${
