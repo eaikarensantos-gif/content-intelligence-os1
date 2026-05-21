@@ -2,13 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teste Relatório</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      width: 380px;
+      width: 320px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      background: #fff7ed;
       padding: 12px;
     }
 
@@ -16,168 +18,84 @@
       background: white;
       border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
     }
 
     .header {
       background: linear-gradient(135deg, #f97316, #ea580c);
       padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
     }
 
-    .header-icon {
-      width: 32px;
-      height: 32px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    .header-text h1 { color: white; font-size: 14px; font-weight: 700; }
-    .header-text p { color: rgba(255,255,255,0.75); font-size: 11px; margin-top: 1px; }
-
-    .body { padding: 14px 16px; }
-
-    .page-info {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 12px;
-      background: #f9fafb;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      margin-bottom: 12px;
-    }
-
-    .page-favicon {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .page-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #111827;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .page-url {
-      font-size: 10px;
-      color: #9ca3af;
-      margin-top: 2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    label {
-      display: block;
-      font-size: 11px;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
-    }
-
-    .clip-types {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-
-    .clip-type {
-      padding: 8px 6px;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 8px;
-      background: white;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s;
-    }
-
-    .clip-type:hover { border-color: #f97316; background: #fff7ed; }
-
-    .clip-type.active {
-      border-color: #f97316;
-      background: #fff7ed;
-      color: #c2410c;
-    }
-
-    .clip-type .icon { font-size: 18px; display: block; margin-bottom: 3px; }
-    .clip-type .name { font-size: 10px; font-weight: 600; color: #374151; }
-    .clip-type.active .name { color: #c2410c; }
-
-    .preview {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 11px;
-      color: #6b7280;
-      line-height: 1.5;
-      max-height: 60px;
-      overflow: hidden;
-      margin-bottom: 12px;
-      position: relative;
-    }
-
-    .preview::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 24px;
-      background: linear-gradient(transparent, #f9fafb);
-    }
-
-    input[type="text"], textarea {
-      width: 100%;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 12px;
-      color: #111827;
-      outline: none;
-      transition: border-color 0.15s;
-      font-family: inherit;
-      resize: none;
-    }
-
-    input[type="text"]:focus, textarea:focus { border-color: #f97316; }
-
-    .field { margin-bottom: 10px; }
-
-    .btn-save {
-      width: 100%;
-      padding: 11px;
-      background: linear-gradient(135deg, #f97316, #ea580c);
+    .header h1 {
       color: white;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .header p {
+      color: rgba(255,255,255,0.80);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .body { padding: 14px 16px 16px; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 11px 14px;
       border: none;
       border-radius: 10px;
-      font-weight: 700;
       font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
+      text-align: center;
       transition: opacity 0.15s, transform 0.1s;
-      margin-top: 4px;
+      margin-bottom: 8px;
     }
 
-    .btn-save:hover { opacity: 0.9; }
-    .btn-save:active { transform: scale(0.98); }
-    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-primary:hover { opacity: 0.90; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .stat {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #f97316;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
 
     .footer {
       border-top: 1px solid #f3f4f6;
@@ -203,7 +121,7 @@
     .footer a:hover { background: #fff7ed; border-color: #f97316; color: #ea580c; }
 
     .status {
-      margin: 8px 0 0;
+      margin-top: 10px;
       padding: 8px 10px;
       border-radius: 8px;
       font-size: 11px;
@@ -224,68 +142,48 @@
       color: #991b1b;
       border: 1px solid #fca5a5;
     }
-
-    .loading { opacity: 0.5; pointer-events: none; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="header">
-      <div class="header-icon">✂️</div>
-      <div class="header-text">
-        <h1>Web Clipper</h1>
-        <p>Content Intelligence OS · Segundo Cérebro</p>
-      </div>
+      <h1>🧪 Teste Relatório</h1>
+      <p>Clique para adicionar dados de teste e abrir os relatórios.</p>
     </div>
 
-    <div class="body" id="body">
-      <div class="page-info" id="pageInfo">
-        <img class="page-favicon" id="favicon" src="" alt="" />
-        <div style="min-width:0">
-          <div class="page-title" id="pageTitle">Carregando...</div>
-          <div class="page-url" id="pageUrl"></div>
-        </div>
-      </div>
-
-      <label>Tipo de clip</label>
-      <div class="clip-types">
-        <div class="clip-type active" data-type="article" onclick="setType('article')">
-          <span class="icon">📄</span>
-          <span class="name">Artigo</span>
-        </div>
-        <div class="clip-type" data-type="selection" onclick="setType('selection')" id="selectionBtn">
-          <span class="icon">✍️</span>
-          <span class="name">Seleção</span>
-        </div>
-        <div class="clip-type" data-type="full_page" onclick="setType('full_page')">
-          <span class="icon">🌐</span>
-          <span class="name">Página</span>
-        </div>
-      </div>
-
-      <label>Prévia do conteúdo</label>
-      <div class="preview" id="preview">Carregando conteúdo...</div>
-
-      <div class="field">
-        <label>Tags <span style="font-weight:400;text-transform:none;color:#9ca3af">(separe por vírgula)</span></label>
-        <input type="text" id="tags" placeholder="ex: marketing, estratégia, referência" />
-      </div>
-
-      <div class="field">
-        <label>Nota rápida</label>
-        <textarea id="notes" rows="2" placeholder="Por que você está salvando isso?"></textarea>
-      </div>
-
-      <button class="btn-save" id="saveBtn" onclick="saveClip()">
-        ✂️ Salvar no Segundo Cérebro
+    <div class="body">
+      <button class="btn btn-primary" id="btnLoadAndOpen">
+        ✅ Carregar Dados + Abrir Relatórios
       </button>
+      <button class="btn btn-secondary" id="btnLoadOnly">
+        📥 Apenas Carregar Dados
+      </button>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">10</div>
+          <div class="stat-label">Posts</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">44K</div>
+          <div class="stat-label">Impressões</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">15%</div>
+          <div class="stat-label">Engajamento</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">7.4K</div>
+          <div class="stat-label">Interações</div>
+        </div>
+      </div>
 
       <div class="status" id="status"></div>
     </div>
 
     <div class="footer">
-      <a href="http://localhost:5173/clipper" target="_blank">📚 Ver Clips</a>
-      <a href="http://localhost:5173/" target="_blank">🏠 Dashboard</a>
+      <a href="http://localhost:5173/" target="_blank">📊 Dashboard</a>
+      <a href="http://localhost:5173/reports" target="_blank">📈 Relatórios</a>
     </div>
   </div>
 
