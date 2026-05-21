@@ -68,11 +68,15 @@ function saveClip() {
   var btn = document.getElementById('save-btn');
   btn.disabled = true;
 
-  chrome.runtime.sendMessage({ type: 'OPEN_CLIPPER', clip: clip }, function(resp) {
-    if (chrome.runtime.lastError) {
-      showMsg('Erro: ' + chrome.runtime.lastError.message, 'err');
-      btn.disabled = false;
-      return;
+  var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(clip))));
+  var url = 'https://content-intelligence-os1.vercel.app/clipper?clip=' + encoded;
+
+  chrome.tabs.query({ url: 'https://content-intelligence-os1.vercel.app/*' }, function(tabs) {
+    if (tabs && tabs.length > 0) {
+      chrome.tabs.update(tabs[0].id, { active: true, url: url });
+      chrome.windows.update(tabs[0].windowId, { focused: true });
+    } else {
+      chrome.tabs.create({ url: url });
     }
     showMsg('Salvo! Abrindo no app...', 'ok');
     setTimeout(function() { window.close(); }, 1500);
