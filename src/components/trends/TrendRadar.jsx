@@ -106,9 +106,13 @@ const LOADING_PHASES = [
 ]
 
 // ─── Claude API call ───────────────────────────────────────────────────────────
-async function callClaudeForTrends(apiKey, topic, insights = []) {
+async function callClaudeForTrends(apiKey, topic, insights = [], banned = []) {
   const insightsContext = insights?.length
     ? `\nCREATOR PERSONAL ANALYTICS (use to personalize recommendations):\n${insights.slice(0, 8).map((ins) => `- ${ins.title}: ${ins.description || ''}`).join('\n')}`
+    : ''
+
+  const bannedBlock = banned.length
+    ? `\nFRASES E PALAVRAS ABSOLUTAMENTE PROIBIDAS — nunca use nos outputs gerados:\n${banned.map(p => `- "${p}"`).join('\n')}\n`
     : ''
 
   const prompt = `You are a social media trend intelligence analyst specializing in Brazilian content creators. Analyze the topic "${topic}" and generate a comprehensive, SPECIFIC trend intelligence report.
@@ -147,6 +151,9 @@ CRITICAL RULES:
 - Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
 - Hook examples must be SPECIFIC to topic "${topic}", not generic
 - Content gaps must be REAL underexplored angles about "${topic}"
+- DECLARAÇÃO DIRETA OBRIGATÓRIA: every hook_example and hook_suggestion MUST begin with a direct declaration — subject + verb + complement. NEVER start with negation ("Não é...", "Nunca..."), corrective contrast ("Não é X, é Y"), or epanortose. Lead straight with the main point.
+- ABSOLUTELY FORBIDDEN in any generated text: epanortose structures ("Não é falta de X, é que Y"), guilt-denial hooks ("a culpa não é sua"), external-blame attribution ("ninguém te ensinou que..."), adversative revelation ("A maioria faz X, mas os melhores fazem Y")
+${bannedBlock}
 
 CREATOR SEARCH STRATEGY — CRITICAL RULES:
 - Do NOT invent or name specific real people. Claude does not have real-time social media data.
@@ -183,7 +190,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   ],
   "patterns": {
     "recurring_hooks": [
-      { "hook": "tipo", "type": "lista|contrário|história|dados|problema|pergunta", "frequency": "X%", "example": "frase gancho em português", "platforms": ["platform"] },
+      { "hook": "tipo", "type": "lista|contrário|história|dados|observação|afirmação|provocação", "frequency": "X%", "example": "frase gancho em português — declaração direta, sem negação inicial", "platforms": ["platform"] },
       { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] },
       { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] }
     ],
@@ -220,7 +227,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens: 8192,
       system: withAntiAIFilter('You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.'),
       messages: [{ role: 'user', content: prompt }],
@@ -582,6 +589,8 @@ export default function TrendRadar() {
   const trendResults    = useStore((s) => s.trendResults)
   const insights        = useStore((s) => s.insights)
   const addIdea         = useStore((s) => s.addIdea)
+  const bannedPhrases   = useStore((s) => s.bannedPhrases) || []
+  const bannedWords     = useStore((s) => s.bannedWords) || []
 
   const [topic, setTopic]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -635,7 +644,7 @@ export default function TrendRadar() {
       const apiKey = localStorage.getItem('cio-anthropic-key')
       if (!apiKey) throw new Error('Chave Anthropic não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
-      const results = await callClaudeForTrends(apiKey, topic.trim(), insights)
+      const results = await callClaudeForTrends(apiKey, topic.trim(), insights, [...bannedPhrases, ...bannedWords])
       setTrendResults(results)
       setSavedIds(new Set())
     } catch (e) {
