@@ -53,7 +53,7 @@ input.inp:focus,textarea.inp:focus{border-color:#f97316}
   <div id="main" style="display:none">
     <div class="bdy">
       <div class="page-info">
-        <img id="fav" class="page-favicon" src="" alt="" onerror="this.style.display='none';document.getElementById('fav-ph').style.display='block'">
+        <img id="fav" class="page-favicon" src="" alt="">
         <div id="fav-ph" class="page-favicon-ph" style="display:none"></div>
         <div class="page-meta">
           <div class="page-title" id="pg-title"></div>
@@ -63,9 +63,9 @@ input.inp:focus,textarea.inp:focus{border-color:#f97316}
 
       <div class="section-label">Tipo</div>
       <div class="types">
-        <button class="type-btn active" id="t-article" onclick="setType('article')">&#x1F4D6; Artigo</button>
-        <button class="type-btn" id="t-full_page" onclick="setType('full_page')">&#x1F310; P&#xE1;gina</button>
-        <button class="type-btn" id="t-selection" onclick="setType('selection')">&#x1F4CC; Sele&#xE7;&#xE3;o</button>
+        <button class="type-btn active" id="t-article">&#x1F4D6; Artigo</button>
+        <button class="type-btn" id="t-full_page">&#x1F310; P&#xE1;gina</button>
+        <button class="type-btn" id="t-selection">&#x1F4CC; Sele&#xE7;&#xE3;o</button>
       </div>
 
       <div id="selection-preview"></div>
@@ -80,7 +80,7 @@ input.inp:focus,textarea.inp:focus{border-color:#f97316}
         <textarea class="inp" id="notes" rows="2" placeholder="O que me chamou aten&#xE7;&#xE3;o nesse conte&#xFA;do..."></textarea>
       </div>
 
-      <button class="save-btn" id="save-btn" onclick="saveClip()">&#x2702; Salvar no segundo c&#xE9;rebro</button>
+      <button class="save-btn" id="save-btn">&#x2702; Salvar no segundo c&#xE9;rebro</button>
       <div class="msg" id="msg"></div>
     </div>
     <div class="ftr">
