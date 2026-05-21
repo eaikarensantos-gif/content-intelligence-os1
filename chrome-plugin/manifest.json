@@ -1,22 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Web Clipper - Content Intelligence",
+  "name": "Teste Relatorio - Content Intelligence",
   "version": "3.0",
-  "description": "Salve sites, imagens e selecoes no seu segundo cerebro com um clique",
-  "permissions": ["storage", "scripting", "activeTab", "tabs", "contextMenus"],
+  "description": "Carrega dados de teste nos Relatorios",
+  "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Web Clipper"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_end"
-    }
-  ],
-  "background": {
-    "service_worker": "background.js"
+    "default_title": "Teste Relatorio"
   },
   "host_permissions": ["<all_urls>"]
 }
