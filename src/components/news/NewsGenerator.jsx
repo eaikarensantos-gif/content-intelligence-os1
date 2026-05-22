@@ -10,8 +10,28 @@ import { withAntiAIFilter } from '../../lib/antiAIFilter'
 const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
 const LS_KEY = 'cio-anthropic-key'
+const LS_FEEDS_KEY = 'cio-news-feeds'
 
-const FEED_URL = '/api/rss?url=' + encodeURIComponent('https://techcrunch.com/feed/')
+const DEFAULT_FEEDS = [
+  { id: 'tc', name: 'TechCrunch', url: 'https://techcrunch.com/feed/', color: 'bg-orange-500' },
+  { id: 'hbr', name: 'HBR', url: 'https://hbr.org/rss/topic/technology', color: 'bg-red-600' },
+  { id: 'mit', name: 'MIT Tech Review', url: 'https://www.technologyreview.com/feed/', color: 'bg-blue-600' },
+]
+const loadFeeds = () => {
+  try {
+    const saved = localStorage.getItem(LS_FEEDS_KEY)
+    return saved ? JSON.parse(saved) : DEFAULT_FEEDS
+  } catch {
+    return DEFAULT_FEEDS
+  }
+}
+const saveFeeds = (feeds) => {
+  localStorage.setItem(LS_FEEDS_KEY, JSON.stringify(feeds))
+}
+const FEED_COLORS = [
+  'bg-orange-500', 'bg-red-600', 'bg-blue-600', 'bg-emerald-600',
+  'bg-purple-600', 'bg-pink-600', 'bg-amber-500', 'bg-cyan-600',
+]
 
 const CREATOR_PROFILE = `Perfil da criadora:
 Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
@@ -54,46 +74,164 @@ export default function NewsGenerator() {
   const [genError, setGenError] = useState('')
   const [copied, setCopied] = useState(false)
   const [filter, setFilter] = useState('')
+  const [feeds, setFeeds] = useState(loadFeeds)
+  const [activeFeeds, setActiveFeeds] = useState(() => loadFeeds().map(f => f.id))
+  const [showFeedManager, setShowFeedManager] = useState(false)
+  const [newFeedName, setNewFeedName] = useState('')
+  const [newFeedUrl, setNewFeedUrl] = useState('')
+  const [themes, setThemes] = useState([])
+  const [activeTheme, setActiveTheme] = useState(null)
+  const [analyzingThemes, setAnalyzingThemes] = useState(false)
   const [translating, setTranslating] = useState(false)
-  const [translated, setTranslated] = useState(null) // { title, description }
+  const [translated, setTranslated] = useState(null)
   const [showTranslated, setShowTranslated] = useState(false)
 
   const fetchNews = useCallback(async () => {
     setLoading(true)
     setError('')
+    setThemes([])
+    setActiveTheme(null)
+    const enabledFeeds = feeds.filter(f => activeFeeds.includes(f.id))
+    if (enabledFeeds.length === 0) {
+      setArticles([])
+      setLoading(false)
+      return
+    }
     try {
-      const res = await fetch(FEED_URL)
-      if (!res.ok) throw new Error('Feed indisponível')
-      const xml = await res.text()
-      const doc = new DOMParser().parseFromString(xml, 'text/xml')
-      const items = Array.from(doc.querySelectorAll('item')).slice(0, 30).map(item => ({
-        title: item.querySelector('title')?.textContent || '',
-        link: item.querySelector('link')?.nextSibling?.textContent?.trim() || item.querySelector('link')?.textContent || '',
-        description: item.querySelector('description')?.textContent || '',
-        pubDate: item.querySelector('pubDate')?.textContent || '',
-        categories: Array.from(item.querySelectorAll('category')).map(c => c.textContent).filter(Boolean),
-        guid: item.querySelector('guid')?.textContent || '',
-      }))
-      setArticles(items)
+      const results = await Promise.allSettled(
+        enabledFeeds.map(async (feed) => {
+          const url = '/api/rss?url=' + encodeURIComponent(feed.url)
+          const res = await fetch(url)
+          if (!res.ok) throw new Error(`${feed.name}: feed indisponível`)
+          const xml = await res.text()
+          const doc = new DOMParser().parseFromString(xml, 'text/xml')
+          return Array.from(doc.querySelectorAll('item')).slice(0, 20).map(item => ({
+            title: item.querySelector('title')?.textContent || '',
+            link: item.querySelector('link')?.nextSibling?.textContent?.trim() || item.querySelector('link')?.textContent || '',
+            description: item.querySelector('description')?.textContent || '',
+            pubDate: item.querySelector('pubDate')?.textContent || '',
+            categories: Array.from(item.querySelectorAll('category')).map(c => c.textContent).filter(Boolean),
+            guid: item.querySelector('guid')?.textContent || '',
+            source: feed.name,
+            sourceId: feed.id,
+            sourceColor: feed.color,
+          }))
+        })
+      )
+      const allArticles = results
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value)
+        .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => r.reason?.message)
+      setArticles(allArticles)
+      if (errors.length > 0 && allArticles.length === 0) {
+        setError(errors.join(' · '))
+      }
     } catch {
-      setError('Não foi possível carregar o feed do TechCrunch. Tente novamente.')
+      setError('Não foi possível carregar os feeds. Tente novamente.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [feeds, activeFeeds])
 
   useEffect(() => { fetchNews() }, [fetchNews])
 
-  const filtered = filter.trim()
-    ? articles.filter(a => a.title?.toLowerCase().includes(filter.toLowerCase()) || a.categories?.some(c => c.toLowerCase().includes(filter.toLowerCase())))
-    : articles
+  const analyzeThemes = async () => {
+    if (!apiKey || articles.length === 0) return
+    setAnalyzingThemes(true)
+    setThemes([])
+    setActiveTheme(null)
+    try {
+      const headlines = articles
+        .slice(0, 40)
+        .map((a, i) => `${i}. ${a.title}`)
+        .join('\n')
+      const prompt = `Você recebeu ${articles.slice(0, 40).length} manchetes de tech desta semana.
+Agrupe-as nos 4 ou 5 temas mais recorrentes e relevantes para profissionais brasileiros de tech, produto e design.
+Manchetes (número = índice):
+${headlines}
+Retorne JSON no formato:
+{"themes": [{"label": "IA no trabalho", "indexes": [0, 3, 7, 12], "relevance": "alto"}, ...]}
+Regras:
+- Máx 5 temas
+- label em português, curto (2-4 palavras)
+- indexes: array com os números das manchetes que pertencem ao tema
+- relevance: "alto", "médio" ou "baixo" (baseado em volume e impacto pro público)
+- Ordene por relevance (alto primeiro)
+- Retorne APENAS o JSON, sem texto antes ou depois`
+      const res = await mkClient(apiKey).messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const text = res.content.find(b => b.type === 'text')?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        const mapped = parsed.themes.map(t => ({
+          label: t.label,
+          relevance: t.relevance,
+          count: t.indexes.length,
+          articleIndexes: t.indexes,
+        }))
+        setThemes(mapped)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setAnalyzingThemes(false)
+    }
+  }
+
+  const addFeed = () => {
+    if (!newFeedName.trim() || !newFeedUrl.trim()) return
+    const url = newFeedUrl.trim().startsWith('http') ? newFeedUrl.trim() : `https://${newFeedUrl.trim()}`
+    const id = Date.now().toString()
+    const color = FEED_COLORS[feeds.length % FEED_COLORS.length]
+    const newFeed = { id, name: newFeedName.trim(), url, color }
+    const updated = [...feeds, newFeed]
+    setFeeds(updated)
+    setActiveFeeds(prev => [...prev, id])
+    saveFeeds(updated)
+    setNewFeedName('')
+    setNewFeedUrl('')
+  }
+  const removeFeed = (id) => {
+    const updated = feeds.filter(f => f.id !== id)
+    setFeeds(updated)
+    setActiveFeeds(prev => prev.filter(fid => fid !== id))
+    saveFeeds(updated)
+  }
+  const toggleFeed = (id) => {
+    setActiveFeeds(prev =>
+      prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]
+    )
+  }
+
+  const filtered = (() => {
+    let base = articles
+    if (activeTheme !== null && themes[activeTheme]) {
+      const indexes = themes[activeTheme].articleIndexes
+      base = indexes.map(i => articles[i]).filter(Boolean)
+    }
+    if (filter.trim()) {
+      base = base.filter(a =>
+        a.title?.toLowerCase().includes(filter.toLowerCase()) ||
+        a.categories?.some(c => c.toLowerCase().includes(filter.toLowerCase()))
+      )
+    }
+    return base
+  })()
 
   const buildPrompt = (article, fmt) => {
     const title = article.title || ''
     const summary = stripHtml(article.description || '').slice(0, 600)
     const url = article.link || ''
+    const sourceName = article.source || 'TechCrunch'
 
-    const base = `Manchete original (TechCrunch): "${title}"
+    const base = `Manchete original (${sourceName}): "${title}"
 Resumo: ${summary}
 Fonte: ${url}
 
@@ -218,22 +356,140 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
       {/* ── Article list ── */}
       <div className="w-96 shrink-0 flex flex-col border-r border-gray-200 bg-white">
         <div className="px-4 pt-5 pb-3 border-b border-gray-100">
+          {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center">
                 <Newspaper size={14} className="text-white" />
               </div>
-              <span className="text-sm font-bold text-gray-900">TechCrunch Feed</span>
+              <span className="text-sm font-bold text-gray-900">News Feed</span>
+              <span className="text-[10px] text-gray-400">{articles.length} manchetes</span>
             </div>
-            <button
-              onClick={fetchNews}
-              disabled={loading}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-              title="Atualizar feed"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowFeedManager(v => !v)}
+                className={clsx(
+                  'p-1.5 rounded-lg text-xs transition-colors',
+                  showFeedManager ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                )}
+                title="Gerenciar fontes"
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={fetchNews}
+                disabled={loading}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                title="Atualizar feeds"
+              >
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
           </div>
+          {/* Gerenciador de fontes */}
+          {showFeedManager && (
+            <div className="mb-3 p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Fontes ativas</p>
+              {feeds.map(feed => (
+                <div key={feed.id} className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleFeed(feed.id)}
+                    className={clsx(
+                      'w-3 h-3 rounded-full shrink-0 transition-all',
+                      activeFeeds.includes(feed.id) ? feed.color : 'bg-gray-300'
+                    )}
+                  />
+                  <span className="text-xs text-gray-700 flex-1 truncate">{feed.name}</span>
+                  {!DEFAULT_FEEDS.find(d => d.id === feed.id) && (
+                    <button
+                      onClick={() => removeFeed(feed.id)}
+                      className="text-gray-300 hover:text-red-400 transition-colors"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {/* Adicionar fonte */}
+              <div className="pt-2 border-t border-gray-200 space-y-1.5">
+                <input
+                  type="text"
+                  placeholder="Nome (ex: Wired)"
+                  value={newFeedName}
+                  onChange={e => setNewFeedName(e.target.value)}
+                  className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-orange-300"
+                />
+                <input
+                  type="text"
+                  placeholder="URL do RSS"
+                  value={newFeedUrl}
+                  onChange={e => setNewFeedUrl(e.target.value)}
+                  className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-orange-300"
+                />
+                <button
+                  onClick={addFeed}
+                  disabled={!newFeedName.trim() || !newFeedUrl.trim()}
+                  className="w-full text-xs py-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white rounded-lg font-medium transition-colors"
+                >
+                  Adicionar fonte
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Badges de fontes ativas */}
+          {!showFeedManager && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {feeds.filter(f => activeFeeds.includes(f.id)).map(feed => (
+                <span key={feed.id} className={clsx('text-[10px] text-white px-1.5 py-0.5 rounded-full font-medium', feed.color)}>
+                  {feed.name}
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Temas da semana */}
+          {themes.length > 0 && (
+            <div className="mb-2 space-y-1">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Temas da semana</p>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setActiveTheme(null)}
+                  className={clsx(
+                    'text-[10px] px-2 py-1 rounded-full border transition-all',
+                    activeTheme === null ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                  )}
+                >
+                  Todos
+                </button>
+                {themes.map((t, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTheme(activeTheme === i ? null : i)}
+                    className={clsx(
+                      'text-[10px] px-2 py-1 rounded-full border transition-all',
+                      activeTheme === i
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                    )}
+                  >
+                    {t.label} <span className="opacity-70">({t.count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Botão analisar temas */}
+          {articles.length > 0 && themes.length === 0 && (
+            <button
+              onClick={analyzeThemes}
+              disabled={analyzingThemes || !apiKey}
+              className="w-full mb-2 flex items-center justify-center gap-1.5 text-[11px] py-1.5 rounded-lg border border-orange-200 text-orange-600 hover:bg-orange-50 disabled:opacity-40 transition-colors"
+            >
+              {analyzingThemes
+                ? <><Loader2 size={11} className="animate-spin" /> Analisando temas...</>
+                : <><Sparkles size={11} /> Identificar temas da semana</>}
+            </button>
+          )}
+          {/* Busca */}
           <input
             type="text"
             placeholder="Filtrar manchetes..."
@@ -247,7 +503,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
           {loading && (
             <div className="flex items-center justify-center py-12 text-gray-400">
               <Loader2 size={20} className="animate-spin mr-2" />
-              <span className="text-sm">Carregando feed...</span>
+              <span className="text-sm">Carregando feeds...</span>
             </div>
           )}
           {error && (
@@ -271,7 +527,12 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
                   {isSelected && <ChevronRight size={12} className="text-orange-500 shrink-0 mt-0.5" />}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  {article.categories?.slice(0, 2).map(cat => (
+                  {article.source && (
+                    <span className={clsx('text-[10px] text-white px-1.5 py-0.5 rounded-full font-medium', article.sourceColor || 'bg-gray-400')}>
+                      {article.source}
+                    </span>
+                  )}
+                  {article.categories?.slice(0, 1).map(cat => (
                     <span key={cat} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{cat}</span>
                   ))}
                   <span className="text-[10px] text-gray-400 ml-auto">{timeAgo(article.pubDate)}</span>
