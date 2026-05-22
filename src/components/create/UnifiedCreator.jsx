@@ -1709,6 +1709,15 @@ Regras:
     setSavedThemes(prev => [entry, ...prev])
   }
 
+  const CREATOR_PROFILE = `Perfil da criadora:
+Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
+Histórico: Nubank, QuintoAndar, PicPay. Fundadora da UX para Minas Pretas.
+Nicho: maturidade profissional na era da IA.
+Público: profissionais de tech, produto e design, nível pleno a sênior.
+Parceria ativa: Samsung (tech, IA aplicada, conteúdo de produto).
+Tom: direto, analítico, sem motivacional, sem coach.
+Ângulo: situações reais, decisões concretas, dados quando disponível.`
+
   const expandThemes = async () => {
     if (!apiKey) return
     const categoria = bankOpenCategory
@@ -1722,11 +1731,13 @@ Regras:
       const aiRes = await mkClient(apiKey).messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 800,
-        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
+        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo especializado no perfil abaixo.
+
+${CREATOR_PROFILE}
 
 ${contextoCategoria}
 
-Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
+Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação para o público descrito. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta do universo de tech/produto/design sênior. Máx 8 palavras. Inclua a temperatura de cada um.
 
 Temperatura:
 - quente: alto potencial viral agora, forte identificação
@@ -1760,12 +1771,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const aiRes = await mkClient(apiKey).messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 600,
-        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores digitais brasileiros.
+        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo especializado no perfil abaixo.
+
+${CREATOR_PROFILE}
 
 Tema principal: "${item.tema}"
 Categoria: "${item.categoria}"
 
-Gere 5 subtemas específicos e concretos derivados desse tema — situações reais, ângulos distintos, cada um com potencial de virar um post independente. Sem repetir o tema principal. Sem linguagem genérica ou de coach. Máx 10 palavras cada.
+Gere 5 subtemas específicos e concretos derivados desse tema — situações reais do universo de tech/produto/design sênior, ângulos distintos, cada um com potencial de virar um post independente. Sem repetir o tema principal. Sem linguagem genérica ou de coach. Máx 10 palavras cada.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"subtemas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
