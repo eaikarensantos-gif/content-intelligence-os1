@@ -24,6 +24,7 @@ import FloatingActions from './components/global/FloatingActions'
 import TaskBoard from './components/tasks/TaskBoard'
 import NaomiStudio from './components/naomi/NaomiStudio'
 import WebClipper from './components/clipper/WebClipper'
+import NewsGenerator from './components/news/NewsGenerator'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />
+            <Route path="/news" element={<NewsGenerator />} />
           </Routes>
         </Layout>
       </BrowserRouter>

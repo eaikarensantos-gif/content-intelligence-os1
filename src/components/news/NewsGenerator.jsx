@@ -1,0 +1,356 @@
+import { useState, useEffect, useCallback } from 'react'
+import {
+  Newspaper, RefreshCw, Loader2, Sparkles, Copy, Check,
+  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare,
+} from 'lucide-react'
+import clsx from 'clsx'
+import { mkClient } from '../../lib/claude'
+import { withAntiAIFilter } from '../../lib/antiAIFilter'
+
+const LS_KEY = 'cio-anthropic-key'
+
+const RSS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftechcrunch.com%2Ffeed%2F&api_key=&count=30'
+
+const CREATOR_PROFILE = `Perfil da criadora:
+Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
+Histórico: Nubank, QuintoAndar, PicPay. Fundadora da UX para Minas Pretas.
+Nicho: maturidade profissional na era da IA.
+Público: profissionais de tech, produto e design, nível pleno a sênior.
+Parceria ativa: Samsung (tech, IA aplicada, conteúdo de produto).
+Tom: direto, analítico, sem motivacional, sem coach.
+Ângulo: situações reais, decisões concretas, dados quando disponível.`
+
+const FORMATS = [
+  { id: 'post', label: 'Post LinkedIn', icon: FileText, desc: 'Post direto, analítico, sem motivacional' },
+  { id: 'carousel', label: 'Carrossel', icon: LayoutGrid, desc: '5 slides com gancho + desenvolvimento' },
+  { id: 'reels', label: 'Roteiro Reels', icon: Video, desc: 'Script de 60s para vídeo vertical' },
+  { id: 'thread', label: 'Thread', icon: MessageSquare, desc: 'Sequência de 5 tweets/posts curtos' },
+]
+
+function stripHtml(html) {
+  return html?.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim() || ''
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const h = Math.floor(diff / 3600000)
+  if (h < 1) return 'agora'
+  if (h < 24) return `${h}h atrás`
+  return `${Math.floor(h / 24)}d atrás`
+}
+
+export default function NewsGenerator() {
+  const apiKey = localStorage.getItem(LS_KEY) || ''
+
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [format, setFormat] = useState('post')
+  const [generating, setGenerating] = useState(false)
+  const [result, setResult] = useState('')
+  const [genError, setGenError] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [filter, setFilter] = useState('')
+
+  const fetchNews = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(RSS_URL)
+      const data = await res.json()
+      if (data.status !== 'ok') throw new Error('Feed indisponível')
+      setArticles(data.items || [])
+    } catch {
+      setError('Não foi possível carregar o feed do TechCrunch. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchNews() }, [fetchNews])
+
+  const filtered = filter.trim()
+    ? articles.filter(a => a.title?.toLowerCase().includes(filter.toLowerCase()) || a.categories?.some(c => c.toLowerCase().includes(filter.toLowerCase())))
+    : articles
+
+  const buildPrompt = (article, fmt) => {
+    const title = article.title || ''
+    const summary = stripHtml(article.description || '').slice(0, 600)
+    const url = article.link || ''
+
+    const base = `Manchete original (TechCrunch): "${title}"
+Resumo: ${summary}
+Fonte: ${url}
+
+${CREATOR_PROFILE}
+
+Ângulo: filtre o que é relevante para profissionais brasileiros de tech, produto e design. Traga a perspectiva de quem trabalha no mercado, não de quem só lê notícias. Dados concretos quando disponível. Sem reproduzir a manchete — adicione análise, contexto ou implicação real.`
+
+    if (fmt === 'post') {
+      return `${base}
+
+Gere um post para LinkedIn com base nessa notícia. Estrutura:
+- Primeira linha: gancho direto (declaração, dado ou observação — nunca pergunta retórica)
+- Desenvolvimento: 2-3 parágrafos curtos com análise concreta
+- Encerramento: implicação direta para o público (sem CTA genérico)
+Máx 200 palavras. Linguagem de conversa profissional, não de artigo.`
+    }
+
+    if (fmt === 'carousel') {
+      return `${base}
+
+Gere um carrossel de 5 slides com base nessa notícia. Retorne JSON:
+{"slides": [{"numero": 1, "titulo": "...", "corpo": "..."}, ...]}
+Slide 1: gancho direto (1 frase, declaração ou dado)
+Slides 2-4: desenvolvimento com análise concreta, um ponto por slide
+Slide 5: implicação ou conclusão direta
+Máx 40 palavras por slide. Sem linguagem motivacional.`
+    }
+
+    if (fmt === 'reels') {
+      return `${base}
+
+Gere um roteiro de Reels de 60 segundos com base nessa notícia. Estrutura:
+- 0-5s: gancho visual (o que acontece na tela + fala de abertura)
+- 5-45s: desenvolvimento em 3 blocos curtos
+- 45-60s: encerramento com implicação concreta
+Formato: [tempo] fala / [tempo] legenda sugerida
+Tom: conversa direta, sem voz de narrador de documentário.`
+    }
+
+    if (fmt === 'thread') {
+      return `${base}
+
+Gere uma thread de 5 posts curtos com base nessa notícia. Cada post: máx 280 caracteres.
+Post 1: gancho (declaração direta com o fato principal)
+Posts 2-4: desenvolvimento — um ângulo por post
+Post 5: implicação concreta ou pergunta de análise (não retórica)
+Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
+    }
+    return base
+  }
+
+  const generate = async () => {
+    if (!selected || !apiKey) return
+    setGenerating(true)
+    setResult('')
+    setGenError('')
+    try {
+      const prompt = buildPrompt(selected, format)
+      const res = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1200,
+        system: withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.'),
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const text = res.content.find(b => b.type === 'text')?.text || ''
+      if (format === 'carousel') {
+        const match = text.match(/\{[\s\S]*\}/)
+        if (match) {
+          const parsed = JSON.parse(match[0])
+          setResult(parsed.slides?.map(s => `**Slide ${s.numero}**\n${s.titulo}\n${s.corpo}`).join('\n\n') || text)
+        } else setResult(text)
+      } else {
+        setResult(text)
+      }
+    } catch (e) {
+      setGenError('Erro ao gerar. Verifique sua API key.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const copy = () => {
+    navigator.clipboard.writeText(result)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* ── Article list ── */}
+      <div className="w-96 shrink-0 flex flex-col border-r border-gray-200 bg-white">
+        <div className="px-4 pt-5 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center">
+                <Newspaper size={14} className="text-white" />
+              </div>
+              <span className="text-sm font-bold text-gray-900">TechCrunch Feed</span>
+            </div>
+            <button
+              onClick={fetchNews}
+              disabled={loading}
+              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              title="Atualizar feed"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+          <input
+            type="text"
+            placeholder="Filtrar manchetes..."
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {loading && (
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              <Loader2 size={20} className="animate-spin mr-2" />
+              <span className="text-sm">Carregando feed...</span>
+            </div>
+          )}
+          {error && (
+            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
+          )}
+          {!loading && !error && filtered.map((article, i) => {
+            const isSelected = selected?.link === article.link
+            return (
+              <button
+                key={article.link || i}
+                onClick={() => { setSelected(article); setResult(''); setGenError('') }}
+                className={clsx(
+                  'w-full text-left px-4 py-3 border-b border-gray-50 transition-colors',
+                  isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50'
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className={clsx('text-xs font-medium leading-snug line-clamp-2', isSelected ? 'text-orange-800' : 'text-gray-800')}>
+                    {article.title}
+                  </p>
+                  {isSelected && <ChevronRight size={12} className="text-orange-500 shrink-0 mt-0.5" />}
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  {article.categories?.slice(0, 2).map(cat => (
+                    <span key={cat} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{cat}</span>
+                  ))}
+                  <span className="text-[10px] text-gray-400 ml-auto">{timeAgo(article.pubDate)}</span>
+                </div>
+              </button>
+            )
+          })}
+          {!loading && !error && filtered.length === 0 && (
+            <p className="text-xs text-gray-400 text-center py-8">Nenhuma manchete encontrada</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Content panel ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {!selected ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+            <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center mb-4">
+              <Newspaper size={22} className="text-orange-500" />
+            </div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Selecione uma manchete</p>
+            <p className="text-xs text-gray-400 max-w-xs">Escolha um artigo à esquerda para gerar conteúdo adaptado ao seu perfil e público</p>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Article header */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-white">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{selected.title}</p>
+                  <p className="text-xs text-gray-500 line-clamp-2">{stripHtml(selected.description || '').slice(0, 160)}...</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={selected.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Abrir artigo original"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                  <button
+                    onClick={() => { setSelected(null); setResult(''); setGenError('') }}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Format selector */}
+              <div className="flex gap-2 mt-3">
+                {FORMATS.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => { setFormat(f.id); setResult(''); setGenError('') }}
+                    className={clsx(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                      format === f.id
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-700'
+                    )}
+                  >
+                    <f.icon size={12} />
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={generate}
+                disabled={generating || !apiKey}
+                className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm shadow-orange-200"
+              >
+                {generating
+                  ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
+                  : <><Sparkles size={13} /> Gerar {FORMATS.find(f => f.id === format)?.label}</>}
+              </button>
+              {!apiKey && (
+                <p className="text-[11px] text-red-500 mt-1">Configure sua API key em Configurações.</p>
+              )}
+            </div>
+
+            {/* Result */}
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {genError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{genError}</div>
+              )}
+              {result && (
+                <div className="relative">
+                  <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {FORMATS.find(f => f.id === format)?.label}
+                      </span>
+                      <button
+                        onClick={copy}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-600 transition-colors"
+                      >
+                        {copied ? <><Check size={12} className="text-emerald-500" /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                      </button>
+                    </div>
+                    <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{result}</div>
+                  </div>
+                  <button
+                    onClick={generate}
+                    disabled={generating}
+                    className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-600 transition-colors"
+                  >
+                    <RefreshCw size={11} /> Gerar novamente
+                  </button>
+                </div>
+              )}
+              {!result && !genError && !generating && (
+                <div className="text-center py-8">
+                  <p className="text-xs text-gray-400">
+                    Escolha um formato e clique em Gerar para criar conteúdo baseado nessa manchete
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
