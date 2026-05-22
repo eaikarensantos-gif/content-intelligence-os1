@@ -4,8 +4,10 @@ import {
   ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { mkClient } from '../../lib/claude'
+import Anthropic from '@anthropic-ai/sdk'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
+
+const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
 const LS_KEY = 'cio-anthropic-key'
 
