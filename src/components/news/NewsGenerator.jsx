@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Newspaper, RefreshCw, Loader2, Sparkles, Copy, Check,
-  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare,
+  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare, Languages,
 } from 'lucide-react'
 import clsx from 'clsx'
 import Anthropic from '@anthropic-ai/sdk'
@@ -54,6 +54,9 @@ export default function NewsGenerator() {
   const [genError, setGenError] = useState('')
   const [copied, setCopied] = useState(false)
   const [filter, setFilter] = useState('')
+  const [translating, setTranslating] = useState(false)
+  const [translated, setTranslated] = useState(null) // { title, description }
+  const [showTranslated, setShowTranslated] = useState(false)
 
   const fetchNews = useCallback(async () => {
     setLoading(true)
@@ -142,6 +145,38 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
     return base
   }
 
+  const translate = async () => {
+    if (!selected || !apiKey) return
+    if (translated) { setShowTranslated(v => !v); return }
+    setTranslating(true)
+    try {
+      const title = selected.title || ''
+      const desc = stripHtml(selected.description || '').slice(0, 600)
+      const prompt = `Traduza do inglês para o português brasileiro de forma natural e fluida, preservando o sentido técnico:
+
+Título: ${title}
+Resumo: ${desc}
+
+Retorne JSON: {"titulo": "...", "resumo": "..."}`
+      const res = await mkClient(apiKey).messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const text = res.content.find(b => b.type === 'text')?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        setTranslated({ title: parsed.titulo, description: parsed.resumo })
+        setShowTranslated(true)
+      }
+    } catch {
+      // silently fail, keep original
+    } finally {
+      setTranslating(false)
+    }
+  }
+
   const generate = async () => {
     if (!selected || !apiKey) return
     setGenerating(true)
@@ -180,6 +215,7 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* ── Article list ── */}
       <div className="w-96 shrink-0 flex flex-col border-r border-gray-200 bg-white">
         <div className="px-4 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
@@ -189,11 +225,22 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
               </div>
               <span className="text-sm font-bold text-gray-900">TechCrunch Feed</span>
             </div>
-            <button onClick={fetchNews} disabled={loading} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50" title="Atualizar feed">
+            <button
+              onClick={fetchNews}
+              disabled={loading}
+              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              title="Atualizar feed"
+            >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
-          <input type="text" placeholder="Filtrar manchetes..." value={filter} onChange={e => setFilter(e.target.value)} className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent" />
+          <input
+            type="text"
+            placeholder="Filtrar manchetes..."
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -203,14 +250,24 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
               <span className="text-sm">Carregando feed...</span>
             </div>
           )}
-          {error && <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>}
+          {error && (
+            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
+          )}
           {!loading && !error && filtered.map((article, i) => {
             const isSelected = (selected?.guid || selected?.link) === (article.guid || article.link)
             return (
-              <button key={article.guid || article.link || i} onClick={() => { setSelected(article); setResult(''); setGenError('') }}
-                className={clsx('w-full text-left px-4 py-3 border-b border-gray-50 transition-colors', isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50')}>
+              <button
+                key={article.link || i}
+                onClick={() => { setSelected(article); setResult(''); setGenError(''); setTranslated(null); setShowTranslated(false) }}
+                className={clsx(
+                  'w-full text-left px-4 py-3 border-b border-gray-50 transition-colors',
+                  isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50'
+                )}
+              >
                 <div className="flex items-start justify-between gap-2">
-                  <p className={clsx('text-xs font-medium leading-snug line-clamp-2', isSelected ? 'text-orange-800' : 'text-gray-800')}>{article.title}</p>
+                  <p className={clsx('text-xs font-medium leading-snug line-clamp-2', isSelected ? 'text-orange-800' : 'text-gray-800')}>
+                    {article.title}
+                  </p>
                   {isSelected && <ChevronRight size={12} className="text-orange-500 shrink-0 mt-0.5" />}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
@@ -222,10 +279,13 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
               </button>
             )
           })}
-          {!loading && !error && filtered.length === 0 && <p className="text-xs text-gray-400 text-center py-8">Nenhuma manchete encontrada</p>}
+          {!loading && !error && filtered.length === 0 && (
+            <p className="text-xs text-gray-400 text-center py-8">Nenhuma manchete encontrada</p>
+          )}
         </div>
       </div>
 
+      {/* ── Content panel ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
@@ -237,56 +297,127 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
           </div>
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Article header */}
             <div className="px-6 py-4 border-b border-gray-200 bg-white">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{selected.title}</p>
-                  <p className="text-xs text-gray-500 line-clamp-2">{stripHtml(selected.description || '').slice(0, 160)}...</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-semibold text-gray-900 leading-snug">
+                      {showTranslated && translated ? translated.title : selected.title}
+                    </p>
+                    {showTranslated && (
+                      <span className="shrink-0 text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-medium">PT</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {showTranslated && translated
+                      ? translated.description.slice(0, 160)
+                      : stripHtml(selected.description || '').slice(0, 160)}...
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <a href={selected.link} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Abrir artigo original">
+                  <button
+                    onClick={translate}
+                    disabled={translating || !apiKey}
+                    className={clsx(
+                      'flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all',
+                      showTranslated
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                        : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                    )}
+                    title={showTranslated ? 'Ver original (EN)' : 'Traduzir para português'}
+                  >
+                    {translating
+                      ? <Loader2 size={13} className="animate-spin" />
+                      : <Languages size={13} />}
+                    {showTranslated ? 'EN' : 'PT'}
+                  </button>
+                  <a
+                    href={selected.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Abrir artigo original"
+                  >
                     <ExternalLink size={14} />
                   </a>
-                  <button onClick={() => { setSelected(null); setResult(''); setGenError('') }} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                  <button
+                    onClick={() => { setSelected(null); setResult(''); setGenError('') }}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
                     <X size={14} />
                   </button>
                 </div>
               </div>
+
+              {/* Format selector */}
               <div className="flex gap-2 mt-3">
                 {FORMATS.map(f => (
-                  <button key={f.id} onClick={() => { setFormat(f.id); setResult(''); setGenError('') }}
-                    className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all', format === f.id ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-700')}>
-                    <f.icon size={12} />{f.label}
+                  <button
+                    key={f.id}
+                    onClick={() => { setFormat(f.id); setResult(''); setGenError('') }}
+                    className={clsx(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                      format === f.id
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-700'
+                    )}
+                  >
+                    <f.icon size={12} />
+                    {f.label}
                   </button>
                 ))}
               </div>
-              <button onClick={generate} disabled={generating || !apiKey} className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm shadow-orange-200">
-                {generating ? <><Loader2 size={13} className="animate-spin" /> Gerando...</> : <><Sparkles size={13} /> Gerar {FORMATS.find(f => f.id === format)?.label}</>}
+
+              <button
+                onClick={generate}
+                disabled={generating || !apiKey}
+                className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm shadow-orange-200"
+              >
+                {generating
+                  ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
+                  : <><Sparkles size={13} /> Gerar {FORMATS.find(f => f.id === format)?.label}</>}
               </button>
-              {!apiKey && <p className="text-[11px] text-red-500 mt-1">Configure sua API key em Configurações.</p>}
+              {!apiKey && (
+                <p className="text-[11px] text-red-500 mt-1">Configure sua API key em Configurações.</p>
+              )}
             </div>
 
+            {/* Result */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
-              {genError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{genError}</div>}
+              {genError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{genError}</div>
+              )}
               {result && (
                 <div className="relative">
                   <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{FORMATS.find(f => f.id === format)?.label}</span>
-                      <button onClick={copy} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-600 transition-colors">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {FORMATS.find(f => f.id === format)?.label}
+                      </span>
+                      <button
+                        onClick={copy}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-600 transition-colors"
+                      >
                         {copied ? <><Check size={12} className="text-emerald-500" /> Copiado</> : <><Copy size={12} /> Copiar</>}
                       </button>
                     </div>
                     <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{result}</div>
                   </div>
-                  <button onClick={generate} disabled={generating} className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-600 transition-colors">
+                  <button
+                    onClick={generate}
+                    disabled={generating}
+                    className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 hover:text-orange-600 transition-colors"
+                  >
                     <RefreshCw size={11} /> Gerar novamente
                   </button>
                 </div>
               )}
               {!result && !genError && !generating && (
                 <div className="text-center py-8">
-                  <p className="text-xs text-gray-400">Escolha um formato e clique em Gerar para criar conteúdo baseado nessa manchete</p>
+                  <p className="text-xs text-gray-400">
+                    Escolha um formato e clique em Gerar para criar conteúdo baseado nessa manchete
+                  </p>
                 </div>
               )}
             </div>
