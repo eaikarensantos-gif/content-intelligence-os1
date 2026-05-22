@@ -11,7 +11,7 @@ const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: tr
 
 const LS_KEY = 'cio-anthropic-key'
 
-const RSS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftechcrunch.com%2Ffeed%2F&api_key=&count=30'
+const FEED_URL = '/api/rss?url=' + encodeURIComponent('https://techcrunch.com/feed/')
 
 const CREATOR_PROFILE = `Perfil da criadora:
 Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
@@ -59,10 +59,19 @@ export default function NewsGenerator() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(RSS_URL)
-      const data = await res.json()
-      if (data.status !== 'ok') throw new Error('Feed indisponível')
-      setArticles(data.items || [])
+      const res = await fetch(FEED_URL)
+      if (!res.ok) throw new Error('Feed indisponível')
+      const xml = await res.text()
+      const doc = new DOMParser().parseFromString(xml, 'text/xml')
+      const items = Array.from(doc.querySelectorAll('item')).slice(0, 30).map(item => ({
+        title: item.querySelector('title')?.textContent || '',
+        link: item.querySelector('link')?.nextSibling?.textContent?.trim() || item.querySelector('link')?.textContent || '',
+        description: item.querySelector('description')?.textContent || '',
+        pubDate: item.querySelector('pubDate')?.textContent || '',
+        categories: Array.from(item.querySelectorAll('category')).map(c => c.textContent).filter(Boolean),
+        guid: item.querySelector('guid')?.textContent || '',
+      }))
+      setArticles(items)
     } catch {
       setError('Não foi possível carregar o feed do TechCrunch. Tente novamente.')
     } finally {
@@ -171,7 +180,6 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* ── Article list ── */}
       <div className="w-96 shrink-0 flex flex-col border-r border-gray-200 bg-white">
         <div className="px-4 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
@@ -181,22 +189,11 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
               </div>
               <span className="text-sm font-bold text-gray-900">TechCrunch Feed</span>
             </div>
-            <button
-              onClick={fetchNews}
-              disabled={loading}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-              title="Atualizar feed"
-            >
+            <button onClick={fetchNews} disabled={loading} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50" title="Atualizar feed">
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
-          <input
-            type="text"
-            placeholder="Filtrar manchetes..."
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
-          />
+          <input type="text" placeholder="Filtrar manchetes..." value={filter} onChange={e => setFilter(e.target.value)} className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent" />
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -206,24 +203,14 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
               <span className="text-sm">Carregando feed...</span>
             </div>
           )}
-          {error && (
-            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
-          )}
+          {error && <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>}
           {!loading && !error && filtered.map((article, i) => {
-            const isSelected = selected?.link === article.link
+            const isSelected = (selected?.guid || selected?.link) === (article.guid || article.link)
             return (
-              <button
-                key={article.link || i}
-                onClick={() => { setSelected(article); setResult(''); setGenError('') }}
-                className={clsx(
-                  'w-full text-left px-4 py-3 border-b border-gray-50 transition-colors',
-                  isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50'
-                )}
-              >
+              <button key={article.guid || article.link || i} onClick={() => { setSelected(article); setResult(''); setGenError('') }}
+                className={clsx('w-full text-left px-4 py-3 border-b border-gray-50 transition-colors', isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50')}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className={clsx('text-xs font-medium leading-snug line-clamp-2', isSelected ? 'text-orange-800' : 'text-gray-800')}>
-                    {article.title}
-                  </p>
+                  <p className={clsx('text-xs font-medium leading-snug line-clamp-2', isSelected ? 'text-orange-800' : 'text-gray-800')}>{article.title}</p>
                   {isSelected && <ChevronRight size={12} className="text-orange-500 shrink-0 mt-0.5" />}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
@@ -235,13 +222,10 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
               </button>
             )
           })}
-          {!loading && !error && filtered.length === 0 && (
-            <p className="text-xs text-gray-400 text-center py-8">Nenhuma manchete encontrada</p>
-          )}
+          {!loading && !error && filtered.length === 0 && <p className="text-xs text-gray-400 text-center py-8">Nenhuma manchete encontrada</p>}
         </div>
       </div>
 
-      {/* ── Content panel ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
@@ -268,23 +252,14 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
                   </button>
                 </div>
               </div>
-
               <div className="flex gap-2 mt-3">
                 {FORMATS.map(f => (
-                  <button
-                    key={f.id}
-                    onClick={() => { setFormat(f.id); setResult(''); setGenError('') }}
-                    className={clsx(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                      format === f.id ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-700'
-                    )}
-                  >
-                    <f.icon size={12} />
-                    {f.label}
+                  <button key={f.id} onClick={() => { setFormat(f.id); setResult(''); setGenError('') }}
+                    className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all', format === f.id ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-orange-50 hover:text-orange-700')}>
+                    <f.icon size={12} />{f.label}
                   </button>
                 ))}
               </div>
-
               <button onClick={generate} disabled={generating || !apiKey} className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm shadow-orange-200">
                 {generating ? <><Loader2 size={13} className="animate-spin" /> Gerando...</> : <><Sparkles size={13} /> Gerar {FORMATS.find(f => f.id === format)?.label}</>}
               </button>
