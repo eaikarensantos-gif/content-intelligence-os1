@@ -866,25 +866,20 @@ const TEMAS_CARROSSEL = [
       'Domingo que não desliga e segunda que começa antes do café',
     ],
   },
-  {
-    categoria: 'Estratégia e Negócios',
-    temas: [
-      'Estratégia de Marca Pessoal',
-      'Negociação de Carreira',
-      'Análise de Competências',
-      'Estratégia de Conteúdo',
-      'Geração de Roteiro',
-      'Criação de Conteúdo',
-      'Mentoria e Coaching',
-      'Desenvolvimento de Produtos',
-      'Estratégia de Dados',
-      'Validação de Ideias',
-      'Gestão de Projetos',
-      'Brainstorming de Nomes',
-      'Liderança Inspiradora',
-      'Estratégia de Networking',
-    ],
-  },
+  { categoria: 'Estratégia de Marca Pessoal', temas: [] },
+  { categoria: 'Negociação de Carreira', temas: [] },
+  { categoria: 'Análise de Competências', temas: [] },
+  { categoria: 'Estratégia de Conteúdo', temas: [] },
+  { categoria: 'Geração de Roteiro', temas: [] },
+  { categoria: 'Criação de Conteúdo', temas: [] },
+  { categoria: 'Mentoria e Coaching', temas: [] },
+  { categoria: 'Desenvolvimento de Produtos', temas: [] },
+  { categoria: 'Estratégia de Dados', temas: [] },
+  { categoria: 'Validação de Ideias', temas: [] },
+  { categoria: 'Gestão de Projetos', temas: [] },
+  { categoria: 'Brainstorming de Nomes', temas: [] },
+  { categoria: 'Liderança Inspiradora', temas: [] },
+  { categoria: 'Estratégia de Networking', temas: [] },
 ]
 
 /* ── Componente Principal ── */
@@ -1007,7 +1002,20 @@ export default function UnifiedCreator() {
     if (/diversidade|inclus[aã]o|representa[çc]|racial|negr|minorias|equidade|ambientes? tech|estrutura que cansa|dupla jornada/.test(t)) return 'Diversidade — Ambientes Tech e Trabalho'
     if (/naomi|bulldog|franc[eê]s|hr manager|relatable|vida real|domingo|rotina honesta/.test(t)) return 'Pessoal / Naomi / Relatable'
     if (/publi|parceria|marca|cachê|publicidade|patrocin|sponsor/.test(t)) return 'Outras Publis'
-    if (/estratégia de marca|negociaç|competências|estratégia de conte|geraç[aã]o de roteiro|criaç[aã]o de conte|mentoria|coaching|desenvolvimento de produto|estratégia de dado|validaç[aã]o|gest[aã]o de projet|brainstorming|liderança|networking/.test(t)) return 'Estratégia e Negócios'
+    if (/estratégia de marca pessoal|marca pessoal/.test(t)) return 'Estratégia de Marca Pessoal'
+    if (/negociaç[aã]o de carreira/.test(t)) return 'Negociação de Carreira'
+    if (/análise de competências|competências/.test(t)) return 'Análise de Competências'
+    if (/estratégia de conte[uú]do/.test(t)) return 'Estratégia de Conteúdo'
+    if (/geraç[aã]o de roteiro|roteiro/.test(t)) return 'Geração de Roteiro'
+    if (/criaç[aã]o de conte[uú]do/.test(t)) return 'Criação de Conteúdo'
+    if (/mentoria|coaching/.test(t)) return 'Mentoria e Coaching'
+    if (/desenvolvimento de produto/.test(t)) return 'Desenvolvimento de Produtos'
+    if (/estratégia de dado|dados/.test(t)) return 'Estratégia de Dados'
+    if (/validaç[aã]o de ideia|validaç[aã]o/.test(t)) return 'Validação de Ideias'
+    if (/gest[aã]o de projet|projetos/.test(t)) return 'Gestão de Projetos'
+    if (/brainstorming de nome|brainstorming/.test(t)) return 'Brainstorming de Nomes'
+    if (/liderança inspiradora|liderança/.test(t)) return 'Liderança Inspiradora'
+    if (/estratégia de networking|networking/.test(t)) return 'Estratégia de Networking'
     return 'Carreira — Operação Independente Sênior'
   }
 
