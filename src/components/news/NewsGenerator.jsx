@@ -11,7 +11,7 @@ const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: tr
 
 const LS_KEY = 'cio-anthropic-key'
 
-const RSS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftechcrunch.com%2Ffeed%2F&api_key=&count=30'
+const FEED_URL = '/api/rss?url=' + encodeURIComponent('https://techcrunch.com/feed/')
 
 const CREATOR_PROFILE = `Perfil da criadora:
 Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
@@ -59,10 +59,19 @@ export default function NewsGenerator() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(RSS_URL)
-      const data = await res.json()
-      if (data.status !== 'ok') throw new Error('Feed indisponível')
-      setArticles(data.items || [])
+      const res = await fetch(FEED_URL)
+      if (!res.ok) throw new Error('Feed indisponível')
+      const xml = await res.text()
+      const doc = new DOMParser().parseFromString(xml, 'text/xml')
+      const items = Array.from(doc.querySelectorAll('item')).slice(0, 30).map(item => ({
+        title: item.querySelector('title')?.textContent || '',
+        link: item.querySelector('link')?.nextSibling?.textContent?.trim() || item.querySelector('link')?.textContent || '',
+        description: item.querySelector('description')?.textContent || '',
+        pubDate: item.querySelector('pubDate')?.textContent || '',
+        categories: Array.from(item.querySelectorAll('category')).map(c => c.textContent).filter(Boolean),
+        guid: item.querySelector('guid')?.textContent || '',
+      }))
+      setArticles(items)
     } catch {
       setError('Não foi possível carregar o feed do TechCrunch. Tente novamente.')
     } finally {
@@ -210,7 +219,7 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
           )}
           {!loading && !error && filtered.map((article, i) => {
-            const isSelected = selected?.link === article.link
+            const isSelected = (selected?.guid || selected?.link) === (article.guid || article.link)
             return (
               <button
                 key={article.link || i}
