@@ -866,6 +866,25 @@ const TEMAS_CARROSSEL = [
       'Domingo que não desliga e segunda que começa antes do café',
     ],
   },
+  {
+    categoria: 'Estratégia e Negócios',
+    temas: [
+      'Estratégia de Marca Pessoal',
+      'Negociação de Carreira',
+      'Análise de Competências',
+      'Estratégia de Conteúdo',
+      'Geração de Roteiro',
+      'Criação de Conteúdo',
+      'Mentoria e Coaching',
+      'Desenvolvimento de Produtos',
+      'Estratégia de Dados',
+      'Validação de Ideias',
+      'Gestão de Projetos',
+      'Brainstorming de Nomes',
+      'Liderança Inspiradora',
+      'Estratégia de Networking',
+    ],
+  },
 ]
 
 /* ── Componente Principal ── */
@@ -988,6 +1007,7 @@ export default function UnifiedCreator() {
     if (/diversidade|inclus[aã]o|representa[çc]|racial|negr|minorias|equidade|ambientes? tech|estrutura que cansa|dupla jornada/.test(t)) return 'Diversidade — Ambientes Tech e Trabalho'
     if (/naomi|bulldog|franc[eê]s|hr manager|relatable|vida real|domingo|rotina honesta/.test(t)) return 'Pessoal / Naomi / Relatable'
     if (/publi|parceria|marca|cachê|publicidade|patrocin|sponsor/.test(t)) return 'Outras Publis'
+    if (/estratégia de marca|negociaç|competências|estratégia de conte|geraç[aã]o de roteiro|criaç[aã]o de conte|mentoria|coaching|desenvolvimento de produto|estratégia de dado|validaç[aã]o|gest[aã]o de projet|brainstorming|liderança|networking/.test(t)) return 'Estratégia e Negócios'
     return 'Carreira — Operação Independente Sênior'
   }
 
@@ -1005,6 +1025,7 @@ export default function UnifiedCreator() {
   const [showThemesPanel, setShowThemesPanel] = useState(true)
   const [expandingThemes, setExpandingThemes] = useState(false)
   const [categorizingThemes, setCategorizingThemes] = useState(false)
+  const [generatingSubthemesFor, setGeneratingSubthemesFor] = useState(null) // theme id
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -1724,6 +1745,40 @@ Responda EXCLUSIVAMENTE com JSON válido:
     finally { setExpandingThemes(false) }
   }
 
+  const generateSubthemes = async (item) => {
+    if (!apiKey || generatingSubthemesFor) return
+    setGeneratingSubthemesFor(item.id)
+    try {
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores digitais brasileiros.
+
+Tema principal: "${item.tema}"
+Categoria: "${item.categoria}"
+
+Gere 5 subtemas específicos e concretos derivados desse tema — situações reais, ângulos distintos, cada um com potencial de virar um post independente. Sem repetir o tema principal. Sem linguagem genérica ou de coach. Máx 10 palavras cada.
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{"subtemas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
+      })
+      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
+      if (match) {
+        const existing = new Set(savedThemes.map(t => t.tema))
+        const novos = (JSON.parse(match[0]).subtemas || [])
+          .filter(t => !existing.has(t.tema))
+          .map(t => ({
+            id: Date.now() + Math.random(),
+            tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
+            categoria: item.categoria,
+            fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
+          }))
+        setSavedThemes(prev => [...prev, ...novos])
+      }
+    } catch { /* silent */ }
+    finally { setGeneratingSubthemesFor(null) }
+  }
+
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
@@ -1898,6 +1953,16 @@ TEXTO:\n${revText.trim()}`
                               className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
                             >
                               {item.tema}
+                            </button>
+                            <button
+                              onClick={() => generateSubthemes(item)}
+                              disabled={generatingSubthemesFor === item.id}
+                              title="Gerar subtemas com IA"
+                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 p-1 disabled:opacity-50"
+                            >
+                              {generatingSubthemesFor === item.id
+                                ? <Loader2 size={11} className="animate-spin text-orange-400" />
+                                : <Sparkles size={11} />}
                             </button>
                             <button
                               onClick={() => removeTheme(item.id)}
