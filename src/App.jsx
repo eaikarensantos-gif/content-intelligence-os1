@@ -21,7 +21,6 @@ import AdManager from './components/ads/AdManager'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import FloatingActions from './components/global/FloatingActions'
-import TaskBoard from './components/tasks/TaskBoard'
 import NaomiStudio from './components/naomi/NaomiStudio'
 import WebClipper from './components/clipper/WebClipper'
 import NewsGenerator from './components/news/NewsGenerator'
@@ -100,7 +99,6 @@ export default function App() {
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
-            <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />
             <Route path="/news" element={<NewsGenerator />} />
