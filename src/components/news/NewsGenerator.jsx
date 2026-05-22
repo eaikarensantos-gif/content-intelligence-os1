@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Newspaper, RefreshCw, Loader2, Sparkles, Copy, Check,
-  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare,
+  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare, Languages,
 } from 'lucide-react'
 import clsx from 'clsx'
 import Anthropic from '@anthropic-ai/sdk'
@@ -54,6 +54,9 @@ export default function NewsGenerator() {
   const [genError, setGenError] = useState('')
   const [copied, setCopied] = useState(false)
   const [filter, setFilter] = useState('')
+  const [translating, setTranslating] = useState(false)
+  const [translated, setTranslated] = useState(null) // { title, description }
+  const [showTranslated, setShowTranslated] = useState(false)
 
   const fetchNews = useCallback(async () => {
     setLoading(true)
@@ -142,6 +145,38 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
     return base
   }
 
+  const translate = async () => {
+    if (!selected || !apiKey) return
+    if (translated) { setShowTranslated(v => !v); return }
+    setTranslating(true)
+    try {
+      const title = selected.title || ''
+      const desc = stripHtml(selected.description || '').slice(0, 600)
+      const prompt = `Traduza do inglês para o português brasileiro de forma natural e fluida, preservando o sentido técnico:
+
+Título: ${title}
+Resumo: ${desc}
+
+Retorne JSON: {"titulo": "...", "resumo": "..."}`
+      const res = await mkClient(apiKey).messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const text = res.content.find(b => b.type === 'text')?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        setTranslated({ title: parsed.titulo, description: parsed.resumo })
+        setShowTranslated(true)
+      }
+    } catch {
+      // silently fail, keep original
+    } finally {
+      setTranslating(false)
+    }
+  }
+
   const generate = async () => {
     if (!selected || !apiKey) return
     setGenerating(true)
@@ -223,7 +258,7 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
             return (
               <button
                 key={article.link || i}
-                onClick={() => { setSelected(article); setResult(''); setGenError('') }}
+                onClick={() => { setSelected(article); setResult(''); setGenError(''); setTranslated(null); setShowTranslated(false) }}
                 className={clsx(
                   'w-full text-left px-4 py-3 border-b border-gray-50 transition-colors',
                   isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50'
@@ -266,10 +301,37 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
             <div className="px-6 py-4 border-b border-gray-200 bg-white">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{selected.title}</p>
-                  <p className="text-xs text-gray-500 line-clamp-2">{stripHtml(selected.description || '').slice(0, 160)}...</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-semibold text-gray-900 leading-snug">
+                      {showTranslated && translated ? translated.title : selected.title}
+                    </p>
+                    {showTranslated && (
+                      <span className="shrink-0 text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-medium">PT</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {showTranslated && translated
+                      ? translated.description.slice(0, 160)
+                      : stripHtml(selected.description || '').slice(0, 160)}...
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={translate}
+                    disabled={translating || !apiKey}
+                    className={clsx(
+                      'flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all',
+                      showTranslated
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                        : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                    )}
+                    title={showTranslated ? 'Ver original (EN)' : 'Traduzir para português'}
+                  >
+                    {translating
+                      ? <Loader2 size={13} className="animate-spin" />
+                      : <Languages size={13} />}
+                    {showTranslated ? 'EN' : 'PT'}
+                  </button>
                   <a
                     href={selected.link}
                     target="_blank"
