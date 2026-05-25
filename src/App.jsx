@@ -8,6 +8,7 @@ import IdeasHub from './components/ideas/IdeasHub'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
 import SocialDashboard from './components/analytics/SocialDashboard'
+import AudienceAnalytics from './components/analytics/AudienceAnalytics'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
 import ThoughtCapture from './components/thoughts/ThoughtCapture'
 import TextStudio from './components/text/TextStudio'
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<SocialDashboard />} />
+            <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
             <Route path="/video" element={<VideoAnalyzer />} />
             <Route path="/create" element={<UnifiedCreator />} />
             <Route path="/create-legacy" element={<CreateContent />} />
