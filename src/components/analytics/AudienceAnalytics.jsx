@@ -97,23 +97,100 @@ function num(v) {
   return isNaN(n) ? 0 : n
 }
 
+function numCol(row, col) {
+  return col ? num(row[col]) : 0
+}
+
+// Detecta nomes das colunas de métricas no CSV (PT e EN)
+function detectarColunasMetricas(row) {
+  const keys = Object.keys(row)
+  const find = (...candidates) => keys.find(k => candidates.some(c => k.toLowerCase().includes(c.toLowerCase()))) || candidates[0]
+  return {
+    impressoes:       find('Impressões', 'Impressoes', 'Impressions', 'Reach Impressions', 'Views'),
+    alcance:          find('Alcance', 'Reach', 'Unique Reach'),
+    curtidas:         find('Curtidas', 'Likes', 'Reactions'),
+    comentarios:      find('Comentários', 'Comentarios', 'Comments'),
+    compartilhamentos:find('Compartilhamentos', 'Shares', 'Reposts'),
+    salvamentos:      find('Salvamentos', 'Saves', 'Bookmarks'),
+    taxa:             find('Taxa Eng', 'Engagement Rate', 'Taxa de Eng', 'Engajamento%', 'Eng.%', 'Taxa'),
+    cliente:          find('Cliente', 'Client', 'Parceiro', 'Brand'),
+    data:             find('Data', 'Date', 'Publicado', 'Published'),
+  }
+}
+
 // ─── PROCESSAMENTO ────────────────────────────────────────────────────────────
 
+// Detecta qual coluna representa o tipo de post no CSV
+function detectarColunaTipo(row) {
+  const candidatas = ['Tipo', 'Type', 'Formato', 'Format', 'Tipo de publicação', 'Content Type', 'Mídia', 'Media Type']
+  for (const c of candidatas) {
+    if (c in row) return c
+  }
+  // fallback: primeira coluna cujo valor parece um tipo de mídia
+  const tiposPossiveis = ['reel', 'carrossel', 'carousel', 'story', 'imagem', 'image', 'vídeo', 'video', 'post', 'photo', 'album']
+  for (const col of Object.keys(row)) {
+    if (tiposPossiveis.some(t => (row[col] || '').toLowerCase().includes(t))) return col
+  }
+  return 'Tipo'
+}
+
+// Detecta qual coluna representa a descrição/legenda
+function detectarColunaDescricao(row) {
+  const candidatas = ['Descrição', 'Descricao', 'Description', 'Legenda', 'Caption', 'Texto', 'Text', 'Conteúdo']
+  for (const c of candidatas) {
+    if (c in row) return c
+  }
+  return 'Descrição'
+}
+
+function getTipo(row, col) { return (row[col] || '').toLowerCase().trim() }
+
+function isStory(t)    { return t.includes('story') || t.includes('storie') || t === 'stories' }
+function isCarrossel(t){ return t.includes('carousel') || t.includes('carrossel') || t.includes('album') || t.includes('álbum') }
+function isReel(t)     { return t.includes('reel') }
+function isFeed(t)     { return isCarrossel(t) || isReel(t) || t.includes('video') || t.includes('vídeo') || t.includes('imagem') || t.includes('image') || t.includes('photo') || t.includes('foto') || (t.length > 0 && !isStory(t)) }
+
+function normalizarTipo(t) {
+  if (isCarrossel(t)) return 'carousel'
+  if (isReel(t))      return 'reel'
+  if (t.includes('video') || t.includes('vídeo')) return 'video'
+  if (t.includes('imagem') || t.includes('image') || t.includes('photo') || t.includes('foto')) return 'imagem'
+  return t || 'outro'
+}
+
 function processarDados(rows) {
+  if (rows.length === 0) return null
+
+  const tipoCol = detectarColunaTipo(rows[0])
+  const descCol = detectarColunaDescricao(rows[0])
+  const metricasCol = detectarColunasMetricas(rows[0])
+  const dataCol = metricasCol.data
+
   // deduplicar
   const seen = new Set()
   const unique = rows.filter(r => {
-    const key = `${r['Data']}|${r['Tipo']}|${(r['Descrição'] || '').slice(0, 40)}`
+    const key = `${r[dataCol] || ''}|${r[tipoCol] || ''}|${(r[descCol] || '').slice(0, 40)}`
     if (seen.has(key)) return false
     seen.add(key); return true
   })
 
-  const feed = unique.filter(r => ['carousel', 'reel'].includes((r['Tipo'] || '').toLowerCase()))
-  const stories = unique.filter(r => (r['Tipo'] || '').toLowerCase() === 'story')
+  // Normalizar tipo em cada row
+  unique.forEach(r => {
+    r._tipoNorm = normalizarTipo(getTipo(r, tipoCol))
+    r._desc = r[descCol] || r['Descrição'] || ''
+  })
+
+  let feed = unique.filter(r => !isStory(getTipo(r, tipoCol)))
+  const stories = unique.filter(r => isStory(getTipo(r, tipoCol)))
+
+  // Se só encontrou stories ou nada reconhecível, tratar tudo como feed
+  if (feed.length === 0) feed = [...unique]
+
+  const colMap = metricasCol
 
   // classificar feed
   feed.forEach(p => {
-    p._pilar = classificarPost(p['Descrição'] || '', p['Cliente'] || '')
+    p._pilar = classificarPost(p._desc, p[colMap.cliente] || p['Cliente'] || '')
   })
 
   // stats por pilar
@@ -123,13 +200,13 @@ function processarDados(rows) {
     if (!pilarMap[pl]) pilarMap[pl] = { posts: 0, impressoes: 0, alcance: 0, curtidas: 0, comentarios: 0, compartilhamentos: 0, salvamentos: 0, taxa: [] }
     const s = pilarMap[pl]
     s.posts++
-    s.impressoes += num(p['Impressões'])
-    s.alcance += num(p['Alcance'])
-    s.curtidas += num(p['Curtidas'])
-    s.comentarios += num(p['Comentários'])
-    s.compartilhamentos += num(p['Compartilhamentos'])
-    s.salvamentos += num(p['Salvamentos'])
-    s.taxa.push(num(p['Taxa Eng.%']))
+    s.impressoes += numCol(p, colMap.impressoes)
+    s.alcance += numCol(p, colMap.alcance)
+    s.curtidas += numCol(p, colMap.curtidas)
+    s.comentarios += numCol(p, colMap.comentarios)
+    s.compartilhamentos += numCol(p, colMap.compartilhamentos)
+    s.salvamentos += numCol(p, colMap.salvamentos)
+    s.taxa.push(numCol(p, colMap.taxa))
   })
 
   const pilarStats = {}
@@ -151,13 +228,13 @@ function processarDados(rows) {
   // stats por formato
   const formatoMap = {}
   feed.forEach(p => {
-    const t = (p['Tipo'] || 'outro').toLowerCase()
+    const t = p._tipoNorm || 'outro'
     if (!formatoMap[t]) formatoMap[t] = { posts: 0, taxa: [], salvamentos: 0, compartilhamentos: 0, alcance: [] }
     formatoMap[t].posts++
-    formatoMap[t].taxa.push(num(p['Taxa Eng.%']))
-    formatoMap[t].salvamentos += num(p['Salvamentos'])
-    formatoMap[t].compartilhamentos += num(p['Compartilhamentos'])
-    formatoMap[t].alcance.push(num(p['Alcance']))
+    formatoMap[t].taxa.push(numCol(p, colMap.taxa))
+    formatoMap[t].salvamentos += numCol(p, colMap.salvamentos)
+    formatoMap[t].compartilhamentos += numCol(p, colMap.compartilhamentos)
+    formatoMap[t].alcance.push(numCol(p, colMap.alcance))
   })
 
   const formatoStats = {}
@@ -172,15 +249,15 @@ function processarDados(rows) {
   })
 
   // stories resumo
-  const storyTaxas = stories.map(p => num(p['Taxa Eng.%'])).filter(v => v > 0)
+  const storyTaxas = stories.map(p => numCol(p, colMap.taxa)).filter(v => v > 0)
   const storiesStats = {
     total: stories.length,
     avgTaxa: storyTaxas.length ? +(storyTaxas.reduce((a, b) => a + b, 0) / storyTaxas.length).toFixed(2) : 0,
-    avgImpressoes: stories.length ? Math.round(stories.reduce((s, p) => s + num(p['Impressões']), 0) / stories.length) : 0,
+    avgImpressoes: stories.length ? Math.round(stories.reduce((s, p) => s + numCol(p, colMap.impressoes), 0) / stories.length) : 0,
   }
 
   // top posts
-  const topPosts = [...feed].sort((a, b) => num(b['Taxa Eng.%']) - num(a['Taxa Eng.%'])).slice(0, 6)
+  const topPosts = [...feed].sort((a, b) => numCol(b, colMap.taxa) - numCol(a, colMap.taxa)).slice(0, 6)
 
   return {
     totalRows: rows.length,
@@ -190,6 +267,8 @@ function processarDados(rows) {
     formatoStats,
     storiesStats,
     topPosts,
+    colMap,
+    tiposEncontrados: [...new Set(unique.map(r => r[tipoCol]).filter(Boolean))],
   }
 }
 
@@ -345,7 +424,7 @@ export default function AudienceAnalytics() {
   }
 
   // ── Com dados: dashboard ──
-  const { totalRows, uniquePosts, feedPosts, pilarStats, formatoStats, storiesStats, topPosts } = dados
+  const { totalRows, uniquePosts, feedPosts, pilarStats, formatoStats, storiesStats, topPosts, colMap, tiposEncontrados } = dados
   const insights = gerarInsights(dados)
 
   const pilaresPorTaxa = Object.entries(pilarStats).sort((a, b) => b[1].avgTaxa - a[1].avgTaxa)
@@ -514,19 +593,19 @@ export default function AudienceAnalytics() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${style.badge}`}>{pilar}</span>
-                    <span className="text-[10px] text-gray-400 capitalize">{p['Tipo']}</span>
-                    <span className="text-[10px] text-gray-400">{p['Data']}</span>
+                    <span className="text-[10px] text-gray-400 capitalize">{p._tipoNorm}</span>
+                    <span className="text-[10px] text-gray-400">{p[colMap?.data] || p['Data'] || ''}</span>
                   </div>
                   <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                    {p['Descrição'] ? p['Descrição'].slice(0, 120) : '(sem descrição)'}
+                    {p._desc ? p._desc.slice(0, 120) : '(sem descrição)'}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-bold text-gray-900">{num(p['Taxa Eng.%']).toFixed(2)}%</p>
+                  <p className="text-sm font-bold text-gray-900">{numCol(p, colMap?.taxa).toFixed(2)}%</p>
                   <div className="flex gap-2 text-[10px] text-gray-400 mt-0.5 justify-end">
-                    <span><Eye size={9} className="inline mr-0.5" />{Number(p['Alcance']).toLocaleString('pt-BR')}</span>
-                    <span><Bookmark size={9} className="inline mr-0.5" />{p['Salvamentos']}</span>
-                    <span><Share2 size={9} className="inline mr-0.5" />{p['Compartilhamentos']}</span>
+                    <span><Eye size={9} className="inline mr-0.5" />{numCol(p, colMap?.alcance).toLocaleString('pt-BR')}</span>
+                    <span><Bookmark size={9} className="inline mr-0.5" />{numCol(p, colMap?.salvamentos)}</span>
+                    <span><Share2 size={9} className="inline mr-0.5" />{numCol(p, colMap?.compartilhamentos)}</span>
                   </div>
                 </div>
               </div>
