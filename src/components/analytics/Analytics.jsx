@@ -18,6 +18,7 @@ import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
 import WeeklyPlanner from './WeeklyPlanner'
+import AudienceAnalytics from './AudienceAnalytics'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
 import { normalizeRow, parseFile, isLinkedinFile, normalizeLinkedinRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
@@ -141,6 +142,7 @@ const TABS = [
   { id: 'publi', label: 'Publi' },
   { id: 'insights', label: 'Insights IA' },
   { id: 'planner', label: 'Próxima Semana' },
+  { id: 'audiencia', label: 'Audiência' },
 ]
 
 const PUBLI_SIGNALS = ['#publi', '#ad', '#parceria', '#publicidade', '#sponsored', '#parceiro']
@@ -2578,6 +2580,9 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
 
       {/* ===== PLANEJADOR SEMANAL ===== */}
       {tab === 'planner' && <WeeklyPlanner />}
+
+      {/* ===== ANÁLISE DE AUDIÊNCIA ===== */}
+      {tab === 'audiencia' && <AudienceAnalytics />}
 
       <MetricsForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
