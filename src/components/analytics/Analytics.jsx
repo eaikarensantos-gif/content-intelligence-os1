@@ -607,6 +607,7 @@ export default function Analytics() {
               { key: 'shares', label: 'Compart.', sortable: true },
               { key: 'saves', label: 'Salvam.', sortable: true },
               { key: 'follows', label: 'Seguim.', sortable: true },
+              { key: 'link_clicks', label: 'Cliques Link', sortable: true },
               { key: 'engagement', label: 'Eng.', sortable: true },
               { key: 'engagement_rate', label: 'Taxa Eng.', sortable: true },
               { key: '_del', label: '', sortable: false },
@@ -765,6 +766,7 @@ export default function Analytics() {
                 { label: 'COMENT.',    w: 14, align: 'right', fmt: m => (m.comments || 0).toLocaleString('pt-BR') },
                 { label: 'COMPART.',   w: 16, align: 'right', fmt: m => (m.shares || 0).toLocaleString('pt-BR') },
                 { label: 'SALVAM.',    w: 15, align: 'right', fmt: m => (m.saves || 0).toLocaleString('pt-BR') },
+                { label: 'CLIQUES',    w: 16, align: 'right', fmt: m => (m.link_clicks || 0).toLocaleString('pt-BR') },
                 { label: 'ENGAJ.',     w: 16, align: 'right', fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
                 { label: 'ER%',        w: 16, align: 'right', fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
               ]
@@ -850,7 +852,7 @@ export default function Analytics() {
                       {sorted.length > 0 && (
                         <button
                           onClick={() => {
-                            const headers = ['Data', 'Tipo', 'Plataforma', 'Cliente', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Engajamento', 'Taxa Eng.%']
+                            const headers = ['Data', 'Tipo', 'Plataforma', 'Cliente', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Cliques no Link', 'Engajamento', 'Taxa Eng.%']
                             const rows = sorted.map(m => [
                               m.date || '',
                               m.post_type || '',
@@ -864,6 +866,7 @@ export default function Analytics() {
                               m.shares || 0,
                               m.saves || 0,
                               m.follows || 0,
+                              m.link_clicks || 0,
                               m.engagement || 0,
                               (m.engagement_rate * 100).toFixed(2),
                             ])
@@ -1022,6 +1025,7 @@ export default function Analytics() {
                             <td className="py-2 px-2.5 text-gray-500">{(m.shares || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{(m.saves || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{(m.follows || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.link_clicks || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-700 font-medium">{(m.engagement || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5">
                               <span className={`font-semibold ${m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
