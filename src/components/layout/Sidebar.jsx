@@ -12,8 +12,8 @@ import useAIStore from '../../store/useAIStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/social', icon: BarChart2, label: 'Analytics' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
@@ -26,7 +26,6 @@ const NAV_GROUPS = [
     id: 'inteligencia',
     label: 'Inteligência',
     children: [
-      { to: '/social', icon: Activity, label: 'Social Dashboard' },
       { to: '/audience', icon: Users, label: 'Análise de Audiência' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },

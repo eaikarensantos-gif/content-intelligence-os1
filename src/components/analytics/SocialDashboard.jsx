@@ -2,8 +2,9 @@ import { useState } from 'react'
 import {
   Users, Heart, Eye, Zap, TrendingUp, TrendingDown,
   Share2, Download, Search, Bell, ChevronDown,
-  Instagram, Twitter, Linkedin, Youtube,
+  Instagram, Twitter, Linkedin, Youtube, BarChart2, Activity,
 } from 'lucide-react'
+import Analytics from './Analytics'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -129,17 +130,19 @@ const ChartTip = ({ active, payload, label }) => {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SocialDashboard() {
+  const [tab, setTab] = useState('overview')
   const [growthPeriod, setGrowthPeriod] = useState('6M')
   const [sentimentPeriod, setSentimentPeriod] = useState('30 dias')
   const [platformPeriod, setPlatformPeriod] = useState('Este mês')
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-6 space-y-6 animate-fade-in">
+    <div className="min-h-screen bg-[#F8F9FA] animate-fade-in">
 
       {/* Header */}
+      <div className="px-6 pt-6 pb-0 space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Social Media Analytics</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
           <p className="text-sm text-gray-500 mt-0.5">Visão consolidada de todas as plataformas</p>
         </div>
 
@@ -163,6 +166,33 @@ export default function SocialDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setTab('overview')}
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all ${tab === 'overview' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Activity size={13} /> Overview
+        </button>
+        <button
+          onClick={() => setTab('analytics')}
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-all ${tab === 'analytics' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <BarChart2 size={13} /> Analytics CSV
+        </button>
+      </div>
+      </div>
+
+      {/* Tab: Analytics CSV */}
+      {tab === 'analytics' && (
+        <div className="animate-fade-in">
+          <Analytics embedded />
+        </div>
+      )}
+
+      {/* Tab: Overview */}
+      {tab === 'overview' && <div className="p-6 space-y-6">
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -403,6 +433,7 @@ export default function SocialDashboard() {
         </div>
       </div>
 
+      </div>}
     </div>
   )
 }
