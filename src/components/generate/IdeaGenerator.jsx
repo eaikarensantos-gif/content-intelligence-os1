@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import DailyAgentBanner from '../ideas/DailyAgentBanner'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -544,6 +545,9 @@ export default function IdeaGenerator() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div className="mb-4">
+          <DailyAgentBanner />
+        </div>
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* ── Controls Panel ──────────────────────────────────────────────── */}
