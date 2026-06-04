@@ -12,6 +12,7 @@ import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
 import DailyAgentBanner from './DailyAgentBanner'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
+import Modal from '../common/Modal'
 import { generateIdeasFromInsights, generateIdeasFromTrends, generateIdeasWithClaude, generateSignalBasedIdeas } from '../../utils/ideaGenerator'
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
@@ -242,7 +243,8 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
   const metrics = useStore((s) => s.metrics)
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
-  const [contextDay, setContextDay] = useState(null) // day string for context menu
+  const [contextDay, setContextDay] = useState(null)
+  const [selectedMetric, setSelectedMetric] = useState(null)
   const year = current.getFullYear()
   const month = current.getMonth()
   const firstDay = new Date(year, month, 1).getDay()
@@ -310,12 +312,17 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                       </span>
                       <div className="space-y-1 hidden sm:block" onClick={(e) => e.stopPropagation()}>
                         {dayMetrics.slice(0, 2).map((m, idx) => (
-                          <div key={idx} title={m.description || m.post_type} className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 truncate">
+                          <button
+                            key={idx}
+                            title={m.description || m.post_type}
+                            onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}
+                            className="w-full flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 truncate hover:bg-emerald-100 transition-colors text-left"
+                          >
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                             <span className="text-[10px] text-emerald-700 truncate leading-tight">
                               {m.description ? m.description.slice(0, 22) : m.post_type || 'Post'}
                             </span>
-                          </div>
+                          </button>
                         ))}
                         {dayMetrics.length > 2 && (
                           <span className="text-[10px] text-emerald-500 pl-1">+{dayMetrics.length - 2} posts</span>
@@ -393,6 +400,73 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
           </div>
         </div>
       )}
+
+      {/* Modal: detalhe do post publicado (CSV) */}
+      <Modal
+        open={!!selectedMetric}
+        onClose={() => setSelectedMetric(null)}
+        title="Post Publicado"
+        maxWidth="max-w-lg"
+      >
+        {selectedMetric && (
+          <div className="space-y-4">
+            {/* Plataforma + tipo + data */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedMetric.platform && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 capitalize">
+                  {selectedMetric.platform}
+                </span>
+              )}
+              {selectedMetric.post_type && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                  {selectedMetric.post_type}
+                </span>
+              )}
+              {selectedMetric.date && (
+                <span className="text-xs text-gray-400 ml-auto">
+                  {new Date(selectedMetric.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+
+            {/* Descrição */}
+            {selectedMetric.description && (
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line border-l-2 border-emerald-300 pl-3">
+                {selectedMetric.description}
+              </p>
+            )}
+
+            {/* Link */}
+            {selectedMetric.link && (
+              <a
+                href={selectedMetric.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-orange-600 hover:underline break-all"
+              >
+                {selectedMetric.link}
+              </a>
+            )}
+
+            {/* Métricas */}
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100">
+              {[
+                { label: 'Impressões',     value: selectedMetric.impressions },
+                { label: 'Alcance',        value: selectedMetric.reach },
+                { label: 'Curtidas',       value: selectedMetric.likes },
+                { label: 'Comentários',    value: selectedMetric.comments },
+                { label: 'Compartilhamentos', value: selectedMetric.shares },
+                { label: 'Salvamentos',    value: selectedMetric.saves },
+              ].filter(m => m.value != null && m.value !== '' && m.value !== 0).map(({ label, value }) => (
+                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-base font-bold text-gray-900">{Number(value).toLocaleString('pt-BR')}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
