@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import IdeaForm from './IdeaForm'
+import DailyAgentBanner from './DailyAgentBanner'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import { generateIdeasFromInsights, generateIdeasFromTrends, generateIdeasWithClaude, generateSignalBasedIdeas } from '../../utils/ideaGenerator'
 
@@ -651,6 +652,9 @@ function GenerateView() {
 
   return (
     <div className="space-y-5">
+
+      {/* Daily agent banner */}
+      <DailyAgentBanner />
 
       {/* Mode selector */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
