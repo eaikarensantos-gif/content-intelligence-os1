@@ -19,10 +19,11 @@ const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','A
 const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 
 const KANBAN_COLUMNS = [
-  { id: 'idea',      label: 'Ideias',     color: 'border-orange-200 bg-orange-50/60',   dot: 'bg-orange-400',  count_bg: 'bg-orange-100 text-orange-700' },
-  { id: 'draft',     label: 'Rascunhos',  color: 'border-blue-200 bg-blue-50/60',       dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
-  { id: 'ready',     label: 'Pronto',     color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
-  { id: 'published', label: 'Publicado',  color: 'border-green-200 bg-green-50/60',     dot: 'bg-green-400',   count_bg: 'bg-green-100 text-green-700' },
+  { id: 'agent',     label: 'Agente Diário', color: 'border-purple-200 bg-purple-50/60',   dot: 'bg-purple-400',  count_bg: 'bg-purple-100 text-purple-700' },
+  { id: 'idea',      label: 'Ideias',        color: 'border-orange-200 bg-orange-50/60',   dot: 'bg-orange-400',  count_bg: 'bg-orange-100 text-orange-700' },
+  { id: 'draft',     label: 'Rascunhos',     color: 'border-blue-200 bg-blue-50/60',       dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
+  { id: 'ready',     label: 'Pronto',        color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
+  { id: 'published', label: 'Publicado',     color: 'border-green-200 bg-green-50/60',     dot: 'bg-green-400',   count_bg: 'bg-green-100 text-green-700' },
 ]
 
 const SOURCE_COLORS = {
@@ -148,7 +149,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 min-h-[60vh]">
+      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-5 lg:overflow-visible lg:pb-0 min-h-[60vh]">
         {KANBAN_COLUMNS.map((col) => {
           const colIdeas = columnIdeas(col.id)
           const confirming = confirmCol === col.id
