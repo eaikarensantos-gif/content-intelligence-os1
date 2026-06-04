@@ -113,7 +113,7 @@ Retorne SOMENTE JSON válido, sem markdown, sem explicações:
     tags: ['agente-diário', idea.topic].filter(Boolean).map(t =>
       t.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
     ),
-    status: 'idea',
+    status: 'agent',
     content_type: 'organic',
     scheduled_date: '',
     source: 'daily-agent',
