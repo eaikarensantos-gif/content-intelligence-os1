@@ -239,6 +239,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
 
 // ─── Visualização Calendário ──────────────────────────────────────────────────
 function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
+  const metrics = useStore((s) => s.metrics)
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [contextDay, setContextDay] = useState(null) // day string for context menu
@@ -253,6 +254,11 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
   const ideasForDay = (day) => {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
     return ideas.filter((i) => i.scheduled_date === dateStr)
+  }
+
+  const metricsForDay = (day) => {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+    return metrics.filter((m) => m.date === dateStr)
   }
 
   const makeDateStr = (day) =>
@@ -290,6 +296,7 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
               const dayStr = day ? makeDateStr(day) : null
               const isToday = dayStr === todayStr
               const dayIdeas = day ? ideasForDay(day) : []
+              const dayMetrics = day ? metricsForDay(day) : []
               return (
                 <div
                   key={i}
@@ -302,6 +309,17 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                         {day}
                       </span>
                       <div className="space-y-1 hidden sm:block" onClick={(e) => e.stopPropagation()}>
+                        {dayMetrics.slice(0, 2).map((m, idx) => (
+                          <div key={idx} title={m.description || m.post_type} className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                            <span className="text-[10px] text-emerald-700 truncate leading-tight">
+                              {m.description ? m.description.slice(0, 22) : m.post_type || 'Post'}
+                            </span>
+                          </div>
+                        ))}
+                        {dayMetrics.length > 2 && (
+                          <span className="text-[10px] text-emerald-500 pl-1">+{dayMetrics.length - 2} posts</span>
+                        )}
                         {dayIdeas.slice(0, 2).map((idea) => (
                           <KanbanMiniCard
                             key={idea.id}
@@ -321,12 +339,15 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                         )}
                       </div>
                       {/* Mobile: show dot indicators */}
-                      {dayIdeas.length > 0 && (
-                        <div className="flex gap-0.5 mt-0.5 sm:hidden" onClick={(e) => { e.stopPropagation(); onCardClick(dayIdeas[0]) }}>
+                      {(dayIdeas.length > 0 || dayMetrics.length > 0) && (
+                        <div className="flex gap-0.5 mt-0.5 sm:hidden" onClick={(e) => { e.stopPropagation(); if (dayIdeas[0]) onCardClick(dayIdeas[0]) }}>
+                          {dayMetrics.slice(0, 2).map((_, idx) => (
+                            <span key={'m'+idx} className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          ))}
                           {dayIdeas.slice(0, 3).map((idea, idx) => (
                             <span key={idx} className="w-1.5 h-1.5 rounded-full bg-orange-400" />
                           ))}
-                          {dayIdeas.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length - 3}</span>}
+                          {dayIdeas.length + dayMetrics.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length + dayMetrics.length - 3}</span>}
                         </div>
                       )}
                       {/* Context menu — add idea or gap */}
@@ -355,7 +376,8 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-gray-400">
+      <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /><span className="font-medium text-gray-700">{metrics.filter(m => m.date?.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)).length}</span> publicados (CSV)</span>
         <span><span className="font-medium text-gray-700">{scheduled.length}</span> agendadas</span>
         <span><span className="font-medium text-gray-700">{unscheduled.length}</span> sem data</span>
         <span className="ml-auto text-[10px] text-gray-300">Clique em uma data para criar</span>
