@@ -300,37 +300,56 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
               const isToday = dayStr === todayStr
               const dayIdeas = day ? ideasForDay(day) : []
               const dayMetrics = day ? metricsForDay(day) : []
+              const totalItems = dayMetrics.length + dayIdeas.length
+
+              const handleCellClick = () => {
+                if (!day) return
+                if (dayMetrics.length === 1 && dayIdeas.length === 0) return setSelectedMetric(dayMetrics[0])
+                if (dayMetrics.length > 1 || (dayMetrics.length >= 1 && dayIdeas.length >= 1)) return setDayMetricsList({ label: dayStr, items: dayMetrics })
+                if (dayIdeas.length === 1 && dayMetrics.length === 0) return onCardClick(dayIdeas[0])
+                setContextDay(contextDay === dayStr ? null : dayStr)
+              }
+
               return (
                 <div
                   key={i}
-                  className={`border-b border-r border-gray-100 p-1 sm:p-1.5 min-h-[56px] sm:min-h-0 relative ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
-                  onClick={() => day && setContextDay(contextDay === dayStr ? null : dayStr)}
+                  className={`border-b border-r border-gray-100 p-1.5 sm:p-2 min-h-[80px] sm:min-h-[110px] relative ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/20 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
+                  onClick={handleCellClick}
                 >
                   {day && (
                     <>
-                      <span className={`text-[10px] sm:text-xs font-medium block mb-0.5 sm:mb-1 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
+                      <span className={`text-[10px] sm:text-xs font-medium block mb-1 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
                         {day}
                       </span>
                       <div className="space-y-1 hidden sm:block" onClick={(e) => e.stopPropagation()}>
-                        {dayMetrics.slice(0, 2).map((m, idx) => (
+                        {dayMetrics.slice(0, 3).map((m, idx) => (
                           <button
                             key={idx}
                             title={m.description || m.post_type}
-                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setSelectedMetric(m) }}
-                            className="w-full flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 truncate hover:bg-emerald-100 transition-colors text-left"
+                            onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}
+                            className="w-full flex flex-col gap-0.5 px-1.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors text-left"
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                            <span className="text-[10px] text-emerald-700 truncate leading-tight">
-                              {m.description ? m.description.slice(0, 22) : m.post_type || 'Post'}
-                            </span>
+                            <div className="flex items-center gap-1 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                              <span className="text-[10px] text-emerald-700 truncate leading-tight font-medium">
+                                {m.description ? m.description.slice(0, 24) : m.post_type || 'Post'}
+                              </span>
+                            </div>
+                            {(m.likes || m.impressions || m.comments) && (
+                              <div className="flex items-center gap-2 pl-2.5 text-[9px] text-emerald-500">
+                                {m.likes > 0 && <span>♥ {Number(m.likes).toLocaleString('pt-BR')}</span>}
+                                {m.comments > 0 && <span>💬 {Number(m.comments).toLocaleString('pt-BR')}</span>}
+                                {m.impressions > 0 && <span>👁 {Number(m.impressions).toLocaleString('pt-BR')}</span>}
+                              </div>
+                            )}
                           </button>
                         ))}
-                        {dayMetrics.length > 2 && (
+                        {dayMetrics.length > 3 && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}
+                            onClick={(e) => { e.stopPropagation(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}
                             className="text-[10px] text-emerald-500 pl-1 hover:text-emerald-700 hover:underline"
                           >
-                            +{dayMetrics.length - 2} posts
+                            +{dayMetrics.length - 3} posts
                           </button>
                         )}
                         {dayIdeas.slice(0, 2).map((idea) => (
@@ -351,25 +370,21 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                           </button>
                         )}
                       </div>
-                      {/* Mobile: show dot indicators */}
-                      {(dayIdeas.length > 0 || dayMetrics.length > 0) && (
-                        <div className="flex gap-0.5 mt-0.5 sm:hidden">
-                          {dayMetrics.slice(0, 2).map((m, idx) => (
-                            <button key={'m'+idx} onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block" />
-                            </button>
+                      {/* Mobile: dots */}
+                      {totalItems > 0 && (
+                        <div className="flex flex-wrap gap-0.5 mt-1 sm:hidden">
+                          {dayMetrics.slice(0, 3).map((m, idx) => (
+                            <button key={'m'+idx} onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}
+                              className="w-2 h-2 rounded-full bg-emerald-400" />
                           ))}
-                          {dayMetrics.length > 2 && (
-                            <button onClick={(e) => { e.stopPropagation(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}>
-                              <span className="text-[8px] text-emerald-500">+{dayMetrics.length - 2}</span>
-                            </button>
+                          {dayMetrics.length > 3 && (
+                            <button onClick={(e) => { e.stopPropagation(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}
+                              className="text-[8px] text-emerald-500">+{dayMetrics.length - 3}</button>
                           )}
                           {dayIdeas.slice(0, 3).map((idea, idx) => (
-                            <button key={idx} onClick={(e) => { e.stopPropagation(); onCardClick(idea) }}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 block" />
-                            </button>
+                            <button key={idx} onClick={(e) => { e.stopPropagation(); onCardClick(idea) }}
+                              className="w-2 h-2 rounded-full bg-orange-400" />
                           ))}
-                          {dayIdeas.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length - 3}</span>}
                         </div>
                       )}
                       {/* Context menu — add idea or gap */}
