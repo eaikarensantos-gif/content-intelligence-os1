@@ -239,7 +239,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
 }
 
 // ─── Visualização Calendário ──────────────────────────────────────────────────
-function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
+function CalendarView({ ideas, filterFormat, onCardClick, onNewIdea, onDelete, onAddGap }) {
   const metrics = useStore((s) => s.metrics)
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
@@ -261,7 +261,11 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
 
   const metricsForDay = (day) => {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-    return metrics.filter((m) => m.date === dateStr)
+    return metrics.filter((m) => {
+      if (m.date !== dateStr) return false
+      if (filterFormat && filterFormat !== 'all' && (m.post_type || '').toLowerCase() !== filterFormat) return false
+      return true
+    })
   }
 
   const makeDateStr = (day) =>
@@ -1525,6 +1529,7 @@ export default function IdeasHub() {
   const [filterPlatform, setFilterPlatform] = useState('all')
   const [filterStatus, setFilterStatus]     = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
+  const [filterFormat, setFilterFormat]     = useState('all')
   const [filterTag, setFilterTag]           = useState(null)  // tag selecionável
   const [showFilters, setShowFilters]       = useState(false)
 
@@ -1542,6 +1547,7 @@ export default function IdeasHub() {
       if (filterPlatform !== 'all' && !platforms.includes(filterPlatform)) return false
       if (filterStatus !== 'all' && i.status !== filterStatus) return false
       if (filterPriority !== 'all' && i.priority !== filterPriority) return false
+      if (filterFormat !== 'all' && (i.format || '').toLowerCase() !== filterFormat) return false
       if (filterTag && !(i.tags || []).includes(filterTag)) return false
       if (search && !i.title?.toLowerCase().includes(search.toLowerCase()) &&
           !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
@@ -1618,7 +1624,7 @@ export default function IdeasHub() {
 
       {/* Filtros */}
       {(tab === 'kanban' || tab === 'calendar' || tab === 'order') && (() => {
-        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
+        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterFormat !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
         return (
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
@@ -1667,6 +1673,19 @@ export default function IdeasHub() {
                 </select>
                 <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
                   {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
+                </select>
+                <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterFormat} onChange={(e) => setFilterFormat(e.target.value)}>
+                  <option value="all">Tipo de conteúdo</option>
+                  <option value="reel">Reel</option>
+                  <option value="reels/tiktok">Reels/TikTok</option>
+                  <option value="carrossel">Carrossel</option>
+                  <option value="stories">Stories</option>
+                  <option value="story">Story</option>
+                  <option value="video">Vídeo</option>
+                  <option value="imagem">Imagem</option>
+                  <option value="artigo">Artigo</option>
+                  <option value="thread">Thread</option>
+                  <option value="post">Post</option>
                 </select>
               </div>
 
@@ -1723,7 +1742,7 @@ export default function IdeasHub() {
 
       {/* Visualização Calendário */}
       {tab === 'calendar' && (
-        <CalendarView ideas={filtered} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} onAddGap={handleAddGap} />
+        <CalendarView ideas={filtered} filterFormat={filterFormat} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} onAddGap={handleAddGap} />
       )}
 
       {/* Visualização Ordem */}
