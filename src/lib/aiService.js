@@ -48,7 +48,22 @@ function parseJSON(text) {
     .replace(/^```(?:json)?\s*/im, '')
     .replace(/\s*```\s*$/im, '')
     .trim()
-  return JSON.parse(cleaned)
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    // Try to extract the first complete JSON object from the text
+    const start = cleaned.indexOf('{')
+    if (start === -1) throw new SyntaxError('No JSON object found in AI response')
+    // Walk forward to find the matching closing brace
+    let depth = 0
+    let end = -1
+    for (let i = start; i < cleaned.length; i++) {
+      if (cleaned[i] === '{') depth++
+      else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break } }
+    }
+    if (end === -1) throw new SyntaxError('AI response JSON was truncated — try again')
+    return JSON.parse(cleaned.slice(start, end + 1))
+  }
 }
 
 // ─── Core call — goes through /api/ai serverless proxy (solves CORS) ─────────
@@ -126,7 +141,7 @@ Rules:
     },
   ]
 
-  const text = await callAI(aiSettings, messages, { temperature: 0.8, maxTokens: 2000 })
+  const text = await callAI(aiSettings, messages, { temperature: 0.8, maxTokens: 3500 })
   const parsed = parseJSON(text)
 
   parsed.opportunities = (parsed.opportunities || []).map((o, i) => ({
@@ -255,7 +270,7 @@ Rules:
     },
   ]
 
-  const text = await callAI(aiSettings, messages, { temperature: 0.6, maxTokens: 2000 })
+  const text = await callAI(aiSettings, messages, { temperature: 0.6, maxTokens: 3000 })
   const parsed = parseJSON(text)
 
   return parsed.map((ins, i) => ({
