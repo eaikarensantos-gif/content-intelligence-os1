@@ -245,6 +245,7 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [contextDay, setContextDay] = useState(null)
   const [selectedMetric, setSelectedMetric] = useState(null)
+  const [dayMetricsList, setDayMetricsList] = useState(null) // { label, items[] }
   const year = current.getFullYear()
   const month = current.getMonth()
   const firstDay = new Date(year, month, 1).getDay()
@@ -315,7 +316,7 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                           <button
                             key={idx}
                             title={m.description || m.post_type}
-                            onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setSelectedMetric(m) }}
                             className="w-full flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 truncate hover:bg-emerald-100 transition-colors text-left"
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
@@ -325,7 +326,12 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                           </button>
                         ))}
                         {dayMetrics.length > 2 && (
-                          <span className="text-[10px] text-emerald-500 pl-1">+{dayMetrics.length - 2} posts</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}
+                            className="text-[10px] text-emerald-500 pl-1 hover:text-emerald-700 hover:underline"
+                          >
+                            +{dayMetrics.length - 2} posts
+                          </button>
                         )}
                         {dayIdeas.slice(0, 2).map((idea) => (
                           <KanbanMiniCard
@@ -347,14 +353,23 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                       </div>
                       {/* Mobile: show dot indicators */}
                       {(dayIdeas.length > 0 || dayMetrics.length > 0) && (
-                        <div className="flex gap-0.5 mt-0.5 sm:hidden" onClick={(e) => { e.stopPropagation(); if (dayIdeas[0]) onCardClick(dayIdeas[0]) }}>
-                          {dayMetrics.slice(0, 2).map((_, idx) => (
-                            <span key={'m'+idx} className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <div className="flex gap-0.5 mt-0.5 sm:hidden">
+                          {dayMetrics.slice(0, 2).map((m, idx) => (
+                            <button key={'m'+idx} onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block" />
+                            </button>
                           ))}
+                          {dayMetrics.length > 2 && (
+                            <button onClick={(e) => { e.stopPropagation(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}>
+                              <span className="text-[8px] text-emerald-500">+{dayMetrics.length - 2}</span>
+                            </button>
+                          )}
                           {dayIdeas.slice(0, 3).map((idea, idx) => (
-                            <span key={idx} className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                            <button key={idx} onClick={(e) => { e.stopPropagation(); onCardClick(idea) }}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 block" />
+                            </button>
                           ))}
-                          {dayIdeas.length + dayMetrics.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length + dayMetrics.length - 3}</span>}
+                          {dayIdeas.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length - 3}</span>}
                         </div>
                       )}
                       {/* Context menu — add idea or gap */}
@@ -400,6 +415,38 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
           </div>
         </div>
       )}
+
+      {/* Modal: lista de todos os posts do dia */}
+      <Modal
+        open={!!dayMetricsList}
+        onClose={() => setDayMetricsList(null)}
+        title={dayMetricsList ? `Posts publicados — ${new Date(dayMetricsList.label + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}` : ''}
+        maxWidth="max-w-lg"
+      >
+        {dayMetricsList && (
+          <div className="space-y-2">
+            {dayMetricsList.items.map((m, idx) => (
+              <button
+                key={idx}
+                onClick={() => { setDayMetricsList(null); setSelectedMetric(m) }}
+                className="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-colors text-left"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-800 truncate">
+                    {m.description || m.post_type || 'Post sem descrição'}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-0.5 flex gap-2">
+                    {m.platform && <span className="capitalize">{m.platform}</span>}
+                    {m.post_type && <span>{m.post_type}</span>}
+                    {m.likes != null && <span>♥ {m.likes}</span>}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
 
       {/* Modal: detalhe do post publicado (CSV) */}
       <Modal
