@@ -326,7 +326,7 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                           <button
                             key={idx}
                             title={m.description || m.post_type}
-                            onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}
+                            onClick={(e) => { e.stopPropagation(); if (m.link) { window.open(m.link, '_blank', 'noopener,noreferrer') } else { setSelectedMetric(m) } }}
                             className="w-full flex flex-col gap-0.5 px-1.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors text-left"
                           >
                             <div className="flex items-center gap-1 truncate">
@@ -374,7 +374,7 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                       {totalItems > 0 && (
                         <div className="flex flex-wrap gap-0.5 mt-1 sm:hidden">
                           {dayMetrics.slice(0, 3).map((m, idx) => (
-                            <button key={'m'+idx} onClick={(e) => { e.stopPropagation(); setSelectedMetric(m) }}
+                            <button key={'m'+idx} onClick={(e) => { e.stopPropagation(); if (m.link) { window.open(m.link, '_blank', 'noopener,noreferrer') } else { setSelectedMetric(m) } }}
                               className="w-2 h-2 rounded-full bg-emerald-400" />
                           ))}
                           {dayMetrics.length > 3 && (
