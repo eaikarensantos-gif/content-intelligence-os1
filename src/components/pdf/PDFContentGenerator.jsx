@@ -4,8 +4,7 @@ import {
   Loader2, X, RefreshCw, BookOpen, Instagram, Film, LayoutGrid, MessageCircle,
 } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
-import useAIStore from '../../store/useAIStore'
-import { callAI } from '../../lib/aiService'
+const LS_KEY = 'cio-anthropic-key'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -77,7 +76,10 @@ const FORMATS = [
 
 // ── AI generation ──────────────────────────────────────────────────────────────
 
-async function generateContent(aiSettings, pdfText, format, count) {
+async function generateContent(pdfText, format, count) {
+  const apiKey = localStorage.getItem(LS_KEY) || ''
+  if (!apiKey) throw new Error('Chave de API Anthropic não configurada. Vá em Configurações para adicionar.')
+
   const truncated = chunkText(pdfText)
 
   const formatInstructions = {
@@ -87,15 +89,14 @@ async function generateContent(aiSettings, pdfText, format, count) {
     post: `Crie ${count} posts de feed completos. Cada um com: frase de abertura (hook), desenvolvimento em parágrafos curtos, encerramento com reflexão, e 10 a 15 hashtags relevantes.`,
   }
 
-  const messages = [
-    {
-      role: 'system',
-      content:
-        'Você é um especialista em criação de conteúdo para redes sociais, com expertise em transformar conteúdo educacional em posts virais. Responda APENAS com JSON válido, sem markdown.',
-    },
-    {
-      role: 'user',
-      content: `A seguir está o conteúdo de um curso em PDF. Baseado nesse material, crie conteúdo para redes sociais.
+  const jsonFormat = {
+    carousel: `[{"title": "...", "slides": [{"heading": "...", "bullets": ["...", "..."]}], "cta": "..."}]`,
+    reel: `[{"title": "...", "hook": "...", "script": "...", "cta": "...", "duration": "30s"}]`,
+    stories: `[{"title": "...", "stories": [{"text": "...", "interaction": "...", "type": "text|poll|question"}], "cta": "..."}]`,
+    post: `[{"title": "...", "hook": "...", "body": "...", "closing": "...", "hashtags": ["..."]}]`,
+  }
+
+  const prompt = `A seguir está o conteúdo de um curso em PDF. Baseado nesse material, crie conteúdo para redes sociais.
 
 ${formatInstructions[format.id]}
 
@@ -105,16 +106,33 @@ CONTEÚDO DO PDF:
 ${truncated}
 
 Retorne um array JSON com exatamente ${count} itens, no formato:
-${format.id === 'carousel' ? `[{"title": "...", "slides": [{"heading": "...", "bullets": ["...", "..."]}], "cta": "..."}]` : ''}
-${format.id === 'reel' ? `[{"title": "...", "hook": "...", "script": "...", "cta": "...", "duration": "30s"}]` : ''}
-${format.id === 'stories' ? `[{"title": "...", "stories": [{"text": "...", "interaction": "...", "type": "text|poll|question"}], "cta": "..."}]` : ''}
-${format.id === 'post' ? `[{"title": "...", "hook": "...", "body": "...", "closing": "...", "hashtags": ["..."]}]` : ''}
+${jsonFormat[format.id]}
 
-Retorne APENAS o array JSON.`,
+Retorne APENAS o array JSON, sem markdown.`
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
-  ]
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      system: 'Você é um especialista em criação de conteúdo para redes sociais, com expertise em transformar conteúdo educacional em posts virais. Responda APENAS com JSON válido, sem markdown.',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
 
-  const text = await callAI(aiSettings, messages, { temperature: 0.8, maxTokens: 4000 })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Erro na API: ${res.status}`)
+  }
+
+  const data = await res.json()
+  const text = data.content?.[0]?.text || ''
   const cleaned = text.replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/im, '').trim()
   return JSON.parse(cleaned)
 }
@@ -348,11 +366,6 @@ function ResultCard({ format, item, index }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function PDFContentGenerator() {
-  const provider = useAIStore((s) => s.provider)
-  const apiKey = useAIStore((s) => s.apiKey)
-  const model = useAIStore((s) => s.model)
-  const customBaseUrl = useAIStore((s) => s.customBaseUrl)
-  const aiSettings = { provider, apiKey, model, customBaseUrl }
 
   const [pdfFile, setPdfFile] = useState(null)
   const [pdfInfo, setPdfInfo] = useState(null)
@@ -410,7 +423,7 @@ export default function PDFContentGenerator() {
     for (const fmtId of selectedFormats) {
       const fmt = FORMATS.find((f) => f.id === fmtId)
       try {
-        const items = await generateContent(aiSettings, pdfInfo.text, fmt, fmt.count)
+        const items = await generateContent(pdfInfo.text, fmt, fmt.count)
         newResults[fmtId] = Array.isArray(items) ? items : []
       } catch (err) {
         newResults[fmtId] = { error: err.message || 'Erro ao gerar conteúdo.' }
