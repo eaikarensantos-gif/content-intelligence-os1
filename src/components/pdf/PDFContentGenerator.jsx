@@ -137,26 +137,26 @@ function CarouselCard({ item, index }) {
   }
 
   return (
-    <div className="border border-white/10 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/8 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-50 transition-colors text-left"
       >
-        <span className="font-medium text-sm text-white">{item.title}</span>
+        <span className="font-medium text-sm text-gray-900">{item.title}</span>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-white/40">{item.slides?.length || 0} slides</span>
-          {open ? <ChevronUp size={14} className="text-white/50" /> : <ChevronDown size={14} className="text-white/50" />}
+          <span className="text-xs text-gray-400">{item.slides?.length || 0} slides</span>
+          {open ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
         </div>
       </button>
       {open && (
         <div className="p-4 space-y-3">
           {(item.slides || []).map((slide, i) => (
-            <div key={i} className="bg-white/5 rounded-lg p-3">
+            <div key={i} className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs font-semibold text-purple-300 mb-1">Slide {i + 1}</p>
-              <p className="text-sm font-medium text-white mb-2">{slide.heading}</p>
+              <p className="text-sm font-medium text-gray-900 mb-2">{slide.heading}</p>
               <ul className="space-y-1">
                 {(slide.bullets || []).map((b, j) => (
-                  <li key={j} className="text-xs text-white/70 flex gap-2">
+                  <li key={j} className="text-xs text-gray-700 flex gap-2">
                     <span className="text-purple-400 mt-0.5">•</span>
                     <span>{b}</span>
                   </li>
@@ -167,12 +167,12 @@ function CarouselCard({ item, index }) {
           {item.cta && (
             <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
               <p className="text-xs text-purple-300 font-medium">CTA</p>
-              <p className="text-sm text-white/80 mt-1">{item.cta}</p>
+              <p className="text-sm text-gray-800 mt-1">{item.cta}</p>
             </div>
           )}
           <button
             onClick={copyText}
-            className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
           >
             {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
             {copied ? 'Copiado!' : 'Copiar tudo'}
@@ -196,26 +196,26 @@ function ReelCard({ item, index }) {
   return (
     <div className="border border-pink-500/20 rounded-xl p-4 space-y-3 bg-pink-500/5">
       <div className="flex items-start justify-between gap-2">
-        <h4 className="font-medium text-sm text-white">{item.title}</h4>
+        <h4 className="font-medium text-sm text-gray-900">{item.title}</h4>
         <span className="text-xs bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full shrink-0">{item.duration}</span>
       </div>
-      <div className="bg-white/5 rounded-lg p-3">
+      <div className="bg-gray-50 rounded-lg p-3">
         <p className="text-xs font-semibold text-pink-300 mb-1">⚡ Gancho (0–3s)</p>
-        <p className="text-sm text-white/80">{item.hook}</p>
+        <p className="text-sm text-gray-800">{item.hook}</p>
       </div>
-      <div className="bg-white/5 rounded-lg p-3">
+      <div className="bg-gray-50 rounded-lg p-3">
         <p className="text-xs font-semibold text-pink-300 mb-1">📝 Roteiro</p>
-        <p className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed">{item.script}</p>
+        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.script}</p>
       </div>
       {item.cta && (
         <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-3">
           <p className="text-xs text-pink-300 font-medium">CTA</p>
-          <p className="text-sm text-white/80 mt-1">{item.cta}</p>
+          <p className="text-sm text-gray-800 mt-1">{item.cta}</p>
         </div>
       )}
       <button
         onClick={copyText}
-        className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
       >
         {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
         {copied ? 'Copiado!' : 'Copiar roteiro'}
@@ -242,15 +242,15 @@ function StoriesCard({ item }) {
 
   return (
     <div className="border border-orange-500/20 rounded-xl p-4 space-y-3 bg-orange-500/5">
-      <h4 className="font-medium text-sm text-white">{item.title}</h4>
+      <h4 className="font-medium text-sm text-gray-900">{item.title}</h4>
       <div className="flex gap-2 overflow-x-auto pb-2">
         {(item.stories || []).map((s, i) => (
           <div
             key={i}
-            className="shrink-0 w-36 bg-white/5 border border-white/10 rounded-xl p-3 space-y-2"
+            className="shrink-0 w-36 bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2"
           >
             <span className="text-xs text-orange-300 font-medium">#{i + 1}</span>
-            <p className="text-xs text-white/80 leading-relaxed">{s.text}</p>
+            <p className="text-xs text-gray-800 leading-relaxed">{s.text}</p>
             {s.interaction && (
               <span className="text-[10px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded-full block text-center">
                 {s.interaction}
@@ -262,12 +262,12 @@ function StoriesCard({ item }) {
       {item.cta && (
         <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
           <p className="text-xs text-orange-300 font-medium">CTA final</p>
-          <p className="text-sm text-white/80 mt-1">{item.cta}</p>
+          <p className="text-sm text-gray-800 mt-1">{item.cta}</p>
         </div>
       )}
       <button
         onClick={copyText}
-        className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
       >
         {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
         {copied ? 'Copiado!' : 'Copiar stories'}
@@ -296,20 +296,20 @@ function PostCard({ item }) {
 
   return (
     <div className="border border-blue-500/20 rounded-xl p-4 space-y-3 bg-blue-500/5">
-      <h4 className="font-medium text-sm text-white">{item.title}</h4>
+      <h4 className="font-medium text-sm text-gray-900">{item.title}</h4>
       <div className="space-y-2">
-        <div className="bg-white/5 rounded-lg p-3">
+        <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs font-semibold text-blue-300 mb-1">🎣 Hook</p>
-          <p className="text-sm text-white/90 font-medium">{item.hook}</p>
+          <p className="text-sm text-gray-900 font-medium">{item.hook}</p>
         </div>
-        <div className="bg-white/5 rounded-lg p-3">
+        <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs font-semibold text-blue-300 mb-1">📝 Legenda</p>
-          <p className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed">{item.body}</p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{item.body}</p>
         </div>
         {item.closing && (
-          <div className="bg-white/5 rounded-lg p-3">
+          <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs font-semibold text-blue-300 mb-1">✨ Fechamento</p>
-            <p className="text-sm text-white/70">{item.closing}</p>
+            <p className="text-sm text-gray-700">{item.closing}</p>
           </div>
         )}
         {item.hashtags?.length > 0 && (
@@ -324,7 +324,7 @@ function PostCard({ item }) {
       </div>
       <button
         onClick={copyText}
-        className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
       >
         {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
         {copied ? 'Copiado!' : 'Copiar post'}
@@ -428,11 +428,11 @@ export default function PDFContentGenerator() {
     <div className="p-6 max-w-4xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <BookOpen size={24} className="text-orange-400" />
           PDF → Conteúdo
         </h1>
-        <p className="text-sm text-white/50 mt-1">
+        <p className="text-sm text-gray-500 mt-1">
           Faça upload do PDF do seu curso e gere posts, reels, carrosseis e stories automaticamente.
         </p>
       </div>
@@ -447,7 +447,7 @@ export default function PDFContentGenerator() {
           relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all
           ${pdfInfo
             ? 'border-green-500/40 bg-green-500/5'
-            : 'border-white/20 bg-white/3 hover:border-orange-400/50 hover:bg-orange-500/5'}
+            : 'border-gray-200 bg-gray-50 hover:border-orange-400/50 hover:bg-orange-500/5'}
         `}
       >
         <input
@@ -461,28 +461,28 @@ export default function PDFContentGenerator() {
         {extracting ? (
           <div className="space-y-2">
             <Loader2 size={32} className="animate-spin text-orange-400 mx-auto" />
-            <p className="text-sm text-white/60">Extraindo texto do PDF…</p>
+            <p className="text-sm text-gray-600">Extraindo texto do PDF…</p>
           </div>
         ) : pdfInfo ? (
           <div className="space-y-2">
             <FileText size={32} className="text-green-400 mx-auto" />
-            <p className="font-medium text-white">{pdfInfo.name}</p>
-            <p className="text-xs text-white/50">
+            <p className="font-medium text-gray-900">{pdfInfo.name}</p>
+            <p className="text-xs text-gray-500">
               {pdfInfo.pageCount} páginas · {Math.round(pdfInfo.size / 1024)} KB ·{' '}
               {pdfInfo.text.length.toLocaleString()} caracteres extraídos
             </p>
             <button
               onClick={(e) => { e.stopPropagation(); setPdfFile(null); setPdfInfo(null); setResults({}); setActiveTab(null) }}
-              className="text-xs text-white/40 hover:text-white/70 flex items-center gap-1 mx-auto transition-colors"
+              className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 mx-auto transition-colors"
             >
               <X size={12} /> Trocar arquivo
             </button>
           </div>
         ) : (
           <div className="space-y-2">
-            <Upload size={32} className="text-white/30 mx-auto" />
-            <p className="text-sm font-medium text-white/70">Arraste o PDF aqui ou clique para selecionar</p>
-            <p className="text-xs text-white/40">Suporte a PDFs com texto selecionável (não escaneados)</p>
+            <Upload size={32} className="text-gray-400 mx-auto" />
+            <p className="text-sm font-medium text-gray-700">Arraste o PDF aqui ou clique para selecionar</p>
+            <p className="text-xs text-gray-400">Suporte a PDFs com texto selecionável (não escaneados)</p>
           </div>
         )}
       </div>
@@ -494,7 +494,7 @@ export default function PDFContentGenerator() {
       {/* Format selection */}
       {pdfInfo && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-white/70">Selecione os formatos a gerar:</p>
+          <p className="text-sm font-medium text-gray-700">Selecione os formatos a gerar:</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {FORMATS.map((fmt) => {
               const Icon = fmt.icon
@@ -509,12 +509,12 @@ export default function PDFContentGenerator() {
                   }
                   className={`
                     border rounded-xl p-3 text-left transition-all space-y-1.5
-                    ${selected ? fmt.bg + ' ring-1 ring-white/20' : 'border-white/10 bg-white/3 hover:bg-white/6'}
+                    ${selected ? fmt.bg + ' ring-1 ring-gray-300' : 'border-gray-200 bg-gray-50 hover:bg-gray-50'}
                   `}
                 >
-                  <Icon size={18} className={selected ? fmt.color : 'text-white/40'} />
-                  <p className={`text-sm font-medium ${selected ? 'text-white' : 'text-white/60'}`}>{fmt.label}</p>
-                  <p className={`text-[11px] leading-tight ${selected ? 'text-white/60' : 'text-white/30'}`}>{fmt.description}</p>
+                  <Icon size={18} className={selected ? fmt.color : 'text-gray-400'} />
+                  <p className={`text-sm font-medium ${selected ? 'text-gray-900' : 'text-gray-600'}`}>{fmt.label}</p>
+                  <p className={`text-[11px] leading-tight ${selected ? 'text-gray-600' : 'text-gray-400'}`}>{fmt.description}</p>
                 </button>
               )
             })}
@@ -548,14 +548,14 @@ export default function PDFContentGenerator() {
       {hasResults && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <Sparkles size={18} className="text-orange-400" />
               Conteúdo gerado
             </h2>
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
             >
               <RefreshCw size={12} /> Regenerar
             </button>
@@ -575,13 +575,13 @@ export default function PDFContentGenerator() {
                     onClick={() => setActiveTab(fmtId)}
                     className={`
                       flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap
-                      ${isActive ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/80'}
+                      ${isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-800'}
                     `}
                   >
                     <Icon size={14} className={isActive ? fmt.color : ''} />
                     {fmt.label}
                     {Array.isArray(results[fmtId]) && (
-                      <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded-full">
+                      <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded-full">
                         {results[fmtId].length}
                       </span>
                     )}
