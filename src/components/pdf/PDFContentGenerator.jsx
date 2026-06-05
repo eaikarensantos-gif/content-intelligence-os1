@@ -348,7 +348,11 @@ function ResultCard({ format, item, index }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function PDFContentGenerator() {
-  const aiSettings = useAIStore((s) => s.getSettings())
+  const provider = useAIStore((s) => s.provider)
+  const apiKey = useAIStore((s) => s.apiKey)
+  const model = useAIStore((s) => s.model)
+  const customBaseUrl = useAIStore((s) => s.customBaseUrl)
+  const aiSettings = { provider, apiKey, model, customBaseUrl }
 
   const [pdfFile, setPdfFile] = useState(null)
   const [pdfInfo, setPdfInfo] = useState(null)
@@ -421,7 +425,8 @@ export default function PDFContentGenerator() {
   const hasResults = Object.keys(results).length > 0
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6 animate-fade-in">
+    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -605,6 +610,7 @@ export default function PDFContentGenerator() {
           )}
         </div>
       )}
+    </div>
     </div>
   )
 }
