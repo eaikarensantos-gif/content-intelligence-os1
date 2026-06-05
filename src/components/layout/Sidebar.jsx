@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  Clapperboard, Sun, Moon, Scissors, Newspaper, Users,
+  Clapperboard, Sun, Moon, Scissors, Newspaper, Users, BookOpen,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -15,6 +15,7 @@ const TOP_NAV = [
   { to: '/social', icon: BarChart2, label: 'Analytics' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
+  { to: '/pdf-studio', icon: BookOpen, label: 'PDF → Conteúdo' },
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/clipper', icon: Scissors, label: 'Web Clipper' },
