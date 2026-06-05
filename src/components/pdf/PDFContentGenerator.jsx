@@ -344,7 +344,7 @@ function ResultCard({ format, item, index }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function PDFContentGenerator() {
-  const aiSettings = useAIStore((s) => s.settings)
+  const aiSettings = useAIStore((s) => s.getSettings())
 
   const [pdfFile, setPdfFile] = useState(null)
   const [pdfInfo, setPdfInfo] = useState(null) // { text, pageCount, name }
