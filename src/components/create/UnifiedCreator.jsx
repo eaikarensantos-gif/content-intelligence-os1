@@ -2963,6 +2963,21 @@ TEXTO:\n${revText.trim()}`
                       ))}
                     </div>
 
+                    {/* Copiar tudo — slides + exercício + pergunta + CTA */}
+                    <button
+                      onClick={() => {
+                        const slides = (active.data?.slides || []).map(s => `${s.numero}. ${s.texto}`).join('\n\n')
+                        const pergunta = active.data?.pergunta_final || carResult.versao_principal?.pergunta_final || ''
+                        const exercicio = carResult.exercicio_pratico || ''
+                        const cta = carResult.cta_fechado || ''
+                        const parts = [slides, exercicio && `Exercício Prático:\n${exercicio}`, pergunta && `Pergunta Final:\n${pergunta}`, cta && `CTA:\n${cta}`].filter(Boolean)
+                        handleCarCopy(parts.join('\n\n─────\n\n'), `tudo-${active.key}`)
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-300 text-xs font-semibold text-gray-500 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+                    >
+                      {carCopied === `tudo-${active.key}` ? <><Check size={12} className="text-green-500" /> Copiado!</> : <><Copy size={12} /> Copiar tudo (slides + exercício + pergunta + CTA)</>}
+                    </button>
+
                     {/* Slides da versão ativa */}
                     {active.data && (
                       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
