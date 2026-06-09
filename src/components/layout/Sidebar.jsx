@@ -17,6 +17,7 @@ const TOP_NAV = [
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
   { to: '/pdf-studio', icon: BookOpen, label: 'PDF → Conteúdo' },
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
+  { to: '/community', icon: Users, label: 'Community Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/clipper', icon: Scissors, label: 'Web Clipper' },
   { to: '/news', icon: Newspaper, label: 'Novidades Tech' },
