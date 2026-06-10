@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw,
-  BookOpen, Users, MessageCircle, ChevronDown, ChevronUp, AlertCircle, ExternalLink,
+  BookOpen, Users, MessageCircle, ChevronDown, ChevronUp, AlertCircle, ExternalLink, BarChart2,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -50,12 +50,34 @@ O template é o hook. Deve ser específico o suficiente para ter valor real, mas
 Para membros que já participam. Convida relatos de experiência, não opiniões genéricas.
 FORMATO: Karen relata em primeira pessoa uma situação que viveu ou observou no universo criativo CLT→PJ. Direto. No final, uma pergunta aberta específica que convida relatos similares — não "o que você acha?" mas algo como "Como você lidou com isso?" ou "O que você faria diferente?". 3 a 4 parágrafos.
 A pergunta final é o hook. Deve ser concreta o suficiente para que a resposta exija uma experiência real, não uma opinião.`,
+
+  enquete: `TIPO DE POST: Enquete de comunidade.
+Diagnóstico rápido do momento do membro. Máximo engajamento, mínimo esforço.
+FORMATO: Uma pergunta de enquete direta sobre o tema, com 2 a 4 opções de resposta curtas e mutuamente exclusivas. Antes da enquete, 1 parágrafo curto contextualizando por que essa pergunta importa agora para quem está em transição CLT→PJ. Após as opções, uma frase de fechamento que diz o que será feito com o resultado (ex: "Dependendo da maioria, trago um conteúdo específico sobre isso essa semana.").
+As opções devem ser situações reais reconhecíveis, não abstrações. Nada de "Sim / Não" genérico.`,
 }
 
-const buildPrompt = ({ slotId, weekTheme, fissura }) => `TEMA DA SEMANA: ${weekTheme?.trim() || 'profissional criativo em transição CLT→PJ'}
-${fissura?.trim() ? `\nFISSURA (integre naturalmente no post): "${fissura.trim()}"` : ''}
+const buildPrompt = ({ slotId, weekTheme, fissura }) => {
+  const base = `TEMA: ${weekTheme?.trim() || 'profissional criativo em transição CLT→PJ'}
+${fissura?.trim() ? `\nFISSURA (integre naturalmente): "${fissura.trim()}"` : ''}
 
-${SLOT_INSTRUCTIONS[slotId]}
+${SLOT_INSTRUCTIONS[slotId]}`
+
+  if (slotId === 'enquete') {
+    return `${base}
+
+Responda com JSON:
+{
+  "pergunta": "a pergunta da enquete, direta e específica",
+  "opcoes": ["opção 1", "opção 2", "opção 3", "opção 4"],
+  "contexto": "parágrafo curto de contextualização antes da enquete",
+  "fechamento": "frase de fechamento após as opções",
+  "post": "texto completo formatado para colar na plataforma: contexto + pergunta + opções numeradas + fechamento",
+  "nota": "observação sobre por que essa enquete funciona com essa audiência"
+}`
+  }
+
+  return `${base}
 
 Responda com JSON:
 {
@@ -63,6 +85,7 @@ Responda com JSON:
   "post": "texto completo do post em português, pronto para copiar e colar",
   "nota": "observação curta sobre por que esse post pode funcionar com essa audiência específica"
 }`
+}
 
 // ─── Slots config ──────────────────────────────────────────────────────────────
 
@@ -119,6 +142,14 @@ export default function CommunityStudio() {
   const [expanded, setExpanded] = useState({ leitura: true, reacao: true, conversa: true })
   const [copied, setCopied]     = useState(null)
 
+  // Enquete state (independente dos 3 slots semanais)
+  const [enqueteTema, setEnqueteTema]       = useState('')
+  const [enqueteFissura, setEnqueteFissura] = useState('')
+  const [enqueteDraft, setEnqueteDraft]     = useState(null)
+  const [enqueteLoading, setEnqueteLoading] = useState(false)
+  const [enqueteError, setEnqueteError]     = useState(null)
+  const [enqueteOpen, setEnqueteOpen]       = useState(true)
+
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
   const handleCopy = (text, key) => {
@@ -171,6 +202,43 @@ export default function CommunityStudio() {
   }
 
   const generateAll = () => SLOTS.forEach(s => generate(s.id))
+
+  const generateEnquete = async () => {
+    if (!apiKey) { setEnqueteError('Configure sua API key em Configurações'); return }
+    setEnqueteLoading(true)
+    setEnqueteError(null)
+    setEnqueteDraft(null)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: COMMUNITY_SYSTEM,
+          messages: [{ role: 'user', content: buildPrompt({ slotId: 'enquete', weekTheme: enqueteTema, fissura: enqueteFissura }) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw  = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da API')
+      setEnqueteDraft(JSON.parse(match[0]))
+    } catch (err) {
+      setEnqueteError(err.message)
+    } finally {
+      setEnqueteLoading(false)
+    }
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5">
@@ -230,6 +298,127 @@ export default function CommunityStudio() {
             : <><Sparkles size={14} /> Gerar os 3 posts da semana</>
           }
         </button>
+      </div>
+
+      {/* Enquete */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <button
+          onClick={() => setEnqueteOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:brightness-95 bg-violet-50 border-b border-violet-100"
+        >
+          <div className="flex items-center gap-3">
+            <BarChart2 size={15} className="text-violet-500" />
+            <div className="text-left">
+              <p className="text-sm font-semibold text-gray-800">Enquete</p>
+              <p className="text-[10px] text-gray-500">Diagnóstico rápido — máximo engajamento, mínimo esforço</p>
+            </div>
+          </div>
+          {enqueteDraft && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full mr-2 bg-violet-600 text-white">pronto</span>
+          )}
+          {enqueteOpen
+            ? <ChevronUp size={15} className="text-gray-400 shrink-0" />
+            : <ChevronDown size={15} className="text-gray-400 shrink-0" />
+          }
+        </button>
+
+        {enqueteOpen && (
+          <div className="p-4 space-y-3">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+                Tema da enquete
+              </label>
+              <input
+                type="text"
+                value={enqueteTema}
+                onChange={e => setEnqueteTema(e.target.value)}
+                placeholder="Ex: principal obstáculo na hora de precificar como PJ"
+                className="input w-full text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5 mb-1.5">
+                <AlertCircle size={9} className="text-gray-400" />
+                Fissura
+                <span className="text-gray-300 normal-case font-normal">(opcional)</span>
+              </label>
+              <textarea
+                value={enqueteFissura}
+                onChange={e => setEnqueteFissura(e.target.value)}
+                rows={2}
+                placeholder="Ex: não sei se o problema é a precificação em si ou o medo de perder o cliente..."
+                className="input w-full text-xs resize-none"
+              />
+            </div>
+
+            {enqueteError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
+                {enqueteError}
+              </div>
+            )}
+
+            <button
+              onClick={generateEnquete}
+              disabled={enqueteLoading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              {enqueteLoading
+                ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
+                : <><Sparkles size={13} /> Gerar enquete</>
+              }
+            </button>
+
+            {enqueteDraft && (
+              <div className="space-y-3 animate-fade-in">
+
+                {/* Opções */}
+                {enqueteDraft.opcoes?.length > 0 && (
+                  <div className="rounded-xl border border-violet-200 bg-violet-50 p-3">
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Opções</p>
+                    <ul className="space-y-1">
+                      {enqueteDraft.opcoes.map((op, i) => (
+                        <li key={i} className="text-xs text-gray-700 flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full bg-violet-200 text-violet-700 text-[9px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                          {op}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Post completo */}
+                <div className="rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Post completo</p>
+                    <button
+                      onClick={() => handleCopy(enqueteDraft.post, 'enquete-post')}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-700 transition-colors"
+                    >
+                      {copied === 'enquete-post' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                    </button>
+                  </div>
+                  <div className="p-4 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap bg-white">
+                    {enqueteDraft.post}
+                  </div>
+                </div>
+
+                {enqueteDraft.nota && (
+                  <p className="text-[10px] text-gray-400 italic px-1 leading-relaxed">{enqueteDraft.nota}</p>
+                )}
+
+                <button
+                  onClick={generateEnquete}
+                  disabled={enqueteLoading}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={11} className={enqueteLoading ? 'animate-spin' : ''} />
+                  Regenerar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Slots */}
