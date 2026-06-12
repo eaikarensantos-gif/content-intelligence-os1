@@ -1,3 +1,5 @@
+import { parseAIJson } from '../utils/safeJson.js'
+
 // ─── Provider definitions ────────────────────────────────────────────────────
 
 export const PROVIDERS = {
@@ -48,7 +50,7 @@ function parseJSON(text) {
     .replace(/^```(?:json)?\s*/im, '')
     .replace(/\s*```\s*$/im, '')
     .trim()
-  return JSON.parse(cleaned)
+  return parseAIJson(cleaned)
 }
 
 // ─── Core call — goes through /api/ai serverless proxy (solves CORS) ─────────

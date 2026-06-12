@@ -1,5 +1,6 @@
 import { AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Sparkles, RefreshCw, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -50,7 +51,7 @@ Responda APENAS com JSON:
   const text = data.content?.[0]?.text || ''
   const match2 = text.match(/\[[\s\S]*\]/)
   if (!match2) throw new Error('No JSON')
-  return JSON.parse(match2[0])
+  return parseAIJson(match2[0])
 }
 
 function ViolationRow({ v }) {

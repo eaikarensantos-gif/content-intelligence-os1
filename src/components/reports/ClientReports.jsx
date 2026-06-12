@@ -10,6 +10,7 @@ import {
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
 import { parseFile } from '../../utils/csvNormalizer'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const fmtDate = (d) => {
@@ -486,8 +487,7 @@ export default function ClientReports() {
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida da IA')
 
-      const cleaned = jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-      const parsed = JSON.parse(cleaned)
+      const parsed = parseAIJson(jsonMatch[0])
       setReport(parsed)
     } catch (err) {
       setError(err.message)

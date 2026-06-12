@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight, ChevronLeft, Sparkles, Check, RotateCcw, Loader2, Eye, Copy, Zap } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -296,7 +297,7 @@ Analise e retorne EXCLUSIVAMENTE JSON:
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 
-      const parsed = JSON.parse(jsonMatch[0])
+      const parsed = parseAIJson(jsonMatch[0])
       setAnalysis(parsed)
 
       // Salvar calibração no brandVoice

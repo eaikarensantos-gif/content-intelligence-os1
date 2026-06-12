@@ -21,6 +21,7 @@ import WeeklyPlanner from './WeeklyPlanner'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
 import { normalizeRow, parseFile, isLinkedinFile, normalizeLinkedinRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const COLORS = ['#f97316', '#fb923c', '#2563eb', '#0891b2', '#059669', '#d97706']
 
@@ -1444,7 +1445,7 @@ Retorne EXCLUSIVAMENTE JSON válido:
             const text = data.content?.[0]?.text || ''
             const jsonMatch = text.match(/\{[\s\S]*\}/)
             if (!jsonMatch) throw new Error('Resposta inválida da IA')
-            setPubliReport(JSON.parse(jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')))
+            setPubliReport(parseAIJson(jsonMatch[0]))
           } catch (err) { setPubliError(err.message) }
           finally { setPubliLoading(false) }
         }
@@ -1552,7 +1553,7 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
             const text = data.content?.[0]?.text || ''
             const jsonMatch = text.match(/\{[\s\S]*\}/)
             if (!jsonMatch) throw new Error('Resposta inválida da IA')
-            const parsed = JSON.parse(jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+            const parsed = parseAIJson(jsonMatch[0])
             setPubliClientReport(parsed)
             setPubliWhatsapp(parsed.whatsapp || '')
           } catch (err) { setPubliError(err.message) }

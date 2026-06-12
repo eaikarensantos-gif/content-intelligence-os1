@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 // ─── Claude call ─────────────────────────────────────────────────────────────
 async function captureThought(apiKey, { thought, niche, tone, voiceContext, regenInstruction }) {
@@ -259,8 +260,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   const raw = data.content?.[0]?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da API')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return parseAIJson(match[0])
 }
 
 // ─── Loading phases ───────────────────────────────────────────────────────────

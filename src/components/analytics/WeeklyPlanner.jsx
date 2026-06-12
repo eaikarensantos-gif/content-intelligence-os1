@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 function getLastNDays(n) {
   const to = new Date()
@@ -161,8 +162,7 @@ export default function WeeklyPlanner() {
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida da IA')
 
-      const cleaned = jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-      const parsed = JSON.parse(cleaned)
+      const parsed = parseAIJson(jsonMatch[0])
 
       if (!parsed.suggestions?.length) throw new Error('Nenhuma sugestão gerada')
       setPlan(parsed)

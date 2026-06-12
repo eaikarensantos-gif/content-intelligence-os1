@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const CDN = '/ffmpeg'
 
@@ -560,8 +561,7 @@ Return ONLY this JSON:
   const data = await res.json()
   const match = data.content[0].text.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return parseAIJson(match[0])
 }
 
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
@@ -1056,7 +1056,7 @@ export default function VideoAnalyzer() {
       const raw = await callClaudeAPI(apiKey, prompt, analysisMode === 'script' ? [] : hasFramesData ? frames : [])
       const jsonMatch = raw.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
-      const result = JSON.parse(jsonMatch[0])
+      const result = parseAIJson(jsonMatch[0])
       setLoadingStep(4)
       await new Promise((r) => setTimeout(r, 300))
       analysisTranscriptRef.current = hasFinalTranscript ? finalTranscript : ''
@@ -1153,7 +1153,7 @@ Responda APENAS com este JSON:
       const raw = await callClaudeAPI(apiKey, prompt)
       const m = raw.match(/\{[\s\S]*\}/)
       if (!m) throw new Error('A IA não retornou um roteiro estruturado.')
-      setImprovedScript(JSON.parse(m[0]))
+      setImprovedScript(parseAIJson(m[0]))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -3180,7 +3180,7 @@ Responda APENAS com JSON válido, sem markdown:
       const data = await resp.json()
       const text = data.content?.[0]?.text || '{}'
       const clean = text.replace(/```json\n?|\n?```/g, '').trim()
-      setSuggestions(JSON.parse(clean))
+      setSuggestions(parseAIJson(clean))
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
   }

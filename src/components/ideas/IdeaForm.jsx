@@ -4,6 +4,7 @@ import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -254,7 +255,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
       // Extract JSON array from response
       const match = clean.match(/\[[\s\S]*\]/)
-      const parsed = JSON.parse(match ? match[0] : clean)
+      const parsed = parseAIJson(match ? match[0] : clean)
       if (Array.isArray(parsed) && parsed.length > 0) {
         setTitleSuggestions(parsed.filter(Boolean))
       } else {

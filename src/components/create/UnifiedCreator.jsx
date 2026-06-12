@@ -14,6 +14,7 @@ import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voice
 import { lintText } from '../../utils/brandLinter'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -860,7 +861,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 
-      const parsed = JSON.parse(jsonMatch[0])
+      const parsed = parseAIJson(jsonMatch[0])
 
       // Salvar no histórico antes de atualizar
       if (result) setHistory(prev => [result, ...prev].slice(0, 10))
@@ -943,7 +944,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setEngResult(JSON.parse(match[0]))
+      setEngResult(parseAIJson(match[0]))
     } catch (err) {
       setEngError(err.message)
     } finally {
@@ -981,7 +982,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setEngHooks(JSON.parse(match[0]))
+      setEngHooks(parseAIJson(match[0]))
     } catch (err) {
       setEngHookError(err.message)
     } finally {
@@ -1046,7 +1047,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const text = data.content?.[0]?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
-        const parsed = JSON.parse(match[0])
+        const parsed = parseAIJson(match[0])
         setCarHooks(parsed.hooks || [])
       }
     } catch { /* silencioso */ } finally {
@@ -1080,7 +1081,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setCarResult(JSON.parse(match[0]))
+      setCarResult(parseAIJson(match[0]))
     } catch (err) {
       setCarError(err.message)
     } finally {
@@ -1267,7 +1268,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const data = await res.json()
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
-        const results = JSON.parse(match[0]).resultados || []
+        const results = parseAIJson(match[0]).resultados || []
         setSavedThemes(prev => prev.map(t => {
           if (!targets.some(tg => tg.id === t.id)) return t
           const r = results.find(r => r.tema === t.tema)
@@ -1319,7 +1320,7 @@ Regras:
         const text = data.content?.[0]?.text || ''
         const match = text.match(/\[[\s\S]*\]/)
         if (match) {
-          const parsed = JSON.parse(match[0])
+          const parsed = parseAIJson(match[0])
           classificados = novos.map((t, i) => ({
             id: Date.now() + i,
             tema: t,
@@ -1379,7 +1380,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const existing = new Set(savedThemes.map(t => t.tema))
-        const novos = (JSON.parse(match[0]).temas || [])
+        const novos = (parseAIJson(match[0]).temas || [])
           .filter(t => !existing.has(t.tema))
           .map(t => ({
             id: Date.now() + Math.random(),

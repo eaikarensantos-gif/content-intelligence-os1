@@ -252,6 +252,7 @@ function ReportPreview({ report, clientName, periodLabel, metrics, enriched }) {
 }
 
 import { normalizeRow } from '../../utils/csvNormalizer'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 export default function ReportBuilder() {
   const metrics = useStore((s) => s.metrics)
@@ -408,8 +409,7 @@ export default function ReportBuilder() {
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida da IA')
 
-      const cleaned = jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-      const parsed = JSON.parse(cleaned)
+      const parsed = parseAIJson(jsonMatch[0])
       setReport(parsed)
     } catch (err) {
       setError(err.message)

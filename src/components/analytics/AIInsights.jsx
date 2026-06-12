@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const PHASES = [
   'Agente 1/4 — Analisando performance individual de cada post...',
@@ -229,8 +230,7 @@ export default function AIInsights() {
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida da IA')
 
-      const cleaned = jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-      const parsed = JSON.parse(cleaned)
+      const parsed = parseAIJson(jsonMatch[0])
 
       if (!parsed.analysis && !parsed.strategy) throw new Error('Resposta incompleta da IA')
       setInsights(parsed)

@@ -10,6 +10,7 @@ import {
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
 import { parseFile } from '../../utils/csvNormalizer'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -285,8 +286,7 @@ REGRAS PARA creator_references:
   const raw = data.content?.[0]?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return parseAIJson(match[0])
 }
 
 // ── Clipboard hook ──────────────────────────────────────────────────────────

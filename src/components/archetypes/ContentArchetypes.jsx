@@ -6,6 +6,7 @@ import {
   Search, X, Edit3, Star, Flame, Hash, Globe, Send, ExternalLink, CheckCircle2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -66,8 +67,7 @@ async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
   const raw = data.content?.[0]?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  const cleaned = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(cleaned)
+  return parseAIJson(match[0])
 }
 
 // ── Prompts ────────────────────────────────────────────────────────────────────

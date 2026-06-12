@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -189,8 +190,7 @@ async function generateIdeas(apiKey, params) {
   const raw = data.content[0].text
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return parseAIJson(match[0])
 }
 
 // ── Idea Card ─────────────────────────────────────────────────────────────────

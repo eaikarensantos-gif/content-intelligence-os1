@@ -9,6 +9,7 @@ import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext } from '../../utils/voiceContext'
 import * as pdfjsLib from 'pdfjs-dist'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -220,7 +221,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta sem JSON válido')
 
-      const parsed = JSON.parse(jsonMatch[0])
+      const parsed = parseAIJson(jsonMatch[0])
       setAnalysis(parsed.analysis)
       setScripts(parsed.scripts)
     } catch (err) {

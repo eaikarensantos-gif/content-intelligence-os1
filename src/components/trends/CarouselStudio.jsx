@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -140,8 +141,7 @@ REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitad
   const raw = data.content?.[0]?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return parseAIJson(match[0])
 }
 
 // ─── Slide image generator (Canvas API) ──────────────────────────────────────

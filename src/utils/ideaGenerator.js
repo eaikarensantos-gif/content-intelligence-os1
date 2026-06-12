@@ -1,3 +1,5 @@
+import { parseAIJson } from './safeJson.js'
+
 const TEMPLATES = [
   {
     hook_type: 'lista',
@@ -145,7 +147,7 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
 
-  const result = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+  const result = parseAIJson(match[0])
   return {
     signals: result.signals || [],
     ideas: (result.ideas || []).map((idea, i) => ({
@@ -238,7 +240,7 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
   const match = raw.match(/\[[\s\S]*\]/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
 
-  const ideas = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+  const ideas = parseAIJson(match[0])
   return ideas.map((idea, i) => ({
     ...idea,
     id: `ai-${Date.now()}-${i}`,

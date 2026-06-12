@@ -5,6 +5,7 @@ import {
   Film, Monitor, MessageSquare, Clapperboard,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -134,7 +135,7 @@ export default function NaomiStudio() {
       })
       const data = await res.json()
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
-      if (match) setSuggestions(JSON.parse(match[0]).situations || [])
+      if (match) setSuggestions(parseAIJson(match[0]).situations || [])
     } catch { /* silent */ }
     finally { setSuggestLoading(false) }
   }
@@ -178,7 +179,7 @@ export default function NaomiStudio() {
       const data = await res.json()
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setResult(JSON.parse(match[0]))
+      setResult(parseAIJson(match[0]))
     } catch (err) {
       setError(err.message)
     } finally {

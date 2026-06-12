@@ -2,6 +2,7 @@ import { AlertCircle, CheckCircle, AlertTriangle, Zap, Sparkles, RefreshCw, X, C
 import { useState } from 'react'
 import clsx from 'clsx'
 import { lintText } from '../../utils/brandLinter'
+import { parseAIJson } from '../../utils/safeJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -39,7 +40,7 @@ Responda APENAS com JSON:
   const text = data.content?.[0]?.text || ''
   const m = text.match(/\[[\s\S]*\]/)
   if (!m) throw new Error('No JSON')
-  return JSON.parse(m[0])
+  return parseAIJson(m[0])
 }
 
 function ViolationItem({ violation, severity, onFix }) {
