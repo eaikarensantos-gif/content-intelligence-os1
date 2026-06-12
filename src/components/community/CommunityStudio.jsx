@@ -4,6 +4,7 @@ import {
   BookOpen, Users, MessageCircle, ChevronDown, ChevronUp, AlertCircle, ExternalLink, BarChart2,
 } from 'lucide-react'
 import clsx from 'clsx'
+import CommunityEngager from './CommunityEngager'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -134,6 +135,7 @@ const SLOTS = [
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function CommunityStudio() {
+  const [tab, setTab] = useState('posts')
   const [weekTheme, setWeekTheme] = useState('')
   const [fissuras, setFissuras] = useState({ leitura: '', reacao: '', conversa: '' })
   const [drafts, setDrafts]     = useState({ leitura: null, reacao: null, conversa: null })
@@ -272,6 +274,30 @@ export default function CommunityStudio() {
         <div className="absolute right-8 bottom-0 w-24 h-24 bg-white/5 rounded-full translate-y-10 pointer-events-none" />
       </div>
 
+      {/* Abas */}
+      <div className="flex gap-1.5 bg-gray-100 rounded-xl p-1">
+        {[
+          { id: 'posts', label: 'Posts da semana' },
+          { id: 'comentarios', label: 'Comentar posts' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={clsx(
+              'flex-1 py-2 text-xs font-bold rounded-lg transition-all',
+              tab === t.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'comentarios' && <CommunityEngager />}
+
+      {tab === 'posts' && (<>
       {/* Tema da semana */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm space-y-3">
         <div>
@@ -551,6 +577,7 @@ export default function CommunityStudio() {
           </div>
         )
       })}
+      </>)}
     </div>
   )
 }
