@@ -35,6 +35,7 @@ const TABS = [
   { id: 'ideias', label: 'Ideias', icon: Lightbulb },
   { id: 'transcricao', label: 'Transcrição', icon: FileText },
   { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
+  { id: 'recriar', label: 'Recriar', icon: Sparkles },
 ]
 
 const MY_VIDEO_TABS = [
@@ -48,6 +49,7 @@ const MY_VIDEO_TABS = [
   { id: 'transcricao', label: 'Transcrição', icon: FileText },
   { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
   { id: 'melhorar', label: 'O que Melhorar', icon: Target },
+  { id: 'recriar', label: 'Recriar', icon: Sparkles },
 ]
 
 const TYPE_OPTIONS = [
@@ -260,7 +262,7 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 6000,
       system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown. STRICT RULE: When given a real transcript, every quote in hook.text, promise.text, cta.text, patterns[].example, retention[].example must be an EXACT verbatim quote from that transcript — never paraphrase, never invent. When given video frames, describe only what you actually see in the images. NEVER fabricate quotes, invented sentences, or fictional examples. If a field requires a quote and you cannot find one in the data, use null. Your response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content }],
@@ -547,7 +549,7 @@ Return ONLY this JSON:
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 3000,
       system: 'You are a scriptwriting API. Respond with valid JSON only. Start with { end with }.',
       messages: [{ role: 'user', content: prompt }],
@@ -777,6 +779,7 @@ export default function VideoAnalyzer() {
   const videoAnalyses = useStore((s) => s.videoAnalyses)
   const addIdea = useStore((s) => s.addIdea)
   const addFavorite = useStore((s) => s.addFavorite)
+  const bannedPhrases = useStore((s) => s.bannedPhrases)
 
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
   const [showKeyModal, setShowKeyModal] = useState(false)
@@ -822,6 +825,11 @@ export default function VideoAnalyzer() {
   const analysisTranscriptRef = useRef('')  // transcript actually used in current analysis
   const [translating, setTranslating] = useState(false)
 
+  // Recriar
+  const [recriarResult, setRecriarResult] = useState(null)
+  const [recriarLoading, setRecriarLoading] = useState(false)
+  const [recriarCopied, setRecriarCopied] = useState(false)
+
   const handleTranslate = async (getText, setText) => {
     const text = getText()
     if (!text || text.trim().length < 10 || !apiKey) return
@@ -854,6 +862,64 @@ export default function VideoAnalyzer() {
 
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
+
+  const generateRecriar = async () => {
+    if (!apiKey || !analysis) return
+    setRecriarLoading(true)
+    setRecriarResult(null)
+    const transcriptText = analysisTranscriptRef.current || ''
+    const banned = (bannedPhrases || []).join(', ')
+    const prompt = `Você é um especialista em conteúdo para redes sociais. Baseado na análise e transcrição do vídeo abaixo, recrie o conteúdo adaptado para a voz e posicionamento da Karen Santos.
+
+TRANSCRIÇÃO DO VÍDEO:
+${transcriptText || '(não disponível — use a análise para inferir o conteúdo)'}
+
+ANÁLISE DO VÍDEO:
+- Arquétipo: ${analysis.archetype || ''}
+- Resumo: ${analysis.summary?.overview || ''}
+- Mensagem central: ${analysis.summary?.main_message || ''}
+- Tom: ${analysis.tone?.primary || ''}
+
+${banned ? `FRASES BANIDAS (nunca use): ${banned}` : ''}
+
+Retorne APENAS um objeto JSON válido com esta estrutura:
+{
+  "gancho": "frase de abertura poderosa para o Reels (máx 2 linhas)",
+  "roteiro": "roteiro completo em blocos: [GANCHO] ... [DESENVOLVIMENTO] ... [CTA]",
+  "legenda": "legenda completa para o post com emojis estratégicos",
+  "hashtags": ["tag1", "tag2", "tag3"],
+  "variacoes": [
+    { "angulo": "nome do ângulo", "gancho": "gancho alternativo" },
+    { "angulo": "nome do ângulo", "gancho": "gancho alternativo" },
+    { "angulo": "nome do ângulo", "gancho": "gancho alternativo" }
+  ]
+}`
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 3000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      if (!res.ok) throw new Error('Erro na API')
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (match) setRecriarResult(JSON.parse(match[0]))
+    } catch (e) {
+      console.error('generateRecriar error:', e)
+    } finally {
+      setRecriarLoading(false)
+    }
+  }
 
   const STEPS = [
     'Buscando metadados do vídeo...',
@@ -2098,7 +2164,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === t.id
-                    ? t.id === 'melhorar' ? 'bg-orange-500 text-white' : 'bg-violet-600 text-white'
+                    ? t.id === 'melhorar' ? 'bg-orange-500 text-white' : t.id === 'recriar' ? 'bg-violet-700 text-white' : 'bg-violet-600 text-white'
                     : 'text-gray-400 hover:text-gray-700'
                 }`}>
                 <t.icon size={12} /> {t.label}
@@ -3031,6 +3097,102 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
+          {/* ── RECRIAR ──────────────────────────────────────────────────────── */}
+          {activeTab === 'recriar' && (
+            <div className="space-y-5">
+              <div className="card p-5 border border-violet-100 bg-gradient-to-br from-violet-50/40 to-white space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-violet-100 text-violet-600"><Sparkles size={14} /></div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Recriar na Minha Voz</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">A IA usa a transcrição e análise do vídeo para gerar um novo roteiro adaptado ao seu posicionamento</p>
+                  </div>
+                </div>
+                {!analysisTranscriptRef.current && (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                    <p className="text-xs text-amber-700 font-medium">Para melhores resultados, faça o upload do vídeo com transcrição automática (Groq Whisper) antes de recriar.</p>
+                  </div>
+                )}
+                <button onClick={generateRecriar} disabled={recriarLoading || !apiKey}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                  style={{ background: recriarLoading ? undefined : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
+                  {recriarLoading ? <><RefreshCw size={14} className="animate-spin" /> Gerando conteúdo...</> : <><Sparkles size={14} /> Recriar na Minha Voz</>}
+                </button>
+              </div>
+
+              {recriarResult && (
+                <div className="space-y-4">
+                  <div className="card p-5 border border-violet-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2"><Zap size={14} className="text-violet-500" /><h4 className="text-sm font-semibold text-gray-900">Gancho</h4></div>
+                      <button onClick={() => { navigator.clipboard.writeText(recriarResult.gancho); setRecriarCopied('gancho'); setTimeout(() => setRecriarCopied(false), 2000) }} className="btn-secondary text-xs">
+                        {recriarCopied === 'gancho' ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-800 font-medium leading-relaxed bg-violet-50 p-3 rounded-xl border border-violet-100 italic">"{recriarResult.gancho}"</p>
+                  </div>
+
+                  <div className="card p-5 border border-indigo-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2"><AlignLeft size={14} className="text-indigo-500" /><h4 className="text-sm font-semibold text-gray-900">Roteiro</h4></div>
+                      <button onClick={() => { navigator.clipboard.writeText(recriarResult.roteiro); setRecriarCopied('roteiro'); setTimeout(() => setRecriarCopied(false), 2000) }} className="btn-secondary text-xs">
+                        {recriarCopied === 'roteiro' ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                      </button>
+                    </div>
+                    <pre className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans bg-gray-50 p-3 rounded-xl border border-gray-100">{recriarResult.roteiro}</pre>
+                  </div>
+
+                  {recriarResult.legenda && (
+                    <div className="card p-5 border border-blue-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2"><FileText size={14} className="text-blue-500" /><h4 className="text-sm font-semibold text-gray-900">Legenda</h4></div>
+                        <button onClick={() => { navigator.clipboard.writeText(recriarResult.legenda); setRecriarCopied('legenda'); setTimeout(() => setRecriarCopied(false), 2000) }} className="btn-secondary text-xs">
+                          {recriarCopied === 'legenda' ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{recriarResult.legenda}</p>
+                      {recriarResult.hashtags?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-blue-100">
+                          {recriarResult.hashtags.map((h, i) => (
+                            <span key={i} className="text-[11px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">#{h.replace(/^#/, '')}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {recriarResult.variacoes?.length > 0 && (
+                    <div className="card p-5 border border-emerald-100 space-y-3">
+                      <div className="flex items-center gap-2"><Layers size={14} className="text-emerald-500" /><h4 className="text-sm font-semibold text-gray-900">Variações de Ângulo</h4></div>
+                      <div className="space-y-3">
+                        {recriarResult.variacoes.map((v, i) => (
+                          <div key={i} className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">{v.angulo}</p>
+                            <p className="text-xs text-gray-800 font-medium italic">"{v.gancho}"</p>
+                            <button onClick={() => navigator.clipboard.writeText(v.gancho)} className="text-[10px] text-gray-400 hover:text-gray-600 flex items-center gap-1"><Copy size={10} /> Copiar gancho</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 flex-wrap">
+                    <button onClick={generateRecriar} disabled={recriarLoading}
+                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-50 transition-colors">
+                      <RefreshCw size={12} /> Regenerar
+                    </button>
+                    <button onClick={() => {
+                      const full = [recriarResult.gancho, '', recriarResult.roteiro, '', recriarResult.legenda, recriarResult.hashtags?.map(h => '#' + h.replace(/^#/, '')).join(' ')].filter(Boolean).join('\n')
+                      navigator.clipboard.writeText(full); setRecriarCopied('all'); setTimeout(() => setRecriarCopied(false), 2000)
+                    }} className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm">
+                      {recriarCopied === 'all' ? <><Check size={12} /> Copiado!</> : <><Copy size={12} /> Copiar Tudo</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       )}
 
@@ -3058,9 +3220,58 @@ function CommentAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false)
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState('')
+  const [responses, setResponses] = useState({})
+  const [respondingId, setRespondingId] = useState(null)
+  const [copiedResponseId, setCopiedResponseId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const fileRef = useRef(null)
+
+  const generateResponse = async (comment) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
+    setRespondingId(comment.id)
+    const voiceContext = brandVoice?.prompt
+      ? `\n\nSua voz e estilo:\n${brandVoice.prompt}`
+      : '\n\nSeu estilo: direto, analítico, sem floreio, empático mas sem motivação barata.'
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: `Você é uma criadora de conteúdo respondendo um comentário no Instagram/TikTok.${voiceContext}
+
+COMENTÁRIO RECEBIDO:
+"${comment.text}"
+
+Escreva a RESPOSTA IDEAL para este comentário. Regras:
+- 1 a 3 linhas curtas — nunca um parágrafo longo
+- Parecer escrita por uma pessoa real, não uma marca
+- Validar a experiência ou aprofundar o ponto levantado
+- Pode terminar com uma pergunta que convida mais interação
+- NUNCA usar frases genéricas como "Que ótimo!", "Amei seu comentário!", "Obrigada pelo apoio!"
+- NUNCA usar emojis em excesso (máximo 1, opcional)
+- Tom: autêntico, direto, humano
+
+Retorne APENAS o texto da resposta, sem aspas, sem introdução.`
+          }]
+        })
+      })
+      const data = await resp.json()
+      const text = data.content?.[0]?.text?.trim() || ''
+      setResponses(prev => ({ ...prev, [comment.id]: text }))
+    } catch (e) { setError(e.message) }
+    finally { setRespondingId(null) }
+  }
 
   const addComment = () => {
     if (!commentText.trim()) return
@@ -3094,7 +3305,7 @@ function CommentAnalyzer() {
             'anthropic-dangerous-direct-browser-access': 'true',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-6',
             max_tokens: 1000,
             messages: [{
               role: 'user',
@@ -3139,7 +3350,7 @@ function CommentAnalyzer() {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 4000,
           messages: [{
             role: 'user',
@@ -3273,17 +3484,56 @@ Responda APENAS com JSON válido, sem markdown:
               Limpar todos
             </button>
           </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2 max-h-[480px] overflow-y-auto">
             {comments.map(c => (
-              <div key={c.id} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg group">
-                <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
-                <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
-                <button
-                  onClick={() => removeComment(c.id)}
-                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                >
-                  <X size={13} />
-                </button>
+              <div key={c.id} className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden group">
+                {/* Comment row */}
+                <div className="flex items-start gap-2 px-3 pt-3 pb-2">
+                  <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
+                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
+                  <button
+                    onClick={() => removeComment(c.id)}
+                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-0.5"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                {/* Response area */}
+                <div className="px-3 pb-3">
+                  {responses[c.id] ? (
+                    <div className="mt-1 space-y-2">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                        <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wide mb-1">Resposta ideal</p>
+                        <p className="text-xs text-gray-800 leading-relaxed">{responses[c.id]}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(responses[c.id]); setCopiedResponseId(c.id); setTimeout(() => setCopiedResponseId(null), 1500) }}
+                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        >
+                          {copiedResponseId === c.id ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                        </button>
+                        <button
+                          onClick={() => generateResponse(c)}
+                          disabled={respondingId === c.id}
+                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+                        >
+                          <RefreshCw size={10} className={respondingId === c.id ? 'animate-spin' : ''} /> Gerar outra
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => generateResponse(c)}
+                      disabled={respondingId !== null}
+                      className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+                    >
+                      {respondingId === c.id
+                        ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
+                        : <><MessageSquare size={11} /> Resposta Ideal</>}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

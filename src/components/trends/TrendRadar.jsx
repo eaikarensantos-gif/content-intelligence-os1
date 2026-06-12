@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
   Search, Radar, Users, TrendingUp, Lightbulb, Plus, ExternalLink,
   ChevronDown, ChevronUp, Loader2, Brain, Zap, BarChart2,
@@ -105,9 +106,13 @@ const LOADING_PHASES = [
 ]
 
 // ─── Claude API call ───────────────────────────────────────────────────────────
-async function callClaudeForTrends(apiKey, topic, insights = []) {
+async function callClaudeForTrends(apiKey, topic, insights = [], banned = []) {
   const insightsContext = insights?.length
     ? `\nCREATOR PERSONAL ANALYTICS (use to personalize recommendations):\n${insights.slice(0, 8).map((ins) => `- ${ins.title}: ${ins.description || ''}`).join('\n')}`
+    : ''
+
+  const bannedBlock = banned.length
+    ? `\nFRASES E PALAVRAS ABSOLUTAMENTE PROIBIDAS — nunca use nos outputs gerados:\n${banned.map(p => `- "${p}"`).join('\n')}\n`
     : ''
 
   const prompt = `You are a social media trend intelligence analyst specializing in Brazilian content creators. Analyze the topic "${topic}" and generate a comprehensive, SPECIFIC trend intelligence report.
@@ -132,20 +137,27 @@ CONTENT IDEAS MUST AVOID (apply to "ideas" and "opportunities" arrays):
 - Catastrophist or extremist takes: "a bolha tech acabou", "o fim de [profissão]", "ninguém quer admitir", "[X] está morto"
 - The AI-and-jobs cliché in any form: "IA vai roubar seu emprego", "vai te tornar irrelevante", "sua carreira vai acabar" — this angle is overused and doesn't match the creator's voice
 - Engagement bait titles that exist only to provoke reaction without real substance behind them
+- Negative framing of brands or products: avoid titles like "Por que profissionais NÃO usam X", "A morte de X", "O custo invisível de não ter X", "A ilusão de X" — these frame the topic as a problem rather than an insight
+- Problem-first hooks: never open with what's wrong, what's missing, or what failed — open with what's true, what works, what the professional actually gains
 
 CONTENT IDEAS MUST FAVOR:
+- Constructive, informative framing: what the topic enables, facilitates, or makes possible for the professional
 - Reflective analysis of what's changing in tech careers and what it means
-- Contrarian takes with real argument (going against market consensus)
+- Contrarian takes with real argument (going against market consensus) — but landing on something constructive, not just critical
 - Human/ethical impact of tech decisions on professionals
 - Specific observations from experience, not generic advice
 - Titles that sound like a talk opening or a direct professional conversation — short, with a clear position
 - Hook examples that feel like "something a senior tech professional would say after years of experience"
+- For brand/product topics: show what the product concretely enables in the professional's real workflow — not whether it's good or bad compared to competitors
 
 CRITICAL RULES:
 - ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
 - Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
 - Hook examples must be SPECIFIC to topic "${topic}", not generic
 - Content gaps must be REAL underexplored angles about "${topic}"
+- DECLARAÇÃO DIRETA OBRIGATÓRIA: every hook_example and hook_suggestion MUST begin with a direct declaration — subject + verb + complement. NEVER start with negation ("Não é...", "Nunca..."), corrective contrast ("Não é X, é Y"), or epanortose. Lead straight with the main point.
+- ABSOLUTELY FORBIDDEN in any generated text: epanortose structures ("Não é falta de X, é que Y"), guilt-denial hooks ("a culpa não é sua"), external-blame attribution ("ninguém te ensinou que..."), adversative revelation ("A maioria faz X, mas os melhores fazem Y")
+${bannedBlock}
 
 CREATOR SEARCH STRATEGY — CRITICAL RULES:
 - Do NOT invent or name specific real people. Claude does not have real-time social media data.
@@ -182,7 +194,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   ],
   "patterns": {
     "recurring_hooks": [
-      { "hook": "tipo", "type": "lista|contrário|história|dados|problema|pergunta", "frequency": "X%", "example": "frase gancho em português", "platforms": ["platform"] },
+      { "hook": "tipo", "type": "lista|contrário|história|dados|observação|afirmação|provocação", "frequency": "X%", "example": "frase gancho em português — declaração direta, sem negação inicial", "platforms": ["platform"] },
       { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] },
       { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] }
     ],
@@ -197,12 +209,12 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
     { "id": "g2", "gap": "...", "description": "...", "opportunity_level": "...", "platforms": ["..."] }
   ],
   "opportunities": [
-    { "id": "o1", "title": "título do conteúdo", "description": "2 frases", "hook": "tipo", "hook_example": "frase exata em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "potential": "Very High|High|Medium", "why_now": "1 frase" },
+    { "id": "o1", "title": "título do conteúdo", "description": "2 frases", "hook": "análise|contrário|história|dados|observação|afirmação|provocação", "hook_example": "frase em português — declaração direta, começa pelo fato principal", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "potential": "Very High|High|Medium", "why_now": "1 frase" },
     { "id": "o2", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." },
     { "id": "o3", "title": "...", "description": "...", "hook": "...", "hook_example": "...", "format": "...", "platform": "...", "potential": "...", "why_now": "..." }
   ],
   "ideas": [
-    { "id": "i1", "title": "título da ideia", "hook": "tipo", "hook_suggestion": "frase de abertura em português", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "priority": "high|medium|low", "angle": "diferencial em 1 frase" },
+    { "id": "i1", "title": "título da ideia", "hook": "análise|contrário|história|dados|observação|afirmação|provocação", "hook_suggestion": "frase de abertura em português — declaração direta, construtiva, começa pelo fato principal", "format": "carrossel|reel|thread|video|artigo", "platform": "platform", "priority": "high|medium|low", "angle": "diferencial em 1 frase" },
     { "id": "i2", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
     { "id": "i3", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
     { "id": "i4", "title": "...", "hook": "...", "hook_suggestion": "...", "format": "...", "platform": "...", "priority": "...", "angle": "..." },
@@ -219,9 +231,9 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens: 8192,
-      system: 'You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.',
+      system: withAntiAIFilter('You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.'),
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -581,6 +593,8 @@ export default function TrendRadar() {
   const trendResults    = useStore((s) => s.trendResults)
   const insights        = useStore((s) => s.insights)
   const addIdea         = useStore((s) => s.addIdea)
+  const bannedPhrases   = useStore((s) => s.bannedPhrases) || []
+  const bannedWords     = useStore((s) => s.bannedWords) || []
 
   const [topic, setTopic]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -634,7 +648,7 @@ export default function TrendRadar() {
       const apiKey = localStorage.getItem('cio-anthropic-key')
       if (!apiKey) throw new Error('Chave Anthropic não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
-      const results = await callClaudeForTrends(apiKey, topic.trim(), insights)
+      const results = await callClaudeForTrends(apiKey, topic.trim(), insights, [...bannedPhrases, ...bannedWords])
       setTrendResults(results)
       setSavedIds(new Set())
     } catch (e) {

@@ -1,18 +1,40 @@
 import { useState, useEffect } from 'react'
 import {
-  Users, Sparkles, Copy, Check, RefreshCw, AlertCircle, Trash2, Loader2,
+  Sparkles, Copy, Check, RefreshCw, AlertCircle, Trash2, Loader2, MessageCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
-import useAIStore from '../../store/useAIStore'
-import { callAI } from '../../lib/aiService'
-import { withAntiAIFilter } from '../../lib/antiAIFilter'
 
-// ── Opções de tom ─────────────────────────────────────────────────────────────
+const LS_KEY = 'cio-anthropic-key'
+const HISTORY_KEY = 'cio-community-comments-history'
+
+// ─── System prompt — mesma voz da Karen usada no Community Studio ─────────────
+
+const COMMENT_SYSTEM = `Você escreve comentários para a Karen Santos deixar em posts de OUTROS membros e hosts da comunidade Contabilizei Mais.
+
+QUEM É A KAREN:
+- Gestora da comunidade Contabilizei Mais (3.000 profissionais criativos em transição CLT→PJ)
+- Designer sênior, 10+ anos, especialista em IA para negócios
+- Técnica e direta. Sem linguagem de coach ou motivacional
+
+TOM OBRIGATÓRIO DOS COMENTÁRIOS:
+- Como a Karen realmente digitaria no celular: informal de internet, pt-BR, oralidade real
+- Proibido: "mindset", "propósito", "transformação", "jornada", elogios genéricos
+- Proibido: "Parabéns pelo conteúdo!", "Muito bom!", "Excelente post!", repetir o post com outras palavras
+- O comentário SEMPRE reage a algo específico do post: cita um detalhe, retoma uma frase, responde ao ponto central
+- Pode admitir dúvida ou raciocínio aberto — soa mais real do que resposta pronta
+- No máximo 1 emoji por comentário, e só se fizer sentido; alguns comentários sem emoji
+- Sem hashtags, sem travessões dramáticos, sem frases picotadas estilo coach
+- Comentário bom levanta a moral do autor E agrega para quem lê depois
+
+Responda EXCLUSIVAMENTE com JSON válido.`
+
+// ─── Opções ────────────────────────────────────────────────────────────────────
+
 const TONES = [
   { id: 'apoio', label: 'Apoio genuíno', hint: 'Concorda e reforça o ponto do autor' },
-  { id: 'experiencia', label: 'Experiência própria', hint: 'Complementa com uma vivência sua' },
+  { id: 'experiencia', label: 'Experiência própria', hint: 'Complementa com uma vivência da Karen' },
   { id: 'pergunta', label: 'Pergunta curiosa', hint: 'Puxa conversa com uma pergunta real' },
-  { id: 'complemento', label: 'Complemento', hint: 'Adiciona um ângulo que faltou no post' },
+  { id: 'complemento', label: 'Complemento técnico', hint: 'Adiciona um ângulo que faltou no post' },
   { id: 'celebracao', label: 'Celebração', hint: 'Comemora uma conquista do autor' },
   { id: 'descontraido', label: 'Descontraído', hint: 'Leve, com humor sutil' },
 ]
@@ -26,58 +48,40 @@ const LENGTHS = [
 const RELATIONSHIPS = [
   { id: 'membro', label: 'Membro da comunidade' },
   { id: 'host', label: 'Host / co-criador' },
-  { id: 'amigo', label: 'Amigo(a) próximo(a)' },
-  { id: 'novo', label: 'Pessoa que conheço pouco' },
+  { id: 'proximo', label: 'Pessoa próxima' },
+  { id: 'novo', label: 'Pessoa que conhece pouco' },
 ]
 
-const HISTORY_KEY = 'cio-community-comments-history'
-
-function buildPrompt({ post, author, relationship, tone, length, context }) {
+const buildPrompt = ({ post, author, relationship, tone, length, context }) => {
   const toneDef = TONES.find((t) => t.id === tone)
   const relDef = RELATIONSHIPS.find((r) => r.id === relationship)
 
-  return `Você vai escrever comentários para um post de outra pessoa em uma comunidade de criadores de conteúdo.
-
-QUEM COMENTA: a criadora de conteúdo da comunidade. Ela conhece o autor do post como: ${relDef?.label || 'membro da comunidade'}.
-${author ? `AUTOR DO POST: ${author}` : ''}
-${context ? `CONTEXTO EXTRA: ${context}` : ''}
-
-POST ORIGINAL:
+  return `POST DE OUTRO MEMBRO DA COMUNIDADE:
 """
 ${post}
 """
+${author ? `\nAUTOR DO POST: ${author}` : ''}
+RELAÇÃO DA KAREN COM O AUTOR: ${relDef?.label}
+${context?.trim() ? `CONTEXTO EXTRA: ${context.trim()}` : ''}
 
-TAREFA: escreva 3 comentários diferentes para esse post.
-- Tom desejado: ${toneDef?.label} — ${toneDef?.hint}
+TAREFA: escreva 3 comentários diferentes que a Karen deixaria nesse post.
+- Tom: ${toneDef?.label} — ${toneDef?.hint}
 - Tamanho: ${LENGTHS.find((l) => l.id === length)?.label}
-- Em português brasileiro, informal de internet (como a pessoa realmente digitaria num comentário)
-- Reaja a algo ESPECÍFICO do post (cite um detalhe, retome uma frase, responda ao ponto central) — nunca um elogio genérico que serviria para qualquer post
-- Pode usar no máximo 1 emoji por comentário, e só se fizer sentido (alguns comentários sem emoji)
-- Sem hashtags, sem "Parabéns pelo conteúdo!", sem "Muito bom!", sem repetir o post com outras palavras
-- Os 3 comentários devem ser bem diferentes entre si (ângulos distintos)
+- Os 3 devem usar ângulos bem diferentes entre si
 
-Responda APENAS com um array JSON válido, sem markdown:
-[
-  { "comment": "...", "angle": "descrição curta do ângulo usado" },
-  { "comment": "...", "angle": "..." },
-  { "comment": "...", "angle": "..." }
-]`
+Responda com JSON:
+{
+  "comentarios": [
+    { "comment": "texto do comentário", "angle": "descrição curta do ângulo usado" },
+    { "comment": "...", "angle": "..." },
+    { "comment": "...", "angle": "..." }
+  ]
+}`
 }
 
-function parseJSON(text) {
-  const cleaned = text
-    .replace(/^```(?:json)?\s*/im, '')
-    .replace(/\s*```\s*$/im, '')
-    .trim()
-  const start = cleaned.indexOf('[')
-  const end = cleaned.lastIndexOf(']')
-  return JSON.parse(start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned)
-}
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function CommunityEngager() {
-  const getSettings = useAIStore((s) => s.getSettings)
-  const isConfigured = useAIStore((s) => s.isConfigured)
-
   const [post, setPost] = useState('')
   const [author, setAuthor] = useState('')
   const [context, setContext] = useState('')
@@ -102,22 +106,43 @@ export default function CommunityEngager() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)))
   }, [history])
 
+  const apiKey = localStorage.getItem(LS_KEY) || ''
+
   const generate = async () => {
     if (!post.trim()) return
+    if (!apiKey) {
+      setError('Configure sua API key da Anthropic em Configurações')
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const messages = [
-        {
-          role: 'system',
-          content: withAntiAIFilter(
-            'Você escreve comentários de redes sociais que soam 100% humanos — como uma pessoa real digitando no celular. Nunca soe como assistente, marketing ou IA. Responda apenas com JSON válido.'
-          ),
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
-        { role: 'user', content: buildPrompt({ post, author, relationship, tone, length, context }) },
-      ]
-      const text = await callAI(getSettings(), messages, { temperature: 0.95, maxTokens: 1200 })
-      const parsed = parseJSON(text)
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1200,
+          system: COMMENT_SYSTEM,
+          messages: [{ role: 'user', content: buildPrompt({ post, author, relationship, tone, length, context }) }],
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da API')
+      const parsed = JSON.parse(match[0]).comentarios || []
       setResults(parsed)
       setHistory((h) => [
         {
@@ -144,163 +169,146 @@ export default function CommunityEngager() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto animate-fade-in space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200">
-          <Users size={18} className="text-white" />
+    <div className="space-y-5">
+      {/* Input */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <MessageCircle size={15} className="text-sky-500" />
+          <p className="text-sm font-semibold text-gray-800">Comentar post de outra pessoa</p>
         </div>
+        <p className="text-[10px] text-gray-400 -mt-1.5">
+          Cola o post de um membro ou host, escolhe o tom, e gera 3 opções de comentário com a sua voz — prontas para copiar.
+        </p>
+
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Comunidade — Comentários</h1>
-          <p className="text-sm text-gray-500">
-            Cole o post de outro membro ou host e gere um comentário natural, com a sua voz
-          </p>
+          <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Post original *
+          </label>
+          <textarea
+            value={post}
+            onChange={(e) => setPost(e.target.value)}
+            rows={6}
+            placeholder="Cole aqui o post da outra pessoa..."
+            className="input w-full text-sm resize-y"
+          />
         </div>
-      </div>
 
-      {!isConfigured() && (
-        <div className="flex items-center gap-2 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3">
-          <AlertCircle size={16} />
-          Configure sua chave de IA em <strong>Configurações</strong> para gerar comentários.
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* ── Input ── */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Post original *
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+              Autor (opcional)
             </label>
-            <textarea
-              value={post}
-              onChange={(e) => setPost(e.target.value)}
-              rows={8}
-              placeholder="Cole aqui o post da outra pessoa..."
-              className="mt-1.5 w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-orange-300 resize-y"
+            <input
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              placeholder="Nome de quem postou"
+              className="input w-full text-sm"
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Autor (opcional)
-              </label>
-              <input
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                placeholder="Nome de quem postou"
-                className="mt-1.5 w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Relação com o autor
-              </label>
-              <select
-                value={relationship}
-                onChange={(e) => setRelationship(e.target.value)}
-                className="mt-1.5 w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
-              >
-                {RELATIONSHIPS.map((r) => (
-                  <option key={r.id} value={r.id}>{r.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Tom do comentário
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+              Relação com o autor
             </label>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              {TONES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTone(t.id)}
-                  className={clsx(
-                    'text-left px-3 py-2 rounded-xl border text-sm transition-all',
-                    tone === t.id
-                      ? 'border-orange-400 bg-orange-50 text-orange-800'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  )}
-                >
-                  <div className="font-medium">{t.label}</div>
-                  <div className="text-[11px] text-gray-400">{t.hint}</div>
-                </button>
+            <select
+              value={relationship}
+              onChange={(e) => setRelationship(e.target.value)}
+              className="input w-full text-sm bg-white"
+            >
+              {RELATIONSHIPS.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
               ))}
-            </div>
+            </select>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Tamanho
-              </label>
-              <select
-                value={length}
-                onChange={(e) => setLength(e.target.value)}
-                className="mt-1.5 w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
-              >
-                {LENGTHS.map((l) => (
-                  <option key={l.id} value={l.id}>{l.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Contexto extra (opcional)
-              </label>
-              <input
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                placeholder='Ex: "ela acabou de lançar um curso"'
-                className="mt-1.5 w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={generate}
-            disabled={loading || !post.trim() || !isConfigured()}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white font-semibold text-sm rounded-xl py-3 transition-all shadow-lg shadow-orange-200"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {loading ? 'Gerando...' : 'Gerar comentários'}
-          </button>
-
-          {error && (
-            <div className="flex items-center gap-2 text-sm bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3">
-              <AlertCircle size={16} /> {error}
-            </div>
-          )}
         </div>
 
-        {/* ── Results ── */}
-        <div className="space-y-4">
-          {results.length === 0 && !loading && (
-            <div className="bg-orange-50/50 border border-dashed border-orange-200 rounded-2xl p-10 text-center text-sm text-gray-400">
-              Os comentários gerados aparecem aqui. <br />
-              Escolha o que soar mais como você, copie e cole na comunidade.
-            </div>
-          )}
+        <div>
+          <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Tom do comentário
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {TONES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTone(t.id)}
+                className={clsx(
+                  'text-left px-3 py-2 rounded-xl border text-xs transition-all',
+                  tone === t.id
+                    ? 'border-sky-400 bg-sky-50 text-sky-800'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                )}
+              >
+                <div className="font-semibold">{t.label}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">{t.hint}</div>
+              </button>
+            ))}
+          </div>
+        </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+              Tamanho
+            </label>
+            <select
+              value={length}
+              onChange={(e) => setLength(e.target.value)}
+              className="input w-full text-sm bg-white"
+            >
+              {LENGTHS.map((l) => (
+                <option key={l.id} value={l.id}>{l.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+              Contexto extra (opcional)
+            </label>
+            <input
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder='Ex: "ela acabou de fechar o primeiro cliente PJ"'
+              className="input w-full text-sm"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={generate}
+          disabled={loading || !post.trim()}
+          className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-xl transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {loading
+            ? <><Loader2 size={14} className="animate-spin" /> Gerando comentários...</>
+            : <><Sparkles size={14} /> Gerar 3 comentários</>
+          }
+        </button>
+
+        {error && (
+          <div className="flex items-center gap-2 text-xs bg-red-50 border border-red-200 text-red-600 rounded-xl px-3 py-2.5">
+            <AlertCircle size={13} className="shrink-0" /> {error}
+          </div>
+        )}
+      </div>
+
+      {/* Results */}
+      {results.length > 0 && (
+        <div className="space-y-3">
           {results.map((r, i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-4 group">
+            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
-                <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 border border-orange-100 rounded-full px-2.5 py-0.5">
+                <span className="text-[10px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-full px-2.5 py-0.5">
                   {r.angle || `Opção ${i + 1}`}
                 </span>
                 <button
                   onClick={() => copy(r.comment, i)}
                   className={clsx(
-                    'flex items-center gap-1.5 text-[11px] font-medium rounded-lg px-2.5 py-1.5 border transition-all',
+                    'flex items-center gap-1.5 text-[10px] font-semibold rounded-lg px-2.5 py-1.5 border transition-all shrink-0',
                     copiedIdx === i
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                      : 'bg-white border-gray-200 text-gray-500 hover:border-orange-300 hover:text-orange-700'
+                      : 'bg-white border-gray-200 text-gray-500 hover:border-sky-300 hover:text-sky-700'
                   )}
                 >
-                  {copiedIdx === i ? <Check size={12} /> : <Copy size={12} />}
+                  {copiedIdx === i ? <Check size={11} /> : <Copy size={11} />}
                   {copiedIdx === i ? 'Copiado!' : 'Copiar'}
                 </button>
               </div>
@@ -310,52 +318,50 @@ export default function CommunityEngager() {
             </div>
           ))}
 
-          {results.length > 0 && (
-            <button
-              onClick={generate}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-700 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-xl py-2.5 transition-all"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              Gerar outras opções
-            </button>
-          )}
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 hover:text-sky-700 bg-white hover:bg-sky-50 border border-gray-200 hover:border-sky-200 rounded-xl py-2.5 transition-all"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            Gerar outras opções
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* ── History ── */}
+      {/* History */}
       {history.length > 0 && (
-        <div className="pt-2">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-700">Histórico recente</h2>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-bold text-gray-600 uppercase tracking-wide">Histórico recente</h2>
             <button
               onClick={() => setHistory([])}
-              className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
             >
-              <Trash2 size={12} /> Limpar
+              <Trash2 size={11} /> Limpar
             </button>
           </div>
           <div className="space-y-2">
             {history.slice(0, 8).map((h) => (
-              <details key={h.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3">
-                <summary className="cursor-pointer text-sm text-gray-600 flex items-center gap-2">
-                  <span className="text-[11px] text-orange-600 bg-orange-50 rounded-full px-2 py-0.5 shrink-0">
+              <details key={h.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+                <summary className="cursor-pointer text-xs text-gray-600 flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-sky-700 bg-sky-50 rounded-full px-2 py-0.5 shrink-0">
                     {TONES.find((t) => t.id === h.tone)?.label || h.tone}
                   </span>
                   <span className="truncate flex-1">
                     {h.author ? `${h.author}: ` : ''}{h.postPreview}…
                   </span>
-                  <span className="text-[10px] text-gray-400 shrink-0">
+                  <span className="text-[9px] text-gray-400 shrink-0">
                     {new Date(h.at).toLocaleDateString('pt-BR')}
                   </span>
                 </summary>
                 <div className="mt-3 space-y-2">
                   {(h.comments || []).map((c, i) => (
                     <div key={i} className="flex items-start justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.comment}</p>
+                      <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{c.comment}</p>
                       <button
                         onClick={() => copy(c.comment, `h-${h.id}-${i}`)}
-                        className="text-gray-400 hover:text-orange-600 shrink-0 mt-0.5"
+                        className="text-gray-400 hover:text-sky-600 shrink-0 mt-0.5"
                         title="Copiar"
                       >
                         {copiedIdx === `h-${h.id}-${i}` ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
