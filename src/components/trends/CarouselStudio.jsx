@@ -575,6 +575,10 @@ export default function CarouselStudio() {
   const [history, setHistory] = useState([])
   const [editingProfile, setEditingProfile] = useState(false)
   const [regenAttempt, setRegenAttempt] = useState(0)
+  const [slideImages, setSlideImages] = useState([]) // generated PNG URLs
+  const [generatingImages, setGeneratingImages] = useState(false)
+  const [imageError, setImageError] = useState(null)
+  const [canvaCopied, setCanvaCopied] = useState(false)
 
   // Show profile setup if no niche configured
   const hasProfile = creatorProfile?.niche?.trim()
@@ -745,9 +749,6 @@ export default function CarouselStudio() {
     navigator.clipboard.writeText(text)
   }
 
-  const [slideImages, setSlideImages] = useState([]) // generated PNG URLs
-  const [generatingImages, setGeneratingImages] = useState(false)
-  const [imageError, setImageError] = useState(null)
 
   const handleGenerateImages = async () => {
     if (!result?.slides?.length) return
@@ -777,7 +778,6 @@ export default function CarouselStudio() {
     a.click()
   }
 
-  const [canvaCopied, setCanvaCopied] = useState(false)
 
   const handleOpenInCanva = async () => {
     if (!result?.slides?.length) return

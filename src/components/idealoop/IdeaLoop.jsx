@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Zap, Plus, RefreshCw, Sparkles, Radar, Loader2, Check } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { Zap, Plus, RefreshCw, Sparkles, Radar, Loader2, Check, Settings } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { generateIdeasFromInsights, generateIdeasFromTrends } from '../../utils/ideaGenerator'

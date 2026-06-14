@@ -722,7 +722,7 @@ export default function TrendRadar() {
             placeholder='"IA nos negócios", "marca pessoal", "carreira em tecnologia"...'
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !nothingConfigured && handleSearch()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button onClick={handleSearch} disabled={loading || !topic.trim()} className="btn-primary shrink-0 min-w-[130px]">
             {loading
