@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import {
   ShieldAlert, Loader2, AlertTriangle, CheckCircle2, Flame,
   ChevronDown, ChevronUp, Copy, Check, Mic, RefreshCw, Sparkles,
@@ -135,10 +136,7 @@ async function runAnalysis(apiKey, draft, benchmarkText, creatorContext) {
 
   const data = await res.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ── Score visual ──────────────────────────────────────────────────────────────

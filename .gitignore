@@ -7,3 +7,7 @@ dist/
 
 .vercel
 test-results/
+
+# build artifacts
+index.zip
+*.zip

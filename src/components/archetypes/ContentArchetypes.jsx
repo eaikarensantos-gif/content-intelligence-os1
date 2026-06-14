@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import {
   Shapes, Sparkles, RefreshCw, Plus, Trash2, Check, Copy, Save,
   ChevronDown, ChevronUp, AlertCircle, Layers, Zap, BookOpen,
@@ -64,10 +65,7 @@ async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
 
   const data = await res.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const cleaned = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(cleaned)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ── Prompts ────────────────────────────────────────────────────────────────────

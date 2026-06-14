@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -159,10 +160,7 @@ Responda SOMENTE com um JSON válido neste formato:
   }
   const data = await res.json()
   const raw = data.content[0].text
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ─── Platform output renderers ────────────────────────────────────────────────

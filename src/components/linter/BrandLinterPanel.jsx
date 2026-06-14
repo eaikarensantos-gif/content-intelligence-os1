@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle, AlertTriangle, Zap, Sparkles, RefreshCw, X, Check, Copy } from 'lucide-react'
 import { useState } from 'react'
+import { extractJsonArray } from '../../utils/aiJson.js'
 import clsx from 'clsx'
 import { lintText } from '../../utils/brandLinter'
 
@@ -37,9 +38,7 @@ Responda APENAS com JSON:
   if (!res.ok) throw new Error('API error')
   const data = await res.json()
   const text = data.content?.[0]?.text || ''
-  const m = text.match(/\[[\s\S]*\]/)
-  if (!m) throw new Error('No JSON')
-  return JSON.parse(m[0])
+  return extractJsonArray(text, 'No JSON')
 }
 
 function ViolationItem({ violation, severity, onFix }) {

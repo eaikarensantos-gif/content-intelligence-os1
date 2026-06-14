@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
   Loader2, Sparkles, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
@@ -138,10 +139,7 @@ REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitad
 
   const data = await response.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta da IA não contém JSON válido')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta da IA não contém JSON válido')
 }
 
 // ─── Slide image generator (Canvas API) ──────────────────────────────────────
