@@ -157,7 +157,7 @@ export const normalizeDate = (raw = '') => {
   }
 
   // 3. Português longo: "20 mar. 2025 16:52" ou "1 de março de 2026"
-  const ptMatch = s.match(/(\d{1,2})\s+(?:de\s+)?(\w+)\.?\s+(?:de\s+)?(\d{4})/)
+  const ptMatch = s.match(/(\d{1,2})\s+(?:de\s+)?([^\s.]+)\.?\s+(?:de\s+)?(\d{4})/)
   if (ptMatch) {
     const monthKey = stripAccents(ptMatch[2].toLowerCase().replace('.', ''))
     const mm = PT_MONTHS[monthKey]
