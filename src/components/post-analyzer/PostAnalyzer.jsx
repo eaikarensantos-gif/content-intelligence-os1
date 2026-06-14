@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, Download, Calendar, AlertCircle, Trash2, Plus } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
+import { confirmDialog } from '../../store/useUIStore'
 
 export default function PostAnalyzer() {
   const [platform, setPlatform] = useState('instagram')
@@ -229,8 +230,14 @@ export default function PostAnalyzer() {
     setPosts(prev => prev.filter((_, i) => i !== index))
   }
 
-  const clearAll = () => {
-    if (confirm('Tem certeza que deseja remover todos os posts?')) {
+  const clearAll = async () => {
+    const ok = await confirmDialog({
+      title: 'Remover todos os posts',
+      message: 'Tem certeza que deseja remover todos os posts?',
+      confirmLabel: 'Remover',
+      danger: true,
+    })
+    if (ok) {
       setPosts([])
       setError(null)
     }

@@ -14,6 +14,7 @@ import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voice
 import { lintText } from '../../utils/brandLinter'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
+import { confirmDialog } from '../../store/useUIStore'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -1468,7 +1469,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </button>
               {savedThemes.length > 0 && (
                 <button
-                  onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
+                  onClick={async () => {
+                    const ok = await confirmDialog({ title: 'Limpar temas', message: 'Limpar todos os temas salvos?', confirmLabel: 'Limpar', danger: true })
+                    if (ok) setSavedThemes([])
+                  }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
                 >
                   <X size={11} /> Limpar

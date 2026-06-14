@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Shield, Lock, Eye, EyeOff, AlertTriangle, LogOut, Zap, Monitor, Globe, Clock } from 'lucide-react'
+import { confirmDialog } from '../../store/useUIStore'
 
 const AUTH_KEY = 'cio-auth-session'
 const OWNER_KEY = 'cio-owner-credentials'
@@ -165,8 +166,14 @@ export default function LoginGate({ children }) {
   }
 
   // ── Reset credentials (keeps app data) ──────────────────────────────────
-  const handleResetCredentials = () => {
-    if (!window.confirm('Isso vai apagar suas credenciais de acesso (seus dados do app ficam intactos). Você precisará criar um novo login. Confirmar?')) return
+  const handleResetCredentials = async () => {
+    const ok = await confirmDialog({
+      title: 'Apagar credenciais de acesso',
+      message: 'Isso vai apagar suas credenciais de acesso (seus dados do app ficam intactos). Você precisará criar um novo login. Confirmar?',
+      confirmLabel: 'Apagar credenciais',
+      danger: true,
+    })
+    if (!ok) return
     localStorage.removeItem(OWNER_KEY)
     localStorage.removeItem(AUTH_KEY)
     localStorage.removeItem(ATTEMPTS_KEY)

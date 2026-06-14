@@ -10,6 +10,7 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import PricingManager from '../pricing/PricingManager'
+import { toast, confirmDialog } from '../../store/useUIStore'
 
 /* ── Constants ──────────────────────────────────────────── */
 const STATUSES = [
@@ -951,7 +952,8 @@ export default function AdManager() {
                         className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
                         <Edit3 size={13} />
                       </button>
-                      <button onClick={() => { if (confirm(`Remover ${client.name}?`)) deleteClient(client.id) }}
+                      <button onClick={async () => { if (await confirmDialog({ title: 'Remover cliente', message: `Remover ${client.name}?`, confirmLabel: 'Remover', danger: true })) deleteClient(client.id) }}
+                        aria-label={`Remover ${client.name}`}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
                         <Trash2 size={13} />
                       </button>
@@ -1026,7 +1028,7 @@ export default function AdManager() {
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (!file) return
-                            if (file.size > 5 * 1024 * 1024) { alert('Arquivo muito grande (máx 5MB)'); return }
+                            if (file.size > 5 * 1024 * 1024) { toast.error('Arquivo muito grande (máx 5MB)'); return }
                             const reader = new FileReader()
                             reader.onload = () => updateClient(client.id, { nf_file: reader.result, nf_name: file.name })
                             reader.readAsDataURL(file)

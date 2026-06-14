@@ -4,6 +4,7 @@ import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
+import { toast } from '../../store/useUIStore'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -244,8 +245,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   // ── AI generation ─────────────────────────────────────────────────────────
   const handleGenerateTitle = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
-    if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
+    if (!apiKey) { toast.error('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
+    if (!form.description.trim() && !form.topic.trim()) { toast.info('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
     setGeneratingTitle(true)
     setTitleSuggestions([])
     try {
@@ -258,19 +259,19 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       if (Array.isArray(parsed) && parsed.length > 0) {
         setTitleSuggestions(parsed.filter(Boolean))
       } else {
-        alert('Não foi possível gerar títulos. Tente novamente.')
+        toast.error('Não foi possível gerar títulos. Tente novamente.')
       }
     } catch (e) {
       console.error('Title generation failed:', e)
-      alert('Erro ao gerar títulos. Verifique sua API key e tente novamente.')
+      toast.error('Erro ao gerar títulos. Verifique sua API key e tente novamente.')
     }
     setGeneratingTitle(false)
   }
 
   const handleGenerateHook = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
-    if (!form.title.trim()) { alert('Preencha o título antes de gerar o gancho.'); return }
+    if (!apiKey) { toast.error('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
+    if (!form.title.trim()) { toast.info('Preencha o título antes de gerar o gancho.'); return }
     setGeneratingHook(true)
     try {
       const hook = await generateWithAI(apiKey, 'hook', form)
@@ -284,8 +285,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateAI = async (type) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
-    if (!form.title.trim()) { alert('Preencha o título antes de gerar.'); return }
+    if (!apiKey) { toast.error('Configure sua API key da Anthropic primeiro (em qualquer módulo de criação).'); return }
+    if (!form.title.trim()) { toast.info('Preencha o título antes de gerar.'); return }
     const setter = type === 'caption' ? setGeneratingCaption : setGeneratingCta
     setter(true)
     try {

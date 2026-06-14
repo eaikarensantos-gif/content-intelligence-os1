@@ -21,6 +21,7 @@ import WeeklyPlanner from './WeeklyPlanner'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
 import { normalizeRow, parseFile, isLinkedinFile, normalizeLinkedinRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
+import { confirmDialog } from '../../store/useUIStore'
 
 const COLORS = ['#f97316', '#fb923c', '#2563eb', '#0891b2', '#059669', '#d97706']
 
@@ -1210,10 +1211,14 @@ export default function Analytics() {
                   <Upload size={12} /> Importar arquivo
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm('Isso vai limpar todos os dados atuais e permitir reimportar. Continuar?')) {
-                      clearMetrics()
-                    }
+                  onClick={async () => {
+                    const ok = await confirmDialog({
+                      title: 'Atualizar dados',
+                      message: 'Isso vai limpar todos os dados atuais e permitir reimportar. Continuar?',
+                      confirmLabel: 'Limpar e reimportar',
+                      danger: true,
+                    })
+                    if (ok) clearMetrics()
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
