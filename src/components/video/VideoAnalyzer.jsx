@@ -8,73 +8,15 @@ import {
   Mic, Film, Zap, Target, TrendingUp, Star,
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
-  Upload, AlignLeft, Info, Bookmark, BookMarked, Pencil, MessageSquare, Send, Loader2,
+  Upload, AlignLeft, Info, Bookmark, BookMarked, Pencil,
   Scissors, Download, Languages,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
+import { CDN, LS_KEY, LS_KEY_GROQ, TABS, MY_VIDEO_TABS, TYPE_OPTIONS, ARCHETYPE_COLORS, ARCHETYPE_LABELS } from './constants'
+import { GroqKeyModal, ApiKeyModal, ScriptModal } from './modals'
+import CommentAnalyzer from './CommentAnalyzer'
 
-const CDN = '/ffmpeg'
-
-const LS_KEY = 'cio-anthropic-key'
-const LS_KEY_GROQ = 'cio-groq-key'
-
-const INPUT_MODES = [
-  { id: 'url', label: 'URL do Vídeo', icon: Link2 },
-  { id: 'file', label: 'Upload de Arquivo', icon: FileVideo },
-  { id: 'transcript', label: 'Colar Transcrição', icon: FileText },
-]
-
-const TABS = [
-  { id: 'resumo', label: 'Resumo', icon: AlignLeft },
-  { id: 'estrutura', label: 'Estrutura', icon: Layers },
-  { id: 'tom', label: 'Tom & Padrões', icon: Mic },
-  { id: 'retencao', label: 'Retenção', icon: Eye },
-  { id: 'porque', label: 'Por Que Funciona', icon: Star },
-  { id: 'template', label: 'Template', icon: BookOpen },
-  { id: 'ideias', label: 'Ideias', icon: Lightbulb },
-  { id: 'transcricao', label: 'Transcrição', icon: FileText },
-  { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
-  { id: 'recriar', label: 'Recriar', icon: Sparkles },
-]
-
-const MY_VIDEO_TABS = [
-  { id: 'resumo', label: 'Resumo', icon: AlignLeft },
-  { id: 'estrutura', label: 'Estrutura', icon: Layers },
-  { id: 'tom', label: 'Tom & Padrões', icon: Mic },
-  { id: 'retencao', label: 'Retenção', icon: Eye },
-  { id: 'porque', label: 'Por Que Funciona', icon: Star },
-  { id: 'template', label: 'Template', icon: BookOpen },
-  { id: 'ideias', label: 'Ideias', icon: Lightbulb },
-  { id: 'transcricao', label: 'Transcrição', icon: FileText },
-  { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
-  { id: 'melhorar', label: 'O que Melhorar', icon: Target },
-  { id: 'recriar', label: 'Recriar', icon: Sparkles },
-]
-
-const TYPE_OPTIONS = [
-  { value: 'auto', label: 'Detectar automaticamente' },
-  { value: 'educational', label: 'Educacional / Tutorial' },
-  { value: 'storytelling', label: 'Storytelling / Pessoal' },
-  { value: 'contrarian', label: 'Contrário / Opinião' },
-  { value: 'listicle', label: 'Lista / Breakdown' },
-  { value: 'motivational', label: 'Motivacional' },
-  { value: 'humorous', label: 'Humor / Entretenimento' },
-]
-
-const ARCHETYPE_COLORS = {
-  educational: 'bg-blue-100 text-blue-700 border-blue-200',
-  storytelling: 'bg-purple-100 text-purple-700 border-purple-200',
-  contrarian: 'bg-red-100 text-red-700 border-red-200',
-  listicle: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  tutorial: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-  motivational: 'bg-orange-100 text-orange-700 border-orange-200',
-  humorous: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-}
-const ARCHETYPE_LABELS = {
-  educational: 'Educacional', storytelling: 'Storytelling', contrarian: 'Contrário',
-  listicle: 'Lista', tutorial: 'Tutorial', motivational: 'Motivacional', humorous: 'Humor',
-}
 
 // ── YouTube oEmbed ────────────────────────────────────────────────────────────
 async function fetchYouTubeMeta(url) {
@@ -253,13 +195,12 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
       ]
     : prompt
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -540,13 +481,12 @@ Return ONLY this JSON:
   "b_roll_suggestions": ["B-roll idea 1", "B-roll idea 2", "B-roll idea 3"],
   "thumbnail_ideas": ["Thumbnail concept 1", "Thumbnail concept 2"]
 }`
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -567,210 +507,6 @@ Return ONLY this JSON:
 }
 
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
-function GroqKeyModal({ onClose, onSave }) {
-  const [val, setVal] = useState('')
-  const [show, setShow] = useState(false)
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Mic size={16} className="text-emerald-500" />
-            <h2 className="text-sm font-bold text-gray-900">Chave Groq — Transcrição Gratuita</h2>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
-        </div>
-
-        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 space-y-2">
-          <p className="text-xs font-semibold text-emerald-800">Como obter sua chave gratuita:</p>
-          {[
-            { n: '1', text: 'Acesse console.groq.com e crie uma conta gratuita' },
-            { n: '2', text: 'Vá em "API Keys" → clique em "Create API Key"' },
-            { n: '3', text: 'Copie a chave e cole abaixo' },
-          ].map(({ n, text }) => (
-            <div key={n} className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{n}</span>
-              <p className="text-xs text-gray-600">{text}</p>
-            </div>
-          ))}
-          <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold hover:underline mt-1">
-            <ExternalLink size={11} /> Abrir console.groq.com
-          </a>
-        </div>
-
-        <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-start gap-2">
-          <ShieldCheck size={14} className="text-gray-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-gray-500">
-            Plano gratuito: 7.200 minutos/dia de transcrição. Chave salva <strong>apenas no seu navegador</strong>.
-          </p>
-        </div>
-
-        <div>
-          <label className="label">Cole sua Groq API Key</label>
-          <div className="relative">
-            <input
-              type={show ? 'text' : 'password'}
-              className="input pr-16"
-              placeholder="gsk_..."
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-            />
-            <button onClick={() => setShow((x) => !x)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600">
-              {show ? 'Ocultar' : 'Mostrar'}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
-          <button
-            onClick={() => { if (val.trim()) { onSave(val.trim()); onClose() } }}
-            disabled={!val.trim()}
-            className="btn-primary flex-1"
-            style={{ background: val.trim() ? 'linear-gradient(135deg, #059669, #047857)' : undefined }}
-          >
-            <Mic size={13} /> Salvar e Ativar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── API Key Modal ─────────────────────────────────────────────────────────────
-function ApiKeyModal({ onClose, onSave }) {
-  const [val, setVal] = useState('')
-  const [show, setShow] = useState(false)
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Key size={16} className="text-violet-500" />
-            <h2 className="text-sm font-bold text-gray-900">API Key da Anthropic</h2>
-          </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
-        </div>
-        <div className="p-3 rounded-xl bg-violet-50 border border-violet-100 flex items-start gap-2">
-          <ShieldCheck size={14} className="text-violet-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-gray-600">
-            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage). Nunca é enviada para outros servidores além da API da Anthropic.
-          </p>
-        </div>
-        <div>
-          <label className="label">Cole sua API Key</label>
-          <div className="relative">
-            <input
-              type={show ? 'text' : 'password'}
-              className="input pr-16"
-              placeholder="sk-ant-api03-..."
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-            />
-            <button onClick={() => setShow((x) => !x)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600">
-              {show ? 'Ocultar' : 'Mostrar'}
-            </button>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1">
-            Obtenha em{' '}
-            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">
-              console.anthropic.com
-            </a>
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
-          <button
-            onClick={() => { if (val.trim()) { onSave(val.trim()); onClose() } }}
-            disabled={!val.trim()}
-            className="btn-primary flex-1"
-            style={{ background: val.trim() ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
-          >
-            <Key size={13} /> Salvar Chave
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Script Modal ──────────────────────────────────────────────────────────────
-function ScriptModal({ script, onClose }) {
-  const [copied, setCopied] = useState(false)
-  const fullText = (script.script || []).map((s) =>
-    `[${s.section.toUpperCase()}]\n${s.text}${s.notes ? `\n(${s.notes})` : ''}`
-  ).join('\n\n')
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(fullText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
-  }
-
-  const sectionColor = (sec) => {
-    if (sec === 'Hook') return 'border-orange-200 bg-orange-50/50'
-    if (sec === 'CTA') return 'border-violet-200 bg-violet-50/50'
-    if (sec === 'Promessa') return 'border-blue-200 bg-blue-50/50'
-    if (sec === 'Fechamento') return 'border-emerald-200 bg-emerald-50/50'
-    return 'border-gray-200 bg-gray-50/40'
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 shrink-0">
-          <div>
-            <h2 className="text-sm font-bold text-gray-900">{script.title}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full border border-violet-200">{script.platform}</span>
-              <span className="text-[10px] text-gray-400">{script.estimated_duration}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleCopy} className="btn-secondary text-xs">
-              {copied ? <><Check size={12} className="text-emerald-500" /> Copiado!</> : <><Copy size={12} /> Copiar Roteiro</>}
-            </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={15} /></button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {(script.script || []).map((section, i) => (
-            <div key={i} className={`p-4 rounded-xl border space-y-2 ${sectionColor(section.section)}`}>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide inline-block ${
-                section.section === 'Hook' ? 'bg-orange-100 text-orange-700' :
-                section.section === 'CTA' ? 'bg-violet-100 text-violet-700' :
-                'bg-gray-100 text-gray-600'
-              }`}>{section.section}</span>
-              <p className="text-sm text-gray-800 leading-relaxed">{section.text}</p>
-              {section.notes && (
-                <p className="text-[11px] text-gray-400 italic border-t border-gray-100 pt-2">💡 {section.notes}</p>
-              )}
-            </div>
-          ))}
-          {(script.b_roll_suggestions?.length > 0 || script.thumbnail_ideas?.length > 0) && (
-            <div className="grid grid-cols-2 gap-3">
-              {script.b_roll_suggestions?.length > 0 && (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">B-roll sugerido</p>
-                  {script.b_roll_suggestions.map((s, i) => (
-                    <p key={i} className="text-xs text-gray-600 flex items-start gap-1.5"><span className="text-gray-300">•</span>{s}</p>
-                  ))}
-                </div>
-              )}
-              {script.thumbnail_ideas?.length > 0 && (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Thumbnails</p>
-                  {script.thumbnail_ideas.map((t, i) => (
-                    <p key={i} className="text-xs text-gray-600 flex items-start gap-1.5"><span className="text-gray-300">•</span>{t}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function VideoAnalyzer() {
@@ -779,7 +515,6 @@ export default function VideoAnalyzer() {
   const videoAnalyses = useStore((s) => s.videoAnalyses)
   const addIdea = useStore((s) => s.addIdea)
   const addFavorite = useStore((s) => s.addFavorite)
-  const bannedPhrases = useStore((s) => s.bannedPhrases)
 
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
   const [showKeyModal, setShowKeyModal] = useState(false)
@@ -825,23 +560,17 @@ export default function VideoAnalyzer() {
   const analysisTranscriptRef = useRef('')  // transcript actually used in current analysis
   const [translating, setTranslating] = useState(false)
 
-  // Recriar
-  const [recriarResult, setRecriarResult] = useState(null)
-  const [recriarLoading, setRecriarLoading] = useState(false)
-  const [recriarCopied, setRecriarCopied] = useState(false)
-
   const handleTranslate = async (getText, setText) => {
     const text = getText()
     if (!text || text.trim().length < 10 || !apiKey) return
     setTranslating(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
@@ -862,64 +591,6 @@ export default function VideoAnalyzer() {
 
   const ytId = extractYouTubeId(url)
   const thumbnail = ytId ? getYouTubeThumbnail(ytId) : null
-
-  const generateRecriar = async () => {
-    if (!apiKey || !analysis) return
-    setRecriarLoading(true)
-    setRecriarResult(null)
-    const transcriptText = analysisTranscriptRef.current || ''
-    const banned = (bannedPhrases || []).join(', ')
-    const prompt = `Você é um especialista em conteúdo para redes sociais. Baseado na análise e transcrição do vídeo abaixo, recrie o conteúdo adaptado para a voz e posicionamento da Karen Santos.
-
-TRANSCRIÇÃO DO VÍDEO:
-${transcriptText || '(não disponível — use a análise para inferir o conteúdo)'}
-
-ANÁLISE DO VÍDEO:
-- Arquétipo: ${analysis.archetype || ''}
-- Resumo: ${analysis.summary?.overview || ''}
-- Mensagem central: ${analysis.summary?.main_message || ''}
-- Tom: ${analysis.tone?.primary || ''}
-
-${banned ? `FRASES BANIDAS (nunca use): ${banned}` : ''}
-
-Retorne APENAS um objeto JSON válido com esta estrutura:
-{
-  "gancho": "frase de abertura poderosa para o Reels (máx 2 linhas)",
-  "roteiro": "roteiro completo em blocos: [GANCHO] ... [DESENVOLVIMENTO] ... [CTA]",
-  "legenda": "legenda completa para o post com emojis estratégicos",
-  "hashtags": ["tag1", "tag2", "tag3"],
-  "variacoes": [
-    { "angulo": "nome do ângulo", "gancho": "gancho alternativo" },
-    { "angulo": "nome do ângulo", "gancho": "gancho alternativo" },
-    { "angulo": "nome do ângulo", "gancho": "gancho alternativo" }
-  ]
-}`
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 3000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
-      if (!res.ok) throw new Error('Erro na API')
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (match) setRecriarResult(JSON.parse(match[0]))
-    } catch (e) {
-      console.error('generateRecriar error:', e)
-    } finally {
-      setRecriarLoading(false)
-    }
-  }
 
   const STEPS = [
     'Buscando metadados do vídeo...',
@@ -2164,7 +1835,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === t.id
-                    ? t.id === 'melhorar' ? 'bg-orange-500 text-white' : t.id === 'recriar' ? 'bg-violet-700 text-white' : 'bg-violet-600 text-white'
+                    ? t.id === 'melhorar' ? 'bg-orange-500 text-white' : 'bg-violet-600 text-white'
                     : 'text-gray-400 hover:text-gray-700'
                 }`}>
                 <t.icon size={12} /> {t.label}
@@ -3097,102 +2768,6 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {/* ── RECRIAR ──────────────────────────────────────────────────────── */}
-          {activeTab === 'recriar' && (
-            <div className="space-y-5">
-              <div className="card p-5 border border-violet-100 bg-gradient-to-br from-violet-50/40 to-white space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-violet-100 text-violet-600"><Sparkles size={14} /></div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Recriar na Minha Voz</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">A IA usa a transcrição e análise do vídeo para gerar um novo roteiro adaptado ao seu posicionamento</p>
-                  </div>
-                </div>
-                {!analysisTranscriptRef.current && (
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                    <p className="text-xs text-amber-700 font-medium">Para melhores resultados, faça o upload do vídeo com transcrição automática (Groq Whisper) antes de recriar.</p>
-                  </div>
-                )}
-                <button onClick={generateRecriar} disabled={recriarLoading || !apiKey}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
-                  style={{ background: recriarLoading ? undefined : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
-                  {recriarLoading ? <><RefreshCw size={14} className="animate-spin" /> Gerando conteúdo...</> : <><Sparkles size={14} /> Recriar na Minha Voz</>}
-                </button>
-              </div>
-
-              {recriarResult && (
-                <div className="space-y-4">
-                  <div className="card p-5 border border-violet-100 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2"><Zap size={14} className="text-violet-500" /><h4 className="text-sm font-semibold text-gray-900">Gancho</h4></div>
-                      <button onClick={() => { navigator.clipboard.writeText(recriarResult.gancho); setRecriarCopied('gancho'); setTimeout(() => setRecriarCopied(false), 2000) }} className="btn-secondary text-xs">
-                        {recriarCopied === 'gancho' ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
-                      </button>
-                    </div>
-                    <p className="text-sm text-gray-800 font-medium leading-relaxed bg-violet-50 p-3 rounded-xl border border-violet-100 italic">"{recriarResult.gancho}"</p>
-                  </div>
-
-                  <div className="card p-5 border border-indigo-100 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2"><AlignLeft size={14} className="text-indigo-500" /><h4 className="text-sm font-semibold text-gray-900">Roteiro</h4></div>
-                      <button onClick={() => { navigator.clipboard.writeText(recriarResult.roteiro); setRecriarCopied('roteiro'); setTimeout(() => setRecriarCopied(false), 2000) }} className="btn-secondary text-xs">
-                        {recriarCopied === 'roteiro' ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
-                      </button>
-                    </div>
-                    <pre className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans bg-gray-50 p-3 rounded-xl border border-gray-100">{recriarResult.roteiro}</pre>
-                  </div>
-
-                  {recriarResult.legenda && (
-                    <div className="card p-5 border border-blue-100 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2"><FileText size={14} className="text-blue-500" /><h4 className="text-sm font-semibold text-gray-900">Legenda</h4></div>
-                        <button onClick={() => { navigator.clipboard.writeText(recriarResult.legenda); setRecriarCopied('legenda'); setTimeout(() => setRecriarCopied(false), 2000) }} className="btn-secondary text-xs">
-                          {recriarCopied === 'legenda' ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{recriarResult.legenda}</p>
-                      {recriarResult.hashtags?.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-blue-100">
-                          {recriarResult.hashtags.map((h, i) => (
-                            <span key={i} className="text-[11px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">#{h.replace(/^#/, '')}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {recriarResult.variacoes?.length > 0 && (
-                    <div className="card p-5 border border-emerald-100 space-y-3">
-                      <div className="flex items-center gap-2"><Layers size={14} className="text-emerald-500" /><h4 className="text-sm font-semibold text-gray-900">Variações de Ângulo</h4></div>
-                      <div className="space-y-3">
-                        {recriarResult.variacoes.map((v, i) => (
-                          <div key={i} className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1">
-                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">{v.angulo}</p>
-                            <p className="text-xs text-gray-800 font-medium italic">"{v.gancho}"</p>
-                            <button onClick={() => navigator.clipboard.writeText(v.gancho)} className="text-[10px] text-gray-400 hover:text-gray-600 flex items-center gap-1"><Copy size={10} /> Copiar gancho</button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3 flex-wrap">
-                    <button onClick={generateRecriar} disabled={recriarLoading}
-                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-50 transition-colors">
-                      <RefreshCw size={12} /> Regenerar
-                    </button>
-                    <button onClick={() => {
-                      const full = [recriarResult.gancho, '', recriarResult.roteiro, '', recriarResult.legenda, recriarResult.hashtags?.map(h => '#' + h.replace(/^#/, '')).join(' ')].filter(Boolean).join('\n')
-                      navigator.clipboard.writeText(full); setRecriarCopied('all'); setTimeout(() => setRecriarCopied(false), 2000)
-                    }} className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-sm">
-                      {recriarCopied === 'all' ? <><Check size={12} /> Copiado!</> : <><Copy size={12} /> Copiar Tudo</>}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
         </div>
       )}
 
@@ -3214,426 +2789,3 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 /* ══════════════════════════════════════════════════════════════════════════════
    COMMENT ANALYZER — Analisa prints de comentários e sugere conteúdos
    ══════════════════════════════════════════════════════════════════════════════ */
-function CommentAnalyzer() {
-  const [comments, setComments] = useState([])
-  const [commentText, setCommentText] = useState('')
-  const [analyzing, setAnalyzing] = useState(false)
-  const [suggestions, setSuggestions] = useState(null)
-  const [error, setError] = useState('')
-  const [responses, setResponses] = useState({})
-  const [respondingId, setRespondingId] = useState(null)
-  const [copiedResponseId, setCopiedResponseId] = useState(null)
-  const addIdea = useStore(s => s.addIdea)
-  const brandVoice = useStore(s => s.brandVoice)
-  const fileRef = useRef(null)
-
-  const generateResponse = async (comment) => {
-    const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
-    setRespondingId(comment.id)
-    const voiceContext = brandVoice?.prompt
-      ? `\n\nSua voz e estilo:\n${brandVoice.prompt}`
-      : '\n\nSeu estilo: direto, analítico, sem floreio, empático mas sem motivação barata.'
-    try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 300,
-          messages: [{
-            role: 'user',
-            content: `Você é uma criadora de conteúdo respondendo um comentário no Instagram/TikTok.${voiceContext}
-
-COMENTÁRIO RECEBIDO:
-"${comment.text}"
-
-Escreva a RESPOSTA IDEAL para este comentário. Regras:
-- 1 a 3 linhas curtas — nunca um parágrafo longo
-- Parecer escrita por uma pessoa real, não uma marca
-- Validar a experiência ou aprofundar o ponto levantado
-- Pode terminar com uma pergunta que convida mais interação
-- NUNCA usar frases genéricas como "Que ótimo!", "Amei seu comentário!", "Obrigada pelo apoio!"
-- NUNCA usar emojis em excesso (máximo 1, opcional)
-- Tom: autêntico, direto, humano
-
-Retorne APENAS o texto da resposta, sem aspas, sem introdução.`
-          }]
-        })
-      })
-      const data = await resp.json()
-      const text = data.content?.[0]?.text?.trim() || ''
-      setResponses(prev => ({ ...prev, [comment.id]: text }))
-    } catch (e) { setError(e.message) }
-    finally { setRespondingId(null) }
-  }
-
-  const addComment = () => {
-    if (!commentText.trim()) return
-    setComments(prev => [...prev, { id: Date.now(), text: commentText.trim(), source: 'text' }])
-    setCommentText('')
-  }
-
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files || [])
-    if (!files.length) return
-    const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
-
-    setAnalyzing(true)
-    setError('')
-    try {
-      for (const file of files) {
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result.split(',')[1])
-          reader.readAsDataURL(file)
-        })
-        const mediaType = file.type || 'image/png'
-
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 1000,
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-                { type: 'text', text: 'Extraia TODOS os comentários visíveis nesta imagem. Retorne APENAS um JSON array de strings, cada string sendo um comentário completo. Exemplo: ["comentário 1", "comentário 2"]. Se não houver comentários, retorne []. Sem markdown, sem explicação.' }
-              ]
-            }]
-          })
-        })
-        const data = await resp.json()
-        const text = data.content?.[0]?.text || '[]'
-        try {
-          const clean = text.replace(/```json\n?|\n?```/g, '').trim()
-          const extracted = JSON.parse(clean)
-          if (Array.isArray(extracted)) {
-            setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
-          }
-        } catch { setComments(prev => [...prev, { id: Date.now(), text: text, source: 'image' }]) }
-      }
-    } catch (e) { setError(e.message) }
-    finally { setAnalyzing(false) }
-    if (fileRef.current) fileRef.current.value = ''
-  }
-
-  const analyzeComments = async () => {
-    if (!comments.length) return
-    const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
-
-    setAnalyzing(true)
-    setError('')
-    setSuggestions(null)
-    try {
-      const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
-          messages: [{
-            role: 'user',
-            content: `Você é um estrategista de conteúdo especializado em transformar dores e dúvidas reais da audiência em conteúdos de alto impacto.
-${voiceContext}
-
-COMENTÁRIOS DA AUDIÊNCIA:
-${comments.map((c, i) => `${i + 1}. "${c.text}"`).join('\n')}
-
-Analise esses comentários e identifique:
-1. Os PERFIS DE DOR (agrupamento de problemas/frustrações similares)
-2. Para CADA perfil de dor, sugira 2-3 conteúdos que resolvam, eduquem ou conectem com essa pessoa
-
-Responda APENAS com JSON válido, sem markdown:
-{
-  "pain_profiles": [
-    {
-      "name": "nome do perfil de dor",
-      "description": "o que essas pessoas sentem/enfrentam",
-      "comments_count": 3,
-      "intensity": "alta|média|baixa",
-      "content_ideas": [
-        {
-          "title": "título do conteúdo sugerido",
-          "format": "carrossel|reel|stories|thread|artigo",
-          "hook": "frase de abertura sugerida",
-          "angle": "abordagem/ângulo do conteúdo",
-          "why": "por que esse conteúdo resolve essa dor"
-        }
-      ]
-    }
-  ],
-  "meta_insight": "insight geral sobre o que a audiência está pedindo entre linhas"
-}`
-          }]
-        })
-      })
-      const data = await resp.json()
-      const text = data.content?.[0]?.text || '{}'
-      const clean = text.replace(/```json\n?|\n?```/g, '').trim()
-      setSuggestions(JSON.parse(clean))
-    } catch (e) { setError(e.message) }
-    finally { setAnalyzing(false) }
-  }
-
-  const handleSaveIdea = (idea, profileName) => {
-    addIdea({
-      title: idea.title,
-      description: `Ângulo: ${idea.angle}\n\nGancho: ${idea.hook}\n\nPor quê: ${idea.why}\n\nPerfil de dor: ${profileName}`,
-      format: idea.format,
-      hook_type: 'pain-point',
-      priority: 'high',
-      status: 'idea',
-      tags: ['comentarios', 'dor-audiencia'],
-    })
-  }
-
-  const removeComment = (id) => setComments(prev => prev.filter(c => c.id !== id))
-
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="card p-5 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-9 h-9 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center">
-            <MessageSquare size={18} className="text-indigo-600" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-900">Analisador de Comentários</h3>
-            <p className="text-[11px] text-gray-500">Printe comentários do seu nicho e a IA sugere conteúdos para resolver essas dores</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Input area */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Adicionar comentários</h4>
-        </div>
-
-        {/* Upload image */}
-        <div className="flex gap-3">
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={analyzing}
-            className="flex-1 flex items-center justify-center gap-2 py-4 border-2 border-dashed border-indigo-200 rounded-xl text-sm text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
-          >
-            <Upload size={16} />
-            {analyzing ? 'Extraindo comentários...' : 'Upload de print (imagem)'}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleImageUpload}
-          />
-        </div>
-
-        {/* Manual text input */}
-        <div className="flex gap-2">
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Ou cole um comentário manualmente..."
-            rows={2}
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
-          />
-          <button
-            onClick={addComment}
-            disabled={!commentText.trim()}
-            className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Comments list */}
-      {comments.length > 0 && (
-        <div className="card p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              {comments.length} comentário{comments.length !== 1 ? 's' : ''} coletado{comments.length !== 1 ? 's' : ''}
-            </h4>
-            <button
-              onClick={() => setComments([])}
-              className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
-            >
-              Limpar todos
-            </button>
-          </div>
-          <div className="space-y-2 max-h-[480px] overflow-y-auto">
-            {comments.map(c => (
-              <div key={c.id} className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden group">
-                {/* Comment row */}
-                <div className="flex items-start gap-2 px-3 pt-3 pb-2">
-                  <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
-                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
-                  <button
-                    onClick={() => removeComment(c.id)}
-                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-0.5"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                {/* Response area */}
-                <div className="px-3 pb-3">
-                  {responses[c.id] ? (
-                    <div className="mt-1 space-y-2">
-                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-                        <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wide mb-1">Resposta ideal</p>
-                        <p className="text-xs text-gray-800 leading-relaxed">{responses[c.id]}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(responses[c.id]); setCopiedResponseId(c.id); setTimeout(() => setCopiedResponseId(null), 1500) }}
-                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
-                        >
-                          {copiedResponseId === c.id ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                        </button>
-                        <button
-                          onClick={() => generateResponse(c)}
-                          disabled={respondingId === c.id}
-                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
-                        >
-                          <RefreshCw size={10} className={respondingId === c.id ? 'animate-spin' : ''} /> Gerar outra
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => generateResponse(c)}
-                      disabled={respondingId !== null}
-                      className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-40 transition-colors"
-                    >
-                      {respondingId === c.id
-                        ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
-                        : <><MessageSquare size={11} /> Resposta Ideal</>}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Analyze button */}
-          <button
-            onClick={analyzeComments}
-            disabled={analyzing}
-            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
-          >
-            {analyzing ? (
-              <><Loader2 size={16} className="animate-spin" /> Analisando dores...</>
-            ) : (
-              <><Sparkles size={16} /> Analisar e Sugerir Conteúdos</>
-            )}
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
-      )}
-
-      {/* Results */}
-      {suggestions && (
-        <div className="space-y-4">
-          {/* Meta insight */}
-          {suggestions.meta_insight && (
-            <div className="card p-4 bg-amber-50 border-amber-200">
-              <div className="flex items-start gap-2">
-                <Zap size={14} className="text-amber-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Insight geral da audiência</p>
-                  <p className="text-xs text-gray-700">{suggestions.meta_insight}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Pain profiles */}
-          {(suggestions.pain_profiles || []).map((profile, pi) => (
-            <div key={pi} className="card p-5 space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${
-                      profile.intensity === 'alta' ? 'bg-red-500' :
-                      profile.intensity === 'média' ? 'bg-orange-500' : 'bg-yellow-500'
-                    }`} />
-                    <h4 className="text-sm font-bold text-gray-900">{profile.name}</h4>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                      {profile.comments_count} comentário{profile.comments_count !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">{profile.description}</p>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                  profile.intensity === 'alta' ? 'bg-red-100 text-red-700' :
-                  profile.intensity === 'média' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  Dor {profile.intensity}
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                {(profile.content_ideas || []).map((idea, ii) => (
-                  <div key={ii} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Lightbulb size={13} className="text-indigo-500" />
-                          <span className="text-sm font-semibold text-gray-900">{idea.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{idea.format}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleSaveIdea(idea, profile.name)}
-                        className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
-                      >
-                        <Plus size={12} /> Salvar
-                      </button>
-                    </div>
-                    {idea.hook && (
-                      <p className="text-xs text-gray-600"><span className="font-medium text-gray-800">Gancho:</span> "{idea.hook}"</p>
-                    )}
-                    {idea.angle && (
-                      <p className="text-xs text-gray-600"><span className="font-medium text-gray-800">Ângulo:</span> {idea.angle}</p>
-                    )}
-                    {idea.why && (
-                      <p className="text-xs text-gray-500 italic">{idea.why}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}

@@ -222,13 +222,12 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   ]
 }`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5',
@@ -737,7 +736,7 @@ export default function TrendRadar() {
             placeholder='"IA nos negócios", "marca pessoal", "carreira em tecnologia"...'
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !nothingConfigured && handleSearch()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button onClick={handleSearch} disabled={loading || !topic.trim()} className="btn-primary shrink-0 min-w-[130px]">
             {loading

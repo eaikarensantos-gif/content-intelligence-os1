@@ -1,49 +1,58 @@
-import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
-import Dashboard from './components/dashboard/Dashboard'
-import IdeasHub from './components/ideas/IdeasHub'
-import TrendRadar from './components/trends/TrendRadar'
-import Analytics from './components/analytics/Analytics'
-import SocialDashboard from './components/analytics/SocialDashboard'
-import AudienceAnalytics from './components/analytics/AudienceAnalytics'
-import VideoAnalyzer from './components/video/VideoAnalyzer'
-import ThoughtCapture from './components/thoughts/ThoughtCapture'
-import TextStudio from './components/text/TextStudio'
-import IdeaGenerator from './components/generate/IdeaGenerator'
-import CreateContent from './components/create/CreateContent'
-import UnifiedCreator from './components/create/UnifiedCreator'
-import PresentationMode from './components/presentation/PresentationMode'
-import ContentDNA from './components/dna/ContentDNA'
-import AccessLog from './components/auth/AccessLog'
-import AdManager from './components/ads/AdManager'
-import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
-import FloatingActions from './components/global/FloatingActions'
-import NaomiStudio from './components/naomi/NaomiStudio'
-import WebClipper from './components/clipper/WebClipper'
-import NewsGenerator from './components/news/NewsGenerator'
-import PDFContentGenerator from './components/pdf/PDFContentGenerator'
-import CommunityStudio from './components/community/CommunityStudio'
-import VideoSwipe from './components/video-swipe/VideoSwipe'
-import SupabaseSettings from './components/settings/SupabaseSettings'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
+
+// Route pages are code-split so the initial bundle stays small; each loads on
+// demand when its route is first visited.
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'))
+const IdeasHub = lazy(() => import('./components/ideas/IdeasHub'))
+const TrendRadar = lazy(() => import('./components/trends/TrendRadar'))
+const Analytics = lazy(() => import('./components/analytics/Analytics'))
+const SocialDashboard = lazy(() => import('./components/analytics/SocialDashboard'))
+const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
+const ThoughtCapture = lazy(() => import('./components/thoughts/ThoughtCapture'))
+const TextStudio = lazy(() => import('./components/text/TextStudio'))
+const IdeaGenerator = lazy(() => import('./components/generate/IdeaGenerator'))
+const CreateContent = lazy(() => import('./components/create/CreateContent'))
+const UnifiedCreator = lazy(() => import('./components/create/UnifiedCreator'))
+const PresentationMode = lazy(() => import('./components/presentation/PresentationMode'))
+const ContentDNA = lazy(() => import('./components/dna/ContentDNA'))
+const AccessLog = lazy(() => import('./components/auth/AccessLog'))
+const AdManager = lazy(() => import('./components/ads/AdManager'))
+const CarouselStudio = lazy(() => import('./components/trends/CarouselStudio'))
+const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
+const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
+const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-full py-20">
+      <Loader2 className="animate-spin text-violet-500" size={28} />
+    </div>
+  )
+}
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
+      {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto">
@@ -63,19 +72,6 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    const resize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }
-    const onInput = (e) => { if (e.target.tagName === 'TEXTAREA') resize(e.target) }
-    const init = () => document.querySelectorAll('textarea').forEach(resize)
-    if (!CSS.supports('field-sizing', 'content')) {
-      document.addEventListener('input', onInput)
-      const obs = new MutationObserver(init)
-      obs.observe(document.body, { childList: true, subtree: true })
-      init()
-      return () => { document.removeEventListener('input', onInput); obs.disconnect() }
-    }
-  }, [])
-
-  useEffect(() => {
     if (isSupabaseConfigured()) loadFromDB()
   }, [])
 
@@ -83,16 +79,14 @@ export default function App() {
     <LoginGate>
       <BrowserRouter>
         <FavoritesDrawer />
-        <FloatingActions />
         <Layout>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/social" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/ideas" element={<IdeasHub />} />
             <Route path="/trends" element={<TrendRadar />} />
-            <Route path="/analytics" element={<Navigate to="/social" replace />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<SocialDashboard />} />
-            <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
             <Route path="/video" element={<VideoAnalyzer />} />
             <Route path="/create" element={<UnifiedCreator />} />
             <Route path="/create-legacy" element={<CreateContent />} />
@@ -102,16 +96,14 @@ export default function App() {
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/ads" element={<AdManager />} />
+            {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
+            <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
-            <Route path="/clipper" element={<WebClipper />} />
-            <Route path="/news" element={<NewsGenerator />} />
-            <Route path="/pdf-studio" element={<div className="p-0 animate-fade-in"><PDFContentGenerator /></div>} />
-            <Route path="/community" element={<CommunityStudio />} />
-            <Route path="/swipe" element={<VideoSwipe />} />
           </Routes>
+          </Suspense>
         </Layout>
       </BrowserRouter>
     </LoginGate>

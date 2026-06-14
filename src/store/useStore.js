@@ -176,7 +176,6 @@ const useStore = create(
 
       deleteIdea: (id) => {
         set((s) => ({ ideas: s.ideas.filter((i) => i.id !== id) }))
-        dbDeleteIdea(id)
       },
 
       deleteIdeasByStatus: (status) =>
@@ -219,7 +218,6 @@ const useStore = create(
             i.id === ideaId ? { ...i, post_id: postId, status: 'draft' } : i
           ),
         }))
-        dbInsertPost(newPost)
         return postId
       },
 
@@ -231,7 +229,6 @@ const useStore = create(
 
       updatePost: (id, updates) => {
         set((s) => ({ posts: s.posts.map((p) => (p.id === id ? { ...p, ...updates } : p)) }))
-        dbUpdatePost(id, updates)
       },
 
       deletePost: (id) =>
@@ -252,12 +249,10 @@ const useStore = create(
         set((s) => ({
           metrics: s.metrics.map((m) => m.id === id ? enrichMetric({ ...m, ...updates }) : m),
         }))
-        dbUpdateMetric(id, updates)
       },
 
       deleteMetric: (id) => {
         set((s) => ({ metrics: s.metrics.filter((m) => m.id !== id) }))
-        dbDeleteMetric(id)
       },
 
       clearMetrics: () => set({ metrics: [], posts: [], insights: [] }),

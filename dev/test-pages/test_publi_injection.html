@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Injetor de Dados de Teste - Publi Analytics</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .info-box p {
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+            font-size: 13px;
+        }
+        .info-box li {
+            margin-bottom: 5px;
+        }
+        .stats {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .stat-item {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 13px;
+        }
+        .stat-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .button-secondary {
+            background: #f3f4f6;
+            color: #333;
+        }
+        .button-secondary:hover {
+            background: #e5e7eb;
+            box-shadow: none;
+            transform: none;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            color: #166534;
+            font-size: 14px;
+            display: none;
+        }
+        .output.success {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        .output.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .footer {
+            color: #999;
+            font-size: 12px;
+            margin-top: 25px;
+            text-align: center;
+        }
+        .signal-list {
+            background: #fff8e1;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid #fbbf24;
+            margin-top: 10px;
+        }
+        .signal-list strong {
+            color: #333;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .signal-list p {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Injetor de Dados de Teste</h1>
+        <p class="subtitle">Publi Analytics - Geração de Relatórios Unificados</p>
+
+        <div class="info-box">
+            <h3>ℹ️ O que este injetor faz:</h3>
+            <p>Este utilitário adiciona <strong>13 métricas de publicidade</strong> (publi) com sinalizadores reais ao seu localStorage, permitindo testar:</p>
+            <ul>
+                <li>✓ Barra de busca de publi</li>
+                <li>✓ Filtro por cliente/marca</li>
+                <li>✓ Geração de Relatório Unificado (PDF)</li>
+                <li>✓ Consolidação Instagram + LinkedIn</li>
+            </ul>
+        </div>
+
+        <div class="stats">
+            <h3 style="color: #333; margin-bottom: 15px; font-size: 14px;">📈 Dados que serão injetados:</h3>
+            <div class="stat-item">
+                <span class="stat-label">Total de posts publi:</span>
+                <span class="stat-value">13</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Posts Instagram:</span>
+                <span class="stat-value">8</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Posts LinkedIn:</span>
+                <span class="stat-value">5</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Período:</span>
+                <span class="stat-value">Abril 2026</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Alcance total estimado:</span>
+                <span class="stat-value">45.320</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Engajamento total:</span>
+                <span class="stat-value">2.847</span>
+            </div>
+
+            <div class="signal-list">
+                <strong>🏷️ Sinalizadores de publi inclusos:</strong>
+                <p>#publi — Publicidade geral</p>
+                <p>#ad — Anúncio patrocinado</p>
+                <p>#parceria — Parceria estratégica</p>
+                <p>#publicidade — Conteúdo patrocinado</p>
+                <p>#sponsored — Sponsored content</p>
+                <p>#parceiro — Parceiro exclusivo</p>
+            </div>
+        </div>
+
+        <button onclick="injectTestData()">🚀 Injetar Dados de Teste</button>
+        <button class="button-secondary" onclick="clearTestData()">🗑️ Limpar Dados (Reverter)</button>
+
+        <div id="output"></div>
+
+        <div class="footer">
+            <p>📱 Após injetar, você será redirecionado para o Analytics no mês de Abril de 2026</p>
+            <p>🔗 A aba "Publi" mostrará os dados e os botões de relatório estarão ativos</p>
+        </div>
+    </div>
+
+    <script>
+        function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function injectTestData() {
+            try {
+                const testMetrics = [
+                    { id: uuidv4(), created_at: '2026-04-15T10:30:00Z', date: '2026-04-15', platform: 'instagram', impressions: 4500, likes: 250, comments: 45, shares: 12, engagement_rate: 0.0865, description: 'Novo produto lançado! 🚀 Confira a campanha #publi com @marca_premium. Engajamento em alta!', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-12T14:20:00Z', date: '2026-04-12', platform: 'linkedin', impressions: 2200, likes: 120, comments: 28, shares: 5, engagement_rate: 0.0742, description: 'Parceria estratégica #parceria com @empresa_destaque. Ótimos resultados em B2B!', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-10T09:15:00Z', date: '2026-04-10', platform: 'instagram', impressions: 3800, likes: 180, comments: 38, shares: 8, engagement_rate: 0.0698, description: 'Conteúdo patrocinado #ad para @brand_luxo. Performance acima do esperado!', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-08T16:45:00Z', date: '2026-04-08', platform: 'linkedin', impressions: 1800, likes: 85, comments: 15, shares: 2, engagement_rate: 0.0615, description: '#publicidade corporativa com @startup_tech. Alcance de profissionais qualificados.', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-05T11:30:00Z', date: '2026-04-05', platform: 'instagram', impressions: 5200, likes: 312, comments: 62, shares: 18, engagement_rate: 0.0919, description: 'Campanha #sponsored com @influencer_global. Resultado excepcional em alcance!', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-03T13:00:00Z', date: '2026-04-03', platform: 'instagram', impressions: 3100, likes: 165, comments: 41, shares: 9, engagement_rate: 0.0751, description: '#parceiro exclusivo @marca_fashion. Lançamento de coleção especial.', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-01T15:20:00Z', date: '2026-04-01', platform: 'linkedin', impressions: 2900, likes: 145, comments: 32, shares: 8, engagement_rate: 0.0675, description: '#publi estratégica com @empresa_consultoria. Geração de leads qualificados.', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-18T10:10:00Z', date: '2026-04-18', platform: 'instagram', impressions: 4100, likes: 228, comments: 51, shares: 14, engagement_rate: 0.0843, description: '#ad criativa com @brand_lifestyle. Crescimento de 45% em engajamento!', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-20T12:45:00Z', date: '2026-04-20', platform: 'linkedin', impressions: 3400, likes: 178, comments: 39, shares: 11, engagement_rate: 0.0743, description: '#publicidade B2B com @tech_solutions. Posicionamento premium alcançado.', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-22T14:30:00Z', date: '2026-04-22', platform: 'instagram', impressions: 6100, likes: 367, comments: 74, shares: 21, engagement_rate: 0.1043, description: '#sponsored mega campanha com @mega_brand. Melhor ER do mês!', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-25T09:55:00Z', date: '2026-04-25', platform: 'linkedin', impressions: 2100, likes: 98, comments: 22, shares: 4, engagement_rate: 0.0581, description: '#parceria com @banco_central. Confiança e segurança em primeiro lugar.', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-28T16:20:00Z', date: '2026-04-28', platform: 'instagram', impressions: 3900, likes: 214, comments: 48, shares: 11, engagement_rate: 0.0795, description: '#parceiro estratégico @retail_leader. Integração perfeita de marca.', postUrl: '#', client_id: null, type: 'metric' },
+                    { id: uuidv4(), created_at: '2026-04-30T11:15:00Z', date: '2026-04-30', platform: 'linkedin', impressions: 2750, likes: 142, comments: 31, shares: 9, engagement_rate: 0.0667, description: '#publi final do mês com @corporate_brand. Retrospectiva de sucesso!', postUrl: '#', client_id: null, type: 'metric' }
+                ];
+
+                const storageName = 'content-intelligence-os-v3';
+                const existing = JSON.parse(localStorage.getItem(storageName) || '{}');
+                const existingMetrics = existing.state?.metrics || [];
+                const updatedMetrics = [...existingMetrics, ...testMetrics];
+
+                const updatedState = {
+                    ...existing.state,
+                    metrics: updatedMetrics
+                };
+
+                const dataToStore = {
+                    state: updatedState,
+                    version: existing.version || 0
+                };
+
+                localStorage.setItem(storageName, JSON.stringify(dataToStore));
+
+                showOutput(`✅ Dados injetados com sucesso!\n\n📊 ${testMetrics.length} métricas publi adicionadas\n📈 Total: ${updatedMetrics.length} métricas no sistema\n\n🔄 Redirecionando em 2 segundos...`, false);
+
+                setTimeout(() => {
+                    window.location.href = 'https://content-intelligence-os.vercel.app?month=2026-04';
+                }, 2000);
+
+            } catch (err) {
+                showOutput(`❌ Erro ao injetar dados: ${err.message}`, true);
+            }
+        }
+
+        function clearTestData() {
+            try {
+                if (confirm('Deseja limpar todos os dados de publi? Esta ação não pode ser desfeita.')) {
+                    const storageName = 'content-intelligence-os-v3';
+                    const existing = JSON.parse(localStorage.getItem(storageName) || '{}');
+
+                    const updatedState = {
+                        ...existing.state,
+                        metrics: []
+                    };
+
+                    const dataToStore = {
+                        state: updatedState,
+                        version: existing.version || 0
+                    };
+
+                    localStorage.setItem(storageName, JSON.stringify(dataToStore));
+
+                    showOutput('✅ Todos os dados foram removidos!\n\n🔄 Recarregando...', false);
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                }
+            } catch (err) {
+                showOutput(`❌ Erro ao limpar dados: ${err.message}`, true);
+            }
+        }
+
+        function showOutput(message, isError = false) {
+            const output = document.getElementById('output');
+            output.textContent = message;
+            output.className = isError ? 'output error success' : 'output success';
+        }
+    </script>
+</body>
+</html>
