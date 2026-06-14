@@ -130,6 +130,7 @@ function ViolationItem({ violation, severity, onFix }) {
               </button>
               <button
                 type="button"
+                aria-label="Copiar"
                 onClick={() => { navigator.clipboard.writeText(alt); setCopied(i); setTimeout(() => setCopied(null), 1500) }}
                 className="shrink-0 text-gray-300 hover:text-violet-500 transition-colors"
               >
@@ -187,7 +188,7 @@ export default function BrandLinterPanel({ text, onClose, onFix }) {
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="text-red-400 hover:text-red-600 flex-shrink-0">
+            <button aria-label="Fechar" onClick={onClose} className="text-red-400 hover:text-red-600 flex-shrink-0">
               <X size={14} />
             </button>
           )}

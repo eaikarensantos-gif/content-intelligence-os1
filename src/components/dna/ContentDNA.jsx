@@ -696,6 +696,7 @@ export default function ContentDNA() {
                             `TEMPLATE: ${template.name}\n\nGANCHO: ${template.hook_structure}\n\nFLUXO:\n${(template.content_flow || []).join('\n')}\n\nTOM: ${template.tone_guidance}\n\nEXEMPLO: ${template.example_hook}`,
                             `template-${i}`
                           )}
+                          aria-label="Copiar template"
                           className="text-[10px] text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-white transition-colors"
                         >
                           {copiedKey === `template-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}

@@ -24,6 +24,8 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
       onMouseDown={(e) => { mouseDownOutside.current = isOutside(e.target) }}
       onClick={(e) => { if (mouseDownOutside.current && isOutside(e.target)) onClose() }}
     >
@@ -37,6 +39,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
           >
             <X size={16} />

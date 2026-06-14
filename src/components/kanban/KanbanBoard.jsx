@@ -53,7 +53,7 @@ function InlineMetricsPanel({ idea, onClose }) {
     <form onSubmit={handleSubmit} className="mt-2 p-3 rounded-xl bg-orange-50 border border-orange-200 space-y-2">
       <div className="flex items-center justify-between mb-1">
         <p className="text-[11px] font-semibold text-orange-700">Registrar Métricas de Publicação</p>
-        <button type="button" onClick={onClose} className="p-0.5 rounded hover:bg-orange-100 text-orange-400">
+        <button aria-label="Fechar" type="button" onClick={onClose} className="p-0.5 rounded hover:bg-orange-100 text-orange-400">
           <X size={12} />
         </button>
       </div>

@@ -245,7 +245,7 @@ export default function NaomiStudio() {
                 <p className="text-xs font-medium text-gray-700 truncate">{photo?.name}</p>
                 <p className="text-[10px] text-gray-400 mt-0.5">Naomi ou a cena completa com Karen ao fundo</p>
               </div>
-              <button onClick={() => { setPhoto(null); setPhotoPreview(null) }} className="text-gray-300 hover:text-red-400 transition-colors">
+              <button aria-label="Remover foto" onClick={() => { setPhoto(null); setPhotoPreview(null) }} className="text-gray-300 hover:text-red-400 transition-colors">
                 <X size={16} />
               </button>
             </div>
@@ -476,7 +476,7 @@ export default function NaomiStudio() {
                         <span>{item.timing}</span>
                       </div>
                     </div>
-                    <button onClick={() => handleCopy(item.text, `text-${i}`)}
+                    <button aria-label="Copiar" onClick={() => handleCopy(item.text, `text-${i}`)}
                       className="text-gray-300 hover:text-slate-600 transition-colors mt-0.5 shrink-0">
                       {copied === `text-${i}` ? <Check size={11} /> : <Copy size={11} />}
                     </button>

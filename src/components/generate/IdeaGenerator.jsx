@@ -333,6 +333,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
           )}
           <button
             onClick={() => onCopy(idea)}
+            aria-label="Copiar"
             className="btn-secondary text-xs py-2 px-3"
           >
             {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
@@ -341,6 +342,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
             onClick={() => onDislike(idea)}
             className="p-2 rounded-xl text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
             title="Não gostei — melhorar sugestões futuras"
+            aria-label="Não gostei — melhorar sugestões futuras"
           >
             <ThumbsDown size={13} />
           </button>
@@ -348,6 +350,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
             onClick={onToggleFav}
             className={`p-2 rounded-xl transition-colors ${isFav ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
             title={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+            aria-label={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           >
             <Heart size={13} className={isFav ? 'fill-current' : ''} />
           </button>

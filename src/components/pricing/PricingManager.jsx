@@ -533,8 +533,8 @@ export default function PricingManager({ embedded = false }) {
                           <td className="py-1.5 px-2 text-center text-gray-400">—</td>
                           <td className="py-1.5 px-2 text-center">
                             <div className="flex gap-1 justify-center">
-                              <button onClick={saveEdit} className="p-1 rounded hover:bg-emerald-100 text-emerald-600"><Check size={14} /></button>
-                              <button onClick={cancelEdit} className="p-1 rounded hover:bg-red-100 text-red-500"><X size={14} /></button>
+                              <button aria-label="Salvar" onClick={saveEdit} className="p-1 rounded hover:bg-emerald-100 text-emerald-600"><Check size={14} /></button>
+                              <button aria-label="Cancelar" onClick={cancelEdit} className="p-1 rounded hover:bg-red-100 text-red-500"><X size={14} /></button>
                             </div>
                           </td>
                         </>
@@ -552,8 +552,8 @@ export default function PricingManager({ embedded = false }) {
                           <td className="py-2 px-2 text-center text-gray-400">{perHour > 0 ? fmtShort(perHour) : '—'}</td>
                           <td className="py-2 px-2 text-center">
                             <div className="flex gap-1 justify-center">
-                              <button onClick={() => startEdit(p)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"><Edit3 size={13} /></button>
-                              <button onClick={() => deleteProduct(p.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
+                              <button aria-label="Editar" onClick={() => startEdit(p)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"><Edit3 size={13} /></button>
+                              <button aria-label="Remover" onClick={() => deleteProduct(p.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
                             </div>
                           </td>
                         </>
@@ -721,7 +721,7 @@ export default function PricingManager({ embedded = false }) {
                           <label className="text-[9px] text-gray-400">Total</label>
                           <p className="text-xs font-bold text-gray-800">{fmtShort(getItemTotal(item))}</p>
                         </div>
-                        <button onClick={() => removeItem(item.productId)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"><X size={14} /></button>
+                        <button aria-label="Remover item" onClick={() => removeItem(item.productId)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"><X size={14} /></button>
                       </div>
                     </div>
                   )
@@ -867,6 +867,7 @@ export default function PricingManager({ embedded = false }) {
                   </button>
                   <button
                     onClick={() => deleteProposal(p.id)}
+                    aria-label="Remover proposta"
                     className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 size={14} />

@@ -70,6 +70,7 @@ function InsightCard({ insight, index, onDelete }) {
           onClick={() => onDelete(insight.id)}
           className="absolute top-3 right-3 p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"
           title="Remover insight"
+          aria-label="Remover insight"
         >
           <Trash2 size={13} />
         </button>

@@ -60,7 +60,7 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+        <button aria-label="Buscar" className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
           <Search size={15} />
         </button>
         <button

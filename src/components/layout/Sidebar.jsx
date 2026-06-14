@@ -200,6 +200,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
         {/* Close button — only on mobile */}
         <button
+          aria-label="Fechar menu"
           onClick={onClose}
           className="lg:hidden p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-gray-600 transition-colors"
         >

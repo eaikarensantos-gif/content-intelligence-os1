@@ -193,6 +193,7 @@ export default function AISettings() {
             spellCheck={false}
           />
           <button
+            aria-label="Mostrar ou ocultar chave"
             onClick={() => setShowKey((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             type="button"
@@ -336,6 +337,7 @@ export default function AISettings() {
                 spellCheck={false}
               />
               <button
+                aria-label="Mostrar ou ocultar chave"
                 onClick={() => setShowSbKey((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 type="button"
@@ -413,6 +415,7 @@ alter table metrics disable row level security;`}</pre>
             spellCheck={false}
           />
           <button
+            aria-label="Mostrar ou ocultar chave"
             onClick={() => setShowYtKey((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             type="button"

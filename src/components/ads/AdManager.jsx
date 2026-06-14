@@ -105,7 +105,7 @@ function AdForm({ ad, onSave, onClose }) {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-gray-900">{ad?.id ? 'Editar Campanha' : 'Nova Campanha'}</h3>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+            <button type="button" aria-label="Fechar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -233,7 +233,7 @@ function LeadForm({ lead, onSave, onClose }) {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-gray-900">{lead?.id ? 'Editar Lead' : 'Novo Lead'}</h3>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+            <button type="button" aria-label="Fechar" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -404,7 +404,7 @@ function AdCard({ ad, onEdit, onDelete }) {
               <ExternalLink size={10} />
             </a>
           )}
-          <button onClick={() => onDelete(ad.id)} className="text-[10px] font-medium text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-lg py-1.5 px-3 flex items-center gap-1 transition-all">
+          <button onClick={() => onDelete(ad.id)} aria-label="Remover" className="text-[10px] font-medium text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-lg py-1.5 px-3 flex items-center gap-1 transition-all">
             <Trash2 size={10} />
           </button>
         </div>
@@ -506,7 +506,7 @@ function LeadCard({ lead, onEdit, onDelete, onStageChange }) {
           <button onClick={() => onEdit(lead)} className="flex-1 text-[10px] font-medium text-gray-500 hover:text-orange-600 bg-gray-50 hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-lg py-1.5 flex items-center justify-center gap-1 transition-all">
             <Edit3 size={10} /> Editar
           </button>
-          <button onClick={() => onDelete(lead.id)} className="text-[10px] font-medium text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-lg py-1.5 px-3 flex items-center gap-1 transition-all">
+          <button onClick={() => onDelete(lead.id)} aria-label="Remover" className="text-[10px] font-medium text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-lg py-1.5 px-3 flex items-center gap-1 transition-all">
             <Trash2 size={10} />
           </button>
         </div>
@@ -809,7 +809,7 @@ export default function AdManager() {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-blue-800">Editando: {editingClient.name}</h4>
-                  <button onClick={() => setEditingClient(null)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+                  <button onClick={() => setEditingClient(null)} aria-label="Fechar" className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -949,6 +949,7 @@ export default function AdManager() {
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <button onClick={() => setEditingClient({ id: client.id, name: client.name, hashtags: client.hashtags || '', company: client.company || '', contact: client.contact || '', email: client.email || '', service: client.service || '', value: client.value || '', source: client.source || '', notes: client.notes || '' })}
+                        aria-label="Editar"
                         className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
                         <Edit3 size={13} />
                       </button>
@@ -1016,6 +1017,7 @@ export default function AdManager() {
                           <Download size={11} />
                         </a>
                         <button onClick={() => updateClient(client.id, { nf_file: '', nf_name: '' })}
+                          aria-label="Remover"
                           className="p-0.5 rounded hover:bg-red-100 text-gray-400 hover:text-red-500" title="Remover">
                           <X size={11} />
                         </button>

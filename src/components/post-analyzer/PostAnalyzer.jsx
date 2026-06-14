@@ -566,6 +566,7 @@ export default function PostAnalyzer() {
                       <td className="px-4 py-3 text-center text-sm text-gray-700 font-medium">{post.interacoes}</td>
                       <td className="px-4 py-3 text-center">
                         <button
+                          aria-label="Remover post"
                           onClick={() => deletePost(i)}
                           className="inline-flex items-center gap-1 px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
                           title="Remover post"

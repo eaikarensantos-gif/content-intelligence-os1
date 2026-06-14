@@ -1516,6 +1516,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                             </button>
                             <button
                               onClick={() => removeTheme(item.id)}
+                              aria-label="Remover"
                               className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
                             >
                               <X size={11} />
@@ -1780,6 +1781,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       </div>
                       <div className="flex items-center gap-2">
                         <button onClick={(e) => { e.stopPropagation(); handleEngCopy(engResult[key], key) }}
+                          aria-label="Copiar"
                           className="text-gray-300 hover:text-gray-600 transition-colors">
                           {engCopied === key ? <Check size={11} /> : <Copy size={11} />}
                         </button>
@@ -1918,6 +1920,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       </div>
                       <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
                       <button onClick={() => handleEngCopy(resp, `resp-${i}`)}
+                        aria-label="Copiar"
                         className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-violet-500 transition-all mt-2 shrink-0">
                         {engCopied === `resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
                       </button>
@@ -2139,6 +2142,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                               </div>
                               <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5">{slide.texto}</p>
                               <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
+                                aria-label="Copiar"
                                 className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
                                 {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
                               </button>
@@ -2189,6 +2193,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                             <Quote size={10} /> Pergunta Final
                           </span>
                           <button onClick={() => handleCarCopy(pergunta, `pergunta-${carActiveVersion}`)}
+                            aria-label="Copiar"
                             className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-all">
                             {carCopied === `pergunta-${carActiveVersion}` ? <Check size={10} /> : <Copy size={10} />}
                           </button>
@@ -2208,6 +2213,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       <ToggleLeft size={10} /> CTA Fechado
                     </span>
                     <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
+                      aria-label="Copiar"
                       className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-all">
                       {carCopied === 'car-cta' ? <Check size={10} /> : <Copy size={10} />}
                     </button>
@@ -2475,7 +2481,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
               {format ? FORMATS.find(f => f.id === format)?.label : 'Formato: Auto'} <ChevronDown size={12} />
             </button>
             {format && (
-              <button onClick={() => setFormat(null)} className="text-gray-300 hover:text-gray-500"><X size={14} /></button>
+              <button onClick={() => setFormat(null)} aria-label="Limpar formato" className="text-gray-300 hover:text-gray-500"><X size={14} /></button>
             )}
 
             {/* Briefing upload */}
@@ -2484,7 +2490,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
               <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
                 <Paperclip size={12} />
                 <span className="max-w-[120px] truncate">{briefingName}</span>
-                <button onClick={() => { setBriefing(''); setBriefingName('') }} className="text-blue-400 hover:text-red-500"><X size={12} /></button>
+                <button onClick={() => { setBriefing(''); setBriefingName('') }} aria-label="Remover briefing" className="text-blue-400 hover:text-red-500"><X size={12} /></button>
               </div>
             ) : (
               <button onClick={() => briefingRef.current?.click()}
@@ -2612,6 +2618,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
                     <span className="text-xs font-bold text-orange-400">{i + 1}.</span>
                     <p className="flex-1 text-sm font-semibold text-gray-800">{t}</p>
                     <button onClick={() => handleCopy(t, `title-${i}`)}
+                      aria-label="Copiar"
                       className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all">
                       {copied === `title-${i}` ? <Check size={10} /> : <Copy size={10} />}
                     </button>
@@ -2659,6 +2666,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
                   <X size={10} /> Banir "{banCandidate.length > 20 ? banCandidate.slice(0, 20) + '...' : banCandidate}"
                 </button>
                 <button onClick={() => { setBanCandidate(null); window.getSelection()?.removeAllRanges() }}
+                  aria-label="Fechar"
                   className="text-gray-400 hover:text-white">
                   <X size={10} />
                 </button>
@@ -2673,7 +2681,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
               {bannedWords.map(w => (
                 <span key={w} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-red-50 text-red-600 border border-red-200">
                   {w}
-                  <button onClick={() => removeBannedWord(w)} className="hover:text-red-800"><X size={9} /></button>
+                  <button onClick={() => removeBannedWord(w)} aria-label="Remover" className="hover:text-red-800"><X size={9} /></button>
                 </span>
               ))}
             </div>
@@ -2723,6 +2731,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
                     <span className="text-[10px] text-gray-300 mt-0.5">{i + 1}.</span>
                     <p className="text-xs text-gray-600 flex-1">{hook}</p>
                     <button onClick={() => handleCopy(hook, `hook-${i}`)}
+                      aria-label="Copiar"
                       className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all">
                       {copied === `hook-${i}` ? <Check size={10} /> : <Copy size={10} />}
                     </button>

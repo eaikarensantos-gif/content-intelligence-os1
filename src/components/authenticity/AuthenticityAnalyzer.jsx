@@ -177,7 +177,7 @@ function CopyButton({ text }) {
     setTimeout(() => setCopied(false), 2000)
   }
   return (
-    <button onClick={copy} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+    <button onClick={copy} aria-label="Copiar" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
       {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
     </button>
   )

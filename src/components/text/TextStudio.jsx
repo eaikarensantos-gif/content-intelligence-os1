@@ -730,6 +730,7 @@ export default function TextStudio() {
                         {copied === activeTab ? <><Check size={12} className="text-emerald-500" /> Copiado!</> : <><Copy size={12} /> Copiar</>}
                       </button>
                       <button
+                        aria-label="Favoritar"
                         onClick={() => toggleTextFav(activeTab)}
                         className={`p-1.5 rounded-lg transition-colors ${isTextFavorited(activeTab) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
                         title={isTextFavorited(activeTab) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
@@ -752,6 +753,7 @@ export default function TextStudio() {
                         }}
                         className="p-1.5 rounded-lg transition-colors text-gray-400 hover:text-orange-500"
                         title="Não gostei desta versão"
+                        aria-label="Não gostei desta versão"
                       >
                         <ThumbsDown size={14} />
                       </button>

@@ -84,6 +84,7 @@ export default function ReferenceCard({ reference, onRemove, onDragStart, onTran
             onTranscribe(reference)
           }}
           title="Transcrever áudio"
+          aria-label="Transcrever áudio"
           className="p-1.5 rounded bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900"
         >
           <Volume2 size={14} />
@@ -94,6 +95,7 @@ export default function ReferenceCard({ reference, onRemove, onDragStart, onTran
             navigator.clipboard.writeText(`@${reference.author} - ${reference.title}`)
           }}
           title="Copiar crédito"
+          aria-label="Copiar crédito"
           className="p-1.5 rounded bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900"
         >
           <Copy size={14} />
@@ -104,6 +106,7 @@ export default function ReferenceCard({ reference, onRemove, onDragStart, onTran
             onRemove(reference.id)
           }}
           title="Remover"
+          aria-label="Remover"
           className="p-1.5 rounded bg-white hover:bg-red-100 text-gray-600 hover:text-red-600 ml-auto"
         >
           <Trash2 size={14} />

@@ -185,7 +185,7 @@ function PostCard({ m, onDelete, onTemplate, onGenerate }) {
                 <ExternalLink size={12} />
               </a>
             )}
-            <button onClick={() => onDelete(m.id)}
+            <button onClick={() => onDelete(m.id)} aria-label="Excluir"
               className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all" title="Excluir">
               <Trash2 size={12} />
             </button>
@@ -1030,7 +1030,7 @@ export default function Analytics() {
                               </span>
                             </td>
                             <td className="py-2 px-2.5">
-                              <button onClick={() => deleteMetric(m.id)}
+                              <button onClick={() => deleteMetric(m.id)} aria-label="Excluir"
                                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-all" title="Excluir">
                                 <Trash2 size={12} />
                               </button>

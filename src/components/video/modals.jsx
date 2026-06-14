@@ -12,7 +12,7 @@ export function GroqKeyModal({ onClose, onSave }) {
             <Mic size={16} className="text-emerald-500" />
             <h2 className="text-sm font-bold text-gray-900">Chave Groq — Transcrição Gratuita</h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+          <button onClick={onClose} aria-label="Fechar" className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
         </div>
 
         <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 space-y-2">

@@ -265,17 +265,20 @@ function ArchetypeCard({ arch, onDelete, onGenerate, onSelect, selected, selecta
         <div className="flex items-center gap-1 shrink-0">
           {onGenerate && (
             <button onClick={(e) => { e.stopPropagation(); onGenerate(arch) }}
+              aria-label="Gerar conteúdo"
               className="p-1.5 rounded-lg hover:bg-orange-50 text-orange-500 hover:text-orange-600" title="Gerar conteúdo">
               <Sparkles size={14} />
             </button>
           )}
           {onDelete && (
             <button onClick={(e) => { e.stopPropagation(); onDelete(arch.id) }}
+              aria-label="Excluir"
               className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500" title="Excluir">
               <Trash2 size={14} />
             </button>
           )}
           <button onClick={(e) => { e.stopPropagation(); setOpen(!open) }}
+            aria-label={open ? 'Recolher' : 'Expandir'}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
             {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -385,16 +388,17 @@ function IdeaCard({ idea, onSave, saved }) {
           <p className="text-xs text-gray-500 mt-1 italic">"{idea.hook}"</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+          <button onClick={handleCopy} aria-label="Copiar" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
             {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
           </button>
           {onSave && (
             <button onClick={() => onSave(idea)} disabled={saved}
+              aria-label="Salvar"
               className={`p-1.5 rounded-lg ${saved ? 'text-emerald-500' : 'hover:bg-orange-50 text-orange-500 hover:text-orange-600'}`}>
               {saved ? <Check size={14} /> : <Save size={14} />}
             </button>
           )}
-          <button onClick={() => setOpen(!open)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+          <button onClick={() => setOpen(!open)} aria-label={open ? 'Recolher' : 'Expandir'} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
             {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </div>

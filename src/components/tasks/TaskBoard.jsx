@@ -189,6 +189,7 @@ function TaskCard({ task, onUpdate, onDelete, onEdit, onMove }) {
           {/* Menu */}
           <div className="relative" ref={menuRef}>
             <button
+              aria-label="Mais opções"
               onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }}
               className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100 transition-all"
             >
@@ -272,7 +273,7 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
             <div className={clsx('flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium border', currentCol.bg, currentCol.border, currentCol.color)}>
               <StatusIcon size={12} /> {currentCol.label}
             </div>
-            <button onClick={save} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+            <button aria-label="Fechar" onClick={save} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
           </div>
 
           {/* Title */}
@@ -324,7 +325,7 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
               {tags.map(tag => (
                 <span key={tag} className={clsx('flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md border', getTagColor(tag))}>
                   {tag}
-                  <button onClick={() => setTags(tags.filter(t => t !== tag))} className="hover:opacity-70"><X size={10} /></button>
+                  <button aria-label="Remover tag" onClick={() => setTags(tags.filter(t => t !== tag))} className="hover:opacity-70"><X size={10} /></button>
                 </span>
               ))}
             </div>
@@ -355,11 +356,11 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
             <div className="space-y-1 mb-2">
               {subtasks.map(sub => (
                 <div key={sub.id} className="flex items-center gap-2 group">
-                  <button onClick={() => toggleSubtask(sub.id)} className="shrink-0">
+                  <button aria-label="Marcar subtarefa" onClick={() => toggleSubtask(sub.id)} className="shrink-0">
                     {sub.done ? <CheckSquare size={14} className="text-emerald-500" /> : <Square size={14} className="text-gray-300" />}
                   </button>
                   <span className={clsx('flex-1 text-sm', sub.done ? 'line-through text-gray-400' : 'text-gray-700')}>{sub.text}</span>
-                  <button onClick={() => deleteSubtask(sub.id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-red-400"><X size={12} /></button>
+                  <button aria-label="Remover subtarefa" onClick={() => deleteSubtask(sub.id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-red-400"><X size={12} /></button>
                 </div>
               ))}
             </div>
@@ -371,7 +372,7 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
                 placeholder="Nova subtarefa..."
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-orange-300"
               />
-              <button onClick={addSubtask} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors">
+              <button aria-label="Adicionar subtarefa" onClick={addSubtask} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors">
                 <Plus size={12} />
               </button>
             </div>
@@ -399,7 +400,7 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
           {/* Actions */}
           <div className="flex gap-2 pt-2 border-t border-gray-100">
             <button onClick={save} className="flex-1 py-2 text-sm font-medium bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors">Salvar</button>
-            <button onClick={() => { onDelete(task.id); onClose() }} className="px-4 py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+            <button aria-label="Excluir tarefa" onClick={() => { onDelete(task.id); onClose() }} className="px-4 py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
               <Trash2 size={14} />
             </button>
           </div>
@@ -469,7 +470,7 @@ function ListRow({ task, onUpdate, onDelete, onEdit, onMove }) {
     <div onClick={() => onEdit(task)}
       className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-orange-200 hover:shadow-sm transition-all cursor-pointer group"
     >
-      <button onClick={toggleDone} className="shrink-0">
+      <button aria-label="Concluir tarefa" onClick={toggleDone} className="shrink-0">
         {task.status === 'done'
           ? <CheckCircle2 size={18} className="text-emerald-500" />
           : <Circle size={18} className="text-gray-300 hover:text-orange-400" />
@@ -613,11 +614,11 @@ export default function TaskBoard() {
 
           {/* View toggle */}
           <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <button onClick={() => setView('kanban')}
+            <button aria-label="Visualizar em quadro" onClick={() => setView('kanban')}
               className={clsx('p-2 transition-colors', view === 'kanban' ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:text-gray-600')}>
               <LayoutGrid size={14} />
             </button>
-            <button onClick={() => setView('list')}
+            <button aria-label="Visualizar em lista" onClick={() => setView('list')}
               className={clsx('p-2 transition-colors', view === 'list' ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:text-gray-600')}>
               <List size={14} />
             </button>

@@ -199,6 +199,7 @@ Responda APENAS com JSON válido, sem markdown:
             className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
           />
           <button
+            aria-label="Adicionar comentário"
             onClick={addComment}
             disabled={!commentText.trim()}
             className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
@@ -228,6 +229,7 @@ Responda APENAS com JSON válido, sem markdown:
                 <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
                 <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
                 <button
+                  aria-label="Remover comentário"
                   onClick={() => removeComment(c.id)}
                   className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                 >

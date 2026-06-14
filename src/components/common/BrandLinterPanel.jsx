@@ -117,6 +117,7 @@ function ViolationRow({ v }) {
               </div>
               <button
                 type="button"
+                aria-label="Copiar"
                 onClick={() => handleCopy(alt, i)}
                 className="shrink-0 mt-1 text-gray-300 hover:text-violet-500 transition-colors"
                 title="Copiar"

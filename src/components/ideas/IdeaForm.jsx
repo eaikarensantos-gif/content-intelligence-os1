@@ -591,6 +591,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
                 #{tag}
                 <button
                   type="button"
+                  aria-label="Remover tag"
                   onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
                   className="hover:text-orange-900 leading-none"
                 >
@@ -668,7 +669,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
                   <a href={url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-blue-500 shrink-0">
                     <ExternalLink size={11} />
                   </a>
-                  <button type="button" onClick={() => removeLink(url)} className="text-gray-300 hover:text-red-400 shrink-0 transition-colors">
+                  <button type="button" aria-label="Remover link" onClick={() => removeLink(url)} className="text-gray-300 hover:text-red-400 shrink-0 transition-colors">
                     <X size={11} />
                   </button>
                 </div>

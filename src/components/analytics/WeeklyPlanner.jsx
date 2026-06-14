@@ -221,6 +221,7 @@ export default function WeeklyPlanner() {
               onClick={() => setShowKeyInput(!showKeyInput)}
               className={`p-2 rounded-xl border transition-colors ${apiKey ? 'border-emerald-400/50 bg-emerald-500/20 text-emerald-300' : 'border-red-400/50 bg-red-500/20 text-red-300'}`}
               title={apiKey ? 'API Key configurada' : 'Configurar API Key'}
+              aria-label={apiKey ? 'API Key configurada' : 'Configurar API Key'}
             >
               <Key size={14} />
             </button>

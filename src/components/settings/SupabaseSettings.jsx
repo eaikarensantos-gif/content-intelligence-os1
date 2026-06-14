@@ -155,7 +155,7 @@ export default function SupabaseSettings() {
                 placeholder="sb_publishable_... ou eyJhbGci..."
                 className="input w-full pr-10 text-sm font-mono"
               />
-              <button onClick={() => setShowSbKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+              <button aria-label="Mostrar ou ocultar chave" onClick={() => setShowSbKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
                 {showSbKey ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
@@ -214,7 +214,7 @@ alter table user_data disable row level security;`}</pre>
                 placeholder="sk-ant-..."
                 className="input w-full pr-10 text-sm font-mono"
               />
-              <button onClick={() => setShowAnthropicKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+              <button aria-label="Mostrar ou ocultar chave" onClick={() => setShowAnthropicKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
                 {showAnthropicKey ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
@@ -229,7 +229,7 @@ alter table user_data disable row level security;`}</pre>
                 placeholder="gsk_..."
                 className="input w-full pr-10 text-sm font-mono"
               />
-              <button onClick={() => setShowGroqKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+              <button aria-label="Mostrar ou ocultar chave" onClick={() => setShowGroqKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
                 {showGroqKey ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
@@ -246,7 +246,7 @@ alter table user_data disable row level security;`}</pre>
                 placeholder="AIza..."
                 className="input w-full pr-10 text-sm font-mono"
               />
-              <button onClick={() => setShowYoutubeKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+              <button aria-label="Mostrar ou ocultar chave" onClick={() => setShowYoutubeKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
                 {showYoutubeKey ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>

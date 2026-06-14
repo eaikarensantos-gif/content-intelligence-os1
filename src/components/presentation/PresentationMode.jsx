@@ -263,7 +263,7 @@ function Teleprompter({ result, onClose }) {
       {/* Control bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-black/80 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => setPlaying(p => !p)}
+          <button onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pausar' : 'Reproduzir'}
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
             {playing ? <Pause size={18} /> : <Play size={18} />}
           </button>

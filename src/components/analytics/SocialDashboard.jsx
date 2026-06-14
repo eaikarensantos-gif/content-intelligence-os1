@@ -151,7 +151,7 @@ export default function SocialDashboard() {
               placeholder="Buscar métricas..."
             />
           </div>
-          <button className="p-2 rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+          <button aria-label="Notificações" className="p-2 rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
             <Bell size={15} />
           </button>
           <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">

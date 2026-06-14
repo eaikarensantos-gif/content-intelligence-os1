@@ -257,6 +257,7 @@ export default function VideoEditor() {
           <div className="px-5 py-4 space-y-3">
             <div className="flex items-center gap-3">
               <button
+                aria-label={playing ? 'Pausar' : 'Reproduzir'}
                 onClick={togglePlay}
                 className="w-8 h-8 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-700 flex items-center justify-center transition-colors"
               >
