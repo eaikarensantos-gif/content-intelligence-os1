@@ -7,9 +7,10 @@ describe('normalizeDate', () => {
     expect(normalizeDate('2026-03-01T16:52:00')).toBe('2026-03-01')
   })
 
-  it('parses Portuguese dates with abbreviated or unaccented month names', () => {
+  it('parses Portuguese dates with abbreviated, accented or spelled-out months', () => {
     expect(normalizeDate('20 mar. 2025 16:52')).toBe('2025-03-20')
     expect(normalizeDate('1 de janeiro de 2026')).toBe('2026-01-01')
+    expect(normalizeDate('1 de março de 2026')).toBe('2026-03-01')
   })
 
   it('parses DD/MM/YYYY when the first number is clearly a day', () => {
