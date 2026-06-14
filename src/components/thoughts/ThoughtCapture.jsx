@@ -235,13 +235,12 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   }
 }`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',

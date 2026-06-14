@@ -114,13 +114,12 @@ Responda APENAS com JSON válido:
   "alternative_hooks": ["hook alternativo 1", "hook alternativo 2", "hook alternativo 3"]
 }`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',

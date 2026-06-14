@@ -251,13 +251,12 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
       ]
     : prompt
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -538,13 +537,12 @@ Return ONLY this JSON:
   "b_roll_suggestions": ["B-roll idea 1", "B-roll idea 2", "B-roll idea 3"],
   "thumbnail_ideas": ["Thumbnail concept 1", "Thumbnail concept 2"]
 }`
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -827,13 +825,12 @@ export default function VideoAnalyzer() {
     if (!text || text.trim().length < 10 || !apiKey) return
     setTranslating(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
@@ -3085,13 +3082,12 @@ function CommentAnalyzer() {
         })
         const mediaType = file.type || 'image/png'
 
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        const resp = await fetch('/api/ai?action=anthropic', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
@@ -3130,13 +3126,12 @@ function CommentAnalyzer() {
     setSuggestions(null)
     try {
       const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const resp = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',

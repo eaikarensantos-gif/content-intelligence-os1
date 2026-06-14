@@ -261,13 +261,12 @@ REGRAS PARA creator_references:
 - Pode ser internacional se não houver nacional adequado — prefira qualidade ao localismo.
 - A justificativa "what_to_learn" deve ser SEMPRE sobre método de entrega (estrutura do post, técnica narrativa, formato visual) — nunca sobre tema.`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',

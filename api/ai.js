@@ -1,7 +1,8 @@
 // Vercel Serverless Function — AI proxy + YouTube search + Whisper transcription
 // Solves CORS by making all external API calls server-side.
 //
-// Routing:
+// Routing (action via ?action= query or body.action):
+//   action === 'anthropic'       → Anthropic Messages API (key from x-api-key header)
 //   action === 'youtube-search'  → YouTube Data API v3 (real creator/video data)
 //   action === 'transcribe'      → OpenAI Whisper API (real audio transcription)
 //   (default)                    → AI chat completion (OpenAI-compatible or Gemini)
@@ -150,19 +151,82 @@ async function transcribeAudio(openaiApiKey, audioUrl) {
   return data.text
 }
 
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+// Restrict the proxy to the app's own origins instead of a wildcard `*`.
+// Allowed: localhost (dev), the project's *.vercel.app deployments, and any
+// extra origins listed in the ALLOWED_ORIGINS env var (comma-separated).
+function isAllowedOrigin(origin) {
+  if (!origin) return false
+  const extra = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+  if (extra.includes(origin)) return true
+  try {
+    const { hostname, protocol } = new URL(origin)
+    if (protocol !== 'http:' && protocol !== 'https:') return false
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true
+    if (hostname.endsWith('.vercel.app')) return true
+  } catch {
+    return false
+  }
+  return false
+}
+
+function applyCors(req, res) {
+  const origin = req.headers.origin
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, anthropic-version')
+  return isAllowedOrigin(origin)
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  const originAllowed = applyCors(req, res)
 
-  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (req.method === 'OPTIONS') {
+    return res.status(originAllowed ? 200 : 403).end()
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { action } = req.body || {}
+  // Reject cross-site browser requests from origins outside the allowlist.
+  if (req.headers.origin && !originAllowed) {
+    return res.status(403).json({ error: 'Origin not allowed' })
+  }
+
+  const action = (req.body && req.body.action) || (req.query && req.query.action)
 
   try {
+    // ── Anthropic (Claude) proxy ──────────────────────────────────────────────
+    // The browser posts the same Anthropic Messages body it used to send
+    // directly, but to this same-origin proxy. The user's key travels in the
+    // x-api-key header to our backend (never cross-origin to Anthropic with the
+    // dangerous-direct-browser-access flag). We forward server-side and mirror
+    // Anthropic's status and JSON so the client response shape is unchanged.
+    if (action === 'anthropic') {
+      const apiKey = req.headers['x-api-key']
+      if (!apiKey) return res.status(400).json({ error: 'API key is required' })
+
+      const { action: _drop, ...anthropicBody } = req.body || {}
+      const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': req.headers['anthropic-version'] || '2023-06-01',
+        },
+        body: JSON.stringify(anthropicBody),
+      })
+
+      const data = await upstream.json().catch(() => ({ error: { message: `Anthropic error ${upstream.status}` } }))
+      return res.status(upstream.status).json(data)
+    }
+
     // ── YouTube search ────────────────────────────────────────────────────────
     if (action === 'youtube-search') {
       const { youtubeApiKey, query } = req.body
