@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
   Loader2, Sparkles, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
@@ -113,13 +114,12 @@ Responda APENAS com JSON válido:
   "alternative_hooks": ["hook alternativo 1", "hook alternativo 2", "hook alternativo 3"]
 }`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -138,10 +138,7 @@ REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitad
 
   const data = await response.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta da IA não contém JSON válido')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta da IA não contém JSON válido')
 }
 
 // ─── Slide image generator (Canvas API) ──────────────────────────────────────
@@ -578,6 +575,10 @@ export default function CarouselStudio() {
   const [history, setHistory] = useState([])
   const [editingProfile, setEditingProfile] = useState(false)
   const [regenAttempt, setRegenAttempt] = useState(0)
+  const [slideImages, setSlideImages] = useState([]) // generated PNG URLs
+  const [generatingImages, setGeneratingImages] = useState(false)
+  const [imageError, setImageError] = useState(null)
+  const [canvaCopied, setCanvaCopied] = useState(false)
 
   // Show profile setup if no niche configured
   const hasProfile = creatorProfile?.niche?.trim()
@@ -748,9 +749,6 @@ export default function CarouselStudio() {
     navigator.clipboard.writeText(text)
   }
 
-  const [slideImages, setSlideImages] = useState([]) // generated PNG URLs
-  const [generatingImages, setGeneratingImages] = useState(false)
-  const [imageError, setImageError] = useState(null)
 
   const handleGenerateImages = async () => {
     if (!result?.slides?.length) return
@@ -780,7 +778,6 @@ export default function CarouselStudio() {
     a.click()
   }
 
-  const [canvaCopied, setCanvaCopied] = useState(false)
 
   const handleOpenInCanva = async () => {
     if (!result?.slides?.length) return

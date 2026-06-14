@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { useNavigate } from 'react-router-dom'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
@@ -260,13 +261,12 @@ REGRAS PARA creator_references:
 - Pode ser internacional se não houver nacional adequado — prefira qualidade ao localismo.
 - A justificativa "what_to_learn" deve ser SEMPRE sobre método de entrega (estrutura do post, técnica narrativa, formato visual) — nunca sobre tema.`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -283,10 +283,7 @@ REGRAS PARA creator_references:
 
   const data = await res.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ── Clipboard hook ──────────────────────────────────────────────────────────

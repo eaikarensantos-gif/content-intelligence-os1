@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import {
   Eye, Heart, Share2, Bookmark, TrendingUp, AlertCircle, Target, Zap,
-  ExternalLink, ChevronDown, Palette, Download, Filter,
+  ExternalLink, ChevronDown, Palette, Download, Filter, FileText,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import {
@@ -313,9 +313,9 @@ export default function DynamicMetricsReport() {
         {/* Engagement Timeline */}
         <div className="card p-5">
           <h3 className="font-semibold text-gray-900 mb-4">Engajamento ao Longo do Tempo</h3>
-          {instagramMetrics.length > 1 ? (
+          {reportMetrics.length > 1 ? (
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={instagramMetrics.sort((a, b) => new Date(a.date) - new Date(b.date))}>
+              <LineChart data={reportMetrics.sort((a, b) => new Date(a.date) - new Date(b.date))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} />
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} />

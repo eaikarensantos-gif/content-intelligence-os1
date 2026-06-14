@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { useNavigate } from 'react-router-dom'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
@@ -116,13 +117,12 @@ GERE a apresentação completa com esta estrutura JSON:
 
 Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -139,10 +139,7 @@ Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.
 
   const data = await res.json()
   const raw = data.content[0].text
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ─── Section Components ──────────────────────────────────────────────────────

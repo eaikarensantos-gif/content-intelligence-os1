@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
@@ -164,13 +165,12 @@ ${voiceContext || ''}${regenInstruction || ''}`
 async function generateIdeas(apiKey, params) {
   const prompt = buildPrompt(params)
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -187,10 +187,7 @@ async function generateIdeas(apiKey, params) {
 
   const data = await res.json()
   const raw = data.content[0].text
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ── Idea Card ─────────────────────────────────────────────────────────────────

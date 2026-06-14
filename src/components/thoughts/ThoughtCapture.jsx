@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import { useNavigate } from 'react-router-dom'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
@@ -234,13 +235,12 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   }
 }`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
@@ -257,10 +257,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 
   const data = await res.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da API')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da API')
 }
 
 // ─── Loading phases ───────────────────────────────────────────────────────────

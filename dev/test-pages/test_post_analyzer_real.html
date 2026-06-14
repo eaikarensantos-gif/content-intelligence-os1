@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PostAnalyzer - Teste com Dados Reais</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header { background: linear-gradient(135deg, #ff6400 0%, #ff8533 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+    .header h1 { font-size: 28px; margin-bottom: 5px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 24px; border-radius: 12px; border-left: 4px solid #ff6400; }
+    .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 10px; }
+    .stat-value { font-size: 32px; font-weight: bold; color: #1f2937; }
+
+    table { width: 100%; background: white; border-collapse: collapse; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px; }
+    thead { background: linear-gradient(135deg, #ff6400 0%, #ff8533 100%); color: white; }
+    th { padding: 16px; text-align: left; font-weight: 600; font-size: 14px; }
+    td { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; }
+    tr:hover { background: #f9fafb; }
+    tr.best-er { background: #fff5f0; }
+    .er-best { color: #ff6400; font-weight: bold; background: #fff0e6; padding: 2px 6px; border-radius: 4px; }
+    .badge { display: inline-block; background: #ff6400; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 5px; }
+    .platform-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .platform-ig { background: #e8f5f7; color: #0891b2; }
+    .platform-li { background: #e8f5f7; color: #0284c7; }
+
+    .actions { display: flex; gap: 12px; margin-bottom: 30px; }
+    .btn-primary { flex: 1; padding: 16px; background: linear-gradient(135deg, #ff6400 0%, #ff8533 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 100, 0, 0.3); }
+
+    .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #28a745; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+    .test-info { background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #0284c7; margin-bottom: 20px; }
+    .test-info p { font-size: 14px; color: #0c4a6e; margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Teste Real do PostAnalyzer</h1>
+      <p>Simulando upload de dados do Instagram e LinkedIn</p>
+    </div>
+
+    <div class="test-info">
+      <p><strong>🧪 Modo de Teste:</strong> Carregando dados automaticamente</p>
+      <p><strong>📝 Dados:</strong> 5 posts do Instagram + 1 post do LinkedIn (abril/2026)</p>
+      <p><strong>✓ Status:</strong> <span id="status">Carregando dados...</span></p>
+    </div>
+
+    <div id="stats" class="stats" style="display: none;"></div>
+
+    <div id="tableContainer" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Plataforma</th>
+            <th>Título</th>
+            <th>ER %</th>
+            <th>Alcance</th>
+            <th>Interações</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="actions" style="display: none;" class="actions">
+      <button class="btn-primary" onclick="generatePDF()">📥 GERAR RELATÓRIO COMPLETO EM PDF</button>
+    </div>
+  </div>
+
+  <script>
+    let allPosts = [];
+
+    const testDataInstagram = [
+      { Data: '2026-04-01', Título: 'Primeiro post sobre conteúdo criativo', Curtidas: 150, Comentários: 25, Compartilhamentos: 12, Salvamentos: 45, Alcance: 3200 },
+      { Data: '2026-04-02', Título: 'Dicas para melhorar engagement nas redes sociais', Curtidas: 280, Comentários: 52, Compartilhamentos: 35, Salvamentos: 120, Alcance: 5100 },
+      { Data: '2026-04-03', Título: 'Análise de tendências de mercado Q2 2026', Curtidas: 195, Comentários: 38, Compartilhamentos: 22, Salvamentos: 85, Alcance: 4200 },
+      { Data: '2026-04-05', Título: 'Ferramentas essenciais para criadores de conteúdo', Curtidas: 420, Comentários: 95, Compartilhamentos: 68, Salvamentos: 245, Alcance: 8900 },
+      { Data: '2026-04-07', Título: 'Webinar: Estratégia de conteúdo para 2026', Curtidas: 320, Comentários: 72, Compartilhamentos: 48, Salvamentos: 180, Alcance: 6800 }
+    ];
+
+    const testDataLinkedIn = {
+      url: 'https://www.linkedin.com/feed/update/urn:li:ugcPost:7437190013035077632',
+      dataText: '10 de abr de 2026',
+      impressoes: 2184,
+      alcance: 1681,
+      reacoes: 45,
+      comentarios: 2,
+      compartilhamentos: 1,
+      salvamentos: 1
+    };
+
+    function parseInstagramData() {
+      return testDataInstagram.map(row => {
+        const interacoes = (row.Curtidas || 0) + (row.Comentários || 0) + (row.Compartilhamentos || 0) + (row.Salvamentos || 0);
+        const alcance = row.Alcance || 0;
+        const er = ((interacoes / alcance) * 100).toFixed(2);
+        return {
+          data: row.Data,
+          titulo: row.Título.substring(0, 50),
+          er: parseFloat(er),
+          alcance: alcance,
+          interacoes: interacoes,
+          platform: 'Instagram'
+        };
+      }).sort((a, b) => b.er - a.er);
+    }
+
+    function parseLinkedInData() {
+      const meses = {'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06', 'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12'};
+      const match = testDataLinkedIn.dataText.match(/(\d+)\s+de\s+(\w+)\s+de\s+(\d+)/);
+      const [, day, monthName, year] = match;
+      const month = meses[monthName.toLowerCase()];
+      const dataFormatada = year + '-' + month + '-' + String(parseInt(day)).padStart(2, '0');
+
+      const engajamento = testDataLinkedIn.reacoes + testDataLinkedIn.comentarios + testDataLinkedIn.compartilhamentos + testDataLinkedIn.salvamentos;
+      const base = testDataLinkedIn.alcance > 0 ? testDataLinkedIn.alcance : testDataLinkedIn.impressoes;
+      const er = ((engajamento / base) * 100).toFixed(2);
+
+      return [{
+        data: dataFormatada,
+        titulo: testDataLinkedIn.url.substring(0, 50),
+        er: parseFloat(er),
+        alcance: testDataLinkedIn.alcance,
+        interacoes: engajamento,
+        platform: 'LinkedIn'
+      }];
+    }
+
+    function loadTestData() {
+      try {
+        const instagramPosts = parseInstagramData();
+        const linkedinPosts = parseLinkedInData();
+
+        allPosts = [...instagramPosts, ...linkedinPosts].sort((a, b) => b.er - a.er);
+        document.getElementById('status').textContent = 'Carregado: ' + allPosts.length + ' posts';
+        updateUI();
+      } catch (err) {
+        document.getElementById('status').textContent = 'Erro: ' + err.message;
+      }
+    }
+
+    function updateUI() {
+      if (allPosts.length === 0) return;
+
+      const maxER = Math.max(...allPosts.map(p => p.er));
+      const avgER = (allPosts.reduce((sum, p) => sum + p.er, 0) / allPosts.length).toFixed(2);
+      const totalAlcance = allPosts.reduce((sum, p) => sum + p.alcance, 0);
+
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Posts</div><div class="stat-value">${allPosts.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Maior ER</div><div class="stat-value">${maxER.toFixed(2)}%</div></div>
+        <div class="stat-card"><div class="stat-label">ER Médio</div><div class="stat-value">${avgER}%</div></div>
+        <div class="stat-card"><div class="stat-label">Alcance</div><div class="stat-value">${(totalAlcance / 1000).toFixed(1)}k</div></div>
+      `;
+      document.getElementById('stats').style.display = 'grid';
+      document.getElementById('tableContainer').style.display = 'block';
+      document.getElementById('actions').style.display = 'flex';
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = allPosts.map((post, idx) => {
+        const isBest = post.er === maxER;
+        const platformClass = post.platform === 'Instagram' ? 'platform-ig' : 'platform-li';
+        return '<tr class="' + (isBest ? 'best-er' : '') + '"><td>' + post.data + '</td><td><span class="platform-badge ' + platformClass + '">' + post.platform + '</span></td><td>' + post.titulo + '</td><td><span class="' + (isBest ? 'er-best' : '') + '">' + post.er + '%' + (isBest ? '<span class="badge">BEST</span>' : '') + '</span></td><td>' + post.alcance.toLocaleString() + '</td><td>' + post.interacoes + '</td></tr>';
+      }).join('');
+    }
+
+    function generatePDF() {
+      const jsPDFLib = window.jspdf.jsPDF;
+      const doc = new jsPDFLib();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(255, 100, 0);
+      doc.rect(0, 0, pageWidth, pageHeight / 3, 'F');
+      doc.setFontSize(32);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.text('ANALISE MULTI-PLATAFORMA', 20, 60);
+
+      const maxER = Math.max(...allPosts.map(p => p.er));
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, 120, pageWidth - 40, 50, 'F');
+      doc.text('Total: ' + allPosts.length + ' posts | Maior ER: ' + maxER.toFixed(2) + '%', 30, 135);
+
+      doc.save('Relatorio_' + new Date().getTime() + '.pdf');
+    }
+
+    window.addEventListener('load', loadTestData);
+  </script>
+</body>
+</html>

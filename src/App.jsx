@@ -1,30 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
-import Dashboard from './components/dashboard/Dashboard'
-import IdeasHub from './components/ideas/IdeasHub'
-import TrendRadar from './components/trends/TrendRadar'
-import Analytics from './components/analytics/Analytics'
-import SocialDashboard from './components/analytics/SocialDashboard'
-import VideoAnalyzer from './components/video/VideoAnalyzer'
-import ThoughtCapture from './components/thoughts/ThoughtCapture'
-import TextStudio from './components/text/TextStudio'
-import IdeaGenerator from './components/generate/IdeaGenerator'
-import CreateContent from './components/create/CreateContent'
-import UnifiedCreator from './components/create/UnifiedCreator'
-import PresentationMode from './components/presentation/PresentationMode'
-import ContentDNA from './components/dna/ContentDNA'
-import AccessLog from './components/auth/AccessLog'
-import AdManager from './components/ads/AdManager'
-import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
-import TaskBoard from './components/tasks/TaskBoard'
-import NaomiStudio from './components/naomi/NaomiStudio'
-import SupabaseSettings from './components/settings/SupabaseSettings'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
+
+// Route pages are code-split so the initial bundle stays small; each loads on
+// demand when its route is first visited.
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'))
+const IdeasHub = lazy(() => import('./components/ideas/IdeasHub'))
+const TrendRadar = lazy(() => import('./components/trends/TrendRadar'))
+const Analytics = lazy(() => import('./components/analytics/Analytics'))
+const SocialDashboard = lazy(() => import('./components/analytics/SocialDashboard'))
+const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
+const ThoughtCapture = lazy(() => import('./components/thoughts/ThoughtCapture'))
+const TextStudio = lazy(() => import('./components/text/TextStudio'))
+const IdeaGenerator = lazy(() => import('./components/generate/IdeaGenerator'))
+const CreateContent = lazy(() => import('./components/create/CreateContent'))
+const UnifiedCreator = lazy(() => import('./components/create/UnifiedCreator'))
+const PresentationMode = lazy(() => import('./components/presentation/PresentationMode'))
+const ContentDNA = lazy(() => import('./components/dna/ContentDNA'))
+const AccessLog = lazy(() => import('./components/auth/AccessLog'))
+const AdManager = lazy(() => import('./components/ads/AdManager'))
+const CarouselStudio = lazy(() => import('./components/trends/CarouselStudio'))
+const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
+const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
+const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-full py-20">
+      <Loader2 className="animate-spin text-violet-500" size={28} />
+    </div>
+  )
+}
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -68,6 +80,7 @@ export default function App() {
       <BrowserRouter>
         <FavoritesDrawer />
         <Layout>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/ideas" element={<IdeasHub />} />
@@ -90,6 +103,7 @@ export default function App() {
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
           </Routes>
+          </Suspense>
         </Layout>
       </BrowserRouter>
     </LoginGate>
