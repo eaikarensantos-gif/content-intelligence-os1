@@ -86,13 +86,13 @@ export default function VideoSwipe() {
 
           <div className="mt-2 flex justify-center">
             {loading && deck.length === 0 ? (
-              <div className="flex h-[460px] items-center justify-center">
+              <div className="flex h-[560px] items-center justify-center">
                 <Loader2 className="animate-spin text-orange-500" size={28} />
               </div>
             ) : started ? (
               <VideoSwipeStack deck={deck} onSwipe={handleSwipe} onEmpty={loadDeck} />
             ) : (
-              <div className="flex h-[460px] items-center justify-center text-center text-gray-400">
+              <div className="flex h-[560px] items-center justify-center text-center text-gray-400">
                 <p>Selecione ao menos uma categoria e busque vídeos para começar.</p>
               </div>
             )}
