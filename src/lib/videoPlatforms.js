@@ -75,3 +75,8 @@ export function getEnabledPlatforms() {
 export function enabledPlatformLabels() {
   return getEnabledPlatforms().map((p) => p.label)
 }
+
+// Lightweight metadata ({ id, label }) of the available platforms, for the UI.
+export function availablePlatforms() {
+  return getEnabledPlatforms().map(({ id, label }) => ({ id, label }))
+}

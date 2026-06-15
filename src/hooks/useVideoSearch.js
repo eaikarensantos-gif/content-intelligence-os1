@@ -9,6 +9,7 @@ import { getEnabledPlatforms, normalizeResult } from '../lib/videoPlatforms'
 // results are interleaved so the deck mixes platforms and categories.
 export function useVideoSearch() {
   const seenIds = useVideoSwipeStore((s) => s.seenIds)
+  const selectedPlatforms = useVideoSwipeStore((s) => s.selectedPlatforms)
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -18,7 +19,11 @@ export function useVideoSearch() {
       const pairs = queriesForCategories(categories)
       if (pairs.length === 0) return []
 
-      const platforms = getEnabledPlatforms()
+      // null = not chosen yet → use all available; otherwise honor the picks.
+      const available = getEnabledPlatforms()
+      const platforms = selectedPlatforms == null
+        ? available
+        : available.filter((p) => selectedPlatforms.includes(p.id))
       if (platforms.length === 0) return []
 
       setLoading(true)
@@ -70,7 +75,7 @@ export function useVideoSearch() {
         setLoading(false)
       }
     },
-    [seenIds]
+    [seenIds, selectedPlatforms]
   )
 
   return { search, loading, error }
