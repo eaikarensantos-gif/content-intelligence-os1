@@ -6,7 +6,10 @@ import VideoSwipeStack from './VideoSwipeStack'
 import ReactionQueue from './ReactionQueue'
 import { useVideoSearch } from '../../hooks/useVideoSearch'
 import useVideoSwipeStore from '../../store/useVideoSwipeStore'
-import useAIStore from '../../store/useAIStore'
+
+// The YouTube Data API key is stored here by the Settings page (same slot used
+// by Creator Insights).
+const LS_YOUTUBE = 'cio-youtube-key'
 
 // Main page for the video swipe feature: pick categories, fetch a deck, and
 // swipe right (save) / left (skip). Saved videos land in the reaction queue.
@@ -15,13 +18,12 @@ export default function VideoSwipe() {
   const toggleCategory = useVideoSwipeStore((s) => s.toggleCategory)
   const saveToQueue = useVideoSwipeStore((s) => s.saveToQueue)
   const markSeen = useVideoSwipeStore((s) => s.markSeen)
-  const isYoutubeConfigured = useAIStore((s) => s.isYoutubeConfigured)
 
   const { search, loading, error } = useVideoSearch()
   const [deck, setDeck] = useState([])
   const [started, setStarted] = useState(false)
 
-  const youtubeReady = isYoutubeConfigured()
+  const youtubeReady = !!localStorage.getItem(LS_YOUTUBE)?.trim()
 
   const loadDeck = async () => {
     const results = await search(selectedCategories)
