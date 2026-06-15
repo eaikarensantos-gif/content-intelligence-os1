@@ -6,10 +6,7 @@ import VideoSwipeStack from './VideoSwipeStack'
 import ReactionQueue from './ReactionQueue'
 import { useVideoSearch } from '../../hooks/useVideoSearch'
 import useVideoSwipeStore from '../../store/useVideoSwipeStore'
-
-// The YouTube Data API key is stored here by the Settings page (same slot used
-// by Creator Insights).
-const LS_YOUTUBE = 'cio-youtube-key'
+import { enabledPlatformLabels } from '../../lib/videoPlatforms'
 
 // Main page for the video swipe feature: pick categories, fetch a deck, and
 // swipe right (save) / left (skip). Saved videos land in the reaction queue.
@@ -23,7 +20,10 @@ export default function VideoSwipe() {
   const [deck, setDeck] = useState([])
   const [started, setStarted] = useState(false)
 
-  const youtubeReady = !!localStorage.getItem(LS_YOUTUBE)?.trim()
+  // Dailymotion needs no key, so search always works; YouTube/Vimeo/TikTok join
+  // when their credentials are configured.
+  const sources = enabledPlatformLabels()
+  const hasYoutube = sources.includes('YouTube')
 
   const loadDeck = async () => {
     const results = await search(selectedCategories)
@@ -48,20 +48,19 @@ export default function VideoSwipe() {
         </p>
       </div>
 
-      {!youtubeReady && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <AlertCircle size={18} className="flex-shrink-0" />
-          <span className="flex-1">
-            Configure sua YouTube API key para buscar vídeos.
-          </span>
-          <Link
-            to="/settings"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 font-medium text-white hover:bg-amber-600"
-          >
-            <Settings size={15} /> Configurações
-          </Link>
-        </div>
-      )}
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+        <AlertCircle size={18} className="flex-shrink-0 text-gray-400" />
+        <span className="flex-1">
+          Buscando em: <strong>{sources.join(', ')}</strong>.
+          {!hasYoutube && ' Adicione a YouTube API key para mais resultados.'}
+        </span>
+        <Link
+          to="/settings"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 font-medium text-white hover:bg-gray-800"
+        >
+          <Settings size={15} /> Configurações
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         {/* Left: selector + swipe stack */}
@@ -71,7 +70,7 @@ export default function VideoSwipe() {
           <button
             type="button"
             onClick={loadDeck}
-            disabled={loading || selectedCategories.length === 0 || !youtubeReady}
+            disabled={loading || selectedCategories.length === 0}
             className="inline-flex w-fit items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
