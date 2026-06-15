@@ -258,8 +258,9 @@ export default function LoginGate({ children }) {
           <form onSubmit={mode === 'setup' ? handleSetup : handleLogin} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
+              <label htmlFor="login-email" className="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError('') }}
@@ -296,8 +297,9 @@ export default function LoginGate({ children }) {
             {/* Confirm password (setup only) */}
             {mode === 'setup' && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Confirmar Senha</label>
+                <label htmlFor="login-confirm-password" className="block text-xs font-medium text-gray-600 mb-1.5">Confirmar Senha</label>
                 <input
+                  id="login-confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => { setConfirmPassword(e.target.value); setError('') }}

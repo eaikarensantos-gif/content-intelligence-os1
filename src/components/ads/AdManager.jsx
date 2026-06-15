@@ -110,35 +110,35 @@ function AdForm({ ad, onSave, onClose }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Título *</label>
-              <input value={form.title} onChange={e => set('title', e.target.value)} required
+              <label htmlFor="adform-title" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Título *</label>
+              <input id="adform-title" value={form.title} onChange={e => set('title', e.target.value)} required
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Nome da campanha" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Cliente</label>
-              <input value={form.client} onChange={e => set('client', e.target.value)}
+              <label htmlFor="adform-client" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Cliente</label>
+              <input id="adform-client" value={form.client} onChange={e => set('client', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Ex: FIAP, Brand X" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Plataforma</label>
-              <select value={form.platform} onChange={e => set('platform', e.target.value)}
+              <label htmlFor="adform-platform" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Plataforma</label>
+              <select id="adform-platform" value={form.platform} onChange={e => set('platform', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
                 {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tipo</label>
-              <select value={form.ad_type} onChange={e => set('ad_type', e.target.value)}
+              <label htmlFor="adform-type" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Tipo</label>
+              <select id="adform-type" value={form.ad_type} onChange={e => set('ad_type', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
                 {AD_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
-              <select value={form.status} onChange={e => set('status', e.target.value)}
+              <label htmlFor="adform-status" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
+              <select id="adform-status" value={form.status} onChange={e => set('status', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
                 {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
@@ -147,31 +147,31 @@ function AdForm({ ad, onSave, onClose }) {
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Orçamento (R$)</label>
-              <input type="number" step="0.01" value={form.budget} onChange={e => set('budget', e.target.value)}
+              <label htmlFor="adform-budget" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Orçamento (R$)</label>
+              <input id="adform-budget" type="number" step="0.01" value={form.budget} onChange={e => set('budget', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="0.00" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Gasto (R$)</label>
-              <input type="number" step="0.01" value={form.spent} onChange={e => set('spent', e.target.value)}
+              <label htmlFor="adform-spent" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Gasto (R$)</label>
+              <input id="adform-spent" type="number" step="0.01" value={form.spent} onChange={e => set('spent', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="0.00" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Receita (R$)</label>
-              <input type="number" step="0.01" value={form.revenue} onChange={e => set('revenue', e.target.value)}
+              <label htmlFor="adform-revenue" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Receita (R$)</label>
+              <input id="adform-revenue" type="number" step="0.01" value={form.revenue} onChange={e => set('revenue', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="0.00" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Início</label>
-              <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)}
+              <label htmlFor="adform-start" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Início</label>
+              <input id="adform-start" type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Término</label>
-              <input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)}
+              <label htmlFor="adform-end" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Término</label>
+              <input id="adform-end" type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" />
             </div>
           </div>
@@ -184,21 +184,21 @@ function AdForm({ ad, onSave, onClose }) {
               { key: 'conversions', label: 'Conversões' },
             ].map(({ key, label }) => (
               <div key={key}>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">{label}</label>
-                <input type="number" value={form[key]} onChange={e => set(key, e.target.value)}
+                <label htmlFor={`adform-${key}`} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">{label}</label>
+                <input id={`adform-${key}`} type="number" value={form[key]} onChange={e => set(key, e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="0" />
               </div>
             ))}
           </div>
 
           <div>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Link do Post/Anúncio</label>
-            <input value={form.link} onChange={e => set('link', e.target.value)}
+            <label htmlFor="adform-link" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Link do Post/Anúncio</label>
+            <input id="adform-link" value={form.link} onChange={e => set('link', e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="https://..." />
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
+            <label htmlFor="adform-notes" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
+            <textarea id="adform-notes" value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300 resize-none" placeholder="Notas internas..." />
           </div>
 
@@ -238,68 +238,68 @@ function LeadForm({ lead, onSave, onClose }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome / Marca *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)} required
+              <label htmlFor="leadform-name" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome / Marca *</label>
+              <input id="leadform-name" value={form.name} onChange={e => set('name', e.target.value)} required
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Nome do lead ou marca" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Empresa</label>
-              <input value={form.company} onChange={e => set('company', e.target.value)}
+              <label htmlFor="leadform-company" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Empresa</label>
+              <input id="leadform-company" value={form.company} onChange={e => set('company', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Empresa (opcional)" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Contato (WhatsApp/Telefone)</label>
-              <input value={form.contact} onChange={e => set('contact', e.target.value)}
+              <label htmlFor="leadform-contact" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Contato (WhatsApp/Telefone)</label>
+              <input id="leadform-contact" value={form.contact} onChange={e => set('contact', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="(11) 99999-9999" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
-              <input value={form.email} onChange={e => set('email', e.target.value)}
+              <label htmlFor="leadform-email" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
+              <input id="leadform-email" value={form.email} onChange={e => set('email', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="email@exemplo.com" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
-              <select value={form.source} onChange={e => set('source', e.target.value)}
+              <label htmlFor="leadform-source" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
+              <select id="leadform-source" value={form.source} onChange={e => set('source', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
                 {LEAD_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Etapa</label>
-              <select value={form.stage} onChange={e => set('stage', e.target.value)}
+              <label htmlFor="leadform-stage" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Etapa</label>
+              <select id="leadform-stage" value={form.stage} onChange={e => set('stage', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300">
                 {LEAD_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor Estimado (R$)</label>
-              <input type="number" step="0.01" value={form.value} onChange={e => set('value', e.target.value)}
+              <label htmlFor="leadform-value" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor Estimado (R$)</label>
+              <input id="leadform-value" type="number" step="0.01" value={form.value} onChange={e => set('value', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="0.00" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Serviço / Proposta</label>
-              <input value={form.service} onChange={e => set('service', e.target.value)}
+              <label htmlFor="leadform-service" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Serviço / Proposta</label>
+              <input id="leadform-service" value={form.service} onChange={e => set('service', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" placeholder="Ex: Pack 3 Reels + 1 Carrossel" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Próximo Follow-up</label>
-              <input type="date" value={form.next_followup} onChange={e => set('next_followup', e.target.value)}
+              <label htmlFor="leadform-next-followup" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Próximo Follow-up</label>
+              <input id="leadform-next-followup" type="date" value={form.next_followup} onChange={e => set('next_followup', e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
+            <label htmlFor="leadform-notes" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
+            <textarea id="leadform-notes" value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300 resize-none"
               placeholder="Histórico de conversas, detalhes da negociação, o que foi combinado..." />
           </div>
@@ -813,51 +813,51 @@ export default function AdManager() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome</label>
-                    <input type="text" value={editingClient.name} onChange={e => setEditingClient({ ...editingClient, name: e.target.value })}
+                    <label htmlFor="client-edit-name" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome</label>
+                    <input id="client-edit-name" type="text" value={editingClient.name} onChange={e => setEditingClient({ ...editingClient, name: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Empresa</label>
-                    <input type="text" value={editingClient.company || ''} onChange={e => setEditingClient({ ...editingClient, company: e.target.value })}
+                    <label htmlFor="client-edit-company" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Empresa</label>
+                    <input id="client-edit-company" type="text" value={editingClient.company || ''} onChange={e => setEditingClient({ ...editingClient, company: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Contato</label>
-                    <input type="text" value={editingClient.contact || ''} onChange={e => setEditingClient({ ...editingClient, contact: e.target.value })}
+                    <label htmlFor="client-edit-contact" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Contato</label>
+                    <input id="client-edit-contact" type="text" value={editingClient.contact || ''} onChange={e => setEditingClient({ ...editingClient, contact: e.target.value })}
                       placeholder="Telefone / WhatsApp"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
-                    <input type="email" value={editingClient.email || ''} onChange={e => setEditingClient({ ...editingClient, email: e.target.value })}
+                    <label htmlFor="client-edit-email" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
+                    <input id="client-edit-email" type="email" value={editingClient.email || ''} onChange={e => setEditingClient({ ...editingClient, email: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Serviço</label>
-                    <input type="text" value={editingClient.service || ''} onChange={e => setEditingClient({ ...editingClient, service: e.target.value })}
+                    <label htmlFor="client-edit-service" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Serviço</label>
+                    <input id="client-edit-service" type="text" value={editingClient.service || ''} onChange={e => setEditingClient({ ...editingClient, service: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor (R$)</label>
-                    <input type="text" value={editingClient.value || ''} onChange={e => setEditingClient({ ...editingClient, value: e.target.value })}
+                    <label htmlFor="client-edit-value" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor (R$)</label>
+                    <input id="client-edit-value" type="text" value={editingClient.value || ''} onChange={e => setEditingClient({ ...editingClient, value: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
-                    <input type="text" value={editingClient.source || ''} onChange={e => setEditingClient({ ...editingClient, source: e.target.value })}
+                    <label htmlFor="client-edit-source" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
+                    <input id="client-edit-source" type="text" value={editingClient.source || ''} onChange={e => setEditingClient({ ...editingClient, source: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags</label>
-                    <input type="text" value={editingClient.hashtags || ''} onChange={e => setEditingClient({ ...editingClient, hashtags: e.target.value })}
+                    <label htmlFor="client-edit-hashtags" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags</label>
+                    <input id="client-edit-hashtags" type="text" value={editingClient.hashtags || ''} onChange={e => setEditingClient({ ...editingClient, hashtags: e.target.value })}
                       placeholder="#publi, @cliente"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
-                  <textarea value={editingClient.notes || ''} onChange={e => setEditingClient({ ...editingClient, notes: e.target.value })}
+                  <label htmlFor="client-edit-notes" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
+                  <textarea id="client-edit-notes" value={editingClient.notes || ''} onChange={e => setEditingClient({ ...editingClient, notes: e.target.value })}
                     rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300 resize-none" />
                 </div>
                 <div className="flex gap-2">
@@ -891,14 +891,14 @@ export default function AdManager() {
             ) : (
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
-                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome do Cliente</label>
-                  <input type="text" value={newClientName} onChange={e => setNewClientName(e.target.value)}
+                  <label htmlFor="client-new-name" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome do Cliente</label>
+                  <input id="client-new-name" type="text" value={newClientName} onChange={e => setNewClientName(e.target.value)}
                     placeholder="Ex: FIAP, Samsung, Glamour..."
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags / @ (separar por vírgula)</label>
-                  <input type="text" value={newClientHashtags} onChange={e => setNewClientHashtags(e.target.value)}
+                  <label htmlFor="client-new-hashtags" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags / @ (separar por vírgula)</label>
+                  <input id="client-new-hashtags" type="text" value={newClientHashtags} onChange={e => setNewClientHashtags(e.target.value)}
                     placeholder="Ex: #publi, @fiapoficial, #Fiap"
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                 </div>

@@ -1271,8 +1271,9 @@ Responda APENAS com este JSON:
               </div>
 
               <div>
-                <label className="label">Título do vídeo (opcional)</label>
+                <label htmlFor="va-script-title" className="label">Título do vídeo (opcional)</label>
                 <input
+                  id="va-script-title"
                   className="input"
                   placeholder="Ex: Como usar IA para criar conteúdo sem perder autenticidade"
                   value={title}
@@ -1281,11 +1282,12 @@ Responda APENAS com este JSON:
               </div>
 
               <div>
-                <label className="label flex items-center justify-between">
+                <label htmlFor="va-script-text" className="label flex items-center justify-between">
                   <span>Roteiro completo</span>
                   <span className="text-[10px] text-gray-400">{scriptText.length} caracteres</span>
                 </label>
                 <textarea
+                  id="va-script-text"
                   className="input resize-none font-mono text-xs leading-relaxed"
                   rows={16}
                   placeholder={"Cole seu roteiro aqui...\n\nEx:\n[GANCHO]\nVocê sabia que 90% dos criadores de conteúdo estão usando IA do jeito errado?\n\n[DESENVOLVIMENTO]\n...\n\n[CTA]\n..."}
@@ -1337,10 +1339,11 @@ Responda APENAS com este JSON:
 
               {/* URL input */}
               <div>
-                <label className="label flex items-center gap-1.5">
+                <label htmlFor="va-url" className="label flex items-center gap-1.5">
                   <Link2 size={11} className="text-gray-400" /> URL do vídeo
                 </label>
                 <input
+                  id="va-url"
                   className="input"
                   placeholder="YouTube, TikTok, Instagram, LinkedIn..."
                   value={url}
@@ -1490,17 +1493,17 @@ Responda APENAS com este JSON:
               {/* Context fields */}
               <div className="space-y-3 pt-1 border-t border-gray-100">
                 <div>
-                  <label className="label">Título <span className="text-gray-400 font-normal">(autopreenchido para YouTube)</span></label>
-                  <input className="input" placeholder="Título do vídeo" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <label htmlFor="va-title" className="label">Título <span className="text-gray-400 font-normal">(autopreenchido para YouTube)</span></label>
+                  <input id="va-title" className="input" placeholder="Título do vídeo" value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Tópico</label>
-                    <input className="input" placeholder="Ex: produtividade..." value={topic} onChange={(e) => setTopic(e.target.value)} />
+                    <label htmlFor="va-topic" className="label">Tópico</label>
+                    <input id="va-topic" className="input" placeholder="Ex: produtividade..." value={topic} onChange={(e) => setTopic(e.target.value)} />
                   </div>
                   <div>
-                    <label className="label">Tipo</label>
-                    <select className="select" value={videoType} onChange={(e) => setVideoType(e.target.value)}>
+                    <label htmlFor="va-type" className="label">Tipo</label>
+                    <select id="va-type" className="select" value={videoType} onChange={(e) => setVideoType(e.target.value)}>
                       {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>

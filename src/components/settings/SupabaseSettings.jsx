@@ -136,8 +136,9 @@ export default function SupabaseSettings() {
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Project URL</label>
+            <label htmlFor="sb-project-url" className="text-xs text-gray-500 font-medium mb-1.5 block">Project URL</label>
             <input
+              id="sb-project-url"
               type="text"
               value={sbUrl}
               onChange={(e) => setSbUrl(e.target.value)}
@@ -146,9 +147,10 @@ export default function SupabaseSettings() {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Anon Key</label>
+            <label htmlFor="sb-anon-key" className="text-xs text-gray-500 font-medium mb-1.5 block">Anon Key</label>
             <div className="relative">
               <input
+                id="sb-anon-key"
                 type={showSbKey ? 'text' : 'password'}
                 value={sbKey}
                 onChange={(e) => setSbKey(e.target.value)}
@@ -205,9 +207,10 @@ alter table user_data disable row level security;`}</pre>
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Anthropic (Claude)</label>
+            <label htmlFor="sb-anthropic-key" className="text-xs text-gray-500 font-medium mb-1.5 block">Anthropic (Claude)</label>
             <div className="relative">
               <input
+                id="sb-anthropic-key"
                 type={showAnthropicKey ? 'text' : 'password'}
                 value={anthropicKey}
                 onChange={(e) => setAnthropicKey(e.target.value)}
@@ -220,9 +223,10 @@ alter table user_data disable row level security;`}</pre>
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Groq (grátis — transcrição)</label>
+            <label htmlFor="sb-groq-key" className="text-xs text-gray-500 font-medium mb-1.5 block">Groq (grátis — transcrição)</label>
             <div className="relative">
               <input
+                id="sb-groq-key"
                 type={showGroqKey ? 'text' : 'password'}
                 value={groqKey}
                 onChange={(e) => setGroqKey(e.target.value)}
@@ -235,11 +239,12 @@ alter table user_data disable row level security;`}</pre>
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5">
+            <label htmlFor="sb-youtube-key" className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5">
               <Youtube size={12} className="text-red-500" /> YouTube Data API v3 (criadores reais no Creator Insights)
             </label>
             <div className="relative">
               <input
+                id="sb-youtube-key"
                 type={showYoutubeKey ? 'text' : 'password'}
                 value={youtubeKey}
                 onChange={(e) => setYoutubeKey(e.target.value)}

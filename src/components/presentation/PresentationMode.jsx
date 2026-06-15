@@ -458,10 +458,11 @@ export default function PresentationMode() {
           <div className="card p-4 sm:p-5 space-y-4">
             {/* Topic */}
             <div>
-              <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label htmlFor="pres-topic" className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 <Mic size={11} /> Tema da apresentação *
               </label>
               <input
+                id="pres-topic"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="Ex: Como a IA está mudando a criação de conteúdo"
@@ -471,10 +472,11 @@ export default function PresentationMode() {
 
             {/* Audience */}
             <div>
-              <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label htmlFor="pres-audience" className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 <Users size={11} /> Audiência
               </label>
               <select
+                id="pres-audience"
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
                 className="input"
@@ -537,10 +539,11 @@ export default function PresentationMode() {
 
             {/* Context */}
             <div>
-              <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label htmlFor="pres-context" className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 <BookOpen size={11} /> Contexto adicional
               </label>
               <textarea
+                id="pres-context"
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 placeholder="Ex: Palestra para evento de marketing digital, 200 pessoas, quero falar sobre minha experiência..."

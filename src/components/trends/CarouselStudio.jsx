@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useId } from 'react'
 import { extractJsonObject } from '../../utils/aiJson.js'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import {
@@ -274,6 +274,7 @@ async function downloadAllSlides(images, title) {
 // ─── Slide editor card ───────────────────────────────────────────────────────
 function SlideCard({ slide, index, total, onUpdate, onDelete, onMoveUp, onMoveDown }) {
   const [expanded, setExpanded] = useState(true)
+  const uid = useId()
   const typeColors = {
     capa: 'from-orange-500 to-red-500',
     conteúdo: 'from-blue-500 to-blue-600',
@@ -311,8 +312,9 @@ function SlideCard({ slide, index, total, onUpdate, onDelete, onMoveUp, onMoveDo
       {expanded && (
         <div className="px-3 pb-3 space-y-3 border-t border-gray-100 pt-3">
           <div>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Texto Principal</label>
+            <label htmlFor={`${uid}-headline`} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Texto Principal</label>
             <textarea
+              id={`${uid}-headline`}
               value={slide.headline || ''}
               onChange={(e) => onUpdate({ headline: e.target.value })}
               className="input mt-1 text-sm min-h-[60px]"
@@ -320,8 +322,9 @@ function SlideCard({ slide, index, total, onUpdate, onDelete, onMoveUp, onMoveDo
             />
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Subtexto</label>
+            <label htmlFor={`${uid}-subtext`} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Subtexto</label>
             <input
+              id={`${uid}-subtext`}
               value={slide.subtext || ''}
               onChange={(e) => onUpdate({ subtext: e.target.value })}
               className="input mt-1 text-sm"
@@ -329,8 +332,9 @@ function SlideCard({ slide, index, total, onUpdate, onDelete, onMoveUp, onMoveDo
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Visual Sugerido</label>
+              <label htmlFor={`${uid}-visual`} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Visual Sugerido</label>
               <input
+                id={`${uid}-visual`}
                 value={slide.visual_suggestion || ''}
                 onChange={(e) => onUpdate({ visual_suggestion: e.target.value })}
                 className="input mt-1 text-[11px]"
@@ -338,8 +342,9 @@ function SlideCard({ slide, index, total, onUpdate, onDelete, onMoveUp, onMoveDo
               />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Técnica</label>
+              <label htmlFor={`${uid}-technique`} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Técnica</label>
               <input
+                id={`${uid}-technique`}
                 value={slide.technique || ''}
                 onChange={(e) => onUpdate({ technique: e.target.value })}
                 className="input mt-1 text-[11px]"
@@ -469,8 +474,9 @@ function ProfileSetup({ profile, onSave }) {
 
       <div className="card p-5 space-y-4">
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Nicho principal *</label>
+          <label htmlFor="profile-niche" className="text-xs font-semibold text-gray-700 mb-1.5 block">Nicho principal *</label>
           <input
+            id="profile-niche"
             value={form.niche}
             onChange={(e) => setForm((f) => ({ ...f, niche: e.target.value }))}
             placeholder='Ex: "Carreira em Tecnologia", "Marketing Digital", "Fitness para mulheres 30+"'
@@ -479,8 +485,9 @@ function ProfileSetup({ profile, onSave }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Sub-nichos <span className="font-normal text-gray-400">(separados por virgula)</span></label>
+          <label htmlFor="profile-subniches" className="text-xs font-semibold text-gray-700 mb-1.5 block">Sub-nichos <span className="font-normal text-gray-400">(separados por virgula)</span></label>
           <input
+            id="profile-subniches"
             value={form.subNiches}
             onChange={(e) => setForm((f) => ({ ...f, subNiches: e.target.value }))}
             placeholder='Ex: "lideranca feminina, transicao de carreira, marca pessoal, IA no trabalho"'
@@ -489,8 +496,9 @@ function ProfileSetup({ profile, onSave }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Publico-alvo</label>
+          <label htmlFor="profile-audience" className="text-xs font-semibold text-gray-700 mb-1.5 block">Publico-alvo</label>
           <input
+            id="profile-audience"
             value={form.targetAudience}
             onChange={(e) => setForm((f) => ({ ...f, targetAudience: e.target.value }))}
             placeholder='Ex: "Profissionais de tech 25-40, buscando crescer na carreira"'
@@ -499,8 +507,9 @@ function ProfileSetup({ profile, onSave }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Tom de voz predominante</label>
+          <label htmlFor="profile-tone" className="text-xs font-semibold text-gray-700 mb-1.5 block">Tom de voz predominante</label>
           <input
+            id="profile-tone"
             value={form.tone}
             onChange={(e) => setForm((f) => ({ ...f, tone: e.target.value }))}
             placeholder='Ex: "Autoridade com empatia, direto ao ponto, leve mas profissional"'
@@ -528,8 +537,9 @@ function ProfileSetup({ profile, onSave }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Descricao do posicionamento <span className="font-normal text-gray-400">(opcional)</span></label>
+          <label htmlFor="profile-description" className="text-xs font-semibold text-gray-700 mb-1.5 block">Descricao do posicionamento <span className="font-normal text-gray-400">(opcional)</span></label>
           <textarea
+            id="profile-description"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             placeholder='Ex: "Ajudo profissionais de tecnologia a crescerem na carreira com estrategias praticas de marca pessoal e lideranca"'
@@ -924,8 +934,9 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
 
         {/* Topic */}
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-2 block">2. Tema do carrossel</label>
+          <label htmlFor="carousel-topic" className="text-xs font-semibold text-gray-700 mb-2 block">2. Tema do carrossel</label>
           <input
+            id="carousel-topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
@@ -956,8 +967,9 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
 
         {/* Custom instructions */}
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-2 block">4. Instruções extras <span className="font-normal text-gray-400">(opcional)</span></label>
+          <label htmlFor="carousel-instructions" className="text-xs font-semibold text-gray-700 mb-2 block">4. Instruções extras <span className="font-normal text-gray-400">(opcional)</span></label>
           <textarea
+            id="carousel-instructions"
             value={customInstructions}
             onChange={(e) => setCustomInstructions(e.target.value)}
             placeholder="Ex: Foque em profissionais 25-35, use dados do mercado brasileiro, mencione a metodologia XYZ..."

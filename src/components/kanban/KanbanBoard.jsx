@@ -1,6 +1,6 @@
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Plus, Calendar, BarChart2, GripVertical, X, Check } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import useStore from '../../store/useStore'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import IdeaForm from '../ideas/IdeaForm'
@@ -22,6 +22,7 @@ function InlineMetricsPanel({ idea, onClose }) {
   const addMetric = useStore((s) => s.addMetric)
   const [form, setForm] = useState({ impressions: '', reach: '', likes: '', comments: '', shares: '', saves: '', link_clicks: '' })
   const [saved, setSaved] = useState(false)
+  const uid = useId()
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -60,8 +61,9 @@ function InlineMetricsPanel({ idea, onClose }) {
       <div className="grid grid-cols-2 gap-1.5">
         {METRIC_FIELDS.map(([key, label]) => (
           <div key={key}>
-            <label className="text-[10px] text-gray-500">{label}</label>
+            <label htmlFor={`${uid}-${key}`} className="text-[10px] text-gray-500">{label}</label>
             <input
+              id={`${uid}-${key}`}
               type="number"
               min="0"
               className="w-full px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-orange-400"

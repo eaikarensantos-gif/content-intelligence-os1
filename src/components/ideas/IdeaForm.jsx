@@ -321,7 +321,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Título */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Título *</label>
+            <label htmlFor="ideaform-title" className="label mb-0">Título *</label>
             <button
               type="button"
               onClick={handleGenerateTitle}
@@ -333,6 +333,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             </button>
           </div>
           <input
+            id="ideaform-title"
             className="input"
             placeholder="ex: 5 Ferramentas de IA Que Todo Criador Precisa"
             value={form.title}
@@ -360,7 +361,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Descrição */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Descrição</label>
+            <label htmlFor="ideaform-description" className="label mb-0">Descrição</label>
             <button
               type="button"
               onClick={handleGenerateHook}
@@ -372,6 +373,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             </button>
           </div>
           <textarea
+            id="ideaform-description"
             ref={descRef}
             className="input resize-none min-h-[80px]"
             placeholder="Qual é a ideia central? Que valor ela entrega? Você pode escrever um briefing completo aqui..."
@@ -385,8 +387,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
         {/* Tópico */}
         <div>
-          <label className="label">Tópico / Nicho</label>
+          <label htmlFor="ideaform-topic" className="label">Tópico / Nicho</label>
           <input
+            id="ideaform-topic"
             className="input"
             placeholder="ex: Economia Criativa, Ferramentas de IA, Crescimento de Carreira"
             value={form.topic}
@@ -424,14 +427,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Formato + Gancho */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Formato</label>
-            <select className="select" value={form.format} onChange={(e) => set('format', e.target.value)}>
+            <label htmlFor="ideaform-format" className="label">Formato</label>
+            <select id="ideaform-format" className="select" value={form.format} onChange={(e) => set('format', e.target.value)}>
               {FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f] || f}</option>)}
             </select>
           </div>
           <div>
-            <label className="label">Tipo de Gancho</label>
-            <select className="select" value={form.hook_type} onChange={(e) => set('hook_type', e.target.value)}>
+            <label htmlFor="ideaform-hook-type" className="label">Tipo de Gancho</label>
+            <select id="ideaform-hook-type" className="select" value={form.hook_type} onChange={(e) => set('hook_type', e.target.value)}>
               {HOOK_TYPES.map((h) => <option key={h} value={h}>{HOOK_LABELS[h] || h}</option>)}
             </select>
           </div>
@@ -440,14 +443,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Prioridade + Status */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Prioridade</label>
-            <select className="select" value={form.priority} onChange={(e) => set('priority', e.target.value)}>
+            <label htmlFor="ideaform-priority" className="label">Prioridade</label>
+            <select id="ideaform-priority" className="select" value={form.priority} onChange={(e) => set('priority', e.target.value)}>
               {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
             </select>
           </div>
           <div>
-            <label className="label">Status</label>
-            <select className="select" value={form.status} onChange={(e) => set('status', e.target.value)}>
+            <label htmlFor="ideaform-status" className="label">Status</label>
+            <select id="ideaform-status" className="select" value={form.status} onChange={(e) => set('status', e.target.value)}>
               {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
             </select>
           </div>
@@ -494,8 +497,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Data + Tipo de Conteúdo */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Data Programada</label>
+            <label htmlFor="ideaform-scheduled-date" className="label">Data Programada</label>
             <input
+              id="ideaform-scheduled-date"
               type="date"
               className="input"
               value={form.scheduled_date || ''}
@@ -523,8 +527,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
         {/* Roteiro */}
         <div>
-          <label className="label">Roteiro</label>
+          <label htmlFor="ideaform-script" className="label">Roteiro</label>
           <textarea
+            id="ideaform-script"
             className="input resize-none min-h-[80px]"
             placeholder="Escreva o roteiro completo do conteúdo aqui..."
             value={form.script || ''}
@@ -535,7 +540,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Legenda + AI */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Legenda</label>
+            <label htmlFor="ideaform-caption" className="label mb-0">Legenda</label>
             <button
               type="button"
               onClick={() => handleGenerateAI('caption')}
@@ -547,6 +552,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             </button>
           </div>
           <textarea
+            id="ideaform-caption"
             className="input resize-none min-h-[60px]"
             placeholder="Legenda para o post... ou clique em 'Gerar com IA'"
             value={form.caption || ''}
@@ -557,7 +563,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* CTA + AI */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">CTA (Call to Action)</label>
+            <label htmlFor="ideaform-cta" className="label mb-0">CTA (Call to Action)</label>
             <button
               type="button"
               onClick={() => handleGenerateAI('cta')}
@@ -569,6 +575,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             </button>
           </div>
           <input
+            id="ideaform-cta"
             className="input"
             placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
             value={form.cta || ''}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useId } from 'react'
 import {
   DollarSign, FileText, Plus, Trash2, Edit3, Check, X, Download,
   ChevronRight, Copy, Eye, Printer, Calendar, User, Building2,
@@ -90,6 +90,8 @@ export default function PricingManager({ embedded = false }) {
   const proposals = useStore((s) => s.proposals)
   const addProposal = useStore((s) => s.addProposal)
   const deleteProposal = useStore((s) => s.deleteProposal)
+
+  const uid = useId()
 
   const [products, setProducts] = useState(() =>
     storedProducts?.length > 0 ? storedProducts : DEFAULT_PRODUCTS
@@ -612,27 +614,27 @@ export default function PricingManager({ embedded = false }) {
               <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><User size={14} className="text-orange-500" /> Dados do Cliente</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold text-gray-500 mb-1 block">Contratante (empresa) *</label>
-                  <input className="input text-xs py-2 w-full" value={clientCompany} onChange={(e) => setClientCompany(e.target.value)} placeholder="FIAP" />
+                  <label htmlFor="proposal-company" className="text-[10px] font-semibold text-gray-500 mb-1 block">Contratante (empresa) *</label>
+                  <input id="proposal-company" className="input text-xs py-2 w-full" value={clientCompany} onChange={(e) => setClientCompany(e.target.value)} placeholder="FIAP" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-gray-500 mb-1 block">Responsavel</label>
-                  <input className="input text-xs py-2 w-full" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="Nome do contato" />
+                  <label htmlFor="proposal-contact" className="text-[10px] font-semibold text-gray-500 mb-1 block">Responsavel</label>
+                  <input id="proposal-contact" className="input text-xs py-2 w-full" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="Nome do contato" />
                 </div>
               </div>
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="text-[10px] font-semibold text-gray-500 mb-1 block">Nome para o arquivo</label>
-                  <input className="input text-xs py-2 w-full" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Karen Santos" />
+                  <label htmlFor="proposal-filename" className="text-[10px] font-semibold text-gray-500 mb-1 block">Nome para o arquivo</label>
+                  <input id="proposal-filename" className="input text-xs py-2 w-full" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Karen Santos" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-gray-500 mb-1 block">Validade (dias)</label>
-                  <input type="number" className="input text-xs py-2 w-20" value={validity} onChange={(e) => setValidity(Number(e.target.value))} />
+                  <label htmlFor="proposal-validity" className="text-[10px] font-semibold text-gray-500 mb-1 block">Validade (dias)</label>
+                  <input id="proposal-validity" type="number" className="input text-xs py-2 w-20" value={validity} onChange={(e) => setValidity(Number(e.target.value))} />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-semibold text-gray-500 mb-1 block">Observacoes</label>
-                <input className="input text-xs py-2 w-full" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Condicoes especiais, escopo extra..." />
+                <label htmlFor="proposal-notes" className="text-[10px] font-semibold text-gray-500 mb-1 block">Observacoes</label>
+                <input id="proposal-notes" className="input text-xs py-2 w-full" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Condicoes especiais, escopo extra..." />
               </div>
             </div>
 
@@ -645,8 +647,9 @@ export default function PricingManager({ embedded = false }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {TEMPLATE_FIELDS[template].map(f => (
                     <div key={f.key}>
-                      <label className="text-[10px] font-semibold text-gray-500 mb-1 block">{f.label}</label>
+                      <label htmlFor={`${uid}-tplfield-${f.key}`} className="text-[10px] font-semibold text-gray-500 mb-1 block">{f.label}</label>
                       <input
+                        id={`${uid}-tplfield-${f.key}`}
                         className="input text-xs py-2 w-full"
                         placeholder={f.placeholder}
                         value={templateFields[f.key] || ''}
@@ -696,8 +699,9 @@ export default function PricingManager({ embedded = false }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <div>
-                          <label className="text-[9px] text-gray-400">Qtd</label>
+                          <label htmlFor={`${uid}-item-qty-${item.productId}`} className="text-[9px] text-gray-400">Qtd</label>
                           <input
+                            id={`${uid}-item-qty-${item.productId}`}
                             type="number"
                             min={1}
                             className="input text-xs py-1 w-12 text-center"
@@ -706,8 +710,9 @@ export default function PricingManager({ embedded = false }) {
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] text-gray-400">Preco</label>
+                          <label htmlFor={`${uid}-item-price-${item.productId}`} className="text-[9px] text-gray-400">Preco</label>
                           <select
+                            id={`${uid}-item-price-${item.productId}`}
                             className="input text-xs py-1 w-24"
                             value={item.priceTier}
                             onChange={(e) => updateItem(item.productId, 'priceTier', Number(e.target.value))}

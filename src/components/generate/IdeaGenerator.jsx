@@ -552,10 +552,11 @@ export default function IdeaGenerator() {
 
               {/* Topic */}
               <div>
-                <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                <label htmlFor="idea-topic" className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
                   <Target size={11} /> Tópico *
                 </label>
                 <input
+                  id="idea-topic"
                   className="input text-sm"
                   placeholder="Ex: inteligência artificial, criação de conteúdo, carreira..."
                   value={topic}
@@ -565,10 +566,11 @@ export default function IdeaGenerator() {
 
               {/* Audience */}
               <div>
-                <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                <label htmlFor="idea-audience" className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
                   <Users size={11} /> Audiência
                 </label>
                 <input
+                  id="idea-audience"
                   className="input text-sm"
                   placeholder="Ex: profissionais de 25-40, empreendedores..."
                   value={audience}
@@ -635,10 +637,11 @@ export default function IdeaGenerator() {
 
                     {/* Narrative style — compact select dropdown */}
                     <div>
-                      <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
+                      <label htmlFor="idea-narrative-style" className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1 uppercase tracking-wide">
                         <BookOpen size={11} /> Estilo Narrativo
                       </label>
                       <select
+                        id="idea-narrative-style"
                         value={narrativeStyle}
                         onChange={(e) => setNarrativeStyle(e.target.value)}
                         className="w-full input text-xs py-2"

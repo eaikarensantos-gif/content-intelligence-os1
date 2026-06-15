@@ -248,8 +248,9 @@ export default function AuthenticityAnalyzer() {
       {/* Input area */}
       <div className="card p-5 space-y-4">
         <div>
-          <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Rascunho</label>
+          <label htmlFor="auth-draft" className="text-xs font-semibold text-gray-600 mb-1.5 block">Rascunho</label>
           <textarea
+            id="auth-draft"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={8}

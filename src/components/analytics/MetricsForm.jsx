@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { Upload, Plus, FileText, ExternalLink } from 'lucide-react'
 import { parseFile } from '../../utils/csvNormalizer'
 import Modal from '../common/Modal'
@@ -21,6 +21,7 @@ export default function MetricsForm({ open, onClose }) {
   const metrics = useStore((s) => s.metrics)
   const addMetric = useStore((s) => s.addMetric)
   const updateMetric = useStore((s) => s.updateMetric)
+  const uid = useId()
   const [form, setForm] = useState(EMPTY)
   const [tab, setTab] = useState('manual')
   const [csvResult, setCsvResult] = useState(null)
@@ -292,8 +293,8 @@ export default function MetricsForm({ open, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Seletor de post */}
           <div>
-            <label className="label">Post Vinculado</label>
-            <select className="select" value={form.post_id} onChange={(e) => set('post_id', e.target.value)} required>
+            <label htmlFor="metric-post" className="label">Post Vinculado</label>
+            <select id="metric-post" className="select" value={form.post_id} onChange={(e) => set('post_id', e.target.value)} required>
               <option value="">Selecione um post...</option>
               {posts.map((p) => (
                 <option key={p.id} value={p.id}>{p.title.slice(0, 50)} — {p.platform}</option>
@@ -303,23 +304,23 @@ export default function MetricsForm({ open, onClose }) {
 
           {/* Cliente */}
           <div>
-            <label className="label">Cliente / Projeto</label>
-            <input type="text" className="input" placeholder="Ex: FIAP, Brand X, Personal..." value={form.client} onChange={(e) => set('client', e.target.value)} />
+            <label htmlFor="metric-client" className="label">Cliente / Projeto</label>
+            <input id="metric-client" type="text" className="input" placeholder="Ex: FIAP, Brand X, Personal..." value={form.client} onChange={(e) => set('client', e.target.value)} />
           </div>
 
           {/* Plataforma + Data */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Plataforma</label>
-              <select className="select" value={form.platform} onChange={(e) => set('platform', e.target.value)}>
+              <label htmlFor="metric-platform" className="label">Plataforma</label>
+              <select id="metric-platform" className="select" value={form.platform} onChange={(e) => set('platform', e.target.value)}>
                 {['linkedin', 'instagram', 'twitter', 'youtube', 'tiktok'].map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Data</label>
-              <input type="date" className="input" value={form.date} onChange={(e) => set('date', e.target.value)} required />
+              <label htmlFor="metric-date" className="label">Data</label>
+              <input id="metric-date" type="date" className="input" value={form.date} onChange={(e) => set('date', e.target.value)} required />
             </div>
           </div>
 
@@ -327,8 +328,9 @@ export default function MetricsForm({ open, onClose }) {
           <div className="grid grid-cols-2 gap-3">
             {NUMERIC_FIELDS.map(([key, label]) => (
               <div key={key}>
-                <label className="label">{label}</label>
+                <label htmlFor={`${uid}-metric-${key}`} className="label">{label}</label>
                 <input
+                  id={`${uid}-metric-${key}`}
                   type="number"
                   min="0"
                   className="input"

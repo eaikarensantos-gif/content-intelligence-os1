@@ -686,12 +686,12 @@ export default function ClientReports() {
             {/* Period */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="label">Data Inicial</label>
-                <input type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                <label htmlFor="report-date-from" className="label">Data Inicial</label>
+                <input id="report-date-from" type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
               </div>
               <div>
-                <label className="label">Data Final</label>
-                <input type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                <label htmlFor="report-date-to" className="label">Data Final</label>
+                <input id="report-date-to" type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
               </div>
               <div className="flex items-end">
                 <div className="w-full p-3 rounded-xl bg-orange-50 border border-orange-100 text-center">

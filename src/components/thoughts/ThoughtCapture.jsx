@@ -1208,8 +1208,9 @@ export default function ThoughtCapture() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nicho / contexto <span className="text-gray-300">(opcional)</span></label>
+            <label htmlFor="thought-niche" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Nicho / contexto <span className="text-gray-300">(opcional)</span></label>
             <input
+              id="thought-niche"
               value={niche}
               onChange={e => setNiche(e.target.value)}
               placeholder="ex: marketing digital, saúde mental..."

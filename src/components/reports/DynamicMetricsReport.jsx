@@ -60,8 +60,9 @@ function BrandSettings({ brand, setBrand }) {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">Font</label>
+            <label htmlFor="metrics-brand-font" className="text-xs font-medium text-gray-600 block mb-2">Font</label>
             <input
+              id="metrics-brand-font"
               type="text"
               value={brand.font}
               onChange={(e) => setBrand({ ...brand, font: e.target.value })}
@@ -70,8 +71,9 @@ function BrandSettings({ brand, setBrand }) {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">Logo URL</label>
+            <label htmlFor="metrics-brand-logo" className="text-xs font-medium text-gray-600 block mb-2">Logo URL</label>
             <input
+              id="metrics-brand-logo"
               type="text"
               value={brand.logoUrl}
               onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
@@ -80,8 +82,9 @@ function BrandSettings({ brand, setBrand }) {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-2">Empresa</label>
+            <label htmlFor="metrics-brand-company" className="text-xs font-medium text-gray-600 block mb-2">Empresa</label>
             <input
+              id="metrics-brand-company"
               type="text"
               value={brand.company}
               onChange={(e) => setBrand({ ...brand, company: e.target.value })}

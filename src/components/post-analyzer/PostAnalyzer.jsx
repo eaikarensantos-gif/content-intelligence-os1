@@ -453,8 +453,9 @@ export default function PostAnalyzer() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Platform selector */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Plataforma</label>
+            <label htmlFor="platform-select" className="block text-sm font-semibold text-gray-700 mb-2">Plataforma</label>
             <select
+              id="platform-select"
               value={platform}
               onChange={(e) => {
                 setPlatform(e.target.value)
@@ -469,10 +470,11 @@ export default function PostAnalyzer() {
 
           {/* Period selector */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label htmlFor="period-input" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <Calendar size={16} /> Período
             </label>
             <input
+              id="period-input"
               type="month"
               value={period}
               onChange={(e) => setPeriod(e.target.value)}

@@ -853,8 +853,9 @@ export default function ContentArchetypes() {
 
               {/* Webhook URL */}
               <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">URL do Webhook</label>
+                <label htmlFor="arch-webhook-url" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">URL do Webhook</label>
                 <input
+                  id="arch-webhook-url"
                   value={webhookUrl}
                   onChange={(e) => handleSaveWebhookUrl(e.target.value)}
                   placeholder="https://hook.us1.make.com/..."
@@ -864,8 +865,9 @@ export default function ContentArchetypes() {
 
               {/* Benchmark data */}
               <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Dados da Conta Benchmark</label>
+                <label htmlFor="arch-benchmark-data" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Dados da Conta Benchmark</label>
                 <textarea
+                  id="arch-benchmark-data"
                   value={benchmarkInput}
                   onChange={(e) => setBenchmarkInput(e.target.value)}
                   placeholder={'Cole o JSON da conta ou o @handle do benchmark.\n\nExemplos:\n{"username": "@icaborges", "platform": "instagram"}\n\nou simplesmente:\n@icaborges'}
@@ -1175,8 +1177,9 @@ export default function ContentArchetypes() {
 
               {/* Archetype selector */}
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Arquétipo</label>
+                <label htmlFor="arch-gen-select" className="text-xs font-medium text-gray-600 mb-1 block">Arquétipo</label>
                 <select
+                  id="arch-gen-select"
                   value={selectedArch?.id || ''}
                   onChange={(e) => {
                     const found = allArchetypes.find(a => a.id === e.target.value)

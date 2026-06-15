@@ -308,8 +308,9 @@ export default function VideoEditor() {
           <p className="text-sm font-semibold text-gray-700">Marcar corte</p>
           <div className="flex items-end gap-3">
             <div className="flex-1 space-y-1">
-              <label className="text-xs text-gray-500">Início (s ou m:ss)</label>
+              <label htmlFor="cut-start" className="text-xs text-gray-500">Início (s ou m:ss)</label>
               <input
+                id="cut-start"
                 type="text"
                 value={newStart}
                 onChange={e => setNewStart(e.target.value)}
@@ -319,8 +320,9 @@ export default function VideoEditor() {
             </div>
             <div className="pb-2 text-gray-400">→</div>
             <div className="flex-1 space-y-1">
-              <label className="text-xs text-gray-500">Fim (s ou m:ss)</label>
+              <label htmlFor="cut-end" className="text-xs text-gray-500">Fim (s ou m:ss)</label>
               <input
+                id="cut-end"
                 type="text"
                 value={newEnd}
                 onChange={e => setNewEnd(e.target.value)}

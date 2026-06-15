@@ -216,10 +216,11 @@ export default function AISettings() {
         {provider === 'custom' ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+              <label htmlFor="ai-base-url" className="text-xs text-gray-500 font-medium mb-1.5 block">
                 Base URL (OpenAI-compatible)
               </label>
               <input
+                id="ai-base-url"
                 type="text"
                 value={customBaseUrl}
                 onChange={(e) => setCustomBaseUrl(e.target.value)}
@@ -231,8 +232,9 @@ export default function AISettings() {
               </p>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium mb-1.5 block">Model name</label>
+              <label htmlFor="ai-model-name" className="text-xs text-gray-500 font-medium mb-1.5 block">Model name</label>
               <input
+                id="ai-model-name"
                 type="text"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
@@ -313,8 +315,9 @@ export default function AISettings() {
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Project URL</label>
+            <label htmlFor="ai-sb-project-url" className="text-xs text-gray-500 font-medium mb-1.5 block">Project URL</label>
             <input
+              id="ai-sb-project-url"
               type="text"
               value={sbUrl}
               onChange={(e) => setSbUrl(e.target.value)}
@@ -325,9 +328,10 @@ export default function AISettings() {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Anon Key</label>
+            <label htmlFor="ai-sb-anon-key" className="text-xs text-gray-500 font-medium mb-1.5 block">Anon Key</label>
             <div className="relative">
               <input
+                id="ai-sb-anon-key"
                 type={showSbKey ? 'text' : 'password'}
                 value={sbKey}
                 onChange={(e) => setSbKey(e.target.value)}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { ChevronRight, ChevronLeft, Sparkles, Check, RotateCcw, Loader2, Eye, Copy, Zap } from 'lucide-react'
 import useStore from '../../store/useStore'
 
@@ -247,6 +247,7 @@ function VoiceCalibrator() {
   const [loading, setLoading] = useState(false)
   const [analysis, setAnalysis] = useState(brandVoice?.calibration || null)
   const [error, setError] = useState(null)
+  const uid = useId()
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -323,10 +324,11 @@ Analise e retorne EXCLUSIVAMENTE JSON:
       <div className="space-y-3">
         {examples.map((ex, i) => (
           <div key={i}>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">
+            <label htmlFor={`${uid}-example-${i}`} className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">
               Post {i + 1} {i < 2 ? '*' : '(opcional)'}
             </label>
             <textarea
+              id={`${uid}-example-${i}`}
               value={ex}
               onChange={e => { const n = [...examples]; n[i] = e.target.value; setExamples(n) }}
               rows={3}

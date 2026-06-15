@@ -701,10 +701,11 @@ function GenerateView() {
       <div className="card p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] font-medium text-gray-500 mb-1.5 flex items-center gap-1">
+            <label htmlFor="generate-niche" className="text-[11px] font-medium text-gray-500 mb-1.5 flex items-center gap-1">
               <Target size={11} /> {mode === 'signals' ? 'Nicho (obrigatório para sinais)' : 'Nicho / Tema Principal'}
             </label>
             <input
+              id="generate-niche"
               className="input text-sm"
               placeholder="Ex: marketing digital, finanças pessoais, fitness..."
               value={niche}
@@ -712,10 +713,11 @@ function GenerateView() {
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-gray-500 mb-1.5 flex items-center gap-1">
+            <label htmlFor="generate-audience" className="text-[11px] font-medium text-gray-500 mb-1.5 flex items-center gap-1">
               <Users size={11} /> Audiência-Alvo
             </label>
             <input
+              id="generate-audience"
               className="input text-sm"
               placeholder="Ex: empreendedores iniciantes, mães de 30-40 anos..."
               value={audience}

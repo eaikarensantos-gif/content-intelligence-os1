@@ -312,8 +312,8 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
               </div>
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Data Limite</label>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+              <label htmlFor="task-due-date" className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Data Limite</label>
+              <input id="task-due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-300" />
             </div>
           </div>
