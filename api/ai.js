@@ -178,34 +178,62 @@ async function vimeoSearch(accessToken, query) {
 }
 
 // ─── TikTok (best-effort, via a RapidAPI provider) ────────────────────────────
-// TikTok has no official search API; this targets a RapidAPI host (configurable,
-// defaults to tiktok-scraper7). Response shapes vary by provider, so we read the
-// most common fields defensively.
+// TikTok has no official search API; this targets a RapidAPI host. The two most
+// common providers use different search endpoints and response shapes, so we
+// pick the endpoint by host and parse fields defensively (camelCase + snake_case).
+
+function tiktokSearchUrl(host, query) {
+  const kw = encodeURIComponent(query)
+  // tiktok-api23: web-style search, camelCase fields.
+  if (host.includes('tiktok-api23')) {
+    return `https://${host}/api/search/general?keyword=${kw}&cursor=0&search_id=0`
+  }
+  // tiktok-scraper7 (and default): snake_case feed search.
+  return `https://${host}/feed/search?keywords=${kw}&count=10&region=br`
+}
+
+function normalizeTiktokItem(raw) {
+  // Some providers wrap the actual video in .item / .aweme_info.
+  const v = raw.item || raw.aweme_info || raw
+  const author = v.author || {}
+  const stats = v.stats || v.statistics || {}
+  const video = v.video || {}
+  const id = String(v.id || v.aweme_id || v.video_id || '')
+  const unique = author.uniqueId || author.unique_id || '_'
+  return {
+    id,
+    videoId:    id,
+    platform:   'tiktok',
+    videoTitle: v.desc || v.title || 'TikTok',
+    name:       author.nickname || author.unique_id || author.uniqueId || 'TikTok',
+    thumbnail:  video.cover || video.originCover || video.origin_cover ||
+                v.cover || v.origin_cover || v.ai_dynamic_cover || null,
+    url:        `https://www.tiktok.com/@${unique}/video/${id}`,
+    viewCount:  String(stats.playCount ?? stats.play_count ?? v.play_count ?? '') || null,
+    likeCount:  String(stats.diggCount ?? stats.digg_count ?? v.digg_count ?? '') || null,
+  }
+}
 
 async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
   const host = (rapidApiHost && rapidApiHost.trim()) || 'tiktok-scraper7.p.rapidapi.com'
-  const url = `https://${host}/feed/search?keywords=${encodeURIComponent(query)}&count=10&region=br`
-  const res = await fetch(url, {
+  const res = await fetch(tiktokSearchUrl(host, query), {
     headers: { 'x-rapidapi-key': rapidApiKey, 'x-rapidapi-host': host },
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.message || `TikTok error ${res.status}`)
-  const items = data.data?.videos || data.videos || (Array.isArray(data.data) ? data.data : [])
-  return (Array.isArray(items) ? items : []).map((v) => {
-    const id = String(v.video_id || v.aweme_id || v.id || '')
-    const author = v.author || {}
-    return {
-      id,
-      videoId:    id,
-      platform:   'tiktok',
-      videoTitle: v.title || v.desc || 'TikTok',
-      name:       author.nickname || author.unique_id || 'TikTok',
-      thumbnail:  v.cover || v.origin_cover || v.ai_dynamic_cover || null,
-      url:        `https://www.tiktok.com/@${author.unique_id || '_'}/video/${id}`,
-      viewCount:  v.play_count != null ? String(v.play_count) : null,
-      likeCount:  v.digg_count != null ? String(v.digg_count) : null,
-    }
-  }).filter((v) => v.id)
+
+  // Items can live under several keys depending on the provider.
+  const items =
+    data.data?.videos ||
+    data.item_list ||
+    data.videos ||
+    (Array.isArray(data.data) ? data.data : null) ||
+    (Array.isArray(data.data?.data) ? data.data.data : null) ||
+    []
+
+  return (Array.isArray(items) ? items : [])
+    .map(normalizeTiktokItem)
+    .filter((v) => v.id)
 }
 
 // ─── Whisper transcription ────────────────────────────────────────────────────
