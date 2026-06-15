@@ -27,6 +27,7 @@ import WebClipper from './components/clipper/WebClipper'
 import NewsGenerator from './components/news/NewsGenerator'
 import PDFContentGenerator from './components/pdf/PDFContentGenerator'
 import CommunityStudio from './components/community/CommunityStudio'
+import VideoSwipe from './components/video-swipe/VideoSwipe'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -109,6 +110,7 @@ export default function App() {
             <Route path="/news" element={<NewsGenerator />} />
             <Route path="/pdf-studio" element={<div className="p-0 animate-fade-in"><PDFContentGenerator /></div>} />
             <Route path="/community" element={<CommunityStudio />} />
+            <Route path="/swipe" element={<VideoSwipe />} />
           </Routes>
         </Layout>
       </BrowserRouter>
