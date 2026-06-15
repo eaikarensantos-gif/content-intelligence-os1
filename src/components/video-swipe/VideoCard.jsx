@@ -7,6 +7,16 @@ const PLATFORM_LABELS = {
   tiktok: 'TikTok',
 }
 
+// Build the player URL. For YouTube we turn captions on and prefer Portuguese,
+// so international videos show auto-translated subtitles when available.
+function playerSrc(video) {
+  let src = `${video.embedUrl}?autoplay=1&rel=0`
+  if (video.platform === 'youtube') {
+    src += '&cc_load_policy=1&cc_lang_pref=pt&hl=pt'
+  }
+  return src
+}
+
 // Compact, human-readable count (e.g. 1.2M, 34K).
 function formatCount(n) {
   const num = parseInt(n, 10)
@@ -27,7 +37,7 @@ export default function VideoCard({ video, playing, onPlay }) {
         {playing ? (
           <iframe
             className="h-full w-full"
-            src={`${video.embedUrl}?autoplay=1&rel=0`}
+            src={playerSrc(video)}
             title={video.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
