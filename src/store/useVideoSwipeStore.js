@@ -9,27 +9,8 @@ const useVideoSwipeStore = create(
   persist(
     (set, get) => ({
       selectedCategories: [],
-      // Which platforms to pull from. null = not chosen yet (defaults to all
-      // available); otherwise an explicit list of platform ids.
-      selectedPlatforms: null,
       queue: [],
       seenIds: [],
-
-      // `allIds` is the full set of currently-available platforms. When nothing
-      // has been chosen yet (null = all active), we materialize from `allIds`
-      // first so that clicking an active chip de-selects it (instead of flipping
-      // the meaning of the list).
-      togglePlatform: (id, allIds = []) =>
-        set((s) => {
-          const base = s.selectedPlatforms ?? allIds
-          return {
-            selectedPlatforms: base.includes(id)
-              ? base.filter((p) => p !== id)
-              : [...base, id],
-          }
-        }),
-
-      setSelectedPlatforms: (selectedPlatforms) => set({ selectedPlatforms }),
 
       toggleCategory: (category) =>
         set((s) => ({
@@ -67,7 +48,6 @@ const useVideoSwipeStore = create(
       name: 'content-intelligence-video-swipe',
       partialize: (s) => ({
         selectedCategories: s.selectedCategories,
-        selectedPlatforms: s.selectedPlatforms,
         queue: s.queue,
         seenIds: s.seenIds,
       }),

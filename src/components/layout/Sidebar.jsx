@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  Clapperboard, Sun, Moon, Scissors, Newspaper, Users, BookOpen, Flame,
+  ClipboardList, Clapperboard, Sun, Moon, Flame,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -12,15 +12,12 @@ import useAIStore from '../../store/useAIStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
-  { to: '/social', icon: BarChart2, label: 'Analytics' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
-  { to: '/pdf-studio', icon: BookOpen, label: 'PDF → Conteúdo' },
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
-  { to: '/community', icon: Users, label: 'Community Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
-  { to: '/clipper', icon: Scissors, label: 'Web Clipper' },
-  { to: '/news', icon: Newspaper, label: 'Novidades Tech' },
+  { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
 ]
 
 const NAV_GROUPS = [
@@ -28,7 +25,7 @@ const NAV_GROUPS = [
     id: 'inteligencia',
     label: 'Inteligência',
     children: [
-      { to: '/audience', icon: Users, label: 'Análise de Audiência' },
+      { to: '/social', icon: Activity, label: 'Social Dashboard' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
       { to: '/trends', icon: Radar, label: 'Creator Insights' },

@@ -1,15 +1,36 @@
 import { useCallback, useState } from 'react'
+import { youtubeSearch } from '../lib/aiService'
+import useAIStore from '../store/useAIStore'
 import useVideoSwipeStore from '../store/useVideoSwipeStore'
 import { queriesForCategories } from '../lib/videoCategories'
-import { getEnabledPlatforms, normalizeResult } from '../lib/videoPlatforms'
 
-// Fetches videos for the selected categories across every enabled platform
-// (YouTube, Dailymotion, Vimeo, TikTok) and builds a deck, skipping anything the
-// user already swiped on. Each (query × platform) call runs in parallel and the
-// results are interleaved so the deck mixes platforms and categories.
+// Normalize a raw YouTube search result (shape from aiService.youtubeSearch)
+// into the VideoResult shape the swipe cards consume.
+function toVideoResult(raw, category, query) {
+  const videoId = raw.videoId || raw.id
+  return {
+    id: `youtube:${videoId}`,
+    videoId,
+    platform: 'youtube',
+    title: raw.videoTitle || raw.name || 'Sem título',
+    channelName: raw.name || raw.handle || '',
+    thumbnailUrl: raw.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    embedUrl: `https://www.youtube.com/embed/${videoId}`,
+    url: raw.url || `https://www.youtube.com/watch?v=${videoId}`,
+    viewCount: raw.viewCount || null,
+    likeCount: raw.likeCount || null,
+    engagementRate: raw.engagementRate || null,
+    category,
+    query,
+  }
+}
+
+// Fetches videos for the selected categories and builds a deck, skipping any
+// video the user has already swiped on. Queries are fetched in parallel and
+// interleaved so the deck mixes categories rather than running one at a time.
 export function useVideoSearch() {
+  const youtubeApiKey = useAIStore((s) => s.youtubeApiKey)
   const seenIds = useVideoSwipeStore((s) => s.seenIds)
-  const selectedPlatforms = useVideoSwipeStore((s) => s.selectedPlatforms)
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -19,38 +40,26 @@ export function useVideoSearch() {
       const pairs = queriesForCategories(categories)
       if (pairs.length === 0) return []
 
-      // null = not chosen yet → use all available; otherwise honor the picks.
-      const available = getEnabledPlatforms()
-      const platforms = selectedPlatforms == null
-        ? available
-        : available.filter((p) => selectedPlatforms.includes(p.id))
-      if (platforms.length === 0) return []
-
       setLoading(true)
       setError(null)
       try {
-        const tasks = []
-        for (const { category, query } of pairs) {
-          for (const platform of platforms) {
-            tasks.push(
-              platform
-                .run(query)
-                .then((raw) => raw.map((r) => normalizeResult(r, category, query)))
-            )
-          }
-        }
+        const settled = await Promise.allSettled(
+          pairs.map(async ({ category, query }) => {
+            const raw = await youtubeSearch(youtubeApiKey, query)
+            return raw.map((r) => toVideoResult(r, category, query))
+          })
+        )
 
-        const settled = await Promise.allSettled(tasks)
+        // Interleave results round-robin across queries for a varied deck.
         const lists = settled
           .filter((r) => r.status === 'fulfilled')
           .map((r) => r.value)
 
         const firstError = settled.find((r) => r.status === 'rejected')
-        if (lists.every((l) => l.length === 0) && firstError) {
+        if (lists.length === 0 && firstError) {
           throw firstError.reason
         }
 
-        // Interleave round-robin so platforms/categories are mixed in the deck.
         const interleaved = []
         const max = Math.max(0, ...lists.map((l) => l.length))
         for (let i = 0; i < max; i++) {
@@ -75,7 +84,7 @@ export function useVideoSearch() {
         setLoading(false)
       }
     },
-    [seenIds, selectedPlatforms]
+    [youtubeApiKey, seenIds]
   )
 
   return { search, loading, error }
