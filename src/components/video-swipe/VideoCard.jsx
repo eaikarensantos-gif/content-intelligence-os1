@@ -1,5 +1,12 @@
 import { Play, Eye, ThumbsUp } from 'lucide-react'
 
+const PLATFORM_LABELS = {
+  youtube: 'YouTube',
+  dailymotion: 'Dailymotion',
+  vimeo: 'Vimeo',
+  tiktok: 'TikTok',
+}
+
 // Compact, human-readable count (e.g. 1.2M, 34K).
 function formatCount(n) {
   const num = parseInt(n, 10)
@@ -48,9 +55,16 @@ export default function VideoCard({ video, playing, onPlay }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2.5 p-5">
-        <span className="inline-flex w-fit rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
-          {video.category}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex w-fit rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+            {video.category}
+          </span>
+          {PLATFORM_LABELS[video.platform] && (
+            <span className="inline-flex w-fit rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+              {PLATFORM_LABELS[video.platform]}
+            </span>
+          )}
+        </div>
         <h3 className="line-clamp-3 text-lg font-semibold leading-snug text-gray-900">{video.title}</h3>
         <p className="text-sm text-gray-500">{video.channelName}</p>
 

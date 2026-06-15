@@ -12,6 +12,8 @@ export const VIDEO_CATEGORIES = {
   Personalidades: ['entrevista personalidade', 'história de vida inspiradora', 'bastidores famosos'],
   Motivacional: ['mensagem motivacional', 'discurso motivacional', 'vídeo de motivação'],
   Discursos: ['discurso inspirador', 'palestra figura pública', 'melhores discursos da história'],
+  'Cortes de Podcast': ['cortes de podcast', 'melhores momentos podcast', 'podcast brasil cortes'],
+  'Personalidades Negras': ['personalidades negras inspiradoras', 'líderes negros história', 'protagonismo negro'],
 }
 
 export const CATEGORY_NAMES = Object.keys(VIDEO_CATEGORIES)

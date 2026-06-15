@@ -122,6 +122,92 @@ async function youtubeSearch(youtubeApiKey, query) {
   })
 }
 
+// ─── Dailymotion (public search — no API key required) ────────────────────────
+
+async function dailymotionSearch(query) {
+  const fields = 'id,title,owner.screenname,thumbnail_360_url,views_total,url'
+  const url = `https://api.dailymotion.com/videos?search=${encodeURIComponent(query)}` +
+    `&fields=${encodeURIComponent(fields)}&limit=10&sort=relevance`
+  const res = await fetch(url)
+  const data = await res.json()
+  if (!res.ok || data.error) {
+    throw new Error(data.error?.message || `Dailymotion error ${res.status}`)
+  }
+  return (data.list || []).map((v) => ({
+    id:         v.id,
+    videoId:    v.id,
+    platform:   'dailymotion',
+    videoTitle: v.title,
+    name:       v['owner.screenname'] || 'Dailymotion',
+    thumbnail:  v.thumbnail_360_url || null,
+    url:        v.url || `https://www.dailymotion.com/video/${v.id}`,
+    viewCount:  v.views_total != null ? String(v.views_total) : null,
+    likeCount:  null,
+  }))
+}
+
+// ─── Vimeo (requires a personal access token) ─────────────────────────────────
+
+async function vimeoSearch(accessToken, query) {
+  const fields = 'uri,name,link,user.name,pictures.sizes,stats.plays'
+  const url = `https://api.vimeo.com/videos?query=${encodeURIComponent(query)}&per_page=10` +
+    `&fields=${encodeURIComponent(fields)}`
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) {
+    throw new Error(data.error || data.developer_message || `Vimeo error ${res.status}`)
+  }
+  return (data.data || []).map((v) => {
+    const id = String(v.uri || '').split('/').pop()
+    const sizes = v.pictures?.sizes || []
+    const thumb = sizes.length ? sizes[Math.min(3, sizes.length - 1)].link : null
+    return {
+      id,
+      videoId:    id,
+      platform:   'vimeo',
+      videoTitle: v.name,
+      name:       v.user?.name || 'Vimeo',
+      thumbnail:  thumb,
+      url:        v.link || `https://vimeo.com/${id}`,
+      viewCount:  v.stats?.plays != null ? String(v.stats.plays) : null,
+      likeCount:  null,
+    }
+  })
+}
+
+// ─── TikTok (best-effort, via a RapidAPI provider) ────────────────────────────
+// TikTok has no official search API; this targets a RapidAPI host (configurable,
+// defaults to tiktok-scraper7). Response shapes vary by provider, so we read the
+// most common fields defensively.
+
+async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
+  const host = (rapidApiHost && rapidApiHost.trim()) || 'tiktok-scraper7.p.rapidapi.com'
+  const url = `https://${host}/feed/search?keywords=${encodeURIComponent(query)}&count=10&region=br`
+  const res = await fetch(url, {
+    headers: { 'x-rapidapi-key': rapidApiKey, 'x-rapidapi-host': host },
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.message || `TikTok error ${res.status}`)
+  const items = data.data?.videos || data.videos || (Array.isArray(data.data) ? data.data : [])
+  return (Array.isArray(items) ? items : []).map((v) => {
+    const id = String(v.video_id || v.aweme_id || v.id || '')
+    const author = v.author || {}
+    return {
+      id,
+      videoId:    id,
+      platform:   'tiktok',
+      videoTitle: v.title || v.desc || 'TikTok',
+      name:       author.nickname || author.unique_id || 'TikTok',
+      thumbnail:  v.cover || v.origin_cover || v.ai_dynamic_cover || null,
+      url:        `https://www.tiktok.com/@${author.unique_id || '_'}/video/${id}`,
+      viewCount:  v.play_count != null ? String(v.play_count) : null,
+      likeCount:  v.digg_count != null ? String(v.digg_count) : null,
+    }
+  }).filter((v) => v.id)
+}
+
 // ─── Whisper transcription ────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
@@ -170,6 +256,32 @@ export default async function handler(req, res) {
       if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
 
       const results = await youtubeSearch(youtubeApiKey, query)
+      return res.status(200).json({ results })
+    }
+
+    // ── Dailymotion search (no key) ─────────────────────────────────────────────
+    if (action === 'dailymotion-search') {
+      const { query } = req.body
+      if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
+      const results = await dailymotionSearch(query)
+      return res.status(200).json({ results })
+    }
+
+    // ── Vimeo search ────────────────────────────────────────────────────────────
+    if (action === 'vimeo-search') {
+      const { vimeoToken, query } = req.body
+      if (!vimeoToken?.trim()) return res.status(400).json({ error: 'Vimeo access token is required' })
+      if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
+      const results = await vimeoSearch(vimeoToken, query)
+      return res.status(200).json({ results })
+    }
+
+    // ── TikTok search (via RapidAPI) ─────────────────────────────────────────────
+    if (action === 'tiktok-search') {
+      const { rapidApiKey, rapidApiHost, query } = req.body
+      if (!rapidApiKey?.trim()) return res.status(400).json({ error: 'RapidAPI key is required' })
+      if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
+      const results = await tiktokSearch(rapidApiKey, rapidApiHost, query)
       return res.status(200).json({ results })
     }
 
