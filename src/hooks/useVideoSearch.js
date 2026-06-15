@@ -1,8 +1,11 @@
 import { useCallback, useState } from 'react'
 import { youtubeSearch } from '../lib/aiService'
-import useAIStore from '../store/useAIStore'
 import useVideoSwipeStore from '../store/useVideoSwipeStore'
 import { queriesForCategories } from '../lib/videoCategories'
+
+// Same localStorage slot the rest of the app (Settings, Creator Insights) uses
+// for the YouTube Data API key.
+const LS_YOUTUBE = 'cio-youtube-key'
 
 // Normalize a raw YouTube search result (shape from aiService.youtubeSearch)
 // into the VideoResult shape the swipe cards consume.
@@ -29,7 +32,6 @@ function toVideoResult(raw, category, query) {
 // video the user has already swiped on. Queries are fetched in parallel and
 // interleaved so the deck mixes categories rather than running one at a time.
 export function useVideoSearch() {
-  const youtubeApiKey = useAIStore((s) => s.youtubeApiKey)
   const seenIds = useVideoSwipeStore((s) => s.seenIds)
 
   const [loading, setLoading] = useState(false)
@@ -39,6 +41,8 @@ export function useVideoSearch() {
     async (categories) => {
       const pairs = queriesForCategories(categories)
       if (pairs.length === 0) return []
+
+      const youtubeApiKey = localStorage.getItem(LS_YOUTUBE) || ''
 
       setLoading(true)
       setError(null)
@@ -84,7 +88,7 @@ export function useVideoSearch() {
         setLoading(false)
       }
     },
-    [youtubeApiKey, seenIds]
+    [seenIds]
   )
 
   return { search, loading, error }
