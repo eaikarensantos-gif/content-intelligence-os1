@@ -56,6 +56,16 @@ const CATEGORY_META = {
     queries: ['discurso inspirador', 'palestra figura pública', 'melhores discursos da história'],
     queriesEn: ['inspiring speech', 'famous speeches'],
   },
+  Influenciadores: {
+    type: 'subject', term: 'influenciadores', termEn: 'influencers',
+    queries: ['influenciador digital entrevista', 'maiores influenciadores brasil', 'influenciadora famosa'],
+    queriesEn: ['top influencers interview', 'famous content creator'],
+  },
+  Atrizes: {
+    type: 'subject', term: 'atrizes', termEn: 'actresses',
+    queries: ['entrevista atriz famosa', 'atriz brasileira entrevista', 'bastidores atriz'],
+    queriesEn: ['famous actress interview', 'actress talk show'],
+  },
   'Personalidades Negras': {
     type: 'subject', term: 'personalidades negras', termEn: 'black personalities',
     queries: [
