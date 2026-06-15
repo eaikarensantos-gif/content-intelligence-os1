@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import clsx from 'clsx'
 import { Loader2, Sparkles, AlertCircle, Settings } from 'lucide-react'
 import CategorySelector from './CategorySelector'
 import VideoSwipeStack from './VideoSwipeStack'
 import ReactionQueue from './ReactionQueue'
 import { useVideoSearch } from '../../hooks/useVideoSearch'
 import useVideoSwipeStore from '../../store/useVideoSwipeStore'
-import { enabledPlatformLabels } from '../../lib/videoPlatforms'
+import { availablePlatforms } from '../../lib/videoPlatforms'
 
 // Main page for the video swipe feature: pick categories, fetch a deck, and
 // swipe right (save) / left (skip). Saved videos land in the reaction queue.
 export default function VideoSwipe() {
   const selectedCategories = useVideoSwipeStore((s) => s.selectedCategories)
   const toggleCategory = useVideoSwipeStore((s) => s.toggleCategory)
+  const selectedPlatforms = useVideoSwipeStore((s) => s.selectedPlatforms)
+  const togglePlatform = useVideoSwipeStore((s) => s.togglePlatform)
   const saveToQueue = useVideoSwipeStore((s) => s.saveToQueue)
   const markSeen = useVideoSwipeStore((s) => s.markSeen)
 
@@ -20,10 +23,13 @@ export default function VideoSwipe() {
   const [deck, setDeck] = useState([])
   const [started, setStarted] = useState(false)
 
-  // Dailymotion needs no key, so search always works; YouTube/Vimeo/TikTok join
-  // when their credentials are configured.
-  const sources = enabledPlatformLabels()
-  const hasYoutube = sources.includes('YouTube')
+  // Dailymotion needs no key, so it's always available; YouTube/Vimeo/TikTok
+  // join when their credentials are configured.
+  const platforms = availablePlatforms()
+  const hasYoutube = platforms.some((p) => p.id === 'youtube')
+  // null = not chosen yet → all platforms active.
+  const isPlatformActive = (id) => selectedPlatforms == null || selectedPlatforms.includes(id)
+  const activePlatforms = platforms.filter((p) => isPlatformActive(p.id))
 
   const loadDeck = async () => {
     const results = await search(selectedCategories)
@@ -48,18 +54,37 @@ export default function VideoSwipe() {
         </p>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-        <AlertCircle size={18} className="flex-shrink-0 text-gray-400" />
-        <span className="flex-1">
-          Buscando em: <strong>{sources.join(', ')}</strong>.
-          {!hasYoutube && ' Adicione a YouTube API key para mais resultados.'}
-        </span>
-        <Link
-          to="/settings"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 font-medium text-white hover:bg-gray-800"
-        >
-          <Settings size={15} /> Configurações
-        </Link>
+      <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+          <AlertCircle size={18} className="flex-shrink-0 text-gray-400" />
+          <span className="flex-1">
+            Escolha de quais plataformas buscar:
+            {!hasYoutube && ' adicione a YouTube API key em Configurações para incluí-lo.'}
+          </span>
+          <Link
+            to="/settings"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 font-medium text-white hover:bg-gray-800"
+          >
+            <Settings size={15} /> Configurações
+          </Link>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {platforms.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => togglePlatform(p.id, platforms.map((x) => x.id))}
+              className={clsx(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition',
+                isPlatformActive(p.id)
+                  ? 'border-gray-700 bg-gray-700 text-white'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400'
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
@@ -68,13 +93,14 @@ export default function VideoSwipe() {
           <CategorySelector selected={selectedCategories} onToggle={toggleCategory} />
 
           <p className="-mt-3 text-xs text-gray-400">
-            Dica: combine <strong>Cortes de Podcast</strong> com outros temas para ver cortes sobre esses assuntos.
+            Dica: combine categorias para cruzá-las — ex.: <strong>Personalidades Negras + Tech</strong> traz
+            pessoas negras falando sobre tecnologia. <strong>Cortes de Podcast</strong> + um tema traz cortes sobre ele.
           </p>
 
           <button
             type="button"
             onClick={loadDeck}
-            disabled={loading || selectedCategories.length === 0}
+            disabled={loading || selectedCategories.length === 0 || activePlatforms.length === 0}
             className="inline-flex w-fit items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
