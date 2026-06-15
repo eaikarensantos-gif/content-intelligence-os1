@@ -67,6 +67,10 @@ export default function VideoSwipe() {
         <div className="flex flex-col gap-6">
           <CategorySelector selected={selectedCategories} onToggle={toggleCategory} />
 
+          <p className="-mt-3 text-xs text-gray-400">
+            Dica: combine <strong>Cortes de Podcast</strong> com outros temas para ver cortes sobre esses assuntos.
+          </p>
+
           <button
             type="button"
             onClick={loadDeck}
