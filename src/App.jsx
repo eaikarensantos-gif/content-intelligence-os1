@@ -30,6 +30,7 @@ const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
 const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
 const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
+const CommunityStudio = lazy(() => import('./components/community/CommunityStudio'))
 
 function PageLoader() {
   return (
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
+            <Route path="/community" element={<CommunityStudio />} />
           </Routes>
           </Suspense>
         </Layout>
