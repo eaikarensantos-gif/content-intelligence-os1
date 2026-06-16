@@ -1,14 +1,12 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Anthropic from '@anthropic-ai/sdk'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
-  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink, Link2,
-  AlertCircle, AlignLeft, TrendingUp,
+  MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -20,8 +18,6 @@ import BrandLinterPanel from '../linter/BrandLinterPanel'
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
 const LS_KEY = 'cio-anthropic-key'
-
-const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
 /* ── Master Prompt Karen (do PDF) ── */
 const MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo para Karen Santos (@karensantosperfil).
@@ -106,121 +102,6 @@ const ADJUSTMENT_PROMPTS = {
 }
 
 /* ── Protocolo de Engajamento ── */
-const REELS_CLICHES = [
-  // ── Aberturas clichê ──────────────────────────────────────────────────────
-  {
-    id: 'tem-uma-coisa',
-    pattern: /^tem uma (coisa|situação|realidade|dinâmica|verdade) que/i,
-    label: 'Abertura vaga',
-    suggestion: 'Comece com a situação específica diretamente, sem introdução.',
-  },
-  {
-    id: 'voce-ja-sentiu',
-    pattern: /^você já (sentiu|passou|viveu|percebeu|notou)/i,
-    label: 'Abertura genérica',
-    suggestion: 'Substitua por uma cena concreta ou observação direta.',
-  },
-  {
-    id: 'sabe-aquela',
-    pattern: /^sabe aquela/i,
-    label: 'Abertura de coach',
-    suggestion: 'Comece no meio da situação, sem o setup.',
-  },
-
-  // ── Oposições falsas ──────────────────────────────────────────────────────
-  {
-    id: 'nao-e-sobre',
-    pattern: /não (é|era|foi) sobre .+,? (é|era|foi) sobre/i,
-    label: 'Oposição falsa',
-    suggestion: 'Proibido no protocolo. Use dados ou lógica causal no lugar.',
-  },
-  {
-    id: 'nao-porque-mas-porque',
-    pattern: /não porque .+,? mas porque/i,
-    label: 'Contraste artificial',
-    suggestion: 'Estrutura que parece profunda mas é fórmula. Reescreva direto.',
-  },
-
-  // ── Generalizações filosóficas ────────────────────────────────────────────
-  {
-    id: 'nem-tudo-que',
-    pattern: /nem tudo (que|o que) .+ (é|são|se|vai)/i,
-    label: 'Generalização filosófica',
-    suggestion: 'Troque por observação específica e concreta.',
-  },
-
-  // ── Construções passivas/vitimizantes ─────────────────────────────────────
-  {
-    id: 'a-gente-foi-ensinado',
-    pattern: /a gente foi ensinado (a|que)/i,
-    label: 'Construção passiva',
-    suggestion: 'Proibido. Substitua por observação de comportamento concreto.',
-  },
-  {
-    id: 'fomos-ensinados',
-    pattern: /fomos ensinados (a|que)/i,
-    label: 'Construção passiva',
-    suggestion: 'Proibido. Substitua por observação de comportamento concreto.',
-  },
-  {
-    id: 'ninguem-nos-ensinou',
-    pattern: /ninguém nos ensinou (a|que)/i,
-    label: 'Construção passiva',
-    suggestion: 'Proibido. Substitua por observação de comportamento concreto.',
-  },
-  {
-    id: 'a-gente-cresce-achando',
-    pattern: /a gente cresce achando (que|como)/i,
-    label: 'Generalização de origem',
-    suggestion: 'Muito usado em conteúdo de coach. Substitua por cena específica.',
-  },
-
-  // ── Palavras proibidas ────────────────────────────────────────────────────
-  {
-    id: 'armadilha',
-    pattern: /armadilha/i,
-    label: 'Palavra proibida: armadilha',
-    suggestion: 'Descreva o mecanismo concreto em vez de nomear como armadilha.',
-  },
-  {
-    id: 'silenciosa',
-    pattern: /silencio(sa|so|sos|sas)/i,
-    label: 'Palavra proibida: silenciosa/silencioso',
-    suggestion: 'Substitua por descrição concreta do que está acontecendo.',
-  },
-
-  // ── Clickbait e promessa de revelação ────────────────────────────────────
-  {
-    id: 'isso-aqui-ninguem',
-    pattern: /isso (aqui )?(ninguém|quase ninguém)/i,
-    label: 'Clickbait disfarçado',
-    suggestion: 'Remova — soa como promessa de revelação.',
-  },
-  {
-    id: 'a-verdade',
-    pattern: /a verdade (é que|sobre|é:)/i,
-    label: 'Fórmula de coach',
-    suggestion: 'Proibido no protocolo. Substitua por observação direta.',
-  },
-  {
-    id: 'ninguem-fala',
-    pattern: /ninguém (fala|te conta|te diz) (sobre|isso|que)/i,
-    label: 'Clickbait',
-    suggestion: 'Remova — soa como gatilho de curiosidade vazia.',
-  },
-  {
-    id: 'o-que-ninguem-te-conta',
-    pattern: /o que ninguém te conta/i,
-    label: 'Promessa de revelação',
-    suggestion: 'Proibido. Substitua por observação específica.',
-  },
-]
-
-function lintReelsOutput(text) {
-  if (!text) return []
-  return REELS_CLICHES.filter(c => c.pattern.test(text.trim()))
-}
-
 const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo com escrita natural, precisa e sem padrões artificiais.
 
 Sua função NÃO é parecer inteligente.
@@ -232,21 +113,11 @@ Escrever como alguém que observou algo específico — não como quem está ens
 PROIBIÇÕES ABSOLUTAS — NUNCA usar:
 - Frases: "não é só X, é Y" / "não é sobre X, é sobre Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
 - Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
-- Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar, armadilha, silenciosa, silencioso
+- Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
 - Listas em escadinha repetitiva
 - Frases de efeito genéricas
 - Tom professoral ou frases prontas de coach
 - Estrutura previsível
-
-CONSTRUÇÕES DE FRASE PROIBIDAS — nunca use estas estruturas:
-- "não porque X, mas porque Y" → contraste artificial que parece profundo mas é fórmula
-- "não é sobre X, é sobre Y" → oposição falsa
-- "nem tudo que X, Y" → generalização filosófica vaga
-- "a gente foi ensinado a / fomos ensinados que / ninguém nos ensinou que" → construção passiva de coach
-- "a gente cresce achando que" → generalização de origem, muito usada em coaching
-- qualquer uso de "armadilha" → descreva o mecanismo concreto
-- qualquer uso de "silenciosa/silencioso" → descreva o que está acontecendo
-- "o que ninguém te conta" → promessa de revelação vazia
 
 ESTRUTURA DO ROTEIRO:
 1. Situação específica (realista, concreta — não abstrata)
@@ -404,13 +275,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
   ]
 }`
 
-const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto, bannedPhrases }) => `
+const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
 TEMA: ${tema}
 ${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
 ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia criativa para este tema — específica e concreta, não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como observação real, não como artigo.' : ''}
-${bannedPhrases?.length > 0 ? `\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use estas aberturas ou estruturas:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}\nSe qualquer versão começar com uma dessas frases ou variação próxima → reescreva do zero.` : ''}
 
 Execute o protocolo:
 1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
@@ -426,7 +296,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "variacao_emocional": "variação emocional completa",
   "variacao_provocativa": "variação provocativa completa",
   "pergunta_final": "apenas a pergunta final — natural, como conversa",
-  "exercicio_pratico": "ação concreta e específica — 3 a 6 frases — contexto da situação + instrução + o que observar. Sem introdução motivacional. Sem conclusão moral.",
+  "exercicio_pratico": "exercício em 2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
   "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
   "nota_estrategica": "em 1 frase: por que a variação provocativa é mais forte que a principal neste tema específico",
   "validacao": {
@@ -484,13 +354,6 @@ VOCABULÁRIO E RITMO:
 
 LISTA NEGRA — ESTRUTURAS PROIBIDAS:
 - "Não é sobre X, é sobre Y" → oposição falsa, parece template
-- "não porque X, mas porque Y" → contraste artificial que parece profundo mas é fórmula
-- "nem tudo que X, Y" → generalização filosófica vaga
-- "a gente foi ensinado a / fomos ensinados que / ninguém nos ensinou que" → construção passiva de coach
-- "a gente cresce achando que" → generalização de origem, muito usada em coaching
-- qualquer uso de "armadilha" → descreva o mecanismo concreto
-- qualquer uso de "silenciosa/silencioso" → descreva o que está acontecendo
-- "o que ninguém te conta" → promessa de revelação vazia
 - Referências a anos específicos ("em 2025", "em 2024") → datado, parece artigo de blog
 - Três ou mais frases curtas em sequência → ritmo de sermão de coach
 - Travessões para dar impacto → artificialidade
@@ -574,8 +437,6 @@ ESTRUTURA DE CADA VERSÃO (slides do carrossel):
 VERSÃO PRINCIPAL → entrada direta, raciocínio progressivo
 VARIAÇÃO EMOCIONAL → mesma tensão, ângulo cotidiano, ritmo mais lento
 VARIAÇÃO PROVOCATIVA → mesma tensão, sem suavização, nomeia o problema diretamente
-VARIAÇÃO FRAMEWORK → estrutura mental aplicável ao tema: cada slide constrói um componente do modelo. Sem dados inventados, sem histórias. Slide 1: nomeia o framework com precisão. Slides 2-4: cada slide é um eixo ou elemento do modelo, explicado de forma concisa. Slide 5: o que muda quando você aplica esse framework — consequência concreta, não motivacional.
-VARIAÇÃO DIAGNÓSTICO → ajuda o leitor a identificar em qual estágio ou situação ele está. Sem dados inventados. Cada slide descreve um sinal observável e específico. Slide 1: estabelece o que está sendo diagnosticado. Slides 2-4: cada slide é um indicador observável — comportamento, padrão, reação. Slide 5: o que o conjunto de sinais revela, sem prescrever solução.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -608,26 +469,6 @@ Responda EXCLUSIVAMENTE com JSON válido:
       { "numero": 5, "texto": "virada sem resolução — a mais incômoda das três" }
     ],
     "pergunta_final": "a pergunta mais exigente das três"
-  },
-  "variacao_framework": {
-    "slides": [
-      { "numero": 1, "texto": "nome e definição precisa do framework — o que ele permite ver" },
-      { "numero": 2, "texto": "primeiro eixo ou elemento do modelo" },
-      { "numero": 3, "texto": "segundo eixo ou elemento do modelo" },
-      { "numero": 4, "texto": "terceiro eixo ou elemento — o que diferencia quem aplica de quem não aplica" },
-      { "numero": 5, "texto": "consequência concreta de usar esse framework — mudança observável, não motivacional" }
-    ],
-    "pergunta_final": "pergunta que pede ao leitor para aplicar o framework à própria situação"
-  },
-  "variacao_diagnostico": {
-    "slides": [
-      { "numero": 1, "texto": "o que está sendo diagnosticado — com precisão, sem julgamento" },
-      { "numero": 2, "texto": "primeiro sinal observável — comportamento ou padrão específico" },
-      { "numero": 3, "texto": "segundo sinal — outro indicador concreto" },
-      { "numero": 4, "texto": "terceiro sinal — o mais revelador dos três" },
-      { "numero": 5, "texto": "o que o conjunto de sinais indica — sem prescrever solução" }
-    ],
-    "pergunta_final": "pergunta que pede ao leitor para identificar quantos sinais reconhece na própria situação"
   },
   "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
   "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
@@ -725,161 +566,62 @@ const STORIES_STRUCTURES = {
   },
 }
 
-/* ── Protocolo de Reels ── */
-const BASE_REELS_SYSTEM = `— IDENTIDADE —
-
-Você é um roteirista de reels para Instagram.
-
-A autora é Karen Santos: consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
-
-— CONTEXTO DA GERAÇÃO —
-
-Tema: {tema}
-Estrutura: {estrutura}
-
-Siga rigorosamente as instruções da estrutura solicitada.
-
-— VOZ E TOM —
-
-Karen fala como quem observa — não como quem ensina.
-Seco. Direto. Sem motivação.
-Sem exclamação. Sem reticências dramáticas. Sem palavras de impacto forçado.
-
-Referências de tom correto:
-- "Você provavelmente já fez isso."
-- "Não é culpa. É padrão."
-- "A empresa mudou o sistema. Você ainda usa o antigo."
-
-— REGRAS GLOBAIS —
-
-Frases curtas. Máximo 15 palavras cada.
-Blocos de 1 a 2 frases.
-NUNCA usar: transformador, poderoso, incrível, surpreendente, jornada, propósito, impacto, verdade, real talk.
-NUNCA usar ponto de exclamação.
-NUNCA inventar dados ou estatísticas.
-NUNCA colocar moral explícita no final.
-
-— ENTREGA —
-
-Entregue apenas o roteiro. Sem título. Sem introdução. Sem "aqui está o roteiro:". Sem comentários ao final.`
-
-const REELS_STRUCTURES = {
-  personagem: {
-    label: 'Personagem em cena',
-    desc: 'Cena com personagem real que o espectador reconhece',
-    prompt: 'Abra com uma cena onde um personagem específico faz algo que o espectador já fez. Não descreva sentimentos. Descreva o que o personagem FAZ. Desenvolva o que aquele comportamento revela sem nomear o problema. Termine com uma constatação seca — não uma pergunta, não uma lição.',
-  },
-  antes_depois: {
-    label: 'Antes / Depois',
-    desc: 'Contraste entre dois estados sem drama',
-    prompt: 'Mostre dois estados: o de antes e o de depois. Sem drama. Sem celebração. O contraste já é suficiente. O antes é concreto e específico. O depois é igualmente concreto. Nenhum dos dois é melhor ou pior — são apenas diferentes. Termine com o estado de depois, sem comentar.',
-  },
-  bastidor: {
-    label: 'Bastidor real',
-    desc: 'O que acontece por trás de uma decisão ou situação',
-    prompt: 'Mostre o que acontece por trás de uma situação que parece simples por fora. Não revele tudo de uma vez. Vá camada por camada. Cada bloco adiciona uma informação que muda levemente o que o espectador pensava saber. Termine na camada mais interna — sem explicar o que ela significa.',
-  },
-  entrevista: {
-    label: 'Entrevista / Pergunta direta',
-    desc: 'Série de perguntas que revelam um padrão',
-    prompt: 'Faça uma série de perguntas diretas — curtas, sem setup. Cada pergunta revela um aspecto do mesmo padrão. As perguntas não têm resposta no roteiro. O espectador responde internamente. Termine com a pergunta mais desconfortável do conjunto.',
-  },
-  desconstrucao: {
-    label: 'Desconstrução',
-    desc: 'Desmonta uma crença comum sem substituir por outra',
-    prompt: 'Comece com uma crença comum — algo que parece óbvio e aceito. Desmonte-a em etapas. Não substitua por outra crença. Apenas mostre por que a crença não se sustenta quando você olha de perto. Termine sem oferecer alternativa — só o vazio depois da desconstrução.',
-  },
-}
-
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
-    categoria: 'Carreira — Operação Independente Sênior',
+    categoria: 'Carreira',
     temas: [
-      'Trabalhar por projeto e explicar isso sem parecer freelancer júnior',
-      'Construir reputação sem depender de um cargo formal',
-      'Precificar o que você sabe sem se sentir ganancioso',
-      'Dizer não para cliente ruim quando o mês está curto',
-      'Sair do modelo CLT e ninguém na família entender',
-      'Quando você é o produto e a marca ao mesmo tempo',
-      'Manter disciplina sem chefe nem estrutura',
-      'A linha entre ser sênior independente e simplesmente estar desempregado',
+      'Medo de ser demitido sem avisar',
+      'Ficar em emprego ruim por medo do desconhecido',
+      'Ser promovido e não se sentir pronto',
+      'Pedir aumento e ter medo da resposta',
+      'Aceitar proposta nova sem contar pra ninguém antes',
+      'Sentir que o mercado passou por você',
     ],
   },
   {
-    categoria: 'IA Estratégica — Rotina Real',
+    categoria: 'Maturidade Profissional',
     temas: [
-      'Usar IA no trabalho sem precisar anunciar pra todo mundo',
-      'Prompt que resolveu em 10 minutos o que levaria 3 horas',
-      'IA que faz bem mas ainda precisa de alguém que sabe o que quer',
-      'Quando você para de ter medo da IA e começa a ter medo de quem não usa',
-      'Workflow com IA que ninguém te ensinou — você montou sozinha',
-      'O que muda quando a IA começa a fazer parte do seu processo criativo',
-      'Usar IA para pensar, não para substituir o pensamento',
-      'Automação que liberou tempo — e o que você fez com esse tempo',
+      'Perfeccionismo que trava mais do que entrega',
+      'Procrastinar numa tarefa que você sabe fazer',
+      'Síndrome do impostor em cargo de liderança',
+      'Não conseguir pedir ajuda sem se sentir fraco',
+      'Trabalhar demais pra provar que merece estar ali',
+      'Fingir que entendeu pra não parecer perdido',
     ],
   },
   {
-    categoria: 'Diversidade — Ambientes Tech e Trabalho',
+    categoria: 'Tomada de Decisão',
     temas: [
-      'Ser a única mulher negra sênior numa reunião de tech',
-      'Código de conduta que existe no papel e não na prática',
-      'Quando diversidade vira KPI e ninguém fala da inclusão de verdade',
-      'O peso de representar um grupo inteiro toda vez que você fala',
-      'Ambientes que pedem diversidade mas rejeitam quem não se encaixa',
-      'Progressão de carreira quando as regras não foram feitas pra você',
-      'Dupla jornada de provar competência e ainda educar o ambiente',
-      'Estrutura que cansa mais do que o trabalho em si',
+      'Paralisação por análise — quando dados não ajudam a decidir',
+      'Decidir sob pressão e se arrepender depois',
+      'Mudar de opinião e não saber como falar',
+      'Deixar o outro decidir pra não errar sozinho',
+      'Adiar uma decisão esperando o momento certo',
+      'Tomar decisão certa da forma errada',
     ],
   },
   {
-    categoria: 'Samsung',
+    categoria: 'Dinâmicas Corporativas',
     temas: [
-      'O que muda quando você troca de celular e percebe o quanto o aparelho te limita',
-      'Criar conteúdo profissional direto do celular — sem desculpa de setup',
-      'Câmera que acompanha o ritmo de quem não pode parar pra montar estúdio',
-      'Produtividade real: o que o Galaxy fez pela minha rotina de trabalho',
-      'Editar, revisar e publicar tudo pelo celular — o que funcionou',
-      'IA integrada no dispositivo vs IA que você vai buscar fora',
-      'O Galaxy como ferramenta de trabalho sênior — não só de consumo',
+      'Reunião que todos balançam a cabeça mas ninguém age',
+      'Concordar em público e discordar no corredor',
+      'Gestor que pede autonomia mas controla tudo',
+      'Feedback que não muda nada mas precisa ser dado',
+      'Política de escritório que ninguém admite jogar',
+      'Entregar bem e não ser visto',
     ],
   },
   {
-    categoria: 'Outras Publis',
+    categoria: 'IA e Futuro do Trabalho',
     temas: [
-      'Parceria que faz sentido — o que eu avalio antes de aceitar',
-      'Quando o produto entra na rotina antes de eu falar sobre ele',
-      'Publicidade que não quebra a linha editorial — como eu equilibro',
-      'Marca que respeita o processo criativo vale mais do que cachê alto',
-      'O que eu não aceito mais em publicidade depois de anos de conteúdo',
+      'Usar IA no trabalho e não contar pra ninguém',
+      'Medo de ser substituído por automação',
+      'IA que entrega mais rápido do que você explica o que quer',
+      'Não saber até onde vai o seu trabalho e onde começa o da IA',
+      'Atualizar as habilidades sem saber o que vai durar',
     ],
   },
-  {
-    categoria: 'Pessoal / Naomi / Relatable',
-    temas: [
-      'Naomi sendo uma HR manager mais eficiente do que a maioria dos humanos',
-      'A rotina honesta de quem trabalha de casa com um bulldog francês',
-      'Quando a Naomi expressa tudo que você sente mas não pode falar',
-      'Vida real de quem trabalha com conteúdo — sem glamour de influencer',
-      'O que ninguém mostra do trabalho criativo no dia a dia',
-      'Equilíbrio que não existe — e como eu lido com isso de verdade',
-      'Domingo que não desliga e segunda que começa antes do café',
-    ],
-  },
-  { categoria: 'Estratégia de Marca Pessoal', temas: [] },
-  { categoria: 'Negociação de Carreira', temas: [] },
-  { categoria: 'Análise de Competências', temas: [] },
-  { categoria: 'Estratégia de Conteúdo', temas: [] },
-  { categoria: 'Geração de Roteiro', temas: [] },
-  { categoria: 'Criação de Conteúdo', temas: [] },
-  { categoria: 'Mentoria e Coaching', temas: [] },
-  { categoria: 'Desenvolvimento de Produtos', temas: [] },
-  { categoria: 'Estratégia de Dados', temas: [] },
-  { categoria: 'Validação de Ideias', temas: [] },
-  { categoria: 'Gestão de Projetos', temas: [] },
-  { categoria: 'Brainstorming de Nomes', temas: [] },
-  { categoria: 'Liderança Inspiradora', temas: [] },
-  { categoria: 'Estratégia de Networking', temas: [] },
 ]
 
 /* ── Componente Principal ── */
@@ -893,9 +635,6 @@ export default function UnifiedCreator() {
   const bannedWords = useStore(s => s.bannedWords) || []
   const addBannedWord = useStore(s => s.addBannedWord)
   const removeBannedWord = useStore(s => s.removeBannedWord)
-  const bannedPhrases = useStore(s => s.bannedPhrases) || []
-  const addBannedPhrase = useStore(s => s.addBannedPhrase)
-  const removeBannedPhrase = useStore(s => s.removeBannedPhrase)
 
   const [input, setInput] = useState('')
   const [briefing, setBriefing] = useState('')
@@ -931,7 +670,6 @@ export default function UnifiedCreator() {
   const [engResult, setEngResult] = useState(null)
   const [engError, setEngError] = useState(null)
   const [engCopied, setEngCopied] = useState(null)
-  const [engBanInput, setEngBanInput] = useState('')
   const [engShowEmocional, setEngShowEmocional] = useState(false)
   const [engShowProvocativo, setEngShowProvocativo] = useState(false)
   const [engHooks, setEngHooks] = useState(null)
@@ -963,60 +701,16 @@ export default function UnifiedCreator() {
   const [strError, setStrError] = useState(null)
   const [strCopied, setStrCopied] = useState(false)
 
-  // Reels
-  const [reelsTema, setReelsTema] = useState('')
-  const [reelsEstrutura, setReelsEstrutura] = useState('personagem')
-  const [reelsLoading, setReelsLoading] = useState(false)
-  const [reelsResult, setReelsResult] = useState(null)
-  const [reelsError, setReelsError] = useState(null)
-  const [reelsCopied, setReelsCopied] = useState(false)
-  const [reelsSavedHub, setReelsSavedHub] = useState(false)
-
-  // Viral Reel
-  const [viralUrl, setViralUrl] = useState('')
-  const [viralDesc, setViralDesc] = useState('')
-  const [viralLoading, setViralLoading] = useState(false)
-  const [viralResult, setViralResult] = useState(null)
-  const [viralError, setViralError] = useState(null)
-  const [viralCopied, setViralCopied] = useState(false)
-  const [viralSavedHub, setViralSavedHub] = useState(false)
-
-  // ── Revisor de Texto ──
-  const [revText, setRevText] = useState('')
-  const [revLoading, setRevLoading] = useState(false)
-  const [revResult, setRevResult] = useState(null)
-  const [revError, setRevError] = useState('')
-  const [revCopied, setRevCopied] = useState(false)
-  const [revApplied, setRevApplied] = useState(null)
-  const [revRewritten, setRevRewritten] = useState('')
-  const [revRewriteLoading, setRevRewriteLoading] = useState(false)
-  const [revBanInput, setRevBanInput] = useState('')
-
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
 
   const categorizeTheme = (tema) => {
     const t = tema.toLowerCase()
-    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|llm|prompt|workflow|ia integrada|processo criativo com ia/.test(t)) return 'IA Estratégica — Rotina Real'
-    if (/samsung|galaxy|celular|dispositivo|câmera|aparelho|setup|editar pelo cel/.test(t)) return 'Samsung'
-    if (/diversidade|inclus[aã]o|representa[çc]|racial|negr|minorias|equidade|ambientes? tech|estrutura que cansa|dupla jornada/.test(t)) return 'Diversidade — Ambientes Tech e Trabalho'
-    if (/naomi|bulldog|franc[eê]s|hr manager|relatable|vida real|domingo|rotina honesta/.test(t)) return 'Pessoal / Naomi / Relatable'
-    if (/publi|parceria|marca|cachê|publicidade|patrocin|sponsor/.test(t)) return 'Outras Publis'
-    if (/estratégia de marca pessoal|marca pessoal/.test(t)) return 'Estratégia de Marca Pessoal'
-    if (/negociaç[aã]o de carreira/.test(t)) return 'Negociação de Carreira'
-    if (/análise de competências|competências/.test(t)) return 'Análise de Competências'
-    if (/estratégia de conte[uú]do/.test(t)) return 'Estratégia de Conteúdo'
-    if (/geraç[aã]o de roteiro|roteiro/.test(t)) return 'Geração de Roteiro'
-    if (/criaç[aã]o de conte[uú]do/.test(t)) return 'Criação de Conteúdo'
-    if (/mentoria|coaching/.test(t)) return 'Mentoria e Coaching'
-    if (/desenvolvimento de produto/.test(t)) return 'Desenvolvimento de Produtos'
-    if (/estratégia de dado|dados/.test(t)) return 'Estratégia de Dados'
-    if (/validaç[aã]o de ideia|validaç[aã]o/.test(t)) return 'Validação de Ideias'
-    if (/gest[aã]o de projet|projetos/.test(t)) return 'Gestão de Projetos'
-    if (/brainstorming de nome|brainstorming/.test(t)) return 'Brainstorming de Nomes'
-    if (/liderança inspiradora|liderança/.test(t)) return 'Liderança Inspiradora'
-    if (/estratégia de networking|networking/.test(t)) return 'Estratégia de Networking'
-    return 'Carreira — Operação Independente Sênior'
+    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|dados|machine|llm|prompt/.test(t)) return 'IA e Futuro do Trabalho'
+    if (/reuni[aã]o|gestor|empresa|corporat|chefe|pol[ií]tica|feedback|equipe|\btime\b|cargo|hierarquia|escrit[oó]rio|demiss|colega/.test(t)) return 'Dinâmicas Corporativas'
+    if (/decid|decis[aã]o|escolha|op[çc][aã]o|dilema|paralisa|risco|incerteza|\bsair\b|\bficar\b|mudan[çc]a/.test(t)) return 'Tomada de Decisão'
+    if (/perfeccion|procrastin|impostor|s[ií]ndrome|ansiedade|burnout|valida[çc]|inseguran[çc]|merecer|autoconfian|reconhecimento/.test(t)) return 'Maturidade Profissional'
+    return 'Carreira'
   }
 
   const [savedThemes, setSavedThemes] = useState(() => {
@@ -1033,7 +727,6 @@ export default function UnifiedCreator() {
   const [showThemesPanel, setShowThemesPanel] = useState(true)
   const [expandingThemes, setExpandingThemes] = useState(false)
   const [categorizingThemes, setCategorizingThemes] = useState(false)
-  const [generatingSubthemesFor, setGeneratingSubthemesFor] = useState(null) // theme id
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -1146,14 +839,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
 REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavras), virais e persuasivos. Devem gerar curiosidade sem ser clickbait extremista ou apelativo. Pense em títulos que fariam alguém parar o scroll. Nada genérico.`
 
     try {
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
-        system: [{ type: 'text', text: ANTI_AI_FILTER, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: prompt }],
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4000,
+          system: ANTI_AI_FILTER,
+          messages: [{ role: 'user', content: prompt }],
+        }),
       })
 
-      const jsonText = aiRes.content.find(b => b.type === 'text')?.text || ''
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+
+      const data = await res.json()
+      const jsonText = data.content?.[0]?.text || ''
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 
@@ -1217,13 +920,26 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngResult(null)
     setEngSavedHub(false)
     try {
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 5000,
-        system: [{ type: 'text', text: ENGAGEMENT_SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, bannedPhrases }) }],
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 5000,
+          system: ENGAGEMENT_SYSTEM,
+          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
+        }),
       })
-      const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setEngResult(JSON.parse(match[0]))
@@ -1241,16 +957,15 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngHookError(null)
     setEngHooks(null)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 3000,
           system: HOOK_SYSTEM,
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal) }],
@@ -1284,7 +999,13 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setCarHooks([])
     try {
       const tema = carTema.trim() || 'carreira e maturidade profissional'
-      const HOOKS_SYSTEM = `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 600,
+          system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
 
 PRINCÍPIO CENTRAL:
@@ -1315,14 +1036,12 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 600,
-        system: [{ type: 'text', text: HOOKS_SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `Tema: ${tema}` }],
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
+          messages: [{ role: 'user', content: `Tema: ${tema}` }],
+        }),
       })
-      const text = aiRes.content.find(b => b.type === 'text')?.text || ''
+      const data = await res.json()
+      const text = data.content?.[0]?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
         const parsed = JSON.parse(match[0])
@@ -1341,13 +1060,22 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarResult(null)
     setCarSavedHub(false)
     try {
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 5000,
-        system: [{ type: 'text', text: CAROUSEL_SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 5000,
+          system: CAROUSEL_SYSTEM,
+          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
+        }),
       })
-      const raw = aiRes.content.find(b => b.type === 'text')?.text || ''
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setCarResult(JSON.parse(match[0]))
@@ -1474,13 +1202,22 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const systemPrompt = BASE_STORIES_SYSTEM
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
-        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: 'Gere o stories agora.' }],
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: 'Gere o stories agora.' }],
+        }),
       })
-      const text = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const text = data.content?.[0]?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
       setStrResult(text)
     } catch (err) {
@@ -1490,124 +1227,10 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     }
   }
 
-  const handleReelsCopy = () => {
-    if (!reelsResult) return
-    navigator.clipboard.writeText(reelsResult)
-    setReelsCopied(true)
-    setTimeout(() => setReelsCopied(false), 2000)
-  }
-
-  const handleReelsSaveHub = () => {
-    if (!reelsResult) return
-    const estrutura = REELS_STRUCTURES[reelsEstrutura]
-    addIdea({
-      title: reelsTema,
-      description: reelsResult.slice(0, 300),
-      script: reelsResult,
-      caption: '',
-      cta: '',
-      format: 'reel',
-      platform: 'instagram',
-      platforms: ['instagram'],
-      priority: 'medium',
-      status: 'ready',
-      tags: ['protocolo-reels', estrutura?.label.toLowerCase() || '', reelsTema.toLowerCase().slice(0, 20)].filter(Boolean),
-      source: `Protocolo de Reels — ${estrutura?.label || ''}`,
-    })
-    setReelsSavedHub(true)
-  }
-
-  const generateReels = async () => {
-    if (!reelsTema.trim()) return
-    if (!apiKey) { setReelsError('Configure sua API key em Configurações'); return }
-    setReelsLoading(true)
-    setReelsError(null)
-    setReelsResult(null)
-    setReelsSavedHub(false)
-    try {
-      const estrutura = REELS_STRUCTURES[reelsEstrutura] || REELS_STRUCTURES.personagem
-      const systemPrompt = BASE_REELS_SYSTEM
-        .replace('{tema}', reelsTema)
-        .replace('{estrutura}', estrutura.prompt)
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
-        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: 'Gere o roteiro de reels agora.' }],
-      })
-      const text = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
-      if (!text) throw new Error('Resposta inválida da IA')
-      setReelsResult(text)
-    } catch (err) {
-      setReelsError(err.message)
-    } finally {
-      setReelsLoading(false)
-    }
-  }
-
-  const generateViralReel = async () => {
-    if (!viralUrl.trim() && !viralDesc.trim()) return
-    if (!apiKey) { setViralError('Configure sua API key em Configurações'); return }
-    setViralLoading(true)
-    setViralError(null)
-    setViralResult(null)
-    setViralSavedHub(false)
-    try {
-      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedPhrases)
-      const bannedBlock = bannedPhrases.length > 0
-        ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS (nunca use no output):\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}`
-        : ''
-      const urlBlock = viralUrl.trim() ? `\nURL do Reel: ${viralUrl.trim()}` : ''
-      const descBlock = viralDesc.trim() ? `\nDescrição do reel (o que acontece, o gancho, o tema, a estrutura):\n${viralDesc.trim()}` : ''
-
-      const systemPrompt = `Você é um estrategista de conteúdo e filmmaker mobile especializado em recriar reels virais adaptados para a voz e audiência de Karen Santos.${voiceCtx}${bannedBlock}`
-
-      const userPrompt = `Analise este reel viral e recrie-o adaptado à voz de Karen Santos.${urlBlock}${descBlock}
-
-Gere uma análise + recriação completa com este JSON:
-{
-  "analise": {
-    "por_que_viraliza": "o que tecnicamente faz esse reel funcionar (gancho, ritmo, estrutura, emoção ativada)",
-    "estrutura_detectada": "como o reel é construído (abertura / desenvolvimento / virada / CTA)",
-    "elemento_chave": "o mecanismo central que gera identificação ou reação",
-    "angulo_original": "o ângulo ou perspectiva que o diferencia"
-  },
-  "recriacao": {
-    "gancho_adaptado": "os 3 primeiros segundos do reel recriado na voz de Karen (texto exato para falar na câmera)",
-    "roteiro_completo": "roteiro cena a cena adaptado para o contexto de carreira + tech, na voz de Karen — seco, direto, sem floreio",
-    "legenda": "legenda para o post no Instagram",
-    "hashtags": ["5", "a", "8", "hashtags", "relevantes"]
-  },
-  "variacoes": [
-    "variação 1 do gancho de abertura (angulo diferente)",
-    "variação 2 do gancho de abertura (tom diferente)",
-    "variação 3 do gancho de abertura (estrutura diferente)"
-  ]
-}`
-
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: userPrompt }],
-      })
-      const raw = aiRes.content.find(b => b.type === 'text')?.text?.trim() || ''
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('Resposta inválida da IA')
-      setViralResult(JSON.parse(match[0]))
-    } catch (err) {
-      setViralError(err.message)
-    } finally {
-      setViralLoading(false)
-    }
-  }
-
   const applyTheme = (tema) => {
     if (mode === 'engagement') setEngTema(tema)
     else if (mode === 'carousel') setCarTema(tema)
     else if (mode === 'stories') setStrTema(tema)
-    else if (mode === 'reels') setReelsTema(tema)
-    else if (mode === 'viral') setViralDesc(prev => prev ? prev + '\nTema: ' + tema : 'Tema: ' + tema)
     else setInput(tema)
   }
 
@@ -1617,10 +1240,13 @@ Gere uma análise + recriação completa com este JSON:
       targets.some(tg => tg.id === t.id) ? { ...t, temperatura: 'analyzing' } : t
     ))
     try {
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-haiku-4-5',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
 
 Temperatura:
 - quente: alto potencial viral agora, gera forte identificação, timely
@@ -1634,8 +1260,10 @@ ${targets.map(t => `- ${t.tema}`).join('\n')}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"resultados": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta e seca"}]}` }],
+        }),
       })
-      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const results = JSON.parse(match[0]).resultados || []
         setSavedThemes(prev => prev.map(t => {
@@ -1668,10 +1296,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
     if (apiKey) {
       try {
-        const aiRes = await mkClient(apiKey).messages.create({
-          model: 'claude-haiku-4-5',
-          max_tokens: 400,
-          system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
+        const res = await fetch('/api/ai?action=anthropic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 400,
+            system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
 - IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
@@ -1679,9 +1310,11 @@ Regras:
 - Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
 - Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
 - Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`,
-          messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
+            messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
+          }),
         })
-        const text = aiRes.content.find(b => b.type === 'text')?.text || ''
+        const data = await res.json()
+        const text = data.content?.[0]?.text || ''
         const match = text.match(/\[[\s\S]*\]/)
         if (match) {
           const parsed = JSON.parse(match[0])
@@ -1709,15 +1342,6 @@ Regras:
     setSavedThemes(prev => [entry, ...prev])
   }
 
-  const CREATOR_PROFILE = `Perfil da criadora:
-Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
-Histórico: Nubank, QuintoAndar, PicPay. Fundadora da UX para Minas Pretas.
-Nicho: maturidade profissional na era da IA.
-Público: profissionais de tech, produto e design, nível pleno a sênior.
-Parceria ativa: Samsung (tech, IA aplicada, conteúdo de produto).
-Tom: direto, analítico, sem motivacional, sem coach.
-Ângulo: situações reais, decisões concretas, dados quando disponível.`
-
   const expandThemes = async () => {
     if (!apiKey) return
     const categoria = bankOpenCategory
@@ -1728,16 +1352,17 @@ Tom: direto, analítico, sem motivacional, sem coach.
       const contextoCategoria = categoria
         ? `Categoria focada: "${categoria}"\n\nTemas já existentes nessa categoria:\n${temasNaCategoria.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`
         : `Temas gerais já existentes:\n${savedThemes.map(t => `- ${t.tema}`).join('\n')}`
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo especializado no perfil abaixo.
-
-${CREATOR_PROFILE}
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 800,
+          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
 
 ${contextoCategoria}
 
-Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação para o público descrito. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta do universo de tech/produto/design sênior. Máx 8 palavras. Inclua a temperatura de cada um.
+Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
 
 Temperatura:
 - quente: alto potencial viral agora, forte identificação
@@ -1746,8 +1371,10 @@ Temperatura:
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
+        }),
       })
-      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const existing = new Set(savedThemes.map(t => t.tema))
         const novos = (JSON.parse(match[0]).temas || [])
@@ -1764,102 +1391,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
     finally { setExpandingThemes(false) }
   }
 
-  const generateSubthemes = async (item) => {
-    if (!apiKey || generatingSubthemesFor) return
-    setGeneratingSubthemesFor(item.id)
-    try {
-      const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: `Você é um estrategista de conteúdo especializado no perfil abaixo.
-
-${CREATOR_PROFILE}
-
-Tema principal: "${item.tema}"
-Categoria: "${item.categoria}"
-
-Gere 5 subtemas específicos e concretos derivados desse tema — situações reais do universo de tech/produto/design sênior, ângulos distintos, cada um com potencial de virar um post independente. Sem repetir o tema principal. Sem linguagem genérica ou de coach. Máx 10 palavras cada.
-
-Responda EXCLUSIVAMENTE com JSON válido:
-{"subtemas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
-      })
-      const match = (aiRes.content.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
-      if (match) {
-        const existing = new Set(savedThemes.map(t => t.tema))
-        const novos = (JSON.parse(match[0]).subtemas || [])
-          .filter(t => !existing.has(t.tema))
-          .map(t => ({
-            id: Date.now() + Math.random(),
-            tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
-            categoria: item.categoria,
-            fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
-          }))
-        setSavedThemes(prev => [...prev, ...novos])
-      }
-    } catch { /* silent */ }
-    finally { setGeneratingSubthemesFor(null) }
-  }
-
   const CONTEXT_COLORS = {
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
     mentora: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', label: 'Mentora' },
-  }
-
-  const engLintViolations = useMemo(() => lintReelsOutput(engResult?.versao_principal || ''), [engResult])
-
-  async function revisorAnalyze() {
-    if (!revText.trim() || !apiKey) { setRevError(!apiKey ? 'Configure sua API key em Configurações.' : ''); return }
-    setRevLoading(true); setRevResult(null); setRevError(''); setRevRewritten('')
-    const bannedList = bannedPhrases.length
-      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use estas expressões nas sugestões, nem variações delas:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}\nSe uma sugestão contiver qualquer uma dessas frases → reescreva do zero.`
-      : ''
-    const prompt = `Você é um revisor especialista em conteúdo para criadores digitais brasileiros. Analise o texto e retorne APENAS um JSON válido:
-{"score":<0-100>,"dimensoes":{"clareza":<0-100>,"tom":<0-100>,"impacto":<0-100>,"autenticidade":<0-100>},"parecer":"<frase resumo>","linguagem_robotica":["<trecho artificial>"],"sugestoes":[{"problema":"<trecho original>","melhoria":"<versão melhorada>"}],"pontos_fortes":["<ponto>"]}
-${bannedList}
-TEXTO:\n${revText.trim()}`
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
-      })
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (match) setRevResult(JSON.parse(match[0]))
-      else throw new Error('inválido')
-    } catch { setRevError('Erro ao analisar. Verifique sua API key.') }
-    finally { setRevLoading(false) }
-  }
-
-  function revisorApply(problema, melhoria, idx) {
-    setRevText(prev => prev.includes(problema) ? prev.replace(problema, melhoria) : prev.replace(problema.trim(), melhoria))
-    setRevApplied(idx)
-    setTimeout(() => {
-      setRevResult(prev => prev ? { ...prev, sugestoes: prev.sugestoes.filter((_, i) => i !== idx) } : prev)
-      setRevApplied(null)
-    }, 600)
-  }
-
-  async function revisorRewrite() {
-    if (!revResult?.sugestoes?.length || !apiKey) return
-    setRevRewriteLoading(true); setRevRewritten('')
-    const list = revResult.sugestoes.map((s, i) => `${i + 1}. "${s.problema}" → "${s.melhoria}"`).join('\n')
-    const bannedList = bannedPhrases.length
-      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use no texto reescrito:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}`
-      : ''
-    const prompt = `Reescreva o texto incorporando as melhorias. Preserve estilo e voz. Retorne APENAS o texto reescrito.${bannedList}\n\nTEXTO:\n${revText.trim()}\n\nMELHORIAS:\n${list}`
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
-      })
-      const data = await res.json()
-      setRevRewritten(data.content?.[0]?.text?.trim() || '')
-    } catch { /* silent */ }
-    finally { setRevRewriteLoading(false) }
   }
 
   return (
@@ -1976,16 +1511,6 @@ TEXTO:\n${revText.trim()}`
                               {item.tema}
                             </button>
                             <button
-                              onClick={() => generateSubthemes(item)}
-                              disabled={generatingSubthemesFor === item.id}
-                              title="Gerar subtemas com IA"
-                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 p-1 disabled:opacity-50"
-                            >
-                              {generatingSubthemesFor === item.id
-                                ? <Loader2 size={11} className="animate-spin text-orange-400" />
-                                : <Sparkles size={11} />}
-                            </button>
-                            <button
                               onClick={() => removeTheme(item.id)}
                               className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
                             >
@@ -2025,13 +1550,7 @@ TEXTO:\n${revText.trim()}`
       </div>
 
       {/* ── Seletor de modo ── */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl flex-wrap">
-        <button onClick={() => setMode('revisor')}
-          className={clsx('flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'revisor' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-400 hover:text-violet-600'
-          )}>
-          <Sparkles size={13} /> Revisor
-        </button>
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
         <button onClick={() => setMode('studio')}
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
             mode === 'studio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
@@ -2056,244 +1575,7 @@ TEXTO:\n${revText.trim()}`
           )}>
           <Film size={13} /> Stories
         </button>
-        <button onClick={() => setMode('reels')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'reels' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <Video size={13} /> Reels
-        </button>
-        <button onClick={() => setMode('viral')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'viral' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <Link2 size={13} /> Recriar
-        </button>
       </div>
-
-      {/* ── Revisor de Texto ── */}
-      {mode === 'revisor' && (
-        <div className="space-y-5 animate-fade-in">
-          {/* Score ring helper */}
-          {(() => {
-            const REV_DIMS = [
-              { key: 'clareza', label: 'Clareza', icon: AlignLeft, color: '#3b82f6' },
-              { key: 'tom', label: 'Tom', icon: Mic, color: '#8b5cf6' },
-              { key: 'impacto', label: 'Impacto', icon: Zap, color: '#f59e0b' },
-              { key: 'autenticidade', label: 'Autenticidade', icon: TrendingUp, color: '#10b981' },
-            ]
-            const scoreColor = revResult ? (revResult.score >= 75 ? '#10b981' : revResult.score >= 50 ? '#f59e0b' : '#ef4444') : '#e5e7eb'
-            const r = 30, circ = 2 * Math.PI * r
-            const offset = revResult ? circ - (revResult.score / 100) * circ : circ
-            return (
-              <>
-                {/* Input + Analyze */}
-                <div className="bg-white rounded-2xl border border-violet-100 p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-200 shrink-0">
-                      <Sparkles size={16} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">Revisor de Texto</p>
-                      <p className="text-xs text-gray-400">Cole qualquer texto gerado — roteiro, legenda, carrossel — e receba uma análise completa</p>
-                    </div>
-                  </div>
-                  <textarea
-                    value={revText}
-                    onChange={(e) => setRevText(e.target.value)}
-                    rows={7}
-                    placeholder="Cole aqui o roteiro, legenda ou qualquer texto gerado para revisar..."
-                    className="w-full text-sm border border-gray-200 rounded-xl p-4 resize-none outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 placeholder:text-gray-300 leading-relaxed"
-                  />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-300">{revText.length} caracteres</span>
-                    {revText && <button onClick={() => { setRevText(''); setRevResult(null); setRevRewritten(''); setRevError('') }} className="text-[11px] text-gray-400 hover:text-gray-600">Limpar</button>}
-                  </div>
-                  {/* Frases Banidas */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                      Frases Banidas <span className="text-gray-300 font-normal">(o revisor vai sinalizar e evitar ao reescrever)</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        value={revBanInput}
-                        onChange={e => setRevBanInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && revBanInput.trim()) { addBannedPhrase(revBanInput.trim()); setRevBanInput('') } }}
-                        placeholder='Ex: "Em resumo", "Não é à toa que..."'
-                        className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-300"
-                      />
-                      <button
-                        onClick={() => { if (revBanInput.trim()) { addBannedPhrase(revBanInput.trim()); setRevBanInput('') } }}
-                        className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                      >
-                        Banir
-                      </button>
-                    </div>
-                    {bannedPhrases.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {bannedPhrases.map(phrase => (
-                          <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                            "{phrase.length > 35 ? phrase.slice(0, 35) + '...' : phrase}"
-                            <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800 shrink-0"><X size={9} /></button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {revError && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
-                      <AlertCircle size={14} className="text-red-400 shrink-0" />
-                      <p className="text-sm text-red-600">{revError}</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={revisorAnalyze}
-                    disabled={revLoading || !revText.trim()}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
-                    style={{ background: revLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-                  >
-                    {revLoading ? <><RefreshCw size={14} className="animate-spin" /> Analisando...</> : <><Sparkles size={14} /> Revisar Texto</>}
-                  </button>
-                </div>
-
-                {/* Results */}
-                {revResult && (
-                  <div className="space-y-4 animate-fade-in">
-                    {/* Score + Dimensions */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                      <div className="flex items-center gap-6">
-                        {/* Score ring */}
-                        <div className="relative w-20 h-20 shrink-0">
-                          <svg width="80" height="80" className="-rotate-90">
-                            <circle cx="40" cy="40" r={r} fill="none" stroke="#f3f4f6" strokeWidth="6" />
-                            <circle cx="40" cy="40" r={r} fill="none" stroke={scoreColor} strokeWidth="6"
-                              strokeDasharray={circ} strokeDashoffset={offset}
-                              strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-                          </svg>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-xl font-bold text-gray-800">{revResult.score}</span>
-                            <span className="text-[10px] text-gray-400">/100</span>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Score Geral</p>
-                          <p className="text-sm text-gray-700 font-medium leading-snug mb-3">{revResult.parecer}</p>
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                            {REV_DIMS.map(({ key, label, color }) => (
-                              <div key={key}>
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <span className="text-[10px] text-gray-500">{label}</span>
-                                  <span className="text-[10px] font-bold text-gray-600">{revResult.dimensoes?.[key]}</span>
-                                </div>
-                                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${revResult.dimensoes?.[key] || 0}%`, background: color }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Robotic language */}
-                    {revResult.linguagem_robotica?.length > 0 && (
-                      <div className="bg-white rounded-2xl border border-red-100 p-5 shadow-sm space-y-3">
-                        <p className="text-xs font-semibold text-red-500 uppercase tracking-wide">Soa artificial</p>
-                        <div className="space-y-2">
-                          {revResult.linguagem_robotica.map((t, i) => (
-                            <div key={i} className="px-3 py-2 rounded-lg bg-red-50 border border-red-100">
-                              <p className="text-sm text-red-700 italic">"{t}"</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Suggestions */}
-                    {revResult.sugestoes?.length > 0 && (
-                      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
-                        <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Sugestões de melhoria</p>
-                        <div className="space-y-3">
-                          {revResult.sugestoes.map((s, i) => (
-                            <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
-                              <div className="px-4 py-2.5 bg-red-50/60 border-b border-gray-100">
-                                <p className="text-[10px] text-red-500 font-medium uppercase tracking-wide mb-1">Antes</p>
-                                <p className="text-sm text-gray-700 italic">"{s.problema}"</p>
-                              </div>
-                              <div className="px-4 py-2.5 bg-emerald-50/60">
-                                <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wide mb-1">Sugestão</p>
-                                <p className="text-sm text-gray-800 font-medium mb-2.5">"{s.melhoria}"</p>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => revisorApply(s.problema, s.melhoria, i)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${revApplied === i ? 'bg-emerald-500 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
-                                  >
-                                    {revApplied === i ? <><Check size={11} /> Aplicado!</> : <><Wand2 size={11} /> Aplicar no texto</>}
-                                  </button>
-                                  <button
-                                    onClick={() => { navigator.clipboard.writeText(s.melhoria); setRevCopied(i); setTimeout(() => setRevCopied(false), 1500) }}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
-                                  >
-                                    {revCopied === i ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Rewrite full */}
-                        <button
-                          onClick={revisorRewrite}
-                          disabled={revRewriteLoading}
-                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all mt-2"
-                          style={{ background: revRewriteLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-                        >
-                          {revRewriteLoading ? <><RefreshCw size={14} className="animate-spin" /> Reescrevendo...</> : <><Wand2 size={14} /> Reescrever Roteiro Completo</>}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Rewritten result */}
-                    {revRewritten && (
-                      <div className="bg-violet-50 rounded-2xl border border-violet-100 p-5 shadow-sm space-y-3 animate-fade-in">
-                        <p className="text-xs font-semibold text-violet-600 uppercase tracking-wide">Roteiro Reescrito</p>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{revRewritten}</p>
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            onClick={() => { navigator.clipboard.writeText(revRewritten); setRevCopied('rewrite'); setTimeout(() => setRevCopied(false), 1500) }}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium border border-violet-200 text-violet-700 hover:bg-white transition-colors"
-                          >
-                            {revCopied === 'rewrite' ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
-                          </button>
-                          <button
-                            onClick={() => { setRevText(revRewritten); setRevRewritten(''); setRevResult(null) }}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors"
-                          >
-                            <Check size={13} /> Usar este texto
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Strengths */}
-                    {revResult.pontos_fortes?.length > 0 && (
-                      <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm space-y-2">
-                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Pontos fortes</p>
-                        {revResult.pontos_fortes.map((p, i) => (
-                          <p key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                            <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>{p}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )
-          })()}
-        </div>
-      )}
 
       {/* ── Formulário de Engajamento ── */}
       {mode === 'engagement' && (
@@ -2322,46 +1604,6 @@ TEXTO:\n${revText.trim()}`
                 className="input text-sm w-full"
                 autoFocus
               />
-            </div>
-
-            {/* Frases Banidas */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                  <X size={10} /> Frases Banidas
-                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={engBanInput}
-                  onChange={e => setEngBanInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && engBanInput.trim()) {
-                      addBannedPhrase(engBanInput.trim())
-                      setEngBanInput('')
-                    }
-                  }}
-                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
-                  className="input text-xs flex-1"
-                />
-                <button
-                  onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all"
-                >
-                  Banir
-                </button>
-              </div>
-              {bannedPhrases.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {bannedPhrases.map(phrase => (
-                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
-                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Ideia */}
@@ -2444,40 +1686,6 @@ TEXTO:\n${revText.trim()}`
           {/* ── Output de Engajamento ── */}
           {engResult && (
             <div className="space-y-4 animate-fade-in">
-
-              {/* Linter de clichês */}
-              {engLintViolations.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-                  <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wide flex items-center gap-1.5">
-                    <AlertCircle size={11} /> Padrões detectados — roteiro precisa de ajuste
-                  </p>
-                  {engLintViolations.map(v => (
-                    <div key={v.id} className="flex items-start gap-2">
-                      <span className="text-[10px] font-semibold text-red-500 shrink-0 mt-0.5">✗</span>
-                      <div className="flex-1">
-                        <p className="text-[11px] font-semibold text-red-700">{v.label}</p>
-                        <p className="text-[10px] text-red-500">{v.suggestion}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const match = (engResult?.versao_principal || '').match(v.pattern)
-                          if (match) addBannedPhrase(match[0])
-                        }}
-                        className="ml-auto text-[10px] text-red-400 hover:text-red-600 font-medium shrink-0 hover:underline"
-                      >
-                        Banir
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={generateEngagement}
-                    disabled={engLoading}
-                    className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
-                  >
-                    <RefreshCw size={12} /> Regenerar sem esses padrões
-                  </button>
-                </div>
-              )}
 
               {/* Validação */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
@@ -2760,31 +1968,6 @@ TEXTO:\n${revText.trim()}`
                   <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar
                 </button>
               </div>
-
-              {/* Dislike com captura de padrão */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const violations = lintReelsOutput(engResult?.versao_principal || '')
-                    const patterns = violations.map(v => {
-                      const match = (engResult?.versao_principal || '').match(v.pattern)
-                      return match ? match[0] : null
-                    }).filter(Boolean)
-                    addDislike({
-                      title: engTema,
-                      hook: engResult?.versao_principal?.slice(0, 100) || '',
-                      reason: 'roteiro com padrões clichê detectados',
-                      patterns,
-                    })
-                    patterns.forEach(p => addBannedPhrase(p))
-                    generateEngagement()
-                  }}
-                  disabled={engLoading}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-orange-600 border border-orange-200 rounded-xl hover:bg-orange-50 transition-colors disabled:opacity-40"
-                >
-                  <ThumbsDown size={13} /> Não gostei — banir padrões e regenerar
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -2837,39 +2020,6 @@ TEXTO:\n${revText.trim()}`
                     >
                       {hook}
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Frases Banidas */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                  <X size={10} /> Frases Banidas
-                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={engBanInput}
-                  onChange={e => setEngBanInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
-                  className="input text-xs flex-1"
-                />
-                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
-                  Banir
-                </button>
-              </div>
-              {bannedPhrases.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {bannedPhrases.map(phrase => (
-                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
-                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
-                    </span>
                   ))}
                 </div>
               )}
@@ -2945,8 +2095,6 @@ TEXTO:\n${revText.trim()}`
                   { key: 'principal',   label: 'Principal',   data: carResult.versao_principal },
                   { key: 'emocional',   label: 'Emocional',   data: carResult.variacao_emocional },
                   { key: 'provocativa', label: 'Provocativa', data: carResult.variacao_provocativa },
-                  ...(carResult.variacao_framework  ? [{ key: 'framework',   label: 'Framework',   data: carResult.variacao_framework }]  : []),
-                  ...(carResult.variacao_diagnostico ? [{ key: 'diagnostico', label: 'Diagnóstico', data: carResult.variacao_diagnostico }] : []),
                 ]
                 const active = versions.find(v => v.key === carActiveVersion) || versions[0]
                 return (
@@ -2962,21 +2110,6 @@ TEXTO:\n${revText.trim()}`
                         </button>
                       ))}
                     </div>
-
-                    {/* Copiar tudo — slides + exercício + pergunta + CTA */}
-                    <button
-                      onClick={() => {
-                        const slides = (active.data?.slides || []).map(s => `${s.numero}. ${s.texto}`).join('\n\n')
-                        const pergunta = active.data?.pergunta_final || carResult.versao_principal?.pergunta_final || ''
-                        const exercicio = carResult.exercicio_pratico || ''
-                        const cta = carResult.cta_fechado || ''
-                        const parts = [slides, exercicio && `Exercício Prático:\n${exercicio}`, pergunta && `Pergunta Final:\n${pergunta}`, cta && `CTA:\n${cta}`].filter(Boolean)
-                        handleCarCopy(parts.join('\n\n─────\n\n'), `tudo-${active.key}`)
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-300 text-xs font-semibold text-gray-500 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
-                    >
-                      {carCopied === `tudo-${active.key}` ? <><Check size={12} className="text-green-500" /> Copiado!</> : <><Copy size={12} /> Copiar tudo (slides + exercício + pergunta + CTA)</>}
-                    </button>
 
                     {/* Slides da versão ativa */}
                     {active.data && (
@@ -3016,8 +2149,11 @@ TEXTO:\n${revText.trim()}`
 
               {/* Exercício Prático + Pergunta Final agrupados */}
               {(carResult.exercicio_pratico || (() => {
-                const versionMap = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa, framework: carResult.variacao_framework, diagnostico: carResult.variacao_diagnostico }
-                const active = versionMap[carActiveVersion] || carResult.versao_principal
+                const active = [
+                  carResult.versao_principal,
+                  carResult.variacao_emocional,
+                  carResult.variacao_provocativa,
+                ].find((_, i) => ['principal','emocional','provocativa'][i] === carActiveVersion) || carResult.versao_principal
                 return active?.pergunta_final
               })()) && (
                 <div className="rounded-2xl border border-orange-100 overflow-hidden bg-white">
@@ -3039,7 +2175,7 @@ TEXTO:\n${revText.trim()}`
 
                   {/* Pergunta Final — abaixo do exercício */}
                   {(() => {
-                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa, framework: carResult.variacao_framework, diagnostico: carResult.variacao_diagnostico }
+                    const versions = { principal: carResult.versao_principal, emocional: carResult.variacao_emocional, provocativa: carResult.variacao_provocativa }
                     const pergunta = versions[carActiveVersion]?.pergunta_final || carResult.versao_principal?.pergunta_final
                     if (!pergunta) return null
                     return (
@@ -3060,64 +2196,19 @@ TEXTO:\n${revText.trim()}`
                 </div>
               )}
 
-              {/* Exercício Prático */}
-              {carResult.exercicio_pratico && (
-                <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-orange-100 bg-orange-50/50">
-                    <div className="flex items-center gap-2">
-                      <Target size={12} className="text-orange-500" />
-                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
-                    </div>
-                    <button onClick={() => handleCarCopy(carResult.exercicio_pratico, 'car-exercicio')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
-                      {carCopied === 'car-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{carResult.exercicio_pratico}</p>
-                </div>
-              )}
-
               {/* CTA Fechado */}
               {carResult.cta_fechado && (
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 to-gray-700 p-5 text-white shadow-lg">
-                  <div className="relative z-10">
-                    <p className="text-[10px] font-semibold text-white/60 uppercase mb-2 flex items-center gap-1.5">
-                      <ToggleLeft size={11} /> CTA Fechado
-                    </p>
-                    <p className="text-base font-bold leading-snug">{carResult.cta_fechado}</p>
+                <div className="relative overflow-hidden rounded-2xl bg-gray-900 px-4 py-3 text-white">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold text-white/50 uppercase flex items-center gap-1.5">
+                      <ToggleLeft size={10} /> CTA Fechado
+                    </span>
                     <button onClick={() => handleCarCopy(carResult.cta_fechado, 'car-cta')}
-                      className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
-                      {carCopied === 'car-cta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                      className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-all">
+                      {carCopied === 'car-cta' ? <Check size={10} /> : <Copy size={10} />}
                     </button>
                   </div>
-                  <div className="absolute right-0 bottom-0 w-20 h-20 bg-white/5 rounded-full translate-x-6 translate-y-6" />
-                </div>
-              )}
-
-              {/* Validação */}
-              {carResult.validacao && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
-                    <ShieldCheck size={12} className="text-emerald-500" /> Validação
-                  </p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { key: 'deixa_espaco',      label: 'Deixa espaço' },
-                      { key: 'nao_parece_coach',  label: 'Não é coach' },
-                      { key: 'so_karen_diria',    label: 'Só Karen diria' },
-                      { key: 'perguntas_diferentes', label: 'Perguntas distintas' },
-                    ].map(({ key, label }) => {
-                      const ok = carResult.validacao?.[key] === true
-                      return (
-                        <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
-                          ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-                        )}>
-                          <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
-                          <span className={clsx('text-[9px] font-semibold', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <p className="text-sm font-bold leading-snug">{carResult.cta_fechado}</p>
                 </div>
               )}
 
@@ -3249,39 +2340,6 @@ TEXTO:\n${revText.trim()}`
               />
             </div>
 
-            {/* Frases Banidas */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                  <X size={10} /> Frases Banidas
-                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={engBanInput}
-                  onChange={e => setEngBanInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
-                  className="input text-xs flex-1"
-                />
-                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
-                  Banir
-                </button>
-              </div>
-              {bannedPhrases.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {bannedPhrases.map(phrase => (
-                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
-                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Estrutura */}
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
@@ -3377,185 +2435,6 @@ TEXTO:\n${revText.trim()}`
         </div>
       )}
 
-      {/* ── Formulário de Reels ── */}
-      {mode === 'reels' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shrink-0">
-                <Video size={15} className="text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">Protocolo de Reels</p>
-                <p className="text-xs text-gray-400 mt-0.5">Roteiro seco, direto, sem floreio — para quem reconhece a cena.</p>
-              </div>
-            </div>
-
-            {/* Tema */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
-                Tema <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={reelsTema}
-                onChange={e => setReelsTema(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateReels()}
-                placeholder="Ex: procrastinação mascarada de planejamento, burnout que parece disciplina..."
-                className="input text-sm w-full"
-                autoFocus
-              />
-            </div>
-
-            {/* Frases Banidas */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                  <X size={10} /> Frases Banidas
-                  <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={engBanInput}
-                  onChange={e => setEngBanInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
-                  className="input text-xs flex-1"
-                />
-                <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-                  className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
-                  Banir
-                </button>
-              </div>
-              {bannedPhrases.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {bannedPhrases.map(phrase => (
-                    <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                      "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
-                      <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Estrutura */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                Estrutura <span className="text-red-400">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(REELS_STRUCTURES).map(([key, s]) => (
-                  <button
-                    key={key}
-                    onClick={() => setReelsEstrutura(key)}
-                    className={clsx(
-                      'text-left px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
-                      reelsEstrutura === key
-                        ? 'bg-purple-50 border-purple-400 text-purple-800'
-                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                    )}
-                  >
-                    <div className="font-semibold">{s.label}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {reelsError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{reelsError}</div>
-            )}
-
-            <button onClick={generateReels} disabled={reelsLoading || !reelsTema.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-40 disabled:cursor-not-allowed">
-              {reelsLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Video size={15} /> Gerar Reels</>}
-            </button>
-          </div>
-
-          {/* ── Output de Reels ── */}
-          {reelsResult && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-500" />
-                    <span className="text-[10px] font-semibold text-gray-700 uppercase">
-                      Reels — {REELS_STRUCTURES[reelsEstrutura]?.label}
-                    </span>
-                  </div>
-                  <button onClick={handleReelsCopy}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-purple-600 transition-colors">
-                    {reelsCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                  </button>
-                </div>
-                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {reelsResult}
-                </div>
-              </div>
-
-              {/* Salvar + Regenerar */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleReelsSaveHub}
-                  disabled={reelsSavedHub}
-                  className={clsx(
-                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
-                    reelsSavedHub
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
-                  )}
-                >
-                  {reelsSavedHub
-                    ? <><Check size={13} /> Salvo no Hub</>
-                    : <><Save size={13} /> Salvar no Hub de Ideias</>
-                  }
-                </button>
-                {reelsSavedHub && (
-                  <button
-                    onClick={() => navigate('/ideas')}
-                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-purple-600 hover:border-purple-200 rounded-xl transition-all"
-                  >
-                    <ExternalLink size={12} /> Abrir Hub
-                  </button>
-                )}
-                <button
-                  onClick={generateReels}
-                  disabled={reelsLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
-                >
-                  <RefreshCw size={13} className={reelsLoading ? 'animate-spin' : ''} /> Regenerar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Modo Viral Reel ── */}
-      {mode === 'viral' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-violet-200 p-6 shadow-sm space-y-5 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-violet-200">
-              <Link2 size={22} className="text-white" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-gray-900">Recriar na Minha Voz</p>
-              <p className="text-sm text-gray-500 mt-2 leading-relaxed max-w-sm mx-auto">
-                Para recriar um vídeo, faça o upload do arquivo no <strong>Analisador de Vídeo</strong> e use a aba <strong>Recriar</strong> — assim a IA analisa o conteúdo real do vídeo com transcrição automática.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate('/video')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white shadow-lg transition-all"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-            >
-              <Link2 size={15} /> Ir para o Analisador de Vídeo
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ── Input principal (Studio Livre) ── */}
       {mode === 'studio' && (<>
       <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4 shadow-sm">
@@ -3581,39 +2460,6 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
             onFix={(oldText, newText) => setInput(prev => prev.replace(oldText, newText))}
           />
         )}
-
-        {/* Frases Banidas */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-              <X size={10} /> Frases Banidas
-              <span className="text-gray-300 font-normal">(o modelo nunca vai usar)</span>
-            </label>
-          </div>
-          <div className="flex gap-2">
-            <input
-              value={engBanInput}
-              onChange={e => setEngBanInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-              placeholder='Ex: "Tem uma coisa que acontece", "Você já sentiu que..."'
-              className="input text-xs flex-1"
-            />
-            <button onClick={() => { if (engBanInput.trim()) { addBannedPhrase(engBanInput.trim()); setEngBanInput('') } }}
-              className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-all">
-              Banir
-            </button>
-          </div>
-          {bannedPhrases.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {bannedPhrases.map(phrase => (
-                <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                  "{phrase.length > 30 ? phrase.slice(0, 30) + '...' : phrase}"
-                  <button onClick={() => removeBannedPhrase(phrase)} className="hover:text-red-800"><X size={9} /></button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* Formato + Briefing */}

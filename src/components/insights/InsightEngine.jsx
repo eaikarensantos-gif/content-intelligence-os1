@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { NavLink } from 'react-router-dom'
 import {
   Sparkles, RefreshCw, TrendingUp, Award, BarChart2,
   Layers, MessageSquare, Loader2, Clock, Filter,
-  ChevronRight, ArrowUpRight, ArrowDownRight, Minus, Trash2,
+  ChevronRight, ArrowUpRight, ArrowDownRight, Minus, Trash2, Settings,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
@@ -134,32 +135,26 @@ export default function InsightEngine({ embedded = false }) {
   const setInsights = useStore((s) => s.generateInsights)
   const clearInsights = useStore((s) => s.clearInsights)
   const deleteInsight = useStore((s) => s.deleteInsight)
+  const aiSettings = useAIStore((s) => s.getSettings())
+  const isAIConfigured = useAIStore((s) => s.isConfigured())
   const [loading, setLoading] = useState(false)
   const [activeFilter, setActiveFilter] = useState('all')
+  const canGenerate = metrics.length > 0
 
   const handleGenerate = async () => {
     setLoading(true)
     setActiveFilter('all')
-    await new Promise((r) => setTimeout(r, 1400))
-    generateInsightsAction()
-    setLoading(false)
-  }
-
     try {
       if (isAIConfigured) {
         const generated = await aiGenerateInsights(aiSettings, { posts, metrics })
         useStore.setState({ insights: generated })
-        setAiPowered(true)
       } else {
         // Rule-based insights calculated from the user's own real data
         setInsights()
-        setAiPowered(false)
       }
-    } catch (err) {
-      setAiError(err.message)
+    } catch {
       // IA indisponível — mantém análise baseada nos dados reais do usuário
       setInsights()
-      setAiPowered(false)
     } finally {
       setLoading(false)
     }

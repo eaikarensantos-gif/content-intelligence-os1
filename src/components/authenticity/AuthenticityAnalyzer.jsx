@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { withAntiAIFilter } from '../../lib/antiAIFilter'
+import { extractJsonObject } from '../../utils/aiJson.js'
 import {
   ShieldAlert, Loader2, AlertTriangle, CheckCircle2, Flame,
   ChevronDown, ChevronUp, Copy, Check, Mic, RefreshCw, Sparkles,
@@ -113,18 +113,17 @@ Exemplos de gancho: ${(p.hook_examples || []).slice(0, 3).join(' | ') || 'N/A'}
 async function runAnalysis(apiKey, draft, benchmarkText, creatorContext) {
   const prompt = buildAnalysisPrompt(draft, benchmarkText, creatorContext)
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 2000,
-      system: withAntiAIFilter('You are an authenticity analyzer. Respond ONLY with valid JSON. No markdown, no code blocks.'),
+      system: 'You are an authenticity analyzer. Respond ONLY with valid JSON. No markdown, no code blocks.',
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -136,10 +135,7 @@ async function runAnalysis(apiKey, draft, benchmarkText, creatorContext) {
 
   const data = await res.json()
   const raw = data.content?.[0]?.text || ''
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ── Score visual ──────────────────────────────────────────────────────────────

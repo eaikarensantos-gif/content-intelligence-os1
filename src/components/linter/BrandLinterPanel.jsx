@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle, AlertTriangle, Zap, Sparkles, RefreshCw, X, Check, Copy } from 'lucide-react'
 import { useState } from 'react'
+import { extractJsonArray } from '../../utils/aiJson.js'
 import clsx from 'clsx'
 import { lintText } from '../../utils/brandLinter'
 
@@ -24,22 +25,19 @@ Gere 3 alternativas concretas para substituir APENAS essa expressão no texto, m
 Responda APENAS com JSON:
 ["alternativa 1", "alternativa 2", "alternativa 3"]`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
   })
   if (!res.ok) throw new Error('API error')
   const data = await res.json()
   const text = data.content?.[0]?.text || ''
-  const m = text.match(/\[[\s\S]*\]/)
-  if (!m) throw new Error('No JSON')
-  return JSON.parse(m[0])
+  return extractJsonArray(text, 'No JSON')
 }
 
 function ViolationItem({ violation, severity, onFix }) {

@@ -1,5 +1,6 @@
 import { AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Sparkles, RefreshCw, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
+import { extractJsonArray } from '../../utils/aiJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -30,13 +31,12 @@ Gere 3 alternativas concretas para reescrever APENAS a parte sinalizada, mantend
 Responda APENAS com JSON:
 ["alternativa 1", "alternativa 2", "alternativa 3"]`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -48,9 +48,7 @@ Responda APENAS com JSON:
   if (!res.ok) throw new Error('API error')
   const data = await res.json()
   const text = data.content?.[0]?.text || ''
-  const match2 = text.match(/\[[\s\S]*\]/)
-  if (!match2) throw new Error('No JSON')
-  return JSON.parse(match2[0])
+  return extractJsonArray(text, 'No JSON')
 }
 
 function ViolationRow({ v }) {

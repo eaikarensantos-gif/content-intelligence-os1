@@ -72,7 +72,7 @@ export default function VideoSwipeStack({ deck, onSwipe, onEmpty }) {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="relative h-[560px] w-[400px] max-w-full select-none">
+      <div className="relative h-[460px] w-full max-w-sm select-none">
         {/* Next card peeking behind */}
         {next && (
           <div className="absolute inset-0 scale-[0.96] opacity-60">
