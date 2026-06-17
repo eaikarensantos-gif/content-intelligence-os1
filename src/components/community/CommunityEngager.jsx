@@ -93,6 +93,7 @@ export default function CommunityEngager() {
   const [error, setError] = useState(null)
   const [results, setResults] = useState([])
   const [copiedIdx, setCopiedIdx] = useState(null)
+  const [reducing, setReducing] = useState({})
 
   const [history, setHistory] = useState(() => {
     try {
@@ -107,6 +108,36 @@ export default function CommunityEngager() {
   }, [history])
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
+
+  const reduceComment = async (idx) => {
+    const apiKey = localStorage.getItem(LS_KEY) || ''
+    if (!apiKey) return
+    setReducing(r => ({ ...r, [idx]: true }))
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 400,
+          messages: [{
+            role: 'user',
+            content: `Reduza o comentário abaixo em até 40%, mantendo o tom e a voz originais. Retorne apenas o comentário reduzido, sem explicações.\n\n${results[idx].comment}`,
+          }],
+        }),
+      })
+      if (!res.ok) throw new Error('Erro na API')
+      const data = await res.json()
+      const reduced = data.content?.[0]?.text?.trim()
+      if (reduced) setResults(prev => prev.map((r, i) => i === idx ? { ...r, comment: reduced } : r))
+    } catch { /* mantém original */ }
+    finally { setReducing(r => ({ ...r, [idx]: false })) }
+  }
 
   const generate = async () => {
     if (!post.trim()) return
@@ -315,6 +346,14 @@ export default function CommunityEngager() {
               <p className="mt-2.5 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                 {r.comment}
               </p>
+              <button
+                onClick={() => reduceComment(i)}
+                disabled={reducing[i]}
+                className="mt-2 flex items-center gap-1 text-[10px] text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+              >
+                {reducing[i] ? <Loader2 size={10} className="animate-spin" /> : <span>↙</span>}
+                Reduzir texto
+              </button>
             </div>
           ))}
 

@@ -143,6 +143,7 @@ export default function CommunityStudio() {
   const [errors, setErrors]     = useState({ leitura: null, reacao: null, conversa: null })
   const [expanded, setExpanded] = useState({ leitura: true, reacao: true, conversa: true })
   const [copied, setCopied]     = useState(null)
+  const [reducing, setReducing] = useState({})
 
   // Enquete state (independente dos 3 slots semanais)
   const [enqueteTema, setEnqueteTema]       = useState('')
@@ -158,6 +159,34 @@ export default function CommunityStudio() {
     navigator.clipboard.writeText(text)
     setCopied(key)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  const reduceText = async (slotId, currentPost, setter) => {
+    if (!apiKey) return
+    setReducing(r => ({ ...r, [slotId]: true }))
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: `Reduza o texto abaixo em até 40%, mantendo o tom, voz e estrutura originais. Preserve o hook e a conclusão. Retorne apenas o texto reduzido, sem explicações.\n\n${currentPost}`,
+          }],
+        }),
+      })
+      if (!res.ok) throw new Error('Erro na API')
+      const data = await res.json()
+      setter(data.content?.[0]?.text?.trim() || currentPost)
+    } catch { /* mantém texto original se falhar */ }
+    finally { setReducing(r => ({ ...r, [slotId]: false })) }
   }
 
   const generate = async (slotId) => {
@@ -444,14 +473,25 @@ export default function CommunityStudio() {
                   <p className="text-[10px] text-gray-400 italic px-1 leading-relaxed">{enqueteDraft.nota}</p>
                 )}
 
-                <button
-                  onClick={generateEnquete}
-                  disabled={enqueteLoading}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
-                >
-                  <RefreshCw size={11} className={enqueteLoading ? 'animate-spin' : ''} />
-                  Regenerar
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={generateEnquete}
+                    disabled={enqueteLoading}
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                  >
+                    <RefreshCw size={11} className={enqueteLoading ? 'animate-spin' : ''} />
+                    Regenerar
+                  </button>
+                  <button
+                    onClick={() => reduceText('enquete', enqueteDraft.post, (reduced) => setEnqueteDraft(d => ({ ...d, post: reduced })))}
+                    disabled={reducing['enquete']}
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+                  >
+                    <Loader2 size={11} className={reducing['enquete'] ? 'animate-spin' : 'hidden'} />
+                    {!reducing['enquete'] && <span className="text-[10px]">↙</span>}
+                    Reduzir texto
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -572,15 +612,26 @@ export default function CommunityStudio() {
                       </p>
                     )}
 
-                    {/* Regenerar */}
-                    <button
-                      onClick={() => generate(id)}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
-                    >
-                      <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
-                      Regenerar
-                    </button>
+                    {/* Regenerar + Reduzir */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => generate(id)}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                      >
+                        <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
+                        Regenerar
+                      </button>
+                      <button
+                        onClick={() => reduceText(id, draft.post, (reduced) => setDrafts(d => ({ ...d, [id]: { ...d[id], post: reduced } })))}
+                        disabled={reducing[id]}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+                      >
+                        <Loader2 size={11} className={reducing[id] ? 'animate-spin' : 'hidden'} />
+                        {!reducing[id] && <span className="text-[10px]">↙</span>}
+                        Reduzir texto
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
