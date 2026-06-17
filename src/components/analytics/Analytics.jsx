@@ -18,6 +18,7 @@ import useStore from '../../store/useStore'
 import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
 import WeeklyPlanner from './WeeklyPlanner'
+import AudienceAnalytics from './AudienceAnalytics'
 import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
 import { normalizeRow, parseFile, isLinkedinFile, normalizeLinkedinRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
@@ -141,6 +142,7 @@ const TABS = [
   { id: 'publi', label: 'Publi' },
   { id: 'insights', label: 'Insights IA' },
   { id: 'planner', label: 'Próxima Semana' },
+  { id: 'audiencia', label: 'Audiência' },
 ]
 
 const PUBLI_SIGNALS = ['#publi', '#ad', '#parceria', '#publicidade', '#sponsored', '#parceiro']
@@ -151,10 +153,19 @@ function detectBrand(description = '') {
 }
 
 // ── Post Card for the new Posts tab ─────────────────────────────────────────
-function PostCard({ m, onDelete, onTemplate, onGenerate }) {
+function PostCard({ m, onDelete, onTemplate, onGenerate, onImageUpload }) {
   const erColor = m.engagement_rate > 0.04 ? 'bg-emerald-500' : m.engagement_rate > 0.02 ? 'bg-amber-400' : 'bg-gray-300'
   const erTextColor = m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'
   const erBg = m.engagement_rate > 0.04 ? 'bg-emerald-50' : m.engagement_rate > 0.02 ? 'bg-amber-50' : 'bg-gray-50'
+  const imgRef = useRef(null)
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => onImageUpload(m.id, ev.target.result)
+    reader.readAsDataURL(file)
+  }
 
   const fmtDate = (d, time) => {
     if (!d) return '—'
@@ -208,6 +219,16 @@ function PostCard({ m, onDelete, onTemplate, onGenerate }) {
           {m.duration_sec > 0 && <span className="ml-2 text-gray-300">· {m.duration_sec}s</span>}
         </p>
 
+        {/* Post thumbnail */}
+        {m.post_image && (
+          <div className="relative mb-2 group/img cursor-pointer" onClick={() => imgRef.current?.click()}>
+            <img src={m.post_image} alt="print do post" className="w-full h-28 object-cover rounded-lg" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+              <span className="text-white text-[10px] font-semibold">Trocar</span>
+            </div>
+          </div>
+        )}
+
         {/* Description */}
         <p className="text-xs text-gray-700 line-clamp-2 mb-3 min-h-[2rem]">
           {m.description || <span className="text-gray-300 italic">Sem descrição</span>}
@@ -254,6 +275,14 @@ function PostCard({ m, onDelete, onTemplate, onGenerate }) {
           >
             <Wand2 size={10} /> Gerar Similar
           </button>
+          <button
+            onClick={() => imgRef.current?.click()}
+            title={m.post_image ? 'Trocar print' : 'Adicionar print'}
+            className={`flex items-center justify-center px-2 rounded-lg border py-1.5 transition-all ${m.post_image ? 'text-blue-500 border-blue-200 bg-blue-50 hover:bg-blue-100' : 'text-gray-400 border-gray-200 bg-gray-50 hover:bg-gray-100'}`}
+          >
+            <Image size={10} />
+          </button>
+          <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
         </div>
       </div>
     </div>
@@ -607,6 +636,7 @@ export default function Analytics() {
               { key: 'shares', label: 'Compart.', sortable: true },
               { key: 'saves', label: 'Salvam.', sortable: true },
               { key: 'follows', label: 'Seguim.', sortable: true },
+              { key: 'link_clicks', label: 'Cliques Link', sortable: true },
               { key: 'engagement', label: 'Eng.', sortable: true },
               { key: 'engagement_rate', label: 'Taxa Eng.', sortable: true },
               { key: '_del', label: '', sortable: false },
@@ -765,6 +795,7 @@ export default function Analytics() {
                 { label: 'COMENT.',    w: 14, align: 'right', fmt: m => (m.comments || 0).toLocaleString('pt-BR') },
                 { label: 'COMPART.',   w: 16, align: 'right', fmt: m => (m.shares || 0).toLocaleString('pt-BR') },
                 { label: 'SALVAM.',    w: 15, align: 'right', fmt: m => (m.saves || 0).toLocaleString('pt-BR') },
+                { label: 'CLIQUES',    w: 16, align: 'right', fmt: m => (m.link_clicks || 0).toLocaleString('pt-BR') },
                 { label: 'ENGAJ.',     w: 16, align: 'right', fmt: m => (m.engagement || 0).toLocaleString('pt-BR') },
                 { label: 'ER%',        w: 16, align: 'right', fmt: m => (m.engagement_rate * 100).toFixed(2) + '%', key: 'er' },
               ]
@@ -850,7 +881,7 @@ export default function Analytics() {
                       {sorted.length > 0 && (
                         <button
                           onClick={() => {
-                            const headers = ['Data', 'Tipo', 'Plataforma', 'Cliente', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Engajamento', 'Taxa Eng.%']
+                            const headers = ['Data', 'Tipo', 'Plataforma', 'Cliente', 'Descrição', 'Impressões', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguimentos', 'Cliques no Link', 'Engajamento', 'Taxa Eng.%']
                             const rows = sorted.map(m => [
                               m.date || '',
                               m.post_type || '',
@@ -864,6 +895,7 @@ export default function Analytics() {
                               m.shares || 0,
                               m.saves || 0,
                               m.follows || 0,
+                              m.link_clicks || 0,
                               m.engagement || 0,
                               (m.engagement_rate * 100).toFixed(2),
                             ])
@@ -1022,6 +1054,7 @@ export default function Analytics() {
                             <td className="py-2 px-2.5 text-gray-500">{(m.shares || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{(m.saves || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-500">{(m.follows || 0).toLocaleString()}</td>
+                            <td className="py-2 px-2.5 text-gray-500">{(m.link_clicks || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5 text-gray-700 font-medium">{(m.engagement || 0).toLocaleString()}</td>
                             <td className="py-2 px-2.5">
                               <span className={`font-semibold ${m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
@@ -1253,6 +1286,7 @@ export default function Analytics() {
                             onDelete={deleteMetric}
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
+                            onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
                           />
                         ))}
                       </div>
@@ -1279,6 +1313,7 @@ export default function Analytics() {
                             onDelete={deleteMetric}
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
+                            onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
                           />
                         ))}
                       </div>
@@ -1305,6 +1340,7 @@ export default function Analytics() {
                             onDelete={deleteMetric}
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
+                            onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
                           />
                         ))}
                       </div>
@@ -1434,9 +1470,9 @@ Retorne EXCLUSIVAMENTE JSON válido:
 }`
 
           try {
-            const res = await fetch('/api/ai?action=anthropic', {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
               body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
@@ -1542,9 +1578,9 @@ Gere EXCLUSIVAMENTE JSON:
 REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.234). Se dado falta, use '— dado não disponível'. Foco no essencial.`
 
           try {
-            const res = await fetch('/api/ai?action=anthropic', {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
               body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
@@ -2548,6 +2584,9 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
 
       {/* ===== PLANEJADOR SEMANAL ===== */}
       {tab === 'planner' && <WeeklyPlanner />}
+
+      {/* ===== ANÁLISE DE AUDIÊNCIA ===== */}
+      {tab === 'audiencia' && <AudienceAnalytics />}
 
       <MetricsForm open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
