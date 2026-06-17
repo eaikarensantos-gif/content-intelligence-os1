@@ -94,6 +94,7 @@ export default function CommunityEngager() {
   const [results, setResults] = useState([])
   const [copiedIdx, setCopiedIdx] = useState(null)
   const [reducing, setReducing] = useState({})
+  const [reducePicker, setReducePicker] = useState({})
 
   const [history, setHistory] = useState(() => {
     try {
@@ -109,10 +110,16 @@ export default function CommunityEngager() {
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
-  const reduceComment = async (idx) => {
+  const reduceComment = async (idx, target = null) => {
     const apiKey = localStorage.getItem(LS_KEY) || ''
     if (!apiKey) return
     setReducing(r => ({ ...r, [idx]: true }))
+    setReducePicker(p => ({ ...p, [idx]: null }))
+    const instruction = target
+      ? target.type === 'paragrafos'
+        ? `Reescreva o comentário abaixo em exatamente ${target.qty} parágrafo${target.qty > 1 ? 's' : ''}, mantendo o tom e a voz originais. Retorne apenas o comentário, sem explicações.`
+        : `Reescreva o comentário abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o comentário, sem explicações.`
+      : `Reduza o comentário abaixo em até 40%, mantendo o tom e a voz originais. Retorne apenas o comentário reduzido, sem explicações.`
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -127,7 +134,7 @@ export default function CommunityEngager() {
           max_tokens: 400,
           messages: [{
             role: 'user',
-            content: `Reduza o comentário abaixo em até 40%, mantendo o tom e a voz originais. Retorne apenas o comentário reduzido, sem explicações.\n\n${results[idx].comment}`,
+            content: `${instruction}\n\n${results[idx].comment}`,
           }],
         }),
       })
@@ -346,14 +353,41 @@ export default function CommunityEngager() {
               <p className="mt-2.5 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                 {r.comment}
               </p>
-              <button
-                onClick={() => reduceComment(i)}
-                disabled={reducing[i]}
-                className="mt-2 flex items-center gap-1 text-[10px] text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
-              >
-                {reducing[i] ? <Loader2 size={10} className="animate-spin" /> : <span>↙</span>}
-                Reduzir texto
-              </button>
+              <div className="mt-2 space-y-2">
+                <button
+                  onClick={() => setReducePicker(p => ({ ...p, [i]: p[i] ? null : { type: 'paragrafos', qty: 2 } }))}
+                  disabled={reducing[i]}
+                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+                >
+                  {reducing[i] ? <Loader2 size={10} className="animate-spin" /> : <span>↙</span>}
+                  Reduzir texto
+                </button>
+                {reducePicker[i] && (
+                  <div className="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
+                    <select
+                      value={reducePicker[i].type}
+                      onChange={e => setReducePicker(p => ({ ...p, [i]: { ...p[i], type: e.target.value } }))}
+                      className="text-[11px] bg-transparent border-none outline-none text-violet-700 font-semibold cursor-pointer"
+                    >
+                      <option value="paragrafos">Parágrafos</option>
+                      <option value="linhas">Linhas</option>
+                    </select>
+                    <input
+                      type="number" min={1} max={20}
+                      value={reducePicker[i].qty}
+                      onChange={e => setReducePicker(p => ({ ...p, [i]: { ...p[i], qty: Math.max(1, Number(e.target.value)) } }))}
+                      className="w-10 text-center text-[11px] bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-700 font-bold"
+                    />
+                    <button
+                      onClick={() => reduceComment(i, reducePicker[i])}
+                      className="text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 px-2.5 py-1 rounded-lg transition-all"
+                    >
+                      Confirmar
+                    </button>
+                    <button onClick={() => setReducePicker(p => ({ ...p, [i]: null }))} className="text-gray-400 hover:text-gray-600 text-[10px]">✕</button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
 
