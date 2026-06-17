@@ -144,7 +144,7 @@ export default function CommunityStudio() {
   const [expanded, setExpanded] = useState({ leitura: true, reacao: true, conversa: true })
   const [copied, setCopied]     = useState(null)
   const [reducing, setReducing] = useState({})
-
+  const [reducePicker, setReducePicker] = useState({}) // { [slotId]: { type: 'paragrafos'|'linhas', qty: number } | null }
   // Enquete state (independente dos 3 slots semanais)
   const [enqueteTema, setEnqueteTema]       = useState('')
   const [enqueteFissura, setEnqueteFissura] = useState('')
@@ -161,9 +161,15 @@ export default function CommunityStudio() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const reduceText = async (slotId, currentPost, setter) => {
+  const reduceText = async (slotId, currentPost, setter, target = null) => {
     if (!apiKey) return
     setReducing(r => ({ ...r, [slotId]: true }))
+    setReducePicker(p => ({ ...p, [slotId]: null }))
+    const instruction = target
+      ? target.type === 'paragrafos'
+        ? `Reescreva o texto abaixo em exatamente ${target.qty} parágrafo${target.qty > 1 ? 's' : ''}, mantendo o tom, voz e as ideias principais. Retorne apenas o texto, sem explicações.`
+        : `Reescreva o texto abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o texto, sem explicações.`
+      : `Reduza o texto abaixo em até 40%, mantendo o tom, voz e estrutura originais. Preserve o hook e a conclusão. Retorne apenas o texto reduzido, sem explicações.`
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -176,10 +182,7 @@ export default function CommunityStudio() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 800,
-          messages: [{
-            role: 'user',
-            content: `Reduza o texto abaixo em até 40%, mantendo o tom, voz e estrutura originais. Preserve o hook e a conclusão. Retorne apenas o texto reduzido, sem explicações.\n\n${currentPost}`,
-          }],
+          messages: [{ role: 'user', content: `${instruction}\n\n${currentPost}` }],
         }),
       })
       if (!res.ok) throw new Error('Erro na API')
@@ -473,24 +476,50 @@ export default function CommunityStudio() {
                   <p className="text-[10px] text-gray-400 italic px-1 leading-relaxed">{enqueteDraft.nota}</p>
                 )}
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={generateEnquete}
-                    disabled={enqueteLoading}
-                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
-                  >
-                    <RefreshCw size={11} className={enqueteLoading ? 'animate-spin' : ''} />
-                    Regenerar
-                  </button>
-                  <button
-                    onClick={() => reduceText('enquete', enqueteDraft.post, (reduced) => setEnqueteDraft(d => ({ ...d, post: reduced })))}
-                    disabled={reducing['enquete']}
-                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
-                  >
-                    <Loader2 size={11} className={reducing['enquete'] ? 'animate-spin' : 'hidden'} />
-                    {!reducing['enquete'] && <span className="text-[10px]">↙</span>}
-                    Reduzir texto
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={generateEnquete}
+                      disabled={enqueteLoading}
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                    >
+                      <RefreshCw size={11} className={enqueteLoading ? 'animate-spin' : ''} />
+                      Regenerar
+                    </button>
+                    <button
+                      onClick={() => setReducePicker(p => ({ ...p, enquete: p.enquete ? null : { type: 'paragrafos', qty: 2 } }))}
+                      disabled={reducing['enquete']}
+                      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+                    >
+                      {reducing['enquete'] ? <Loader2 size={11} className="animate-spin" /> : <span className="text-[10px]">↙</span>}
+                      Reduzir texto
+                    </button>
+                  </div>
+                  {reducePicker['enquete'] && (
+                    <div className="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
+                      <select
+                        value={reducePicker['enquete'].type}
+                        onChange={e => setReducePicker(p => ({ ...p, enquete: { ...p.enquete, type: e.target.value } }))}
+                        className="text-[11px] bg-transparent border-none outline-none text-violet-700 font-semibold cursor-pointer"
+                      >
+                        <option value="paragrafos">Parágrafos</option>
+                        <option value="linhas">Linhas</option>
+                      </select>
+                      <input
+                        type="number" min={1} max={20}
+                        value={reducePicker['enquete'].qty}
+                        onChange={e => setReducePicker(p => ({ ...p, enquete: { ...p.enquete, qty: Math.max(1, Number(e.target.value)) } }))}
+                        className="w-10 text-center text-[11px] bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-700 font-bold"
+                      />
+                      <button
+                        onClick={() => reduceText('enquete', enqueteDraft.post, (reduced) => setEnqueteDraft(d => ({ ...d, post: reduced })), reducePicker['enquete'])}
+                        className="text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 px-2.5 py-1 rounded-lg transition-all"
+                      >
+                        Confirmar
+                      </button>
+                      <button onClick={() => setReducePicker(p => ({ ...p, enquete: null }))} className="text-gray-400 hover:text-gray-600 text-[10px]">✕</button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -613,24 +642,51 @@ export default function CommunityStudio() {
                     )}
 
                     {/* Regenerar + Reduzir */}
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => generate(id)}
-                        disabled={isLoading}
-                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
-                      >
-                        <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
-                        Regenerar
-                      </button>
-                      <button
-                        onClick={() => reduceText(id, draft.post, (reduced) => setDrafts(d => ({ ...d, [id]: { ...d[id], post: reduced } })))}
-                        disabled={reducing[id]}
-                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
-                      >
-                        <Loader2 size={11} className={reducing[id] ? 'animate-spin' : 'hidden'} />
-                        {!reducing[id] && <span className="text-[10px]">↙</span>}
-                        Reduzir texto
-                      </button>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => generate(id)}
+                          disabled={isLoading}
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                        >
+                          <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
+                          Regenerar
+                        </button>
+                        <button
+                          onClick={() => setReducePicker(p => ({ ...p, [id]: p[id] ? null : { type: 'paragrafos', qty: 2 } }))}
+                          disabled={reducing[id]}
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+                        >
+                          {reducing[id] ? <Loader2 size={11} className="animate-spin" /> : <span className="text-[10px]">↙</span>}
+                          Reduzir texto
+                        </button>
+                      </div>
+                      {reducePicker[id] && (
+                        <div className="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
+                          <select
+                            value={reducePicker[id].type}
+                            onChange={e => setReducePicker(p => ({ ...p, [id]: { ...p[id], type: e.target.value } }))}
+                            className="text-[11px] bg-transparent border-none outline-none text-violet-700 font-semibold cursor-pointer"
+                          >
+                            <option value="paragrafos">Parágrafos</option>
+                            <option value="linhas">Linhas</option>
+                          </select>
+                          <input
+                            type="number"
+                            min={1} max={20}
+                            value={reducePicker[id].qty}
+                            onChange={e => setReducePicker(p => ({ ...p, [id]: { ...p[id], qty: Math.max(1, Number(e.target.value)) } }))}
+                            className="w-10 text-center text-[11px] bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-700 font-bold"
+                          />
+                          <button
+                            onClick={() => reduceText(id, draft.post, (reduced) => setDrafts(d => ({ ...d, [id]: { ...d[id], post: reduced } })), reducePicker[id])}
+                            className="text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 px-2.5 py-1 rounded-lg transition-all"
+                          >
+                            Confirmar
+                          </button>
+                          <button onClick={() => setReducePicker(p => ({ ...p, [id]: null }))} className="text-gray-400 hover:text-gray-600 text-[10px]">✕</button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
