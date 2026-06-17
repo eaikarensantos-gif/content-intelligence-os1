@@ -487,6 +487,21 @@ const useStore = create(
     }),
     {
       name: 'content-intelligence-os-v3',
+      storage: {
+        getItem: (name) => {
+          try {
+            const val = localStorage.getItem(name)
+            return val ? JSON.parse(val) : null
+          } catch {
+            localStorage.removeItem(name)
+            return null
+          }
+        },
+        setItem: (name, value) => {
+          try { localStorage.setItem(name, JSON.stringify(value)) } catch { /* quota exceeded — ignore */ }
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
       partialize: (s) => ({
         clips: s.clips,
         ideas: s.ideas,
