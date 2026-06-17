@@ -260,15 +260,26 @@ export default function CommunityStudio() {
           <p className="text-xs text-white/40 leading-relaxed">
             3 posts por semana — um por camada de audiência. Define o tema, adiciona a fissura se quiser, gera e copia.
           </p>
-          <a
-            href="https://plataforma.contabilizeimais.com.br/m/community?tenantUuid=9e5df8c5-b632-4b5d-8787-5b8c9bcfebdd&channel=b7164b69-a785-44ab-aa01-f6371c6e8cfb"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 mt-3 text-[11px] font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1.5 rounded-lg transition-all"
-          >
-            <ExternalLink size={11} />
-            Abrir comunidade
-          </a>
+          <div className="flex items-center gap-2 mt-3">
+            <a
+              href="https://plataforma.contabilizeimais.com.br/m/community?tenantUuid=9e5df8c5-b632-4b5d-8787-5b8c9bcfebdd&channel=b7164b69-a785-44ab-aa01-f6371c6e8cfb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1.5 rounded-lg transition-all"
+            >
+              <ExternalLink size={11} />
+              Abrir comunidade
+            </a>
+            <a
+              href="https://docs.google.com/spreadsheets/d/13PHIq1UFKRBtC6_i5h1EjcYDN9EqTc6dFvEVRjnTDzQ/edit?gid=1495768093#gid=1495768093"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1.5 rounded-lg transition-all"
+            >
+              <ExternalLink size={11} />
+              Cronograma
+            </a>
+          </div>
         </div>
         <div className="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full translate-x-20 -translate-y-12 pointer-events-none" />
         <div className="absolute right-8 bottom-0 w-24 h-24 bg-white/5 rounded-full translate-y-10 pointer-events-none" />
