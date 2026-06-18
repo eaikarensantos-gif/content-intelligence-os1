@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import CommunityEngager from './CommunityEngager'
+import CommunityResources from './CommunityResources'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -322,6 +323,7 @@ export default function CommunityStudio() {
         {[
           { id: 'posts', label: 'Posts da semana' },
           { id: 'comentarios', label: 'Comentar posts' },
+          { id: 'recursos', label: 'Indicações' },
         ].map((t) => (
           <button
             key={t.id}
@@ -339,6 +341,8 @@ export default function CommunityStudio() {
       </div>
 
       {tab === 'comentarios' && <CommunityEngager />}
+
+      {tab === 'recursos' && <CommunityResources />}
 
       {tab === 'posts' && (<>
       {/* Tema da semana */}
