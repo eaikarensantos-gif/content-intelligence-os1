@@ -8,20 +8,17 @@ import { useVideoSearch } from '../../hooks/useVideoSearch'
 import useVideoSwipeStore from '../../store/useVideoSwipeStore'
 import useAIStore from '../../store/useAIStore'
 
-// Main page for the video swipe feature: pick categories, fetch a deck, and
-// swipe right (save) / left (skip). Saved videos land in the reaction queue.
 export default function VideoSwipe() {
   const selectedCategories = useVideoSwipeStore((s) => s.selectedCategories)
   const toggleCategory = useVideoSwipeStore((s) => s.toggleCategory)
   const saveToQueue = useVideoSwipeStore((s) => s.saveToQueue)
   const markSeen = useVideoSwipeStore((s) => s.markSeen)
-  const isYoutubeConfigured = useAIStore((s) => s.isYoutubeConfigured)
+
+  const youtubeReady = useAIStore((s) => !!s.youtubeApiKey?.trim())
 
   const { search, loading, error } = useVideoSearch()
   const [deck, setDeck] = useState([])
   const [started, setStarted] = useState(false)
-
-  const youtubeReady = isYoutubeConfigured()
 
   const loadDeck = async () => {
     const results = await search(selectedCategories)
