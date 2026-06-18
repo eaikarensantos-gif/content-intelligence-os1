@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   BookOpen, Play, FileText, Sparkles, Search, Loader2,
-  AlertCircle, ExternalLink, Mic, GraduationCap, Wrench, Users,
+  AlertCircle, ExternalLink, Mic, GraduationCap, Wrench,
 } from 'lucide-react'
 import useAIStore from '../../store/useAIStore'
 
@@ -120,36 +120,37 @@ async function enrichVideos(items, youtubeApiKey) {
 const PROMPT = (t, depth) => `Você é um curador de conteúdo educacional com foco em profundidade real.
 
 Tema: "${t}"
-Nível de profundidade: ${depth === 'avancado' ? 'avançado — a pessoa já conhece o básico e quer ir além' : 'intermediário — conhece o tema mas quer aprofundar'}
+Nível: ${depth === 'avancado' ? 'avançado — a pessoa já conhece o básico' : 'intermediário — conhece o tema mas quer aprofundar'}
 
-REGRAS OBRIGATÓRIAS:
-1. PROIBIDO incluir os títulos mais citados/famosos do tema. Se a pessoa já pesquisou o assunto, ela provavelmente conhece.
-2. Prefira conteúdo publicado nos últimos 3 anos ou clássicos pouco divulgados no Brasil.
-3. Para vídeos: prefira canais com menos de 500k inscritos mas alta densidade técnica.
-4. Para podcasts: indique episódios específicos, não só o nome do podcast.
-5. Para artigos: prefira fontes como MIT Sloan, HBR, First Round Review, Substack de especialistas, newsletters setoriais.
+REGRAS:
+1. PROIBIDO incluir os títulos mais famosos/citados do tema.
+2. Prefira conteúdo dos últimos 3 anos ou clássicos pouco conhecidos no Brasil.
+3. Vídeos: prefira canais com menos de 500k inscritos mas alta densidade técnica.
+4. Podcasts: indique episódios específicos, não só o nome do podcast.
+5. Artigos: prefira MIT Sloan, HBR, First Round Review, Substack de especialistas.
 6. Só inclua o que você tem certeza que existe.
-7. 5 itens por categoria.
+7. Exatamente 4 itens por categoria.
+8. Descrições curtas: máximo 12 palavras cada.
 
-Retorne APENAS JSON válido:
+Retorne APENAS JSON válido sem texto adicional:
 {
   "livros": [
-    { "titulo": "título exato", "autor": "nome completo", "descricao": "por que é uma escolha não-óbvia para quem já conhece o tema" }
+    { "titulo": "string", "autor": "string", "descricao": "string" }
   ],
   "videos": [
-    { "titulo": "título do vídeo ou playlist", "canal": "nome exato do canal", "descricao": "por que vale a pena" }
+    { "titulo": "string", "canal": "string", "descricao": "string" }
   ],
   "podcasts": [
-    { "titulo": "nome do episódio ou série", "programa": "nome do podcast", "descricao": "o que esse episódio traz de específico" }
+    { "titulo": "string", "programa": "string", "descricao": "string" }
   ],
   "cursos": [
-    { "titulo": "nome do curso", "plataforma": "Coursera | Udemy | Maven | Reforge | outro", "descricao": "por que esse curso e não outros" }
+    { "titulo": "string", "plataforma": "string", "descricao": "string" }
   ],
   "artigos": [
-    { "titulo": "título do artigo", "fonte": "veículo", "descricao": "argumento central do artigo" }
+    { "titulo": "string", "fonte": "string", "descricao": "string" }
   ],
   "ferramentas": [
-    { "titulo": "nome da ferramenta", "tipo": "SaaS | open-source | framework | template", "descricao": "caso de uso específico para esse tema" }
+    { "titulo": "string", "tipo": "string", "descricao": "string" }
   ]
 }`
 
@@ -157,10 +158,10 @@ export default function CommunityResources() {
   const apiKey = localStorage.getItem(LS_KEY) || ''
   const youtubeApiKey = useAIStore((s) => s.youtubeApiKey)
 
-  const [topic, setTopic]   = useState('')
-  const [depth, setDepth]   = useState('avancado')
+  const [topic, setTopic]     = useState('')
+  const [depth, setDepth]     = useState('avancado')
   const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState(null)
+  const [error, setError]     = useState(null)
   const [results, setResults] = useState(null)
   const [lastTopic, setLastTopic] = useState('')
 
@@ -183,7 +184,7 @@ export default function CommunityResources() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 3000,
+          max_tokens: 4096,
           messages: [{ role: 'user', content: PROMPT(t, depth) }],
         }),
       })
@@ -236,7 +237,7 @@ export default function CommunityResources() {
         </div>
 
         {/* Nível */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {[{ id: 'intermediario', label: 'Intermediário' }, { id: 'avancado', label: 'Avançado' }].map((d) => (
             <button
               key={d.id}
@@ -250,7 +251,7 @@ export default function CommunityResources() {
               {d.label}
             </button>
           ))}
-          <span className="text-[10px] text-gray-400 self-center ml-1">
+          <span className="text-[10px] text-gray-400 ml-1">
             {depth === 'avancado' ? 'Exclui os títulos mais óbvios do tema' : 'Inclui boas introduções aprofundadas'}
           </span>
         </div>
@@ -269,7 +270,7 @@ export default function CommunityResources() {
             <div key={c.key} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden animate-pulse">
               <div className="h-11 bg-gray-100" />
               <div className="p-3 space-y-3">
-                {[1,2,3,4,5].map((j) => (
+                {[1,2,3,4].map((j) => (
                   <div key={j} className="space-y-1">
                     <div className="h-2.5 bg-gray-100 rounded w-3/4" />
                     <div className="h-2 bg-gray-50 rounded w-full" />
@@ -284,9 +285,9 @@ export default function CommunityResources() {
       {results && !loading && (
         <>
           <p className="text-xs text-gray-400">
-            Indicações não-óbvias sobre <strong className="text-gray-600">"{lastTopic}"</strong>
+            Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
             {!youtubeApiKey && (
-              <span className="ml-2 text-amber-500">· vídeos sem YouTube API key (links de busca)</span>
+              <span className="ml-2 text-amber-500">· vídeos sem YouTube API (links de busca)</span>
             )}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
