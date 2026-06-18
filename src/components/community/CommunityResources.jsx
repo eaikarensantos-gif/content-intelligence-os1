@@ -4,10 +4,10 @@ import { BookOpen, Play, FileText, Sparkles, Search, Loader2, AlertCircle, Exter
 const LS_KEY = 'cio-anthropic-key'
 
 const CATEGORIES = [
-  { key: 'livros',  label: 'Livros',         icon: BookOpen, color: 'violet' },
-  { key: 'videos',  label: 'Vídeos & Cursos', icon: Play,     color: 'red'    },
-  { key: 'artigos', label: 'Artigos',          icon: FileText, color: 'blue'   },
-  { key: 'outros',  label: 'Outros',           icon: Sparkles, color: 'amber'  },
+  { key: 'livros',  label: 'Livros',         icon: BookOpen, color: 'violet', searchBase: (t, a) => `https://www.amazon.com.br/s?k=${encodeURIComponent((a ? a + ' ' : '') + t)}` },
+  { key: 'videos',  label: 'Vídeos & Cursos', icon: Play,     color: 'red',    searchBase: (t, c) => `https://www.youtube.com/results?search_query=${encodeURIComponent((c ? c + ' ' : '') + t)}` },
+  { key: 'artigos', label: 'Artigos',          icon: FileText, color: 'blue',   searchBase: (t, f) => `https://www.google.com/search?q=${encodeURIComponent((f ? f + ' ' : '') + t)}` },
+  { key: 'outros',  label: 'Outros',           icon: Sparkles, color: 'amber',  searchBase: (t)    => `https://www.google.com/search?q=${encodeURIComponent(t)}` },
 ]
 
 const COLOR = {
@@ -21,6 +21,13 @@ function parseJSON(text) {
   const match = text.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta inválida da API')
   return JSON.parse(match[0])
+}
+
+function itemLink(catKey, item) {
+  const cat = CATEGORIES.find(c => c.key === catKey)
+  if (!cat) return '#'
+  const secondary = item.autor || item.canal || item.fonte || item.tipo || ''
+  return cat.searchBase(item.titulo, secondary)
 }
 
 export default function CommunityResources() {
@@ -152,6 +159,7 @@ Regras:
         <>
           <p className="text-xs text-gray-400">
             Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
+            <span className="ml-2 opacity-60">— clique em qualquer item para buscar</span>
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {CATEGORIES.map(({ key, label, icon: Icon, color }) => {
@@ -168,10 +176,15 @@ Regras:
                     {items.length === 0 ? (
                       <li className="px-3 py-2.5 text-xs text-gray-400 italic">Nenhuma indicação encontrada.</li>
                     ) : items.map((item, i) => (
-                      <li key={i} className="px-3 py-2.5 hover:bg-gray-50 transition-colors group">
-                        <div className="flex items-start justify-between gap-2">
+                      <li key={i}>
+                        <a
+                          href={itemLink(key, item)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors group"
+                        >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 leading-snug">{item.titulo}</p>
+                            <p className="text-sm font-medium text-gray-900 leading-snug group-hover:text-orange-700 transition-colors">{item.titulo}</p>
                             {(item.autor || item.canal || item.fonte || item.tipo) && (
                               <p className="text-xs text-orange-600 font-medium mt-0.5">
                                 {item.autor || item.canal || item.fonte || item.tipo}
@@ -181,8 +194,8 @@ Regras:
                               <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.descricao}</p>
                             )}
                           </div>
-                          <ExternalLink size={12} className="shrink-0 mt-0.5 text-gray-300 group-hover:text-gray-400" />
-                        </div>
+                          <ExternalLink size={12} className="shrink-0 mt-1 text-gray-300 group-hover:text-orange-500 transition-colors" />
+                        </a>
                       </li>
                     ))}
                   </ul>
