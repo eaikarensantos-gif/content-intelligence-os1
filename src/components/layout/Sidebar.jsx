@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  Clapperboard, Sun, Moon, Scissors, Newspaper, Users,
+  Clapperboard, Sun, Moon, Scissors, Newspaper, Users, BookOpen,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -19,6 +19,7 @@ const TOP_NAV = [
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/clipper', icon: Scissors, label: 'Web Clipper' },
   { to: '/news', icon: Newspaper, label: 'Novidades Tech' },
+  { to: '/community', icon: BookOpen, label: 'Community Studio' },
 ]
 
 const NAV_GROUPS = [

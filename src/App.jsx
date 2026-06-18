@@ -26,6 +26,7 @@ import NaomiStudio from './components/naomi/NaomiStudio'
 import WebClipper from './components/clipper/WebClipper'
 import NewsGenerator from './components/news/NewsGenerator'
 import SupabaseSettings from './components/settings/SupabaseSettings'
+import CommunityStudio from './components/community/CommunityStudio'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />
             <Route path="/news" element={<NewsGenerator />} />
+            <Route path="/community" element={<div className="p-6 animate-fade-in"><CommunityStudio /></div>} />
           </Routes>
         </Layout>
       </BrowserRouter>
