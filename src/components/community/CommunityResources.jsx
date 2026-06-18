@@ -17,30 +17,31 @@ function parseJSON(text) {
   return JSON.parse(match[0])
 }
 
-// Busca real no Google Books (sem chave)
+// Verifica existência via Google Books (pega capa), link vai pra Amazon Brasil
 async function enrichBooks(items) {
   return Promise.all(items.map(async (item) => {
+    const amazonUrl = `https://www.amazon.com.br/s?k=${encodeURIComponent(item.titulo + ' ' + (item.autor || ''))}&i=stripbooks`
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.autor || ''}`)
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1&langRestrict=pt`)
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`)
       const data = await res.json()
       const vol = data.items?.[0]
       if (!vol) throw new Error('not found')
       return {
         ...item,
-        url: vol.volumeInfo?.infoLink || `https://books.google.com/books?q=${q}`,
+        url: amazonUrl,
         capa: vol.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
         autorReal: vol.volumeInfo?.authors?.join(', ') || item.autor,
         tituloReal: vol.volumeInfo?.title || item.titulo,
         verified: true,
       }
     } catch {
-      return { ...item, url: `https://books.google.com/books?q=${encodeURIComponent(item.titulo + ' ' + (item.autor || ''))}`, verified: false }
+      return { ...item, url: amazonUrl, verified: false }
     }
   }))
 }
 
-// Busca real no YouTube via API do app
+// Busca real no YouTube
 async function enrichVideos(items, youtubeApiKey) {
   if (!youtubeApiKey) {
     return items.map(item => ({
@@ -142,7 +143,6 @@ Regras obrigatórias:
       const raw = data.content?.[0]?.text || ''
       const parsed = parseJSON(raw)
 
-      // Enriquecer com URLs reais em paralelo
       const [livros, videos] = await Promise.all([
         enrichBooks(parsed.livros || []),
         enrichVideos(parsed.videos || [], youtubeApiKey),
@@ -172,7 +172,7 @@ Regras obrigatórias:
   }
 
   const CATEGORIES = [
-    { key: 'livros',  label: 'Livros',         icon: BookOpen, color: 'violet', linkLabel: 'Google Books' },
+    { key: 'livros',  label: 'Livros',         icon: BookOpen, color: 'violet', linkLabel: 'Amazon Brasil' },
     { key: 'videos',  label: 'Vídeos & Cursos', icon: Play,     color: 'red',    linkLabel: youtubeApiKey ? 'YouTube' : 'Buscar no YouTube' },
     { key: 'artigos', label: 'Artigos',          icon: FileText, color: 'blue',   linkLabel: 'Buscar no Google' },
     { key: 'outros',  label: 'Outros',           icon: Sparkles, color: 'amber',  linkLabel: 'Buscar no Google' },
@@ -180,7 +180,6 @@ Regras obrigatórias:
 
   return (
     <div className="space-y-4">
-      {/* Search bar */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -261,7 +260,6 @@ Regras obrigatórias:
                           rel="noopener noreferrer"
                           className="flex items-start gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors group"
                         >
-                          {/* Thumbnail para livros e vídeos */}
                           {(item.capa || item.thumb) && (
                             <img
                               src={item.capa || item.thumb}
@@ -303,7 +301,7 @@ Regras obrigatórias:
         <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
           <BookOpen size={36} className="mb-3 opacity-30" />
           <p className="text-sm">Digite um tema e clique em <strong>Buscar</strong></p>
-          <p className="text-xs mt-1 opacity-70">Livros e vídeos verificados via Google Books e YouTube</p>
+          <p className="text-xs mt-1 opacity-70">Livros com capa e link direto para Amazon Brasil</p>
         </div>
       )}
     </div>
