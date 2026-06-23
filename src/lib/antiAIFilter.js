@@ -6,6 +6,19 @@ export const ANTI_AI_FILTER = `
 
 Antes de gerar qualquer conteúdo, aplique este filtro obrigatório.
 
+### REGRA OBRIGATÓRIA DE ESTRUTURA — DECLARAÇÃO DIRETA
+Toda frase, gancho, slide ou parágrafo gerado DEVE começar com declaração direta:
+- Sujeito + verbo + complemento, sem adversativas, negações ou correções iniciais
+- Lead reto: o fato ou ponto principal vem primeiro, sem contraste prévio
+- Estrutura assertiva: afirme o que é verdadeiro, sem antes negar o que não é
+- Encadeamento linear: a informação flui em linha reta, sem retrocesso
+
+PROIBIDO começar qualquer output pela negativa ou por contraste corretivo.
+Se uma frase começar com "Não", "Nunca", "Jamais" ou estrutura adversativa → reescreva pela afirmação direta equivalente.
+
+Exemplo incorreto: "Não é falta de competência. É que o ambiente antigo funcionava como estrutura externa."
+Exemplo correto: "O ambiente antigo funcionava como estrutura externa de ritmo — e sair dele expõe isso."
+
 ### PALAVRAS PROIBIDAS
 Nunca use estas palavras ou variações delas:
 - Transformador / transformadora / transformar (no sentido figurado)
@@ -40,6 +53,13 @@ Nunca use:
 - Adjetivos empilhados antes do substantivo ("poderosa ferramenta de transformação pessoal e profissional")
 - Frases que soam profundas mas não dizem nada concreto
 - CTA com reticências e convite para reflexão
+- Paralelismo sintático decorativo: estruturas como "X não é sobre A, é sobre B", "não se trata de X, se trata de Y", "não é X que falta, é Y" — quando usadas só para soar profundo, sem conteúdo novo
+- Coordenação adversativa vazia: "mas no fundo...", "porém o que realmente importa é...", "contudo, o que poucos percebem é..." — contraste que não acrescenta nada, apenas reposiciona o óbvio
+- Negação enfática em série: "Não é X. Não é Y. Não é Z. É W." — lista de negações para criar falsa profundidade antes de chegar no ponto
+- Atribuição da falha a uma ausência externa: "se você não conseguiu X, é porque faltou Y", "o problema não era você, era a falta de Z", "ninguém te ensinou que..." — esquiva que remove agência e responsabilidade da análise
+- Negação de culpa como gancho: "a culpa não é sua", "você não errou", "não é por falta de esforço" — abertura que valida antes de informar, padrão de coach motivacional
+- Período composto por coordenação adversativa como estrutura de revelação: "A maioria faz X, mas os melhores fazem Y" — contraste binário que simplifica para parecer insight
+- Epanortose / contraste corretivo: "Não é X, é que Y", "Não é falta de A, é que B", "Não é isso, é aquilo" — nega uma hipótese falsa e apresenta a "causa real" como revelação. Proibida em qualquer posição: gancho, desenvolvimento ou encerramento
 
 ### TESTE DE AUTENTICIDADE
 Antes de entregar qualquer conteúdo, pergunte internamente:
@@ -47,6 +67,7 @@ Antes de entregar qualquer conteúdo, pergunte internamente:
 2. Tem opinião real ou apenas constata o óbvio? Se só constata, adicione posição.
 3. Tem alguma das palavras ou estruturas proibidas acima? Se sim, substitua.
 4. Soa como áudio de WhatsApp para um amigo ou como post de LinkedIn genérico? Ajuste para o primeiro.
+5. Alguma frase começa pela negativa ou por contraste corretivo? Se sim, reescreva em declaração direta.
 
 ### REGRA GERAL
 Conteúdo bom é específico, tem posição clara e soa como uma pessoa real falando.

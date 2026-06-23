@@ -186,6 +186,10 @@ function ReportPreview({ report, clientName, periodLabel, metrics, enriched }) {
             return (
               <div key={m.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
                 <span className="text-xs font-bold text-gray-300 w-5 text-center">{i + 1}</span>
+                {m.post_image
+                  ? <img src={m.post_image} alt="print" className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                  : <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center text-gray-300 text-[9px]">sem foto</div>
+                }
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-800 truncate">{m.description || 'Sem descrição'}</p>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -391,7 +395,7 @@ export default function ReportBuilder() {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 4000,
           messages: [{ role: 'user', content: prompt }],
         }),
