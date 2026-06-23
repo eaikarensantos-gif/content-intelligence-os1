@@ -1645,7 +1645,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 {"descricao_visual":"o que você vê em 1-2 frases","tema_sugerido":"tema detectado","tom_sugerido":"reflexivo|engracado|mentora","legendas":[{"versao":"Principal","texto":"legenda completa","hashtags":["#tag1"]},{"versao":"Mais pessoal","texto":"versão íntima","hashtags":["#tag1"]},{"versao":"Mais provocativa","texto":"versão incisiva","hashtags":["#tag1"]}]}`
       const imageBlocks = b64Images.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } }))
       const aiRes = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 3000,
         system: MASTER_PROMPT,
         messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: textContent }] }],
