@@ -930,7 +930,7 @@ export default function UnifiedCreator() {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel' | 'stories' | 'imagem'
+  const [mode, setMode] = useState('revisor') // 'studio' | 'engagement' | 'carousel' | 'stories' | 'imagem'
 
   // ── Modo Legenda por Imagem ──
   const [imgFiles, setImgFiles] = useState([])
