@@ -1628,6 +1628,38 @@ Gere uma análise + recriação completa com este JSON:
     e.target.value = ''
   }
 
+  const imgPdfRef = useRef(null)
+  const [imgPdfLoading, setImgPdfLoading] = useState(false)
+
+  const handleImgPdfUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImgPdfLoading(true)
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const maxPages = Math.min(pdf.numPages, 10)
+      const newFiles = []
+      for (let i = 1; i <= maxPages; i++) {
+        const page = await pdf.getPage(i)
+        const viewport = page.getViewport({ scale: 1.5 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
+        const imgFile = new File([blob], `${file.name}-pagina-${i}.jpg`, { type: 'image/jpeg' })
+        newFiles.push({ file: imgFile, preview: URL.createObjectURL(blob), name: imgFile.name })
+      }
+      setImgFiles(prev => [...prev, ...newFiles].slice(0, 10))
+    } catch {
+      setImgError('Erro ao processar o PDF. Tente novamente.')
+    } finally {
+      setImgPdfLoading(false)
+    }
+    e.target.value = ''
+  }
+
   const removeImg = (idx) => setImgFiles(prev => prev.filter((_, i) => i !== idx))
 
   const generateCaptionFromImages = async () => {
@@ -4085,16 +4117,29 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
                   </button>
                 )}
               </div>
-              <button onClick={() => imgInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-200 hover:border-pink-300 rounded-xl py-6 flex flex-col items-center gap-2 transition-colors group">
-                <Upload size={20} className="text-gray-300 group-hover:text-pink-400 transition-colors" />
-                <p className="text-xs text-gray-400 group-hover:text-pink-500 transition-colors">
-                  {imgTipo === 'carrossel' ? 'Adicionar imagens (até 10)' : 'Selecionar imagem'}
-                </p>
-                <p className="text-[10px] text-gray-300">JPG, PNG, WEBP</p>
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => imgInputRef.current?.click()}
+                  className="flex-1 border-2 border-dashed border-gray-200 hover:border-pink-300 rounded-xl py-6 flex flex-col items-center gap-2 transition-colors group">
+                  <Upload size={20} className="text-gray-300 group-hover:text-pink-400 transition-colors" />
+                  <p className="text-xs text-gray-400 group-hover:text-pink-500 transition-colors">
+                    {imgTipo === 'carrossel' ? 'Adicionar imagens (até 10)' : 'Selecionar imagem'}
+                  </p>
+                  <p className="text-[10px] text-gray-300">JPG, PNG, WEBP</p>
+                </button>
+                <button onClick={() => imgPdfRef.current?.click()} disabled={imgPdfLoading}
+                  className="border-2 border-dashed border-gray-200 hover:border-violet-300 rounded-xl px-4 flex flex-col items-center justify-center gap-2 transition-colors group disabled:opacity-50 min-w-[90px]">
+                  {imgPdfLoading
+                    ? <Loader2 size={18} className="text-violet-400 animate-spin" />
+                    : <Paperclip size={18} className="text-gray-300 group-hover:text-violet-400 transition-colors" />
+                  }
+                  <p className="text-[10px] text-gray-400 group-hover:text-violet-500 transition-colors">
+                    {imgPdfLoading ? 'Processando...' : 'Subir PDF'}
+                  </p>
+                </button>
+              </div>
               <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/webp"
                 multiple={imgTipo === 'carrossel'} onChange={handleImgUpload} className="hidden" />
+              <input ref={imgPdfRef} type="file" accept=".pdf" onChange={handleImgPdfUpload} className="hidden" />
               {imgFiles.length > 0 && (
                 <div className="mt-3 grid grid-cols-4 gap-2">
                   {imgFiles.map((img, idx) => (
