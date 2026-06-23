@@ -96,6 +96,7 @@ const ADJUSTMENTS = [
   { id: 'more_light', label: 'Mais leve', icon: Sparkles },
   { id: 'more_personal', label: 'Mais pessoal', icon: Heart },
   { id: 'more_practical', label: 'Mais prático', icon: Target },
+  { id: 'shorter', label: 'Mais curto', icon: Layers },
 ]
 
 const ADJUSTMENT_PROMPTS = {
@@ -103,6 +104,15 @@ const ADJUSTMENT_PROMPTS = {
   more_light: 'Reescreva com tom MAIS LEVE — use humor, situações relatables, linguagem coloquial. Mantenha o insight.',
   more_personal: 'Reescreva de forma MAIS PESSOAL — como confissão, experiência própria, vulnerabilidade estratégica.',
   more_practical: 'Reescreva de forma MAIS PRÁTICA — dê passos concretos, exemplos reais, frameworks acionáveis.',
+  shorter: `Reescreva de forma MAIS CURTA E SUCINTA — corte pelo menos 30% das palavras sem perder nenhuma ideia central.
+
+REGRAS OBRIGATÓRIAS:
+- Elimine frases redundantes, explicações desnecessárias e repetições
+- Cada frase deve ganhar peso — se não acrescenta, corta
+- Mantenha o gancho de abertura e o CTA final intactos
+- Preserve o tom e a voz originais — apenas enxugue, não mude o estilo
+- NÃO remova quebras de parágrafo — mantenha a estrutura visual
+- O resultado deve soar ainda mais direto e preciso, não truncado`,
 }
 
 /* ── Protocolo de Engajamento ── */
@@ -1251,13 +1261,12 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     setEngHookError(null)
     setEngHooks(null)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
