@@ -316,6 +316,13 @@ html.dark header {
   border-color: var(--border-soft) !important;
 }
 
+/* ── Auto-resize textareas ────────────────────────────────────────────────── */
+textarea {
+  field-sizing: content;
+  min-height: 2.5rem;
+  resize: none;
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    DARK MODE — FORMS & INPUTS
    ════════════════════════════════════════════════════════════════════════════ */

@@ -125,7 +125,7 @@ Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       system: withAntiAIFilter('You are a Brazilian content and presentation coach. You write in natural spoken Portuguese. Everything must sound like someone TALKING naturally. Your tone adapts to the goal: brand content = enthusiastic and genuine, reflective content = curious and intelligent (never pessimistic), educational = clear and practical. You NEVER default to melancholic or defeatist tone. Respond ONLY with valid JSON.'),
       messages: [{ role: 'user', content: prompt }],

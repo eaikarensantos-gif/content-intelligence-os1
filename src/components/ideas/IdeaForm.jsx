@@ -49,6 +49,7 @@ const EMPTY = {
   tags: [],                   // array de strings
   scheduled_date: '',
   content_type: 'organic',
+  client: '',
   script: '',                 // roteiro do conteúdo
   caption: '',                // legenda
   cta: '',                    // call to action
@@ -469,7 +470,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               monday.setHours(0, 0, 0, 0)
               const slotDate = new Date(monday)
               slotDate.setDate(monday.getDate() + offset)
-              const dateStr = slotDate.toISOString().slice(0, 10)
+              const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+              const dateStr = localDateStr(slotDate)
               const isSelected = form.scheduled_date === dateStr
               return (
                 <button
@@ -519,6 +521,19 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             </div>
           </div>
         </div>
+
+        {/* Cliente */}
+        {(form.content_type === 'paid' || form.content_type === 'partnership') && (
+          <div>
+            <label className="label">Cliente / Marca</label>
+            <input
+              className="input"
+              placeholder="ex: Samsung, FIAP, orgânico próprio"
+              value={form.client || ''}
+              onChange={(e) => set('client', e.target.value)}
+            />
+          </div>
+        )}
 
         {/* Roteiro */}
         <div>

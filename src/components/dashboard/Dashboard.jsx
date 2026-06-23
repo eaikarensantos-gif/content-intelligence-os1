@@ -464,7 +464,7 @@ export default function Dashboard() {
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} unit="%" />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={70} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="engajamento" name="Engajamento %" fill="#f97316" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="engajamento" name="Engajamento %" fill="#f97316" radius={[0, 4, 4, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -575,9 +575,9 @@ export default function Dashboard() {
             </h3>
             <div className="flex items-center gap-6">
               <div className="w-32 h-32 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={128}>
                   <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={3} dataKey="value">
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={3} dataKey="value" isAnimationActive={false}>
                       {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
