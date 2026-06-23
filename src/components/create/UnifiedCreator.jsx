@@ -1010,6 +1010,8 @@ export default function UnifiedCreator() {
   const [revApplied, setRevApplied] = useState(null)
   const [revRewritten, setRevRewritten] = useState('')
   const [revRewriteLoading, setRevRewriteLoading] = useState(false)
+  const [revShortened, setRevShortened] = useState('')
+  const [revShortenLoading, setRevShortenLoading] = useState(false)
   const [revBanInput, setRevBanInput] = useState('')
 
   // ── Banco de Temas ──
@@ -1942,6 +1944,38 @@ TEXTO:\n${revText.trim()}`
     }, 600)
   }
 
+  async function revisorShorten() {
+    if (!revText.trim() || !apiKey) return
+    setRevShortenLoading(true); setRevShortened('')
+    const bannedList = bannedPhrases.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${bannedPhrases.map(p => `- "${p}"`).join('\n')}`
+      : ''
+    const prompt = `Reescreva o texto abaixo de forma MAIS CURTA E SUCINTA — corte pelo menos 30% das palavras sem perder nenhuma ideia central.
+
+REGRAS OBRIGATÓRIAS:
+- Elimine frases redundantes, explicações desnecessárias e repetições
+- Cada frase deve ganhar peso — se não acrescenta, corta
+- Mantenha o gancho de abertura e o CTA final intactos
+- Preserve o tom e a voz originais — apenas enxugue, não mude o estilo
+- Mantenha a estrutura de parágrafos — NÃO junte tudo em um bloco
+- O resultado deve soar mais direto e preciso, não truncado${bannedList}
+
+Retorne APENAS o texto encurtado, sem introdução nem comentários.
+
+TEXTO:
+${revText.trim()}`
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: ANTI_AI_FILTER, messages: [{ role: 'user', content: prompt }] }),
+      })
+      const data = await res.json()
+      setRevShortened(data.content?.[0]?.text?.trim() || '')
+    } catch { /* silent */ }
+    finally { setRevShortenLoading(false) }
+  }
+
   async function revisorRewrite() {
     if (!revResult?.sugestoes?.length || !apiKey) return
     setRevRewriteLoading(true); setRevRewritten('')
@@ -2252,14 +2286,24 @@ TEXTO:\n${revText.trim()}`
                       <p className="text-sm text-red-600">{revError}</p>
                     </div>
                   )}
-                  <button
-                    onClick={revisorAnalyze}
-                    disabled={revLoading || !revText.trim()}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
-                    style={{ background: revLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-                  >
-                    {revLoading ? <><RefreshCw size={14} className="animate-spin" /> Analisando...</> : <><Sparkles size={14} /> Revisar Texto</>}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={revisorAnalyze}
+                      disabled={revLoading || !revText.trim()}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                      style={{ background: revLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                    >
+                      {revLoading ? <><RefreshCw size={14} className="animate-spin" /> Analisando...</> : <><Sparkles size={14} /> Revisar Texto</>}
+                    </button>
+                    <button
+                      onClick={revisorShorten}
+                      disabled={revShortenLoading || !revText.trim()}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                      style={{ background: revShortenLoading ? '#6b7280' : 'linear-gradient(135deg, #374151, #1f2937)' }}
+                    >
+                      {revShortenLoading ? <><RefreshCw size={14} className="animate-spin" /> Encurtando...</> : <><Layers size={14} /> Encurtar Texto</>}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Results */}
@@ -2348,15 +2392,25 @@ TEXTO:\n${revText.trim()}`
                           ))}
                         </div>
 
-                        {/* Rewrite full */}
-                        <button
-                          onClick={revisorRewrite}
-                          disabled={revRewriteLoading}
-                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all mt-2"
-                          style={{ background: revRewriteLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-                        >
-                          {revRewriteLoading ? <><RefreshCw size={14} className="animate-spin" /> Reescrevendo...</> : <><Wand2 size={14} /> Reescrever Roteiro Completo</>}
-                        </button>
+                        {/* Rewrite + Shorten buttons */}
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={revisorRewrite}
+                            disabled={revRewriteLoading}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                            style={{ background: revRewriteLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                          >
+                            {revRewriteLoading ? <><RefreshCw size={14} className="animate-spin" /> Reescrevendo...</> : <><Wand2 size={14} /> Reescrever Completo</>}
+                          </button>
+                          <button
+                            onClick={revisorShorten}
+                            disabled={revShortenLoading}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                            style={{ background: revShortenLoading ? '#6b7280' : 'linear-gradient(135deg, #374151, #1f2937)' }}
+                          >
+                            {revShortenLoading ? <><RefreshCw size={14} className="animate-spin" /> Encurtando...</> : <><Layers size={14} /> Encurtar Texto</>}
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -2375,6 +2429,28 @@ TEXTO:\n${revText.trim()}`
                           <button
                             onClick={() => { setRevText(revRewritten); setRevRewritten(''); setRevResult(null) }}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+                          >
+                            <Check size={13} /> Usar este texto
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shortened result */}
+                    {revShortened && (
+                      <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm space-y-3 animate-fade-in">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Texto Encurtado</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{revShortened}</p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(revShortened); setRevCopied('shorten'); setTimeout(() => setRevCopied(false), 1500) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-700 hover:bg-white transition-colors"
+                          >
+                            {revCopied === 'shorten' ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
+                          </button>
+                          <button
+                            onClick={() => { setRevText(revShortened); setRevShortened(''); setRevResult(null) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-gray-800 text-white hover:bg-gray-900 transition-colors"
                           >
                             <Check size={13} /> Usar este texto
                           </button>
