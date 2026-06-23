@@ -2286,24 +2286,14 @@ ${revText.trim()}`
                       <p className="text-sm text-red-600">{revError}</p>
                     </div>
                   )}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={revisorAnalyze}
-                      disabled={revLoading || !revText.trim()}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
-                      style={{ background: revLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
-                    >
-                      {revLoading ? <><RefreshCw size={14} className="animate-spin" /> Analisando...</> : <><Sparkles size={14} /> Revisar Texto</>}
-                    </button>
-                    <button
-                      onClick={revisorShorten}
-                      disabled={revShortenLoading || !revText.trim()}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
-                      style={{ background: revShortenLoading ? '#6b7280' : 'linear-gradient(135deg, #374151, #1f2937)' }}
-                    >
-                      {revShortenLoading ? <><RefreshCw size={14} className="animate-spin" /> Encurtando...</> : <><Layers size={14} /> Encurtar Texto</>}
-                    </button>
-                  </div>
+                  <button
+                    onClick={revisorAnalyze}
+                    disabled={revLoading || !revText.trim()}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                    style={{ background: revLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                  >
+                    {revLoading ? <><RefreshCw size={14} className="animate-spin" /> Analisando...</> : <><Sparkles size={14} /> Revisar Texto</>}
+                  </button>
                 </div>
 
                 {/* Results */}
