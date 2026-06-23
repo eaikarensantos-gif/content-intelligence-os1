@@ -8,7 +8,7 @@ import {
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
   MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink, Link2,
-  AlertCircle, AlignLeft, TrendingUp,
+  AlertCircle, AlignLeft, TrendingUp, ImagePlus, Images, Trash2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -920,7 +920,17 @@ export default function UnifiedCreator() {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel' | 'stories'
+  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel' | 'stories' | 'imagem'
+
+  // ── Modo Legenda por Imagem ──
+  const [imgFiles, setImgFiles] = useState([])
+  const [imgTipo, setImgTipo] = useState('post')
+  const [imgContexto, setImgContexto] = useState('')
+  const [imgLoading, setImgLoading] = useState(false)
+  const [imgResult, setImgResult] = useState(null)
+  const [imgError, setImgError] = useState(null)
+  const [imgCopied, setImgCopied] = useState(null)
+  const imgInputRef = useRef(null)
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
   const [engIdeia, setEngIdeia] = useState('')
@@ -1602,6 +1612,55 @@ Gere uma análise + recriação completa com este JSON:
     }
   }
 
+  const handleImgUpload = (e) => {
+    const files = Array.from(e.target.files || [])
+    const parsed = files.map(f => ({ file: f, preview: URL.createObjectURL(f), name: f.name }))
+    setImgFiles(prev => [...prev, ...parsed].slice(0, 10))
+    e.target.value = ''
+  }
+
+  const removeImg = (idx) => setImgFiles(prev => prev.filter((_, i) => i !== idx))
+
+  const generateCaptionFromImages = async () => {
+    if (imgFiles.length === 0) return
+    if (!apiKey) { setImgError('Configure sua API key em Analytics > Configurações'); return }
+    setImgLoading(true)
+    setImgError(null)
+    setImgResult(null)
+    try {
+      const b64Images = await Promise.all(imgFiles.map(({ file }) => new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = ev => resolve({ data: ev.target.result.split(',')[1], mediaType: file.type || 'image/jpeg' })
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })))
+      const tipoLabel = imgTipo === 'carrossel' ? 'carrossel (múltiplas imagens em sequência)' : 'post único'
+      const qtdLabel = imgFiles.length > 1 ? `${imgFiles.length} imagens (em ordem)` : '1 imagem'
+      const textContent = `Analise ${qtdLabel} e sugira legendas para um ${tipoLabel} no Instagram.
+${imgContexto ? `\nCONTEXTO ADICIONAL DA CRIADORA: ${imgContexto}\n` : ''}
+PERSONA: Karen Santos — consultora tech, mentora de carreira. Tom: direto, analítico, sem floreio, sem motivacional vazio.
+${imgTipo === 'carrossel' ? 'As imagens formam um carrossel. Analise a narrativa visual em sequência.' : ''}
+REGRAS: Abertura forte, sem coach speak, CTA natural, 5-8 hashtags. NUNCA: "não é X, é Y" / "o segredo é" / anos específicos.
+Responda EXCLUSIVAMENTE com JSON válido:
+{"descricao_visual":"o que você vê em 1-2 frases","tema_sugerido":"tema detectado","tom_sugerido":"reflexivo|engracado|mentora","legendas":[{"versao":"Principal","texto":"legenda completa","hashtags":["#tag1"]},{"versao":"Mais pessoal","texto":"versão íntima","hashtags":["#tag1"]},{"versao":"Mais provocativa","texto":"versão incisiva","hashtags":["#tag1"]}]}`
+      const imageBlocks = b64Images.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } }))
+      const aiRes = await mkClient(apiKey).messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        system: MASTER_PROMPT,
+        messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: textContent }] }],
+      })
+      const jsonText = aiRes.content?.[0]?.text || ''
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) throw new Error('Resposta inválida')
+      setImgResult(JSON.parse(jsonMatch[0]))
+    } catch (err) {
+      setImgError(err.message)
+    } finally {
+      setImgLoading(false)
+    }
+  }
+
   const applyTheme = (tema) => {
     if (mode === 'engagement') setEngTema(tema)
     else if (mode === 'carousel') setCarTema(tema)
@@ -2067,6 +2126,12 @@ TEXTO:\n${revText.trim()}`
             mode === 'viral' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <Link2 size={13} /> Recriar
+        </button>
+        <button onClick={() => setMode('imagem')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'imagem' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <ImagePlus size={13} /> Legenda
         </button>
       </div>
 
@@ -3965,6 +4030,142 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
       )}
 
       </>)} {/* fim mode === 'studio' */}
+
+      {/* ── Modo Legenda por Imagem ── */}
+      {mode === 'imagem' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shrink-0">
+                <ImagePlus size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Legenda por Imagem</p>
+                <p className="text-xs text-gray-400 mt-0.5">Suba uma foto ou um carrossel — a IA sugere legendas condizentes com o visual</p>
+              </div>
+            </div>
+
+            {/* Tipo de post */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-2">Tipo de publicação</label>
+              <div className="flex gap-2">
+                <button onClick={() => setImgTipo('post')}
+                  className={clsx('flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all',
+                    imgTipo === 'post' ? 'bg-pink-50 border-pink-400 text-pink-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <ImagePlus size={13} /> Post único
+                </button>
+                <button onClick={() => setImgTipo('carrossel')}
+                  className={clsx('flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all',
+                    imgTipo === 'carrossel' ? 'bg-orange-50 border-orange-400 text-orange-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                  )}>
+                  <Images size={13} /> Carrossel
+                </button>
+              </div>
+            </div>
+
+            {/* Upload de imagens */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  {imgTipo === 'carrossel' ? 'Imagens do carrossel' : 'Imagem'} <span className="text-red-400">*</span>
+                </label>
+                {imgFiles.length > 0 && (
+                  <button onClick={() => setImgFiles([])} className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-600">
+                    <Trash2 size={10} /> Limpar tudo
+                  </button>
+                )}
+              </div>
+              <button onClick={() => imgInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-gray-200 hover:border-pink-300 rounded-xl py-6 flex flex-col items-center gap-2 transition-colors group">
+                <Upload size={20} className="text-gray-300 group-hover:text-pink-400 transition-colors" />
+                <p className="text-xs text-gray-400 group-hover:text-pink-500 transition-colors">
+                  {imgTipo === 'carrossel' ? 'Adicionar imagens (até 10)' : 'Selecionar imagem'}
+                </p>
+                <p className="text-[10px] text-gray-300">JPG, PNG, WEBP</p>
+              </button>
+              <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+                multiple={imgTipo === 'carrossel'} onChange={handleImgUpload} className="hidden" />
+              {imgFiles.length > 0 && (
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {imgFiles.map((img, idx) => (
+                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square">
+                      <img src={img.preview} alt={img.name} className="w-full h-full object-cover" />
+                      {imgTipo === 'carrossel' && (
+                        <span className="absolute top-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">{idx + 1}</span>
+                      )}
+                      <button onClick={() => removeImg(idx)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                  {imgTipo === 'carrossel' && imgFiles.length < 10 && (
+                    <button onClick={() => imgInputRef.current?.click()}
+                      className="aspect-square border-2 border-dashed border-gray-200 hover:border-pink-300 rounded-xl flex items-center justify-center transition-colors">
+                      <Plus size={16} className="text-gray-300" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Contexto adicional */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+                Contexto adicional <span className="text-gray-300">(opcional)</span>
+              </label>
+              <input value={imgContexto} onChange={e => setImgContexto(e.target.value)}
+                placeholder="Ex: foto do evento X, bastidores, selfie pós-palestra..."
+                className="input text-sm w-full" />
+            </div>
+
+            {imgError && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{imgError}</div>}
+
+            <button onClick={generateCaptionFromImages} disabled={imgLoading || imgFiles.length === 0}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all shadow-lg shadow-pink-200 disabled:opacity-40 disabled:cursor-not-allowed">
+              {imgLoading ? <><Loader2 size={15} className="animate-spin" /> Analisando imagens...</> : <><Sparkles size={15} /> Sugerir Legendas</>}
+            </button>
+          </div>
+
+          {imgResult && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2 flex items-center gap-1.5">
+                  <Eye size={12} /> Análise Visual
+                </p>
+                <p className="text-sm text-gray-700">{imgResult.descricao_visual}</p>
+                <div className="flex gap-2 mt-2">
+                  <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">Tema: {imgResult.tema_sugerido}</span>
+                  {imgResult.tom_sugerido && (
+                    <span className={clsx('text-[10px] font-semibold px-2 py-1 rounded-lg',
+                      imgResult.tom_sugerido === 'reflexivo' ? 'bg-purple-100 text-purple-700' :
+                      imgResult.tom_sugerido === 'engracado' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                    )}>Tom: {imgResult.tom_sugerido}</span>
+                  )}
+                </div>
+              </div>
+              {(imgResult.legendas || []).map((leg, i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-gray-700">{leg.versao}</p>
+                    <button onClick={() => {
+                      navigator.clipboard.writeText(`${leg.texto}\n\n${(leg.hashtags || []).join(' ')}`)
+                      setImgCopied(i)
+                      setTimeout(() => setImgCopied(null), 2000)
+                    }} className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 hover:text-gray-700 transition-colors">
+                      {imgCopied === i ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                      {imgCopied === i ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{leg.texto}</p>
+                  {leg.hashtags?.length > 0 && <p className="text-xs text-blue-500">{leg.hashtags.join(' ')}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   )
