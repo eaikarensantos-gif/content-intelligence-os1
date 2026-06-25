@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
 
@@ -27,7 +28,14 @@ export default function SupabaseSettings() {
 
   const [anthropicKey, setAnthropicKey]   = useState(() => localStorage.getItem(LS_ANTHROPIC) || '')
   const [groqKey, setGroqKey]             = useState(() => localStorage.getItem(LS_GROQ) || '')
-  const [youtubeKey, setYoutubeKey]       = useState(() => localStorage.getItem(LS_YOUTUBE) || '')
+  const [youtubeKey, setYoutubeKey]       = useState(() => {
+    const stored = localStorage.getItem(LS_YOUTUBE) || ''
+    // Sync to AIStore on mount if AIStore doesn't have it yet
+    if (stored && !useAIStore.getState().youtubeApiKey?.trim()) {
+      useAIStore.getState().setYoutubeApiKey(stored)
+    }
+    return stored
+  })
   const [vimeoToken, setVimeoToken]       = useState(() => localStorage.getItem(LS_VIMEO) || '')
   const [rapidApiKey, setRapidApiKey]     = useState(() => localStorage.getItem(LS_RAPIDAPI) || '')
   const [rapidHost, setRapidHost]         = useState(() => localStorage.getItem(LS_RAPIDAPI_HOST) || '')
@@ -79,6 +87,8 @@ export default function SupabaseSettings() {
     else localStorage.removeItem(LS_RAPIDAPI)
     if (rapidHost.trim()) localStorage.setItem(LS_RAPIDAPI_HOST, rapidHost.trim())
     else localStorage.removeItem(LS_RAPIDAPI_HOST)
+    // Sync YouTube key to AIStore so VideoSwipe picks it up immediately
+    useAIStore.getState().setYoutubeApiKey(youtubeKey.trim())
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
