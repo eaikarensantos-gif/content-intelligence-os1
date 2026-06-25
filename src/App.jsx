@@ -19,6 +19,7 @@ import PresentationMode from './components/presentation/PresentationMode'
 import ContentDNA from './components/dna/ContentDNA'
 import AccessLog from './components/auth/AccessLog'
 import AdManager from './components/ads/AdManager'
+import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import FloatingActions from './components/global/FloatingActions'
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/ads" element={<AdManager />} />
+            <Route path="/reports" element={<PerformanceReport />} />
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
