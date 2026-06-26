@@ -9,6 +9,7 @@ import {
   TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal, ListOrdered,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
 import IdeaForm from './IdeaForm'
 import DailyAgentBanner from './DailyAgentBanner'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
@@ -1520,6 +1521,9 @@ export default function IdeasHub() {
   const deleteIdea           = useStore((s) => s.deleteIdea)
   const deleteIdeasByStatus  = useStore((s) => s.deleteIdeasByStatus)
   const convertIdeaToPost    = useStore((s) => s.convertIdeaToPost)
+  const importIdeas          = useStore((s) => s.importIdeas)
+  const hasGaveta = ideas.some((i) => (i.tags || []).includes('gaveta-21dias'))
+  const handleImportGaveta = () => importIdeas(GAVETA_IDEAS)
 
   const [tab, setTab]                       = useState('kanban')
   const [formOpen, setFormOpen]             = useState(false)
@@ -1614,6 +1618,15 @@ export default function IdeasHub() {
           <button onClick={() => navigate('/generate')} className="btn-secondary text-xs sm:text-sm px-3 sm:px-4">
             <Zap size={14} /> <span className="hidden sm:inline">Gerar com IA</span>
           </button>
+          {!hasGaveta && (
+            <button
+              onClick={handleImportGaveta}
+              title="Importar conteúdo de gaveta — 21 dias"
+              className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 border-orange-300 text-orange-700 hover:bg-orange-50"
+            >
+              <FileText size={14} /> <span className="hidden sm:inline">Gaveta 21d</span>
+            </button>
+          )}
           {ideas.length > 0 && (
             <button onClick={() => openNew()} className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
               <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>

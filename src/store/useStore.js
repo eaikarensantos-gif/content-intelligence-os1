@@ -170,6 +170,19 @@ const useStore = create(
           ],
         })),
 
+      importIdeas: (newIdeas) =>
+        set((s) => ({
+          ideas: [
+            ...s.ideas,
+            ...newIdeas.map((idea) => ({
+              id: uuidv4(),
+              created_at: new Date().toISOString(),
+              tags: [],
+              ...idea,
+            })),
+          ],
+        })),
+
       updateIdea: (id, updates) => {
         set((s) => ({ ideas: s.ideas.map((i) => (i.id === id ? { ...i, ...updates } : i)) }))
       },
