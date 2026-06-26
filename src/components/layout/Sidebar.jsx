@@ -4,7 +4,7 @@ import {
   Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings,
-  ClipboardList, Clapperboard, Sun, Moon, Flame, Users, Newspaper,
+  ClipboardList, Clapperboard, Sun, Moon, Flame, Users, Newspaper, Brain,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -17,6 +17,7 @@ const TOP_NAV = [
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
+  { to: '/brain', icon: Brain, label: 'Content Brain' },
 ]
 
 const NAV_GROUPS = [

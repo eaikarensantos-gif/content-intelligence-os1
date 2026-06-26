@@ -415,7 +415,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
           {/* Data livre */}
           <div>
-            <label className="label">Data Programada</label>
+            <label className="label flex items-center gap-1.5">
+              Data Programada
+              {!initial?.id && initial?.scheduled_date && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium border border-orange-200">
+                  do calendário
+                </span>
+              )}
+            </label>
             <input type="date" className="input" value={form.scheduled_date || ''}
               onChange={(e) => set('scheduled_date', e.target.value)} />
           </div>
@@ -589,8 +596,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Ações */}
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" disabled={lintViolations.length > 0}
-            title={lintViolations.length > 0 ? 'Corrija as violações de tom antes de salvar' : undefined}
+          <button type="submit" disabled={!form.title.trim()}
+            title={!form.title.trim() ? 'Preencha o título antes de salvar' : undefined}
             className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
             {initial?.id ? 'Salvar Alterações' : 'Criar Ideia'}
           </button>

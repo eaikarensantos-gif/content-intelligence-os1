@@ -30,6 +30,7 @@ import CommunityStudio from './components/community/CommunityStudio'
 import VideoSwipe from './components/video-swipe/VideoSwipe'
 import SupabaseSettings from './components/settings/SupabaseSettings'
 import TaskBoard from './components/tasks/TaskBoard'
+import ContentBrain from './components/brain/ContentBrain'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -112,6 +113,7 @@ export default function App() {
             <Route path="/news" element={<NewsGenerator />} />
             <Route path="/pdf-studio" element={<div className="p-0 animate-fade-in"><PDFContentGenerator /></div>} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
+            <Route path="/brain" element={<ContentBrain />} />
             <Route path="/community" element={<CommunityStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
           </Routes>
