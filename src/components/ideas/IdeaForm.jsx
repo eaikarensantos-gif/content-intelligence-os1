@@ -317,82 +317,6 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Brand Directive Banner */}
         <BrandDirectiveBanner />
 
-        {/* Título */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Título *</label>
-            <button
-              type="button"
-              onClick={handleGenerateTitle}
-              disabled={generatingTitle}
-              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 font-medium transition-all disabled:opacity-50"
-            >
-              {generatingTitle ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
-              {generatingTitle ? 'Gerando...' : 'Gerar Títulos'}
-            </button>
-          </div>
-          <input
-            className="input"
-            placeholder="ex: 5 Ferramentas de IA Que Todo Criador Precisa"
-            value={form.title}
-            onChange={(e) => { set('title', e.target.value); setTitleSuggestions([]) }}
-            required
-          />
-          {/* Title suggestions */}
-          {titleSuggestions.length > 0 && (
-            <div className="mt-2 space-y-1.5">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Clique para usar:</p>
-              {titleSuggestions.map((t, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => { set('title', t); setTitleSuggestions([]) }}
-                  className="w-full text-left text-xs px-3 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 hover:border-violet-300 transition-all leading-snug"
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Descrição */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Descrição</label>
-            <button
-              type="button"
-              onClick={handleGenerateHook}
-              disabled={generatingHook}
-              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 font-medium transition-all disabled:opacity-50"
-            >
-              {generatingHook ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
-              {generatingHook ? 'Gerando...' : 'Gerar Gancho'}
-            </button>
-          </div>
-          <textarea
-            ref={descRef}
-            className="input resize-none min-h-[80px]"
-            placeholder="Qual é a ideia central? Que valor ela entrega? Você pode escrever um briefing completo aqui..."
-            value={form.description}
-            onChange={(e) => {
-              set('description', e.target.value)
-              autoResizeDesc(e.target)
-            }}
-          />
-        </div>
-
-        {/* Tópico */}
-        <div>
-          <label className="label">Tópico / Nicho</label>
-          <input
-            className="input"
-            placeholder="ex: Economia Criativa, Ferramentas de IA, Crescimento de Carreira"
-            value={form.topic}
-            onChange={(e) => set('topic', e.target.value)}
-          />
-        </div>
-
         {/* Plataformas — multi-select */}
         <div>
           <label className="label">Plataforma(s)</label>
@@ -518,6 +442,81 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Título */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">Título *</label>
+            <button
+              type="button"
+              onClick={handleGenerateTitle}
+              disabled={generatingTitle}
+              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 font-medium transition-all disabled:opacity-50"
+            >
+              {generatingTitle ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
+              {generatingTitle ? 'Gerando...' : 'Gerar Títulos'}
+            </button>
+          </div>
+          <input
+            className="input"
+            placeholder="ex: 5 Ferramentas de IA Que Todo Criador Precisa"
+            value={form.title}
+            onChange={(e) => { set('title', e.target.value); setTitleSuggestions([]) }}
+            required
+          />
+          {titleSuggestions.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Clique para usar:</p>
+              {titleSuggestions.map((t, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { set('title', t); setTitleSuggestions([]) }}
+                  className="w-full text-left text-xs px-3 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 hover:border-violet-300 transition-all leading-snug"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Descrição */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">Descrição</label>
+            <button
+              type="button"
+              onClick={handleGenerateHook}
+              disabled={generatingHook}
+              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 font-medium transition-all disabled:opacity-50"
+            >
+              {generatingHook ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
+              {generatingHook ? 'Gerando...' : 'Gerar Gancho'}
+            </button>
+          </div>
+          <textarea
+            ref={descRef}
+            className="input resize-none min-h-[80px]"
+            placeholder="Qual é a ideia central? Que valor ela entrega? Você pode escrever um briefing completo aqui..."
+            value={form.description}
+            onChange={(e) => {
+              set('description', e.target.value)
+              autoResizeDesc(e.target)
+            }}
+          />
+        </div>
+
+        {/* Tópico */}
+        <div>
+          <label className="label">Tópico / Nicho</label>
+          <input
+            className="input"
+            placeholder="ex: Economia Criativa, Ferramentas de IA, Crescimento de Carreira"
+            value={form.topic}
+            onChange={(e) => set('topic', e.target.value)}
+          />
         </div>
 
         {/* Tags — chip input */}
