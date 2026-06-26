@@ -2026,196 +2026,30 @@ ${revText.trim()}`
         )}
       </div>
 
-      {/* ── Banco de Temas ── */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <button
-          onClick={() => setShowThemesPanel(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Layers size={14} className="text-orange-500" />
-            <span className="text-xs font-semibold text-gray-700">Banco de Temas</span>
-            {savedThemes.length > 0 && (
-              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                {savedThemes.length}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-400">clique para usar no campo Tema</span>
-            {showThemesPanel ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-          </div>
-        </button>
-
-        {showThemesPanel && (
-          <div className="border-t border-gray-100">
-            {/* Actions bar */}
-            <div className="flex gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/40">
-              <input
-                value={newThemeInput}
-                onChange={e => setNewThemeInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addTheme()}
-                placeholder="Adicione temas separados por vírgula..."
-                className="input text-xs flex-1 py-1.5"
-              />
-              <button
-                onClick={addTheme}
-                disabled={!newThemeInput.trim() || categorizingThemes}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40 shrink-0"
-              >
-                {categorizingThemes ? <><Loader2 size={11} className="animate-spin" /> Classificando...</> : '+ Adicionar'}
-              </button>
-              <button
-                onClick={expandThemes}
-                disabled={expandingThemes || (!bankOpenCategory && savedThemes.length === 0)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
-              >
-                {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                {bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
-              </button>
-              {savedThemes.length > 0 && (
-                <button
-                  onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
-                >
-                  <X size={11} /> Limpar
-                </button>
-              )}
-            </div>
-
-            {/* Accordion por categoria — temas salvos + sugestões */}
-            <div className="px-4 py-3 space-y-1.5">
-              {TEMAS_CARROSSEL.map(({ categoria, temas: sugestoes }) => {
-                const isOpen = bankOpenCategory === categoria
-                const savedInCat = savedThemes.filter(s => s.categoria === categoria)
-                const savedSet = new Set(savedThemes.map(s => s.tema))
-                const sugestoesNaoSalvas = sugestoes.filter(t => !savedSet.has(t))
-                const totalCount = savedInCat.length
-                return (
-                  <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
-                    >
-                      <span className="text-xs font-semibold text-gray-700">{categoria}</span>
-                      <div className="flex items-center gap-2">
-                        {totalCount > 0 && (
-                          <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{totalCount}</span>
-                        )}
-                        {isOpen ? <ChevronUp size={13} className="text-orange-500" /> : <ChevronDown size={13} className="text-gray-400" />}
-                      </div>
-                    </button>
-
-                    {isOpen && (
-                      <div className="bg-white px-3 py-2 space-y-1">
-                        {/* Temas salvos nesta categoria */}
-                        {savedInCat.map(item => (
-                          <div key={item.id} className="flex items-center gap-1.5 group">
-                            <button
-                              onClick={() => applyTheme(item.tema)}
-                              className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
-                            >
-                              {item.tema}
-                            </button>
-                            <button
-                              onClick={() => generateSubthemes(item)}
-                              disabled={generatingSubthemesFor === item.id}
-                              title="Gerar subtemas com IA"
-                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 p-1 disabled:opacity-50"
-                            >
-                              {generatingSubthemesFor === item.id
-                                ? <Loader2 size={11} className="animate-spin text-orange-400" />
-                                : <Sparkles size={11} />}
-                            </button>
-                            <button
-                              onClick={() => removeTheme(item.id)}
-                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
-                            >
-                              <X size={11} />
-                            </button>
-                          </div>
-                        ))}
-
-                        {/* Separador só se tiver salvos e sugestões */}
-                        {savedInCat.length > 0 && sugestoesNaoSalvas.length > 0 && (
-                          <div className="border-t border-gray-100 my-1.5" />
-                        )}
-
-                        {/* Sugestões não salvas */}
-                        {sugestoesNaoSalvas.map(tema => (
-                          <button
-                            key={tema}
-                            onClick={() => addThemeFromSuggestion(tema, categoria)}
-                            className="w-full text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
-                          >
-                            <span>{tema}</span>
-                            <Plus size={11} className="text-gray-300 shrink-0" />
-                          </button>
-                        ))}
-
-                        {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (
-                          <p className="text-[11px] text-gray-300 text-center py-2">Todos adicionados</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* ── Seletor de modo ── */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl flex-wrap">
-        <button onClick={() => setMode('revisor')}
-          className={clsx('flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'revisor' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-400 hover:text-violet-600'
-          )}>
-          <Sparkles size={13} /> Revisor
-        </button>
-        <button onClick={() => setMode('studio')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'studio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <PenTool size={13} /> Studio Livre
-        </button>
-        <button onClick={() => setMode('engagement')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <MessageCircle size={13} /> Reels
-        </button>
-        <button onClick={() => setMode('carousel')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <LayoutGrid size={13} /> Carrossel
-        </button>
-        <button onClick={() => setMode('stories')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <Film size={13} /> Stories
-        </button>
-        <button onClick={() => setMode('reels')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'reels' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <Video size={13} /> Reels
-        </button>
-        <button onClick={() => setMode('viral')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'viral' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <Link2 size={13} /> Recriar
-        </button>
-        <button onClick={() => setMode('imagem')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'imagem' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <ImagePlus size={13} /> Legenda
-        </button>
+      <div className="flex gap-0.5 bg-white border border-gray-200 p-1 rounded-2xl shadow-sm overflow-x-auto scrollbar-hide">
+        {[
+          { id: 'revisor',    label: 'Revisor',      Icon: Sparkles,       active: 'bg-violet-600 text-white shadow-md shadow-violet-200' },
+          { id: 'studio',     label: 'Studio Livre', Icon: PenTool,        active: 'bg-gray-900 text-white shadow-md shadow-gray-200' },
+          { id: 'engagement', label: 'Reels',        Icon: MessageCircle,  active: 'bg-pink-500 text-white shadow-md shadow-pink-200' },
+          { id: 'carousel',   label: 'Carrossel',    Icon: LayoutGrid,     active: 'bg-orange-500 text-white shadow-md shadow-orange-200' },
+          { id: 'stories',    label: 'Stories',      Icon: Film,           active: 'bg-amber-500 text-white shadow-md shadow-amber-200' },
+          { id: 'reels',      label: 'Reels',        Icon: Video,          active: 'bg-purple-600 text-white shadow-md shadow-purple-200' },
+          { id: 'viral',      label: 'Recriar',      Icon: Link2,          active: 'bg-teal-500 text-white shadow-md shadow-teal-200' },
+          { id: 'imagem',     label: 'Legenda',      Icon: ImagePlus,      active: 'bg-sky-500 text-white shadow-md shadow-sky-200' },
+        ].map(({ id, label, Icon, active }) => (
+          <button
+            key={id}
+            onClick={() => setMode(id)}
+            className={clsx(
+              'flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0',
+              mode === id ? active : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+            )}
+          >
+            <Icon size={13} /> {label}
+          </button>
+        ))}
       </div>
 
       {/* ── Revisor de Texto ── */}
@@ -2472,6 +2306,141 @@ ${revText.trim()}`
               </>
             )
           })()}
+
+          {/* ── Banco de Temas ── */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowThemesPanel(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Layers size={14} className="text-orange-500" />
+              <span className="text-xs font-semibold text-gray-700">Banco de Temas</span>
+              {savedThemes.length > 0 && (
+                <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                  {savedThemes.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-400">clique para usar no campo Tema</span>
+              {showThemesPanel ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            </div>
+          </button>
+
+          {showThemesPanel && (
+            <div className="border-t border-gray-100">
+              <div className="flex gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/40">
+                <input
+                  value={newThemeInput}
+                  onChange={e => setNewThemeInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addTheme()}
+                  placeholder="Adicione temas separados por vírgula..."
+                  className="input text-xs flex-1 py-1.5"
+                />
+                <button
+                  onClick={addTheme}
+                  disabled={!newThemeInput.trim() || categorizingThemes}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-40 shrink-0"
+                >
+                  {categorizingThemes ? <><Loader2 size={11} className="animate-spin" /> Classificando...</> : '+ Adicionar'}
+                </button>
+                <button
+                  onClick={expandThemes}
+                  disabled={expandingThemes || (!bankOpenCategory && savedThemes.length === 0)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
+                >
+                  {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                  {bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
+                </button>
+                {savedThemes.length > 0 && (
+                  <button
+                    onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
+                  >
+                    <X size={11} /> Limpar
+                  </button>
+                )}
+              </div>
+
+              <div className="px-4 py-3 space-y-1.5">
+                {TEMAS_CARROSSEL.map(({ categoria, temas: sugestoes }) => {
+                  const isOpen = bankOpenCategory === categoria
+                  const savedInCat = savedThemes.filter(s => s.categoria === categoria)
+                  const savedSet = new Set(savedThemes.map(s => s.tema))
+                  const sugestoesNaoSalvas = sugestoes.filter(t => !savedSet.has(t))
+                  const totalCount = savedInCat.length
+                  return (
+                    <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
+                      >
+                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                        <div className="flex items-center gap-2">
+                          {totalCount > 0 && (
+                            <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{totalCount}</span>
+                          )}
+                          {isOpen ? <ChevronUp size={13} className="text-orange-500" /> : <ChevronDown size={13} className="text-gray-400" />}
+                        </div>
+                      </button>
+
+                      {isOpen && (
+                        <div className="bg-white px-3 py-2 space-y-1">
+                          {savedInCat.map(item => (
+                            <div key={item.id} className="flex items-center gap-1.5 group">
+                              <button
+                                onClick={() => applyTheme(item.tema)}
+                                className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
+                              >
+                                {item.tema}
+                              </button>
+                              <button
+                                onClick={() => generateSubthemes(item)}
+                                disabled={generatingSubthemesFor === item.id}
+                                title="Gerar subtemas com IA"
+                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 p-1 disabled:opacity-50"
+                              >
+                                {generatingSubthemesFor === item.id
+                                  ? <Loader2 size={11} className="animate-spin text-orange-400" />
+                                  : <Sparkles size={11} />}
+                              </button>
+                              <button
+                                onClick={() => removeTheme(item.id)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                          ))}
+
+                          {savedInCat.length > 0 && sugestoesNaoSalvas.length > 0 && (
+                            <div className="border-t border-gray-100 my-1.5" />
+                          )}
+
+                          {sugestoesNaoSalvas.map(tema => (
+                            <button
+                              key={tema}
+                              onClick={() => addThemeFromSuggestion(tema, categoria)}
+                              className="w-full text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
+                            >
+                              <span>{tema}</span>
+                              <Plus size={11} className="text-gray-300 shrink-0" />
+                            </button>
+                          ))}
+
+                          {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (
+                            <p className="text-[11px] text-gray-300 text-center py-2">Todos adicionados</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
         </div>
       )}
 
