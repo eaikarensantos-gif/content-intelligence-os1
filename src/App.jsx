@@ -88,7 +88,7 @@ export default function App() {
         <FloatingActions />
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/social" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/ideas" element={<IdeasHub />} />
             <Route path="/trends" element={<TrendRadar />} />
