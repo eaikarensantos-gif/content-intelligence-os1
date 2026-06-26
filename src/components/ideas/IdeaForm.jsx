@@ -589,9 +589,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* Ações */}
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" disabled={lintViolations.length > 0}
-            title={lintViolations.length > 0 ? 'Corrija as violações de tom antes de salvar' : undefined}
-            className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+          <button type="submit"
+            className="btn-primary">
             {initial?.id ? 'Salvar Alterações' : 'Criar Ideia'}
           </button>
         </div>
