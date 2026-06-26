@@ -105,6 +105,25 @@ Regras:
 
 Responda APENAS com a legenda, sem explicações.`,
 
+    script: `Você é especialista em roteiros de conteúdo para criadores brasileiros. Crie um roteiro completo e detalhado para o seguinte conteúdo.
+
+Título: ${context.title}
+${context.description ? `Briefing: ${context.description}` : ''}
+${context.topic ? `Nicho: ${context.topic}` : ''}
+Formato: ${context.format || 'video'}
+Plataforma: ${context.platforms?.join(', ') || 'Instagram'}
+Tipo de gancho: ${context.hook_type || 'problema'}
+
+REGRAS:
+- Comece com o gancho forte que prende nos primeiros 3 segundos
+- Estruture em blocos claros: Abertura → Desenvolvimento → Conclusão/CTA
+- Linguagem direta, conversacional — como Karen fala, não como IA escreve
+- PROIBIDO: frases genéricas, enrolação, superlativo vazio
+- Use marcadores visuais para cenas/cortes quando for Reels ou Vídeo
+- Tom: especialista sênior que fala com pares, não que explica para iniciantes
+
+Responda APENAS com o roteiro, sem introdução nem explicações.`,
+
     cta: `Você é especialista em CTAs (Call to Action) para redes sociais brasileiras. Gere UM CTA altamente engajador para o seguinte conteúdo.
 
 Título: ${context.title}
@@ -144,6 +163,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [generatingHook, setGeneratingHook] = useState(false)
   const [generatingCaption, setGeneratingCaption] = useState(false)
   const [generatingCta, setGeneratingCta] = useState(false)
+  const [generatingScript, setGeneratingScript] = useState(false)
   const [linkInput, setLinkInput] = useState('')
   const [showProducao, setShowProducao] = useState(false)
   const tagRef = useRef(null)
@@ -248,6 +268,18 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       }
     } catch { /* silent */ }
     setGeneratingHook(false)
+  }
+
+  const handleGenerateScript = async () => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro.'); return }
+    if (!form.title.trim()) { alert('Preencha o título antes de gerar o roteiro.'); return }
+    setGeneratingScript(true)
+    try {
+      const script = await generateWithAI(apiKey, 'script', form)
+      if (script.trim()) set('script', script.trim())
+    } catch { /* silent */ }
+    setGeneratingScript(false)
   }
 
   const handleGenerateAI = async (type) => {
@@ -530,7 +562,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
             <div className="px-4 py-4 space-y-4 border-t border-gray-100">
               {/* Roteiro */}
               <div>
-                <label className="label">Roteiro</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label mb-0">Roteiro</label>
+                  <button type="button" onClick={handleGenerateScript} disabled={generatingScript}
+                    className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 font-medium transition-all disabled:opacity-50">
+                    {generatingScript ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
+                    {generatingScript ? 'Gerando...' : 'Gerar com IA'}
+                  </button>
+                </div>
                 <textarea className="input resize-none min-h-[80px]"
                   placeholder="Escreva o roteiro completo do conteúdo aqui..."
                   value={form.script || ''} onChange={(e) => set('script', e.target.value)} />
