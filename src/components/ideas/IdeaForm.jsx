@@ -467,6 +467,50 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               value={form.description}
               onChange={(e) => { set('description', e.target.value); autoResizeDesc(e.target) }} />
           </div>
+
+          {/* Roteiro */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Roteiro</label>
+              <button type="button" onClick={handleGenerateScript} disabled={generatingScript}
+                className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 font-medium transition-all disabled:opacity-50">
+                {generatingScript ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
+                {generatingScript ? 'Gerando...' : 'Gerar com IA'}
+              </button>
+            </div>
+            <textarea className="input resize-none min-h-[80px]"
+              placeholder="Escreva o roteiro completo do conteúdo aqui..."
+              value={form.script || ''} onChange={(e) => set('script', e.target.value)} />
+          </div>
+
+          {/* Legenda */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Legenda</label>
+              <button type="button" onClick={() => handleGenerateAI('caption')} disabled={generatingCaption}
+                className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50">
+                {generatingCaption ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                {generatingCaption ? 'Gerando...' : 'Gerar com IA'}
+              </button>
+            </div>
+            <textarea className="input resize-none min-h-[60px]"
+              placeholder="Legenda para o post... ou clique em 'Gerar com IA'"
+              value={form.caption || ''} onChange={(e) => set('caption', e.target.value)} />
+          </div>
+
+          {/* CTA */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">CTA (Call to Action)</label>
+              <button type="button" onClick={() => handleGenerateAI('cta')} disabled={generatingCta}
+                className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50">
+                {generatingCta ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                {generatingCta ? 'Gerando...' : 'Gerar com IA'}
+              </button>
+            </div>
+            <input className="input" placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
+              value={form.cta || ''} onChange={(e) => set('cta', e.target.value)} />
+          </div>
         </div>
 
         <div className="border-t border-gray-100" />
@@ -474,13 +518,6 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         {/* ── 4. ORGANIZAÇÃO ───────────────────────────────────────────────── */}
         <div className="space-y-3">
           <SectionLabel>Organização</SectionLabel>
-
-          {/* Tópico */}
-          <div>
-            <label className="label">Tópico / Nicho</label>
-            <input className="input" placeholder="ex: Economia Criativa, Ferramentas de IA, Crescimento de Carreira"
-              value={form.topic} onChange={(e) => set('topic', e.target.value)} />
-          </div>
 
           {/* Tags */}
           <div>
@@ -544,67 +581,6 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               </div>
             )}
           </div>
-        </div>
-
-        {/* ── 5. PRODUÇÃO (colapsável) ─────────────────────────────────────── */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
-          <button type="button" onClick={() => setShowProducao(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left">
-            <div className="flex items-center gap-2">
-              <Sparkles size={13} className="text-violet-500" />
-              <span className="text-xs font-semibold text-gray-700">Produção</span>
-              <span className="text-[10px] text-gray-400 font-normal">Roteiro, Legenda e CTA</span>
-            </div>
-            {showProducao ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-          </button>
-
-          {showProducao && (
-            <div className="px-4 py-4 space-y-4 border-t border-gray-100">
-              {/* Roteiro */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="label mb-0">Roteiro</label>
-                  <button type="button" onClick={handleGenerateScript} disabled={generatingScript}
-                    className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 font-medium transition-all disabled:opacity-50">
-                    {generatingScript ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
-                    {generatingScript ? 'Gerando...' : 'Gerar com IA'}
-                  </button>
-                </div>
-                <textarea className="input resize-none min-h-[80px]"
-                  placeholder="Escreva o roteiro completo do conteúdo aqui..."
-                  value={form.script || ''} onChange={(e) => set('script', e.target.value)} />
-              </div>
-
-              {/* Legenda */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="label mb-0">Legenda</label>
-                  <button type="button" onClick={() => handleGenerateAI('caption')} disabled={generatingCaption}
-                    className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50">
-                    {generatingCaption ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    {generatingCaption ? 'Gerando...' : 'Gerar com IA'}
-                  </button>
-                </div>
-                <textarea className="input resize-none min-h-[60px]"
-                  placeholder="Legenda para o post... ou clique em 'Gerar com IA'"
-                  value={form.caption || ''} onChange={(e) => set('caption', e.target.value)} />
-              </div>
-
-              {/* CTA */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="label mb-0">CTA (Call to Action)</label>
-                  <button type="button" onClick={() => handleGenerateAI('cta')} disabled={generatingCta}
-                    className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50">
-                    {generatingCta ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    {generatingCta ? 'Gerando...' : 'Gerar com IA'}
-                  </button>
-                </div>
-                <input className="input" placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
-                  value={form.cta || ''} onChange={(e) => set('cta', e.target.value)} />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Brand Linter */}
