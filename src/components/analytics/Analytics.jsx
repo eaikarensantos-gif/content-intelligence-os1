@@ -625,7 +625,7 @@ export default function Analytics() {
           {(() => {
             const SORT_COLS = [
               { key: 'date', label: 'Data', sortable: true },
-              { key: 'post_type', label: 'Tipo', sortable: false },
+              { key: 'post_type', label: 'Tipo', sortable: true },
               { key: 'platform', label: 'Plataforma', sortable: false },
               { key: 'client', label: 'Cliente', sortable: false },
               { key: 'description', label: 'Descrição', sortable: false },
@@ -690,6 +690,7 @@ export default function Analytics() {
               .sort((a, b) => {
                 let va = a[sortBy], vb = b[sortBy]
                 if (sortBy === 'date') { va = new Date(va); vb = new Date(vb) }
+                else if (sortBy === 'post_type') { va = (va || '').toLowerCase(); vb = (vb || '').toLowerCase() }
                 else { va = Number(va) || 0; vb = Number(vb) || 0 }
                 if (va < vb) return sortDir === 'asc' ? -1 : 1
                 if (va > vb) return sortDir === 'asc' ? 1 : -1
