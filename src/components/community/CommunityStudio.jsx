@@ -41,22 +41,26 @@ const SLOT_INSTRUCTIONS = {
 O membro não precisa comentar ou reagir para se beneficiar. Quem salva, leu.
 FORMATO: Observação técnica precisa + dado concreto ou sequência prática sobre o tema. 3 a 5 parágrafos. Linguagem direta.
 SAVE HOOK: Uma frase de abertura do tipo "Salva esse post se você…" que justifica o save sem pedir comentário. Deve ser específica, não genérica.
-CONCLUSÃO: Frase seca que resume o valor — não é CTA, é uma observação conclusiva.`,
+CONCLUSÃO: Frase seca que resume o valor — não é CTA, é uma observação conclusiva.
+LIMITE OBRIGATÓRIO: o campo "post" deve ter no máximo 15 linhas no total.`,
 
   reacao: `TIPO DE POST: Engajamento de baixo atrito.
 O membro participa sem escrever um texto livre — edita um template pronto.
 FORMATO: Apresente uma situação profissional concreta com dois caminhos possíveis. Em seguida, ofereça um template editável com uma lacuna: "Use esse modelo: '[frase com espaço para adaptar]'". 2 a 3 parágrafos + template.
-O template é o hook. Deve ser específico o suficiente para ter valor real, mas com uma lacuna clara que convida adaptação pessoal. Não use colchetes genéricos como [sua situação] — seja mais concreto.`,
+O template é o hook. Deve ser específico o suficiente para ter valor real, mas com uma lacuna clara que convida adaptação pessoal. Não use colchetes genéricos como [sua situação] — seja mais concreto.
+LIMITE OBRIGATÓRIO: o campo "post" deve ter no máximo 15 linhas no total.`,
 
   conversa: `TIPO DE POST: Conversa real.
 Para membros que já participam. Convida relatos de experiência, não opiniões genéricas.
 FORMATO: Karen relata em primeira pessoa uma situação que viveu ou observou no universo criativo CLT→PJ. Direto. No final, uma pergunta aberta específica que convida relatos similares — não "o que você acha?" mas algo como "Como você lidou com isso?" ou "O que você faria diferente?". 3 a 4 parágrafos.
-A pergunta final é o hook. Deve ser concreta o suficiente para que a resposta exija uma experiência real, não uma opinião.`,
+A pergunta final é o hook. Deve ser concreta o suficiente para que a resposta exija uma experiência real, não uma opinião.
+LIMITE OBRIGATÓRIO: o campo "post" deve ter no máximo 15 linhas no total.`,
 
   enquete: `TIPO DE POST: Enquete de comunidade.
 Diagnóstico rápido do momento do membro. Máximo engajamento, mínimo esforço.
 FORMATO: Uma pergunta de enquete direta sobre o tema, com 2 a 4 opções de resposta curtas e mutuamente exclusivas. Antes da enquete, 1 parágrafo curto contextualizando por que essa pergunta importa agora para quem está em transição CLT→PJ. Após as opções, uma frase de fechamento que diz o que será feito com o resultado (ex: "Dependendo da maioria, trago um conteúdo específico sobre isso essa semana.").
-As opções devem ser situações reais reconhecíveis, não abstrações. Nada de "Sim / Não" genérico.`,
+As opções devem ser situações reais reconhecíveis, não abstrações. Nada de "Sim / Não" genérico.
+LIMITE OBRIGATÓRIO: o campo "post" deve ter no máximo 15 linhas no total.`,
 }
 
 const buildPrompt = ({ slotId, weekTheme, fissura }) => {
@@ -170,7 +174,7 @@ export default function CommunityStudio() {
       ? target.type === 'paragrafos'
         ? `Reescreva o texto abaixo em exatamente ${target.qty} parágrafo${target.qty > 1 ? 's' : ''}, mantendo o tom, voz e as ideias principais. Retorne apenas o texto, sem explicações.`
         : `Reescreva o texto abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o texto, sem explicações.`
-      : `Reduza o texto abaixo em até 40%, mantendo o tom, voz e estrutura originais. Preserve o hook e a conclusão. Retorne apenas o texto reduzido, sem explicações.`
+      : `Reescreva o texto abaixo em no máximo 15 linhas, mantendo o tom, voz, hook e conclusão originais. Corte explicações redundantes, não corte ideias. Retorne apenas o texto reescrito, sem explicações.`
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
