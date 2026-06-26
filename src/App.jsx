@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
-import Dashboard from './components/dashboard/Dashboard'
 import IdeasHub from './components/ideas/IdeasHub'
 import TrendRadar from './components/trends/TrendRadar'
 import Analytics from './components/analytics/Analytics'
@@ -88,8 +87,8 @@ export default function App() {
         <FloatingActions />
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/social" replace />} />
+            <Route path="/dashboard" element={<Navigate to="/social" replace />} />
             <Route path="/ideas" element={<IdeasHub />} />
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Navigate to="/social" replace />} />

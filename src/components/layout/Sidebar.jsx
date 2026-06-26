@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Lightbulb, Radar, BarChart2,
+  Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings,
   ClipboardList, Clapperboard, Sun, Moon, Flame, Users, Newspaper,
@@ -12,8 +12,7 @@ import useAIStore from '../../store/useAIStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/social', icon: BarChart2, label: 'Analytics' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
