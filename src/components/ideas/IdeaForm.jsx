@@ -49,7 +49,6 @@ const EMPTY = {
   tags: [],                   // array de strings
   scheduled_date: '',
   content_type: 'organic',
-  client: '',
   script: '',                 // roteiro do conteúdo
   caption: '',                // legenda
   cta: '',                    // call to action
@@ -470,8 +469,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               monday.setHours(0, 0, 0, 0)
               const slotDate = new Date(monday)
               slotDate.setDate(monday.getDate() + offset)
-              const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-              const dateStr = localDateStr(slotDate)
+              const dateStr = slotDate.toISOString().slice(0, 10)
               const isSelected = form.scheduled_date === dateStr
               return (
                 <button
@@ -520,74 +518,6 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Cliente */}
-        {(form.content_type === 'paid' || form.content_type === 'partnership') && (
-          <div>
-            <label className="label">Cliente / Marca</label>
-            <input
-              className="input"
-              placeholder="ex: Samsung, FIAP, orgânico próprio"
-              value={form.client || ''}
-              onChange={(e) => set('client', e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Roteiro */}
-        <div>
-          <label className="label">Roteiro</label>
-          <textarea
-            className="input resize-none min-h-[80px]"
-            placeholder="Escreva o roteiro completo do conteúdo aqui..."
-            value={form.script || ''}
-            onChange={(e) => set('script', e.target.value)}
-          />
-        </div>
-
-        {/* Legenda + AI */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Legenda</label>
-            <button
-              type="button"
-              onClick={() => handleGenerateAI('caption')}
-              disabled={generatingCaption}
-              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50"
-            >
-              {generatingCaption ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-              {generatingCaption ? 'Gerando...' : 'Gerar com IA'}
-            </button>
-          </div>
-          <textarea
-            className="input resize-none min-h-[60px]"
-            placeholder="Legenda para o post... ou clique em 'Gerar com IA'"
-            value={form.caption || ''}
-            onChange={(e) => set('caption', e.target.value)}
-          />
-        </div>
-
-        {/* CTA + AI */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">CTA (Call to Action)</label>
-            <button
-              type="button"
-              onClick={() => handleGenerateAI('cta')}
-              disabled={generatingCta}
-              className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50"
-            >
-              {generatingCta ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-              {generatingCta ? 'Gerando...' : 'Gerar com IA'}
-            </button>
-          </div>
-          <input
-            className="input"
-            placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
-            value={form.cta || ''}
-            onChange={(e) => set('cta', e.target.value)}
-          />
         </div>
 
         {/* Tags — chip input */}
@@ -689,6 +619,66 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── Conteúdo textual ────────────────────────────── */}
+        <div className="border-t border-gray-100 pt-4 space-y-4">
+
+          {/* Roteiro */}
+          <div>
+            <label className="label">Roteiro</label>
+            <textarea
+              className="input resize-none min-h-[80px]"
+              placeholder="Escreva o roteiro completo do conteúdo aqui..."
+              value={form.script || ''}
+              onChange={(e) => set('script', e.target.value)}
+            />
+          </div>
+
+          {/* Legenda + AI */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Legenda</label>
+              <button
+                type="button"
+                onClick={() => handleGenerateAI('caption')}
+                disabled={generatingCaption}
+                className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50"
+              >
+                {generatingCaption ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                {generatingCaption ? 'Gerando...' : 'Gerar com IA'}
+              </button>
+            </div>
+            <textarea
+              className="input resize-none min-h-[60px]"
+              placeholder="Legenda para o post... ou clique em 'Gerar com IA'"
+              value={form.caption || ''}
+              onChange={(e) => set('caption', e.target.value)}
+            />
+          </div>
+
+          {/* CTA + AI */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">CTA (Call to Action)</label>
+              <button
+                type="button"
+                onClick={() => handleGenerateAI('cta')}
+                disabled={generatingCta}
+                className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50"
+              >
+                {generatingCta ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                {generatingCta ? 'Gerando...' : 'Gerar com IA'}
+              </button>
+            </div>
+            <input
+              className="input"
+              placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
+              value={form.cta || ''}
+              onChange={(e) => set('cta', e.target.value)}
+            />
+          </div>
+
         </div>
 
         {/* Brand Linter Panel */}
