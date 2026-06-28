@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
+import { youtubeSearch } from '../../lib/aiService'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 
@@ -147,6 +149,21 @@ REGRAS OBRIGATÓRIAS:
 
 Responda APENAS com JSON válido (array de 4 strings), sem markdown nem explicações:
 ["CTA 1", "CTA 2", "CTA 3", "CTA 4"]`,
+
+    refQueries: `Você é um pesquisador de referências para criadores de conteúdo brasileiros.
+
+Ideia: ${context.title}
+${context.description ? `Contexto: ${context.description.slice(0, 300)}` : ''}
+Plataforma(s): ${context.platforms?.join(', ') || 'Instagram'}
+Formato: ${context.format || 'carrossel'}
+
+Gere 4 queries de busca para o YouTube que encontrem os melhores vídeos de referência sobre exatamente este tema.
+Varie os ângulos: análise/debate, tutorial/explicação, case real, perspectiva diferente.
+Queries em português, exceto se o tema for essencialmente em inglês.
+NÃO coloque aspas nas queries.
+
+Responda APENAS com JSON válido (array de 4 strings), sem markdown:
+["query 1", "query 2", "query 3", "query 4"]`,
   }
   const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
@@ -172,6 +189,11 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [generatingCaption, setGeneratingCaption] = useState(false)
   const [generatingCta, setGeneratingCta] = useState(false)
   const [ctaSuggestions, setCtaSuggestions] = useState([])
+  const [searchingRefs, setSearchingRefs] = useState(false)
+  const [refResults, setRefResults] = useState([])   // YouTube video cards
+  const [refQueries, setRefQueries] = useState([])   // fallback: AI-generated query strings
+
+  const youtubeApiKey = useAIStore((s) => s.youtubeApiKey)
   const [generatingScript, setGeneratingScript] = useState(false)
   const [linkInput, setLinkInput] = useState('')
   const [showProducao, setShowProducao] = useState(false)
@@ -218,6 +240,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     }
     setTagInput('')
     setCtaSuggestions([])
+    setRefResults([])
+    setRefQueries([])
   }, [open, initial])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -318,6 +342,29 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       }
     } catch { /* silent */ }
     setter(false)
+  }
+
+  const handleSearchRefs = async () => {
+    if (!form.title.trim()) { alert('Preencha o título antes de buscar referências.'); return }
+    setSearchingRefs(true)
+    setRefResults([])
+    setRefQueries([])
+    try {
+      if (youtubeApiKey?.trim()) {
+        const query = [form.title, form.description?.slice(0, 120)].filter(Boolean).join(' ')
+        const results = await youtubeSearch(youtubeApiKey, query)
+        setRefResults(results.slice(0, 5))
+      } else {
+        const apiKey = localStorage.getItem(LS_KEY)
+        if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key Anthropic para buscar referências.'); setSearchingRefs(false); return }
+        const raw = await generateWithAI(apiKey, 'refQueries', form)
+        const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
+        const match = clean.match(/\[[\s\S]*\]/)
+        const parsed = JSON.parse(match ? match[0] : clean)
+        if (Array.isArray(parsed)) setRefQueries(parsed.filter(Boolean))
+      }
+    } catch { /* silent */ }
+    setSearchingRefs(false)
   }
 
   const handleSubmit = (e) => {
@@ -603,7 +650,66 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
           {/* Links de referência */}
           <div>
-            <label className="label">Links de Referência</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Links de Referência</label>
+              <button type="button" onClick={handleSearchRefs} disabled={searchingRefs}
+                className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-medium transition-all disabled:opacity-50">
+                {searchingRefs ? <Loader2 size={10} className="animate-spin" /> : <Search size={10} />}
+                {searchingRefs ? 'Buscando...' : youtubeApiKey?.trim() ? 'Buscar no YouTube' : 'Sugerir buscas'}
+              </button>
+            </div>
+
+            {/* YouTube video results */}
+            {refResults.length > 0 && (
+              <div className="mb-2 space-y-1.5">
+                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Vídeos encontrados — clique + para adicionar:</p>
+                {refResults.map((v) => (
+                  <div key={v.videoId} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200 hover:border-red-200 transition-colors group">
+                    {v.thumbnail && (
+                      <img src={v.thumbnail} alt="" className="w-16 h-10 rounded object-cover shrink-0 bg-gray-200" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium text-gray-800 line-clamp-2 leading-snug">{v.videoTitle}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 truncate">{v.name}</p>
+                      {v.viewCount && (
+                        <p className="text-[10px] text-gray-300 mt-0.5">{Number(v.viewCount).toLocaleString('pt-BR')} views</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button type="button"
+                        onClick={() => { addLink(v.url); setRefResults((r) => r.filter((x) => x.videoId !== v.videoId)) }}
+                        className="flex items-center gap-0.5 text-[10px] px-2 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 font-medium transition-colors">
+                        <Plus size={9} /> Usar
+                      </button>
+                      <a href={v.url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-0.5 text-[10px] px-2 py-1 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 font-medium transition-colors">
+                        <ExternalLink size={9} /> Ver
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Fallback: AI-generated search queries */}
+            {refQueries.length > 0 && (
+              <div className="mb-2 space-y-1.5">
+                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Pesquise no YouTube:</p>
+                {refQueries.map((q, i) => (
+                  <a key={i} href={`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 transition-all group">
+                    <Search size={10} className="text-red-400 shrink-0" />
+                    <span className="text-xs text-red-800 flex-1">{q}</span>
+                    <ExternalLink size={9} className="text-red-300 group-hover:text-red-500 shrink-0" />
+                  </a>
+                ))}
+                <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                  Configure a YouTube API Key em <span className="text-orange-500 font-medium">Configurações</span> para buscar vídeos direto aqui.
+                </p>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <Link2 size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
