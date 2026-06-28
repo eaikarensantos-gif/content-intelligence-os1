@@ -124,21 +124,29 @@ REGRAS:
 
 Responda APENAS com o roteiro, sem introdução nem explicações.`,
 
-    cta: `Você é especialista em CTAs (Call to Action) para redes sociais brasileiras. Gere UM CTA altamente engajador para o seguinte conteúdo.
+    cta: `Você é especialista em CTAs (Call to Action) de alta conversão para criadores de conteúdo brasileiros.
 
 Título: ${context.title}
-${context.description ? `Descrição: ${context.description}` : ''}
-Plataforma: ${context.platforms?.join(', ') || 'Instagram'}
-Formato: ${context.format}
+${context.description ? `Contexto: ${context.description.slice(0, 400)}` : ''}
+Plataforma(s): ${context.platforms?.join(', ') || 'Instagram'}
+Formato: ${context.format || 'carrossel'}
+Tipo de gancho: ${context.hook_type || 'lista'}
 
-Regras:
-- CTA direto, curto e irresistível
-- Gere urgência ou curiosidade
-- Adequado para a plataforma
-- Pode incluir emoji
-- Exemplos de bons CTAs: "Salva pra quando precisar", "Marca alguém que precisa ver isso", "Comenta SIM que eu mando o link"
+Gere EXATAMENTE 4 CTAs com MECÂNICAS distintas, na ordem:
+1. SALVAR — incentiva salvar/favoritar o conteúdo (ex: "Salva antes de fechar...")
+2. MARCAR — pede pra marcar alguém específico relacionado ao tema (ex: "Marca aquela pessoa que...")
+3. COMENTAR — gera interação direta no comentário (ex: "Comenta a letra X se..." ou pergunta curta)
+4. SEGUIR / DM / LINK — pede follow, resposta por DM com palavra-chave, ou clique no link da bio
 
-Responda APENAS com o CTA, sem explicações.`,
+REGRAS OBRIGATÓRIAS:
+- Cada CTA deve ser ESPECÍFICO para o tema "${context.title}" — nada genérico
+- Tom natural e direto, como alguém falaria com um amigo
+- Pode usar emoji com moderação (máximo 2 por CTA)
+- PROIBIDO: "incrível", "sensacional", urgência falsa, manipulação emocional
+- Máximo 130 caracteres por CTA
+
+Responda APENAS com JSON válido (array de 4 strings), sem markdown nem explicações:
+["CTA 1", "CTA 2", "CTA 3", "CTA 4"]`,
   }
   const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
@@ -163,6 +171,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [generatingHook, setGeneratingHook] = useState(false)
   const [generatingCaption, setGeneratingCaption] = useState(false)
   const [generatingCta, setGeneratingCta] = useState(false)
+  const [ctaSuggestions, setCtaSuggestions] = useState([])
   const [generatingScript, setGeneratingScript] = useState(false)
   const [linkInput, setLinkInput] = useState('')
   const [showProducao, setShowProducao] = useState(false)
@@ -208,6 +217,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       setShowProducao(false)
     }
     setTagInput('')
+    setCtaSuggestions([])
   }, [open, initial])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -290,7 +300,22 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setter(true)
     try {
       const result = await generateWithAI(apiKey, type, form)
-      set(type === 'caption' ? 'caption' : 'cta', result)
+      if (type === 'cta') {
+        const clean = result.replace(/```[a-z]*\n?/gi, '').trim()
+        const match = clean.match(/\[[\s\S]*\]/)
+        try {
+          const parsed = JSON.parse(match ? match[0] : clean)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCtaSuggestions(parsed.filter(Boolean))
+          } else {
+            set('cta', result.trim())
+          }
+        } catch {
+          set('cta', result.trim())
+        }
+      } else {
+        set('caption', result)
+      }
     } catch { /* silent */ }
     setter(false)
   }
@@ -509,14 +534,32 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="label mb-0">CTA (Call to Action)</label>
-              <button type="button" onClick={() => handleGenerateAI('cta')} disabled={generatingCta}
+              <button type="button" onClick={() => { setCtaSuggestions([]); handleGenerateAI('cta') }} disabled={generatingCta}
                 className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200 font-medium transition-all disabled:opacity-50">
                 {generatingCta ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                {generatingCta ? 'Gerando...' : 'Gerar com IA'}
+                {generatingCta ? 'Gerando 4 opções...' : 'Gerar com IA'}
               </button>
             </div>
             <input className="input" placeholder="ex: Salva pra quando precisar... ou clique em 'Gerar com IA'"
-              value={form.cta || ''} onChange={(e) => set('cta', e.target.value)} />
+              value={form.cta || ''} onChange={(e) => { set('cta', e.target.value); setCtaSuggestions([]) }} />
+            {ctaSuggestions.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Escolha uma opção:</p>
+                {ctaSuggestions.map((cta, i) => {
+                  const labels = ['💾 Salvar', '👥 Marcar', '💬 Comentar', '➡️ Seguir / DM']
+                  return (
+                    <button key={i} type="button"
+                      onClick={() => { set('cta', cta); setCtaSuggestions([]) }}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-orange-50 hover:bg-orange-100 border border-orange-200 hover:border-orange-300 transition-all group">
+                      <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wide block mb-0.5">
+                        {labels[i] || `Opção ${i + 1}`}
+                      </span>
+                      <span className="text-xs text-orange-800 leading-snug">{cta}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
 
