@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   BookOpen, Play, FileText, Sparkles, Search, Loader2,
-  AlertCircle, ExternalLink, Mic, GraduationCap, Wrench,
+  AlertCircle, ExternalLink, Mic, GraduationCap, Wrench, Download,
 } from 'lucide-react'
 import useAIStore from '../../store/useAIStore'
 
@@ -13,7 +13,7 @@ const CATEGORIES = [
     label: 'Livros',
     icon: BookOpen,
     color: 'violet',
-    linkFn: (item) => `https://www.amazon.com.br/s?k=${encodeURIComponent(item.titulo + ' ' + (item.autor || ''))}&i=stripbooks`,
+    linkFn: (item) => `https://www.amazon.com.br/s?k=${encodeURIComponent('"' + item.titulo + '" ' + (item.autor || ''))}&i=stripbooks`,
     linkLabel: 'Amazon',
   },
   {
@@ -73,19 +73,83 @@ function parseJSON(text) {
   return JSON.parse(match[0])
 }
 
+// ── Exportar indicações como documento Word (.doc) ───────────────────────────
+const escHTML = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+function buildDoc(topic, results) {
+  const sections = CATEGORIES.map(({ key, label, linkFn }) => {
+    const items = results[key] ?? []
+    if (items.length === 0) return ''
+    const lis = items.map((item) => {
+      const href = item.url || linkFn(item)
+      const titulo = item.tituloReal || item.titulo
+      const subtitle = item.autorReal || item.canalReal || item.autor || item.canal || item.programa || item.plataforma || item.fonte || item.tipo
+      return `<li style="margin-bottom:10pt">
+        <b><a href="${escHTML(href)}">${escHTML(titulo)}</a></b>${item.idioma ? ` <span style="color:#888">[${escHTML(item.idioma)}]</span>` : ''}
+        ${subtitle ? `<br/><span style="color:#c2540a">${escHTML(subtitle)}</span>` : ''}
+        ${item.descricao ? `<br/><i style="color:#555">${escHTML(item.descricao)}</i>` : ''}
+        <br/><span style="font-size:9pt;color:#888">${escHTML(href)}</span>
+      </li>`
+    }).join('')
+    return `<h2 style="color:#1a1a1a">${escHTML(label)}</h2><ul>${lis}</ul>`
+  }).join('')
+
+  return `<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Indicações — ${escHTML(topic)}</title></head>
+<body style="font-family:Calibri,Arial,sans-serif">
+<h1 style="color:#1a1a1a">Indicações sobre "${escHTML(topic)}"</h1>
+<p style="color:#888;font-size:10pt">Gerado em ${new Date().toLocaleDateString('pt-BR')} — Community Studio</p>
+${sections}
+</body></html>`
+}
+
+function baixarDoc(topic, results) {
+  const slug = topic.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'indicacoes'
+  const blob = new Blob(['﻿', buildDoc(topic, results)], { type: 'application/msword' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `indicacoes-${slug}.doc`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// Compara dois textos por sobreposição de palavras (0–1). Usado para validar
+// se o resultado retornado pelas APIs é realmente o item indicado pela IA,
+// evitando links para produtos/vídeos sem relação com o tema.
+function similarity(a = '', b = '') {
+  const tokens = (s) => new Set(
+    String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .split(/\W+/).filter((w) => w.length > 2)
+  )
+  const ta = tokens(a)
+  const tb = tokens(b)
+  if (ta.size === 0 || tb.size === 0) return 0
+  let hits = 0
+  ta.forEach((w) => { if (tb.has(w)) hits++ })
+  return hits / Math.min(ta.size, tb.size)
+}
+
 async function enrichBooks(items) {
   return Promise.all(items.map(async (item) => {
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.autor || ''}`)
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`)
+      const lang = item.idioma === 'PT' ? '&langRestrict=pt' : ''
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=3${lang}`)
       const data = await res.json()
-      const vol = data.items?.[0]
+      // Aceita só um volume cujo título realmente corresponde ao indicado —
+      // o 1º resultado de busca fuzzy pode ser um livro sem relação nenhuma.
+      const vol = (data.items || []).find((v) => similarity(item.titulo, v.volumeInfo?.title) >= 0.5)
       if (!vol) return item
+      const tituloReal = vol.volumeInfo?.title || item.titulo
+      const autorReal = vol.volumeInfo?.authors?.join(', ') || item.autor
       return {
         ...item,
         capa: vol.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
-        autorReal: vol.volumeInfo?.authors?.join(', ') || item.autor,
-        tituloReal: vol.volumeInfo?.title || item.titulo,
+        autorReal,
+        tituloReal,
+        // Busca na Amazon com o título real entre aspas + autor confirmado,
+        // para não cair em produtos aleatórios quando o termo é genérico.
+        url: `https://www.amazon.com.br/s?k=${encodeURIComponent(`"${tituloReal}" ${autorReal || ''}`)}&i=stripbooks`,
         verified: true,
       }
     } catch {
@@ -99,10 +163,18 @@ async function enrichVideos(items, youtubeApiKey) {
   return Promise.all(items.map(async (item) => {
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.canal || ''}`)
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&maxResults=1&type=video&key=${youtubeApiKey}`)
+      const lang = item.idioma === 'PT' ? '&relevanceLanguage=pt&regionCode=BR' : ''
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&maxResults=1&type=video${lang}&key=${youtubeApiKey}`)
       const data = await res.json()
       const vid = data.items?.[0]
       if (!vid) return item
+      // Só usa o link direto se o vídeo encontrado corresponde ao indicado;
+      // senão mantém o link de busca, que sempre mostra resultados do tema.
+      const match = similarity(
+        `${item.titulo} ${item.canal || ''}`,
+        `${vid.snippet?.title || ''} ${vid.snippet?.channelTitle || ''}`
+      )
+      if (match < 0.4) return item
       return {
         ...item,
         url: `https://www.youtube.com/watch?v=${vid.id.videoId}`,
@@ -123,34 +195,38 @@ Tema: "${t}"
 Nível: ${depth === 'avancado' ? 'avançado — a pessoa já conhece o básico' : 'intermediário — conhece o tema mas quer aprofundar'}
 
 REGRAS:
-1. PROIBIDO incluir os títulos mais famosos/citados do tema.
-2. Prefira conteúdo dos últimos 3 anos ou clássicos pouco conhecidos no Brasil.
-3. Vídeos: prefira canais com menos de 500k inscritos mas alta densidade técnica.
-4. Podcasts: indique episódios específicos, não só o nome do podcast.
-5. Artigos: prefira MIT Sloan, HBR, First Round Review, Substack de especialistas.
-6. Só inclua o que você tem certeza que existe.
-7. Exatamente 4 itens por categoria.
-8. Descrições curtas: máximo 12 palavras cada.
+1. IDIOMA (prioridade máxima): a maioria das indicações deve ser em português do Brasil. Em cada categoria, no mínimo 3 dos 4 itens em português — produzidos no Brasil ou com edição/tradução brasileira. No máximo 1 item em inglês por categoria, e só se for realmente excepcional.
+2. PROIBIDO incluir os títulos mais famosos/citados do tema.
+3. Prefira conteúdo dos últimos 3 anos ou clássicos pouco conhecidos no Brasil.
+4. Livros: priorize autores brasileiros ou obras com edição publicada no Brasil (use o título da edição brasileira).
+5. Vídeos: priorize canais brasileiros; prefira canais com menos de 500k inscritos mas alta densidade técnica.
+6. Podcasts: priorize podcasts brasileiros e indique episódios específicos, não só o nome do podcast.
+7. Cursos: priorize cursos em português (Alura, Sebrae, FGV, Conquer, Hotmart, Udemy em português etc.).
+8. Artigos: priorize fontes em português (HBR Brasil, MIT Sloan Review Brasil, Exame, Na Prática, newsletters brasileiras no Substack).
+9. Só inclua o que você tem certeza que existe, com título e autor/canal EXATOS — nunca invente nem aproxime nomes, pois eles geram os links.
+10. Exatamente 4 itens por categoria.
+11. Descrições sempre em português e curtas: máximo 12 palavras cada.
+12. Em cada item, preencha "idioma" com "PT" (conteúdo em português) ou "EN" (inglês).
 
 Retorne APENAS JSON válido sem texto adicional:
 {
   "livros": [
-    { "titulo": "string", "autor": "string", "descricao": "string" }
+    { "titulo": "string", "autor": "string", "descricao": "string", "idioma": "PT" }
   ],
   "videos": [
-    { "titulo": "string", "canal": "string", "descricao": "string" }
+    { "titulo": "string", "canal": "string", "descricao": "string", "idioma": "PT" }
   ],
   "podcasts": [
-    { "titulo": "string", "programa": "string", "descricao": "string" }
+    { "titulo": "string", "programa": "string", "descricao": "string", "idioma": "PT" }
   ],
   "cursos": [
-    { "titulo": "string", "plataforma": "string", "descricao": "string" }
+    { "titulo": "string", "plataforma": "string", "descricao": "string", "idioma": "PT" }
   ],
   "artigos": [
-    { "titulo": "string", "fonte": "string", "descricao": "string" }
+    { "titulo": "string", "fonte": "string", "descricao": "string", "idioma": "PT" }
   ],
   "ferramentas": [
-    { "titulo": "string", "tipo": "string", "descricao": "string" }
+    { "titulo": "string", "tipo": "string", "descricao": "string", "idioma": "PT" }
   ]
 }`
 
@@ -284,12 +360,20 @@ export default function CommunityResources() {
 
       {results && !loading && (
         <>
-          <p className="text-xs text-gray-400">
-            Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
-            {!youtubeApiKey && (
-              <span className="ml-2 text-amber-500">· vídeos sem YouTube API (links de busca)</span>
-            )}
-          </p>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-xs text-gray-400">
+              Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
+              {!youtubeApiKey && (
+                <span className="ml-2 text-amber-500">· vídeos sem YouTube API (links de busca)</span>
+              )}
+            </p>
+            <button
+              onClick={() => baixarDoc(lastTopic, results)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-colors"
+            >
+              <Download size={12} /> Baixar doc
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {CATEGORIES.map(({ key, label, icon: Icon, color, linkFn, linkLabel }) => {
               const items = results[key] ?? []
@@ -320,6 +404,13 @@ export default function CommunityResources() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 leading-snug group-hover:text-orange-700 transition-colors">
                                 {item.tituloReal || item.titulo}
+                                {item.idioma && (
+                                  <span className={`ml-1.5 align-middle text-[9px] font-semibold px-1 py-0.5 rounded ${
+                                    item.idioma === 'PT' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                    {item.idioma}
+                                  </span>
+                                )}
                               </p>
                               {subtitle && (
                                 <p className="text-xs text-orange-600 font-medium mt-0.5">{subtitle}</p>
