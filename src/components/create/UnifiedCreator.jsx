@@ -411,12 +411,14 @@ TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
 Se você leu e pensou "isso vai incomodar alguém" → provavelmente funcionou.`
 
-const buildCarouselPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
+const buildCarouselPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto, template, targetER }) => `
 TEMA: ${tema}
 ${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
 ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
+${template ? `TEMPLATE DE SLIDES: ${template.label} (alavanca: ${template.alavanca})\n${template.estrutura}\nAplique essa estrutura nas 3 versões, mantendo o número de slides.` : ''}
+${targetER ? `META DE E/R: ${targetER}%. O último slide precisa puxar diretamente pra essa alavanca (${template?.alavanca || 'salvamento ou comentário'}).` : ''}
 
 Execute o protocolo completo:
 1. Identifique a tensão interna central do tema.
@@ -566,6 +568,46 @@ const STORIES_STRUCTURES = {
   },
 }
 
+/* ── Templates de Slides — Carrossel Tech/IA (engenharia de salvamento e comentário) ── */
+const CAROUSEL_TEMPLATES = {
+  ferramentas: {
+    label: 'Ferramentas de IA',
+    alavanca: 'salvamento',
+    desc: 'Lista de ferramentas que você usa pra uma tarefa real',
+    estrutura: 'Slide 1 (capa): promessa concreta — "ferramentas de IA que eu uso pra [tarefa]". Slides 2 ao penúltimo: uma ferramenta por slide, com o que ela resolve na prática. Penúltimo: a lista resumida ou o ranking. Último: "salva pra usar no seu próximo projeto".',
+  },
+  passo_a_passo: {
+    label: 'Passo a passo',
+    alavanca: 'salvamento',
+    desc: 'Processo de IA aplicado a um problema de negócio',
+    estrutura: 'Slide 1 (capa): o problema de negócio e a promessa do processo. Slides 2 ao penúltimo: um passo do processo por slide, em sequência. Penúltimo: o insight que fecha o raciocínio. Último: instrução de uso — "salva pra aplicar no seu processo".',
+  },
+  antes_depois: {
+    label: 'Antes e depois',
+    alavanca: 'salvamento e identificação',
+    desc: 'Um fluxo de trabalho sem IA e com IA, lado a lado',
+    estrutura: 'Slide 1 (capa): o fluxo que vai ser comparado. Slides 2 ao penúltimo: alternando antes/depois de cada etapa do fluxo. Penúltimo: o ganho real, em tempo ou qualidade. Último: pergunta de opinião — "qual ferramenta você usaria aqui?".',
+  },
+  opiniao_tecnica: {
+    label: 'Opinião técnica',
+    alavanca: 'comentário e compartilhamento',
+    desc: 'Uma leitura sobre IA que vai contra o senso comum',
+    estrutura: 'Slide 1 (capa): a opinião declarada sem suavizar. Slides 2 ao penúltimo: a causa e o dado que sustentam a opinião, um argumento por slide. Penúltimo: a consequência prática dessa visão. Último: pergunta de opinião que puxa discordância ou concordância no comentário.',
+  },
+  limites_ia: {
+    label: 'O que a IA ainda erra',
+    alavanca: 'comentário',
+    desc: 'Leitura honesta dos limites da IA no seu trabalho',
+    estrutura: 'Slide 1 (capa): o erro ou limite mais comum que você vê. Slides 2 ao penúltimo: um caso concreto de falha por slide, sem genérico. Penúltimo: como você contorna esse limite na prática. Último: pergunta de opinião — "que erro de IA mais te incomoda?".',
+  },
+  bastidor: {
+    label: 'Bastidor home office',
+    alavanca: 'identificação aspiracional',
+    desc: 'Setup e rotina real de trabalho com IA em casa',
+    estrutura: 'Slide 1 (capa): o momento ou cena do setup. Slides 2 ao penúltimo: um elemento da rotina ou do setup por slide, com estética. Penúltimo: o que essa rotina resolveu pra você. Último: "salva pra montar o seu" ou pergunta de identificação.',
+  },
+}
+
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
@@ -686,6 +728,8 @@ export default function UnifiedCreator() {
   const [carTexto, setCarTexto] = useState('')
   const [carGerarIdeia, setCarGerarIdeia] = useState(false)
   const [carGerarTexto, setCarGerarTexto] = useState(false)
+  const [carTemplate, setCarTemplate] = useState(null)
+  const [carTargetER, setCarTargetER] = useState('')
   const [carLoading, setCarLoading] = useState(false)
   const [carResult, setCarResult] = useState(null)
   const [carError, setCarError] = useState(null)
@@ -1067,7 +1111,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           model: 'claude-sonnet-4-20250514',
           max_tokens: 5000,
           system: CAROUSEL_SYSTEM,
-          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto }) }],
+          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
       })
       if (!res.ok) {
@@ -1126,8 +1170,14 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       platforms: ['instagram'],
       priority: 'medium',
       status: 'ready',
-      tags: ['protocolo-carrossel', carTema.toLowerCase().slice(0, 20)],
-      source: 'Protocolo de Carrossel',
+      tags: [
+        'protocolo-carrossel',
+        carTema.toLowerCase().slice(0, 20),
+        ...(carTemplate ? [CAROUSEL_TEMPLATES[carTemplate].label.toLowerCase()] : []),
+      ],
+      source: carTemplate
+        ? `Protocolo de Carrossel — ${CAROUSEL_TEMPLATES[carTemplate].label}${carTargetER ? ` — Meta E/R ${carTargetER}%` : ''}`
+        : 'Protocolo de Carrossel',
     })
     setCarSavedHub(true)
   }
@@ -1984,6 +2034,49 @@ Responda EXCLUSIVAMENTE com JSON válido:
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
                 <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
+              </div>
+            </div>
+
+            {/* Template de Slides */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                Template de slides <span className="text-gray-300">(opcional)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {Object.entries(CAROUSEL_TEMPLATES).map(([key, t]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCarTemplate(prev => prev === key ? null : key)}
+                    title={t.desc}
+                    className={clsx(
+                      'text-left px-2.5 py-2 rounded-lg border transition-all',
+                      carTemplate === key
+                        ? 'bg-orange-50 border-orange-300 text-orange-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                    )}
+                  >
+                    <p className="text-[11px] font-semibold leading-tight">{t.label}</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 capitalize">{t.alavanca}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Meta de E/R */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                Meta de E/R <span className="text-gray-300">(opcional)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number" step="0.01" min="0"
+                  value={carTargetER}
+                  onChange={e => setCarTargetER(e.target.value)}
+                  placeholder="2,00"
+                  className="input text-sm w-full pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
               </div>
             </div>
 
