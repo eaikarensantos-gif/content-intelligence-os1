@@ -228,7 +228,9 @@ REGRAS:
    - cursos: página oficial do curso na plataforma
    - artigos: URL do próprio artigo
    - ferramentas: site oficial da ferramenta
-   NUNCA invente uma URL nem use link de página de busca. Se não conseguir confirmar o link exato, troque o item por outro que você consiga confirmar, ou deixe "url" como "".` : ''}
+   A "url" DEVE ser copiada exatamente de um resultado das buscas que você fez nesta conversa — NUNCA monte ou complete uma URL de memória, nunca use link de página de busca.
+14. ARTIGOS só podem vir dos resultados das suas buscas: use o título exato que apareceu no resultado e a URL exata do resultado. Se as buscas não retornarem artigos bons sobre o tema, retorne menos de 4 artigos — é proibido inventar título de artigo.
+15. Se não conseguir confirmar o link exato de um item, troque-o por outro que você consiga confirmar, ou deixe "url" como "".` : ''}
 
 Retorne APENAS JSON válido sem texto adicional:
 {
@@ -264,7 +266,7 @@ async function callClaude(apiKey, messages, useWebSearch, onSearch, signal) {
     messages,
   }
   if (useWebSearch) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }]
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8 }]
   }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -355,6 +357,7 @@ export default function CommunityResources() {
   const [results, setResults] = useState(null)
   const [lastTopic, setLastTopic] = useState('')
   const [searchCount, setSearchCount] = useState(0)
+  const [noWebSearch, setNoWebSearch] = useState(false)
 
   async function buscar() {
     const t = topic.trim()
@@ -405,6 +408,13 @@ export default function CommunityResources() {
           return { ...it, url, verified: !!url }
         })
       })
+
+      // Artigo sem link confirmado é quase sempre invenção — melhor mostrar
+      // menos artigos do que um que não existe.
+      if (useWebSearch && Array.isArray(parsed.artigos)) {
+        parsed.artigos = parsed.artigos.filter((it) => it.url)
+      }
+      setNoWebSearch(!useWebSearch)
 
       const [livros, videos] = await Promise.all([
         enrichBooks(parsed.livros || []),
@@ -510,7 +520,9 @@ export default function CommunityResources() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="text-xs text-gray-400">
               Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
-              {CATEGORIES.some(({ key }) => (results[key] || []).some((it) => !it.url)) && (
+              {noWebSearch ? (
+                <span className="ml-2 text-red-500">· sua chave da API não tem busca na web — links não verificados</span>
+              ) : CATEGORIES.some(({ key }) => (results[key] || []).some((it) => !it.url)) && (
                 <span className="ml-2 text-amber-500">· itens sem link confirmado abrem na busca</span>
               )}
             </p>
