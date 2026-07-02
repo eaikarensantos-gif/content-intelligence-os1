@@ -139,6 +139,15 @@ async function enrichBooks(items) {
       // Aceita só um volume cujo título realmente corresponde ao indicado —
       // o 1º resultado de busca fuzzy pode ser um livro sem relação nenhuma.
       const vol = (data.items || []).find((v) => similarity(item.titulo, v.volumeInfo?.title) >= 0.5)
+      // Link real confirmado pela IA via busca na web tem prioridade;
+      // o Google Books só complementa com a capa.
+      if (item.url) {
+        return {
+          ...item,
+          capa: vol?.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
+          verified: true,
+        }
+      }
       if (!vol) return item
       const tituloReal = vol.volumeInfo?.title || item.titulo
       const autorReal = vol.volumeInfo?.authors?.join(', ') || item.autor
@@ -159,8 +168,13 @@ async function enrichBooks(items) {
 }
 
 async function enrichVideos(items, youtubeApiKey) {
-  if (!youtubeApiKey) return items
   return Promise.all(items.map(async (item) => {
+    // Link direto do vídeo confirmado pela IA via busca na web — não precisa
+    // da YouTube API.
+    if (item.url && /youtube\.com\/watch|youtu\.be\//.test(item.url)) {
+      return { ...item, verified: true }
+    }
+    if (!youtubeApiKey) return item
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.canal || ''}`)
       const lang = item.idioma === 'PT' ? '&relevanceLanguage=pt&regionCode=BR' : ''
@@ -189,7 +203,7 @@ async function enrichVideos(items, youtubeApiKey) {
   }))
 }
 
-const PROMPT = (t, depth) => `Você é um curador de conteúdo educacional com foco em profundidade real.
+const PROMPT = (t, depth, comBusca) => `Você é um curador de conteúdo educacional com foco em profundidade real.
 
 Tema: "${t}"
 Nível: ${depth === 'avancado' ? 'avançado — a pessoa já conhece o básico' : 'intermediário — conhece o tema mas quer aprofundar'}
@@ -206,29 +220,76 @@ REGRAS:
 9. Só inclua o que você tem certeza que existe, com título e autor/canal EXATOS — nunca invente nem aproxime nomes, pois eles geram os links.
 10. Exatamente 4 itens por categoria.
 11. Descrições sempre em português e curtas: máximo 12 palavras cada.
-12. Em cada item, preencha "idioma" com "PT" (conteúdo em português) ou "EN" (inglês).
+12. Em cada item, preencha "idioma" com "PT" (conteúdo em português) ou "EN" (inglês).${comBusca ? `
+13. LINKS REAIS (obrigatório): use a busca na web para confirmar que cada item existe e preencha "url" com o link real e específico:
+   - livros: página do produto na amazon.com.br (contendo /dp/); se não achar, a página da editora
+   - vídeos: URL exata do vídeo (https://www.youtube.com/watch?v=...)
+   - podcasts: link do episódio no Spotify ou YouTube
+   - cursos: página oficial do curso na plataforma
+   - artigos: URL do próprio artigo
+   - ferramentas: site oficial da ferramenta
+   NUNCA invente uma URL nem use link de página de busca. Se não conseguir confirmar o link exato, troque o item por outro que você consiga confirmar, ou deixe "url" como "".` : ''}
 
 Retorne APENAS JSON válido sem texto adicional:
 {
   "livros": [
-    { "titulo": "string", "autor": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "autor": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "videos": [
-    { "titulo": "string", "canal": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "canal": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "podcasts": [
-    { "titulo": "string", "programa": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "programa": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "cursos": [
-    { "titulo": "string", "plataforma": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "plataforma": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "artigos": [
-    { "titulo": "string", "fonte": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "fonte": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "ferramentas": [
-    { "titulo": "string", "tipo": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "tipo": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ]
 }`
+
+// Chama a API da Anthropic; com useWebSearch, habilita a ferramenta de busca na
+// web para a IA confirmar cada indicação e obter o link real.
+async function callClaude(apiKey, messages, useWebSearch) {
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 8192,
+    messages,
+  }
+  if (useWebSearch) {
+    body.tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }]
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    const e = new Error(err.error?.message || `Erro ${res.status}`)
+    e.status = res.status
+    throw e
+  }
+  return res.json()
+}
+
+// Com busca na web, a resposta vem em vários blocos (buscas + texto);
+// o JSON final é a junção de todos os blocos de texto.
+function extractText(data) {
+  return (data.content || [])
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text)
+    .join('\n')
+}
 
 export default function CommunityResources() {
   const apiKey = localStorage.getItem(LS_KEY) || ''
@@ -250,27 +311,39 @@ export default function CommunityResources() {
     setResults(null)
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: PROMPT(t, depth) }],
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
+      let useWebSearch = true
+      let messages = [{ role: 'user', content: PROMPT(t, depth, true) }]
+      let data
+      try {
+        data = await callClaude(apiKey, messages, true)
+      } catch (e) {
+        // Chave sem acesso à busca na web → refaz sem a ferramenta
+        // (os links caem nos fallbacks de busca por categoria).
+        if (e.status !== 400) throw e
+        useWebSearch = false
+        messages = [{ role: 'user', content: PROMPT(t, depth, false) }]
+        data = await callClaude(apiKey, messages, false)
       }
-      const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
-      const parsed = parseJSON(raw)
+      // O servidor pausa o loop de buscas após várias rodadas; reenviar a
+      // conversa continua de onde parou.
+      let guard = 0
+      while (data.stop_reason === 'pause_turn' && guard++ < 3) {
+        messages = [...messages, { role: 'assistant', content: data.content }]
+        data = await callClaude(apiKey, messages, useWebSearch)
+      }
+      const parsed = parseJSON(extractText(data))
+
+      // Sanitiza as URLs confirmadas pela IA: só aceita http(s) sem espaços;
+      // item com link real válido já conta como verificado.
+      Object.keys(parsed).forEach((k) => {
+        if (!Array.isArray(parsed[k])) return
+        parsed[k] = parsed[k].map((it) => {
+          const url = typeof it.url === 'string' && /^https?:\/\/\S+$/.test(it.url.trim())
+            ? it.url.trim()
+            : undefined
+          return { ...it, url, verified: !!url }
+        })
+      })
 
       const [livros, videos] = await Promise.all([
         enrichBooks(parsed.livros || []),
@@ -363,8 +436,8 @@ export default function CommunityResources() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="text-xs text-gray-400">
               Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
-              {!youtubeApiKey && (
-                <span className="ml-2 text-amber-500">· vídeos sem YouTube API (links de busca)</span>
+              {CATEGORIES.some(({ key }) => (results[key] || []).some((it) => !it.url)) && (
+                <span className="ml-2 text-amber-500">· itens sem link confirmado abrem na busca</span>
               )}
             </p>
             <button
