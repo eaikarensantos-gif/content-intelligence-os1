@@ -77,7 +77,8 @@ async function enrichBooks(items) {
   return Promise.all(items.map(async (item) => {
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.autor || ''}`)
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`)
+      const lang = item.idioma === 'PT' ? '&langRestrict=pt' : ''
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1${lang}`)
       const data = await res.json()
       const vol = data.items?.[0]
       if (!vol) return item
@@ -99,7 +100,8 @@ async function enrichVideos(items, youtubeApiKey) {
   return Promise.all(items.map(async (item) => {
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.canal || ''}`)
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&maxResults=1&type=video&key=${youtubeApiKey}`)
+      const lang = item.idioma === 'PT' ? '&relevanceLanguage=pt&regionCode=BR' : ''
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&maxResults=1&type=video${lang}&key=${youtubeApiKey}`)
       const data = await res.json()
       const vid = data.items?.[0]
       if (!vid) return item
@@ -123,34 +125,38 @@ Tema: "${t}"
 Nível: ${depth === 'avancado' ? 'avançado — a pessoa já conhece o básico' : 'intermediário — conhece o tema mas quer aprofundar'}
 
 REGRAS:
-1. PROIBIDO incluir os títulos mais famosos/citados do tema.
-2. Prefira conteúdo dos últimos 3 anos ou clássicos pouco conhecidos no Brasil.
-3. Vídeos: prefira canais com menos de 500k inscritos mas alta densidade técnica.
-4. Podcasts: indique episódios específicos, não só o nome do podcast.
-5. Artigos: prefira MIT Sloan, HBR, First Round Review, Substack de especialistas.
-6. Só inclua o que você tem certeza que existe.
-7. Exatamente 4 itens por categoria.
-8. Descrições curtas: máximo 12 palavras cada.
+1. IDIOMA (prioridade máxima): a maioria das indicações deve ser em português do Brasil. Em cada categoria, no mínimo 3 dos 4 itens em português — produzidos no Brasil ou com edição/tradução brasileira. No máximo 1 item em inglês por categoria, e só se for realmente excepcional.
+2. PROIBIDO incluir os títulos mais famosos/citados do tema.
+3. Prefira conteúdo dos últimos 3 anos ou clássicos pouco conhecidos no Brasil.
+4. Livros: priorize autores brasileiros ou obras com edição publicada no Brasil (use o título da edição brasileira).
+5. Vídeos: priorize canais brasileiros; prefira canais com menos de 500k inscritos mas alta densidade técnica.
+6. Podcasts: priorize podcasts brasileiros e indique episódios específicos, não só o nome do podcast.
+7. Cursos: priorize cursos em português (Alura, Sebrae, FGV, Conquer, Hotmart, Udemy em português etc.).
+8. Artigos: priorize fontes em português (HBR Brasil, MIT Sloan Review Brasil, Exame, Na Prática, newsletters brasileiras no Substack).
+9. Só inclua o que você tem certeza que existe.
+10. Exatamente 4 itens por categoria.
+11. Descrições sempre em português e curtas: máximo 12 palavras cada.
+12. Em cada item, preencha "idioma" com "PT" (conteúdo em português) ou "EN" (inglês).
 
 Retorne APENAS JSON válido sem texto adicional:
 {
   "livros": [
-    { "titulo": "string", "autor": "string", "descricao": "string" }
+    { "titulo": "string", "autor": "string", "descricao": "string", "idioma": "PT" }
   ],
   "videos": [
-    { "titulo": "string", "canal": "string", "descricao": "string" }
+    { "titulo": "string", "canal": "string", "descricao": "string", "idioma": "PT" }
   ],
   "podcasts": [
-    { "titulo": "string", "programa": "string", "descricao": "string" }
+    { "titulo": "string", "programa": "string", "descricao": "string", "idioma": "PT" }
   ],
   "cursos": [
-    { "titulo": "string", "plataforma": "string", "descricao": "string" }
+    { "titulo": "string", "plataforma": "string", "descricao": "string", "idioma": "PT" }
   ],
   "artigos": [
-    { "titulo": "string", "fonte": "string", "descricao": "string" }
+    { "titulo": "string", "fonte": "string", "descricao": "string", "idioma": "PT" }
   ],
   "ferramentas": [
-    { "titulo": "string", "tipo": "string", "descricao": "string" }
+    { "titulo": "string", "tipo": "string", "descricao": "string", "idioma": "PT" }
   ]
 }`
 
@@ -320,6 +326,13 @@ export default function CommunityResources() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 leading-snug group-hover:text-orange-700 transition-colors">
                                 {item.tituloReal || item.titulo}
+                                {item.idioma && (
+                                  <span className={`ml-1.5 align-middle text-[9px] font-semibold px-1 py-0.5 rounded ${
+                                    item.idioma === 'PT' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                    {item.idioma}
+                                  </span>
+                                )}
                               </p>
                               {subtitle && (
                                 <p className="text-xs text-orange-600 font-medium mt-0.5">{subtitle}</p>
