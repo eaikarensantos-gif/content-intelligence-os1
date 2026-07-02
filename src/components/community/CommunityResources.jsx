@@ -252,16 +252,19 @@ Retorne APENAS JSON válido sem texto adicional:
   ]
 }`
 
-// Chama a API da Anthropic; com useWebSearch, habilita a ferramenta de busca na
-// web para a IA confirmar cada indicação e obter o link real.
-async function callClaude(apiKey, messages, useWebSearch) {
+// Chama a API da Anthropic em streaming; com useWebSearch, habilita a
+// ferramenta de busca na web para a IA confirmar cada indicação e obter o
+// link real. Streaming evita a conexão ficar muda por minutos (e travar)
+// enquanto as buscas rodam, e permite mostrar progresso na tela.
+async function callClaude(apiKey, messages, useWebSearch, onSearch, signal) {
   const body = {
     model: 'claude-sonnet-4-6',
     max_tokens: 8192,
+    stream: true,
     messages,
   }
   if (useWebSearch) {
-    body.tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }]
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }]
   }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -272,6 +275,7 @@ async function callClaude(apiKey, messages, useWebSearch) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify(body),
+    signal,
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
@@ -279,7 +283,56 @@ async function callClaude(apiKey, messages, useWebSearch) {
     e.status = res.status
     throw e
   }
-  return res.json()
+
+  // Reconstrói os blocos de conteúdo a partir dos eventos SSE.
+  const content = []
+  let stopReason = null
+  const handleEvent = (evt) => {
+    if (evt.type === 'error') {
+      throw new Error(evt.error?.message || 'Erro no stream da API')
+    } else if (evt.type === 'content_block_start') {
+      content[evt.index] = { ...evt.content_block }
+      if (evt.content_block.type === 'server_tool_use') {
+        content[evt.index]._json = ''
+        onSearch?.()
+      }
+    } else if (evt.type === 'content_block_delta') {
+      const block = content[evt.index]
+      if (!block) return
+      if (evt.delta.type === 'text_delta') block.text = (block.text || '') + evt.delta.text
+      else if (evt.delta.type === 'input_json_delta') block._json = (block._json || '') + evt.delta.partial_json
+      else if (evt.delta.type === 'thinking_delta') block.thinking = (block.thinking || '') + evt.delta.thinking
+    } else if (evt.type === 'content_block_stop') {
+      const block = content[evt.index]
+      if (block && block._json !== undefined) {
+        try { block.input = JSON.parse(block._json || '{}') } catch { block.input = {} }
+        delete block._json
+      }
+    } else if (evt.type === 'message_delta') {
+      stopReason = evt.delta?.stop_reason || stopReason
+    }
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const parts = buffer.split('\n\n')
+    buffer = parts.pop()
+    for (const part of parts) {
+      const line = part.split('\n').find((l) => l.startsWith('data:'))
+      if (!line) continue
+      const payload = line.slice(5).trim()
+      if (!payload) continue
+      let evt
+      try { evt = JSON.parse(payload) } catch { continue }
+      handleEvent(evt)
+    }
+  }
+  return { content, stop_reason: stopReason }
 }
 
 // Com busca na web, a resposta vem em vários blocos (buscas + texto);
@@ -301,6 +354,7 @@ export default function CommunityResources() {
   const [error, setError]     = useState(null)
   const [results, setResults] = useState(null)
   const [lastTopic, setLastTopic] = useState('')
+  const [searchCount, setSearchCount] = useState(0)
 
   async function buscar() {
     const t = topic.trim()
@@ -309,27 +363,34 @@ export default function CommunityResources() {
     setLoading(true)
     setError(null)
     setResults(null)
+    setSearchCount(0)
+
+    // Tempo-limite duro: melhor falhar com mensagem clara do que carregar
+    // para sempre.
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 240_000)
+    const onSearch = () => setSearchCount((n) => n + 1)
 
     try {
       let useWebSearch = true
       let messages = [{ role: 'user', content: PROMPT(t, depth, true) }]
       let data
       try {
-        data = await callClaude(apiKey, messages, true)
+        data = await callClaude(apiKey, messages, true, onSearch, controller.signal)
       } catch (e) {
         // Chave sem acesso à busca na web → refaz sem a ferramenta
         // (os links caem nos fallbacks de busca por categoria).
         if (e.status !== 400) throw e
         useWebSearch = false
         messages = [{ role: 'user', content: PROMPT(t, depth, false) }]
-        data = await callClaude(apiKey, messages, false)
+        data = await callClaude(apiKey, messages, false, onSearch, controller.signal)
       }
       // O servidor pausa o loop de buscas após várias rodadas; reenviar a
       // conversa continua de onde parou.
       let guard = 0
       while (data.stop_reason === 'pause_turn' && guard++ < 3) {
         messages = [...messages, { role: 'assistant', content: data.content }]
-        data = await callClaude(apiKey, messages, useWebSearch)
+        data = await callClaude(apiKey, messages, useWebSearch, onSearch, controller.signal)
       }
       const parsed = parseJSON(extractText(data))
 
@@ -353,8 +414,13 @@ export default function CommunityResources() {
       setResults({ ...parsed, livros, videos })
       setLastTopic(t)
     } catch (e) {
-      setError(e.message)
+      if (e.name === 'AbortError') {
+        setError('A busca demorou demais e foi cancelada. Tente novamente — se persistir, refaça com um tema mais específico.')
+      } else {
+        setError(e.message)
+      }
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
     }
   }
@@ -414,6 +480,13 @@ export default function CommunityResources() {
       )}
 
       {loading && (
+        <>
+          <p className="text-xs text-gray-500 flex items-center gap-2">
+            <Loader2 size={12} className="animate-spin text-violet-500" />
+            {searchCount > 0
+              ? `Verificando indicações na web — ${searchCount} pesquisa${searchCount !== 1 ? 's' : ''} feita${searchCount !== 1 ? 's' : ''}... (leva ~1 min)`
+              : 'Gerando indicações... a verificação de links na web pode levar ~1 minuto'}
+          </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {CATEGORIES.map((c) => (
             <div key={c.key} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden animate-pulse">
@@ -429,6 +502,7 @@ export default function CommunityResources() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {results && !loading && (
