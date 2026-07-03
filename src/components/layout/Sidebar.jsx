@@ -2,13 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
+  Zap, ChevronRight, Video, X, PenTool,
+  Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
   ClipboardList, Clapperboard, Sun, Moon, Flame,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
-import useAIStore from '../../store/useAIStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [

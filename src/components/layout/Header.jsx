@@ -1,5 +1,5 @@
 import { useLocation, Link } from 'react-router-dom'
-import { Heart, Search, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
+import { Heart, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TITLES = {
@@ -11,16 +11,18 @@ const TITLES = {
   '/dna': { title: 'Content DNA', sub: 'Descubra os padrões que fazem seu conteúdo funcionar' },
   '/tasks': { title: 'Tarefas', sub: 'Organize suas tarefas do dia e acompanhe o progresso' },
   '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
-  '/archetypes': { title: 'Arquétipos de Conteúdo', sub: 'Extraia padrões de criadores e gere conteúdo baseado em arquétipos' },
   '/security': { title: 'Registro de Acessos', sub: 'Histórico completo de logins e tentativas' },
-  '/create': { title: 'Studio de Criação', sub: 'Escolha como quer começar sua criação' },
+  '/create': { title: 'Studio de Criação', sub: 'Crie conteúdo em qualquer formato com IA e sua voz de marca' },
+  '/social': { title: 'Social Dashboard', sub: 'Métricas consolidadas das suas redes sociais' },
+  '/reports': { title: 'Relatórios', sub: 'Relatórios de performance prontos para compartilhar' },
+  '/naomi': { title: 'Naomi Studio', sub: 'Roteiros e prompts de vídeo para a personagem Naomi' },
+  '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },
+  '/settings': { title: 'Configurações', sub: 'Sincronização, banco de dados e preferências' },
   '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
   '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo', parent: '/create' },
   '/presentation': { title: 'Modo Apresentação', sub: 'Transforme ideias em talks com roteiro em linguagem falada', parent: '/create' },
-  '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade de conteúdo' },
-  '/brain': { title: 'Content Brain', sub: 'Priorize pelo score: Impacto² ÷ Esforço' },
 }
 
 const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])
@@ -60,9 +62,6 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
-          <Search size={15} />
-        </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-orange-500 transition-colors"

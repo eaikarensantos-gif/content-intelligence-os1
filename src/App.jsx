@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
@@ -30,6 +30,7 @@ const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
 const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
 const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
+const ClientReports = lazy(() => import('./components/reports/ClientReports'))
 
 function PageLoader() {
   return (
@@ -96,6 +97,7 @@ export default function App() {
             <Route path="/generate" element={<IdeaGenerator />} />
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
+            <Route path="/reports" element={<ClientReports />} />
             <Route path="/ads" element={<AdManager />} />
             {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
@@ -104,6 +106,8 @@ export default function App() {
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
+            {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>
         </Layout>
