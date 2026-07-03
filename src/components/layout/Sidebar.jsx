@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  ClipboardList, Clapperboard, Sun, Moon, Flame,
+  ClipboardList, Clapperboard, Sun, Moon, Flame, Dices,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -37,6 +37,7 @@ const NAV_GROUPS = [
     children: [
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
       { to: '/swipe', icon: Flame, label: 'Video Swipe' },
+      { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade' },
     ],
   },
