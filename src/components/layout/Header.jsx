@@ -5,27 +5,31 @@ import useStore from '../../store/useStore'
 const TITLES = {
   '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
   '/ideas': { title: 'Hub de Ideias', sub: 'Capture e organize suas ideias de conteúdo' },
-  '/trends': { title: 'Creator Insights', sub: 'Tendências e criadores em alta no seu nicho' },
+  '/trends': { title: 'Creator Insights', sub: 'Criadores, padrões e oportunidades do seu nicho analisados com IA' },
   '/analytics': { title: 'Analytics', sub: 'Acompanhe o desempenho dos seus posts' },
   '/video': { title: 'Analisador de Vídeo', sub: 'Analise e aprenda com vídeos de referência' },
   '/dna': { title: 'Content DNA', sub: 'Descubra os padrões que fazem seu conteúdo funcionar' },
   '/tasks': { title: 'Tarefas', sub: 'Organize suas tarefas do dia e acompanhe o progresso' },
   '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
-  '/archetypes': { title: 'Arquétipos de Conteúdo', sub: 'Extraia padrões de criadores e gere conteúdo baseado em arquétipos' },
   '/security': { title: 'Registro de Acessos', sub: 'Histórico completo de logins e tentativas' },
-  '/create': { title: 'Studio de Criação', sub: 'Escolha como quer começar sua criação' },
+  '/create': { title: 'Studio de Criação', sub: 'Crie conteúdo em qualquer formato com IA e sua voz de marca' },
+  '/social': { title: 'Social Dashboard', sub: 'Métricas consolidadas das suas redes sociais' },
+  '/reports': { title: 'Relatórios', sub: 'Relatórios de performance prontos para compartilhar' },
+  '/naomi': { title: 'Naomi Studio', sub: 'Roteiros e prompts de vídeo para a personagem Naomi' },
+  '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },
+  '/settings': { title: 'Configurações', sub: 'Sincronização, banco de dados e preferências' },
+  '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade — alimenta todos os geradores' },
+  '/desafio': { title: 'Desafio de Formato', sub: 'Sorteie um briefing criativo para sair da zona de conforto' },
   '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
   '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo', parent: '/create' },
   '/presentation': { title: 'Modo Apresentação', sub: 'Transforme ideias em talks com roteiro em linguagem falada', parent: '/create' },
-  '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade de conteúdo' },
-  '/brain': { title: 'Content Brain', sub: 'Priorize pelo score: Impacto² ÷ Esforço' },
 }
 
 const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])
 
-export default function Header({ onMenuClick }) {
+export default function Header({ onMenuClick, onSearchClick }) {
   const { pathname } = useLocation()
   const info = TITLES[pathname] || TITLES['/']
   const isCreateChild = CREATE_ROUTES.has(pathname)
@@ -60,8 +64,14 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+        <button
+          onClick={onSearchClick}
+          className="p-2 sm:px-2.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1.5"
+          aria-label="Buscar (Ctrl+K)"
+          title="Buscar (Ctrl+K)"
+        >
           <Search size={15} />
+          <kbd className="hidden lg:block text-[9px] text-gray-400 border border-gray-200 rounded px-1 py-0.5">⌘K</kbd>
         </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

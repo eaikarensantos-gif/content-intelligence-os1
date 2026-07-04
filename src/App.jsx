@@ -1,10 +1,11 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
+import CommandPalette from './components/common/CommandPalette'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -19,7 +20,6 @@ const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
 const ThoughtCapture = lazy(() => import('./components/thoughts/ThoughtCapture'))
 const TextStudio = lazy(() => import('./components/text/TextStudio'))
 const IdeaGenerator = lazy(() => import('./components/generate/IdeaGenerator'))
-const CreateContent = lazy(() => import('./components/create/CreateContent'))
 const UnifiedCreator = lazy(() => import('./components/create/UnifiedCreator'))
 const PresentationMode = lazy(() => import('./components/presentation/PresentationMode'))
 const ContentDNA = lazy(() => import('./components/dna/ContentDNA'))
@@ -30,6 +30,8 @@ const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
 const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
 const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
+const ReportsPage = lazy(() => import('./components/reports/ReportsPage'))
+const BrandVoiceSetup = lazy(() => import('./components/brand/BrandVoiceSetup'))
 const DesafioSorteador = lazy(() => import('./components/desafio/DesafioSorteador'))
 
 function PageLoader() {
@@ -42,6 +44,19 @@ function PageLoader() {
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Atalho global Cmd/Ctrl+K para a busca
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -56,11 +71,13 @@ function Layout({ children }) {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} onSearchClick={() => setSearchOpen(true)} />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
+
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   )
 }
@@ -91,14 +108,14 @@ export default function App() {
             <Route path="/social" element={<SocialDashboard />} />
             <Route path="/video" element={<VideoAnalyzer />} />
             <Route path="/create" element={<UnifiedCreator />} />
-            <Route path="/create-legacy" element={<CreateContent />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />
             <Route path="/text" element={<TextStudio />} />
             <Route path="/generate" element={<IdeaGenerator />} />
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/brand-voice" element={<BrandVoiceSetup />} />
             <Route path="/ads" element={<AdManager />} />
-            {/* /archetypes, /briefing, /post-analyzer — arquivados */}
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
@@ -106,6 +123,8 @@ export default function App() {
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
             <Route path="/desafio" element={<div className="p-6 animate-fade-in"><DesafioSorteador /></div>} />
+            {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>
         </Layout>

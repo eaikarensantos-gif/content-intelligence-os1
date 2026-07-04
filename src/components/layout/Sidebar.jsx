@@ -2,13 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, ChevronDown, Video, Wand2, X, PenTool,
-  Download, Upload, Check, AlertCircle, Dna, FileText, Shield, DollarSign, Shapes, FileBarChart, Megaphone, Settings, Activity,
-  ClipboardList, Clapperboard, Sun, Moon, Flame, Dices,
+  Zap, ChevronRight, Video, X, PenTool,
+  Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
+  ClipboardList, Clapperboard, Flame, Mic, Dices,
 } from 'lucide-react'
 import clsx from 'clsx'
-import useStore from '../../store/useStore'
-import useAIStore from '../../store/useAIStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
@@ -38,12 +36,13 @@ const NAV_GROUPS = [
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
       { to: '/swipe', icon: Flame, label: 'Video Swipe' },
       { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
-      { to: '/ads', icon: DollarSign, label: 'Publicidade' },
+      { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
     ],
   },
 ]
 
 const BOTTOM_NAV = [
+  { to: '/brand-voice', icon: Mic, label: 'Minha Voz' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
   { to: '/security', icon: Shield, label: 'Registro de Acessos' },
 ]
@@ -63,8 +62,12 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const importRef = useRef(null)
   const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
-  const theme = useStore((s) => s.theme)
-  const setTheme = useStore((s) => s.setTheme)
+
+  // Email da sessão logada (LoginGate grava em localStorage)
+  const sessionEmail = (() => {
+    try { return JSON.parse(localStorage.getItem('cio-auth-session') || 'null')?.email || null }
+    catch { return null }
+  })()
 
   // Track which group is open — auto-expand the one containing current route
   const [openGroup, setOpenGroup] = useState(() => findGroupForPath(location.pathname))
@@ -271,24 +274,14 @@ export default function Sidebar({ isOpen, onClose }) {
           />
         </div>
 
-        {/* Theme toggle */}
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-orange-200 bg-white hover:bg-orange-50 transition-colors text-sm font-medium text-gray-600 hover:text-orange-700"
-        >
-          {theme === 'dark'
-            ? <><Sun size={15} className="text-orange-500" /> Modo Claro</>
-            : <><Moon size={15} className="text-orange-500" /> Modo Escuro</>}
-        </button>
-
         {/* User */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-xs font-bold text-white">
-            CU
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-xs font-bold text-white uppercase">
+            {sessionEmail ? sessionEmail[0] : '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-medium text-gray-800 truncate">Usuário Criador</div>
-            <div className="text-[10px] text-gray-400">Plano Pro</div>
+            <div className="text-xs font-medium text-gray-800 truncate">{sessionEmail || 'Sessão local'}</div>
+            <div className="text-[10px] text-gray-400">Proprietário</div>
           </div>
         </div>
       </div>

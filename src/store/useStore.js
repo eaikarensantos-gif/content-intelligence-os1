@@ -28,7 +28,6 @@ const useStore = create(
       hiddenReportTags: [],
       bannedWords: [],
       theme: 'light',
-      brainItems: [],
       desafioHistory: [],
 
       // ── Perfil do Criador ────────────────────────────────
@@ -42,31 +41,6 @@ const useStore = create(
       },
 
       setTheme: (t) => set({ theme: t }),
-
-      // ── Content Brain ────────────────────────────────────────────────────
-      addBrainItem: (item) =>
-        set((s) => ({
-          brainItems: [...s.brainItems, {
-            id: uuidv4(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            status: 'inbox',
-            impact: 3,
-            effort: 3,
-            notes: '',
-            ...item,
-          }],
-        })),
-
-      updateBrainItem: (id, updates) =>
-        set((s) => ({
-          brainItems: s.brainItems.map((b) =>
-            b.id === id ? { ...b, ...updates, updated_at: new Date().toISOString() } : b
-          ),
-        })),
-
-      deleteBrainItem: (id) =>
-        set((s) => ({ brainItems: s.brainItems.filter((b) => b.id !== id) })),
 
       setCreatorProfile: (profile) =>
         set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
@@ -473,7 +447,6 @@ const useStore = create(
         hiddenReportTags: s.hiddenReportTags,
         bannedWords: s.bannedWords,
         theme: s.theme,
-        brainItems: s.brainItems,
         creatorProfile: s.creatorProfile,
         desafioHistory: s.desafioHistory,
       }),
