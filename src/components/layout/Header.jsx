@@ -19,6 +19,7 @@ const TITLES = {
   '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },
   '/settings': { title: 'Configurações', sub: 'Sincronização, banco de dados e preferências' },
   '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade — alimenta todos os geradores' },
+  '/desafio': { title: 'Desafio de Formato', sub: 'Sorteie um briefing criativo para sair da zona de conforto' },
   '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search, Lightbulb, Brain, Video, ClipboardList, ArrowRight,
   LayoutDashboard, BarChart2, PenTool, Clapperboard, Radar, Dna,
-  Activity, FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft,
+  Activity, FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft, Dices,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -22,6 +22,7 @@ const PAGES = [
   { to: '/trends', label: 'Creator Insights', icon: Radar },
   { to: '/video', label: 'Analisador de Vídeo', icon: Video },
   { to: '/swipe', label: 'Video Swipe', icon: Flame },
+  { to: '/desafio', label: 'Desafio de Formato', icon: Dices },
   { to: '/ads', label: 'Publicidade & Preços', icon: DollarSign },
   { to: '/brand-voice', label: 'Minha Voz', icon: Mic },
   { to: '/settings', label: 'Configurações', icon: Settings },

@@ -32,6 +32,7 @@ const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettin
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
 const ReportsPage = lazy(() => import('./components/reports/ReportsPage'))
 const BrandVoiceSetup = lazy(() => import('./components/brand/BrandVoiceSetup'))
+const DesafioSorteador = lazy(() => import('./components/desafio/DesafioSorteador'))
 
 function PageLoader() {
   return (
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
+            <Route path="/desafio" element={<div className="p-6 animate-fade-in"><DesafioSorteador /></div>} />
             {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

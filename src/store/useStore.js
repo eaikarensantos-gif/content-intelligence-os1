@@ -28,6 +28,7 @@ const useStore = create(
       hiddenReportTags: [],
       bannedWords: [],
       theme: 'light',
+      desafioHistory: [],
 
       // ── Perfil do Criador ────────────────────────────────
       creatorProfile: {
@@ -43,6 +44,12 @@ const useStore = create(
 
       setCreatorProfile: (profile) =>
         set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
+
+      // ── Desafio de Formato (sorteador) ───────────────────────────────────
+      addDesafio: (desafio) =>
+        set((s) => ({ desafioHistory: [...s.desafioHistory, desafio] })),
+
+      clearDesafioHistory: () => set({ desafioHistory: [] }),
 
       // ── Brand Voice (Master Prompt) ─────────────────────────
       brandVoice: null,
@@ -441,6 +448,7 @@ const useStore = create(
         bannedWords: s.bannedWords,
         theme: s.theme,
         creatorProfile: s.creatorProfile,
+        desafioHistory: s.desafioHistory,
       }),
     }
   )
