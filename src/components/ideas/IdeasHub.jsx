@@ -9,8 +9,11 @@ import {
   TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal, ListOrdered,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
 import IdeaForm from './IdeaForm'
+import DailyAgentBanner from './DailyAgentBanner'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
+import Modal from '../common/Modal'
 import { generateIdeasFromInsights, generateIdeasFromTrends, generateIdeasWithClaude, generateSignalBasedIdeas } from '../../utils/ideaGenerator'
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
@@ -18,10 +21,11 @@ const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','A
 const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 
 const KANBAN_COLUMNS = [
-  { id: 'idea',      label: 'Ideias',     color: 'border-orange-200 bg-orange-50/60',   dot: 'bg-orange-400',  count_bg: 'bg-orange-100 text-orange-700' },
-  { id: 'draft',     label: 'Rascunhos',  color: 'border-blue-200 bg-blue-50/60',       dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
-  { id: 'ready',     label: 'Pronto',     color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
-  { id: 'published', label: 'Publicado',  color: 'border-green-200 bg-green-50/60',     dot: 'bg-green-400',   count_bg: 'bg-green-100 text-green-700' },
+  { id: 'agent',     label: 'Agente Diário', color: 'border-purple-200 bg-purple-50/60',   dot: 'bg-purple-400',  count_bg: 'bg-purple-100 text-purple-700' },
+  { id: 'idea',      label: 'Ideias',        color: 'border-orange-200 bg-orange-50/60',   dot: 'bg-orange-400',  count_bg: 'bg-orange-100 text-orange-700' },
+  { id: 'draft',     label: 'Rascunhos',     color: 'border-blue-200 bg-blue-50/60',       dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
+  { id: 'ready',     label: 'Pronto',        color: 'border-emerald-200 bg-emerald-50/60', dot: 'bg-emerald-400', count_bg: 'bg-emerald-100 text-emerald-700' },
+  { id: 'published', label: 'Publicado',     color: 'border-green-200 bg-green-50/60',     dot: 'bg-green-400',   count_bg: 'bg-green-100 text-green-700' },
 ]
 
 const SOURCE_COLORS = {
@@ -93,6 +97,11 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
             {CONTENT_TYPE_LABELS[idea.content_type]}
           </span>
         )}
+        {idea.client && (
+          <span className="chip border text-[9px] bg-amber-100 text-amber-700 border-amber-200">
+            {idea.client}
+          </span>
+        )}
       </div>
 
       {/* Tags dentro do card */}
@@ -142,7 +151,7 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 min-h-[60vh]">
+      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory lg:grid lg:grid-cols-5 lg:overflow-visible lg:pb-0 min-h-[60vh]">
         {KANBAN_COLUMNS.map((col) => {
           const colIdeas = columnIdeas(col.id)
           const confirming = confirmCol === col.id
@@ -231,10 +240,13 @@ function KanbanView({ ideas, updateIdea, onCardClick, onTagClick, onDelete, onDe
 }
 
 // ─── Visualização Calendário ──────────────────────────────────────────────────
-function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
+function CalendarView({ ideas, filterFormat, onCardClick, onNewIdea, onDelete, onAddGap }) {
+  const metrics = useStore((s) => s.metrics)
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
-  const [contextDay, setContextDay] = useState(null) // day string for context menu
+  const [contextDay, setContextDay] = useState(null)
+  const [selectedMetric, setSelectedMetric] = useState(null)
+  const [dayMetricsList, setDayMetricsList] = useState(null) // { label, items[] }
   const year = current.getFullYear()
   const month = current.getMonth()
   const firstDay = new Date(year, month, 1).getDay()
@@ -246,6 +258,15 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
   const ideasForDay = (day) => {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
     return ideas.filter((i) => i.scheduled_date === dateStr)
+  }
+
+  const metricsForDay = (day) => {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+    return metrics.filter((m) => {
+      if (m.date !== dateStr) return false
+      if (filterFormat && filterFormat !== 'all' && (m.post_type || '').toLowerCase() !== filterFormat) return false
+      return true
+    })
   }
 
   const makeDateStr = (day) =>
@@ -283,18 +304,59 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
               const dayStr = day ? makeDateStr(day) : null
               const isToday = dayStr === todayStr
               const dayIdeas = day ? ideasForDay(day) : []
+              const dayMetrics = day ? metricsForDay(day) : []
+              const totalItems = dayMetrics.length + dayIdeas.length
+
+              const handleCellClick = () => {
+                if (!day) return
+                if (dayMetrics.length === 1 && dayIdeas.length === 0) return setSelectedMetric(dayMetrics[0])
+                if (dayMetrics.length > 1 || (dayMetrics.length >= 1 && dayIdeas.length >= 1)) return setDayMetricsList({ label: dayStr, items: dayMetrics })
+                if (dayIdeas.length === 1 && dayMetrics.length === 0) return onCardClick(dayIdeas[0])
+                setContextDay(contextDay === dayStr ? null : dayStr)
+              }
+
               return (
                 <div
                   key={i}
-                  className={`border-b border-r border-gray-100 p-1 sm:p-1.5 min-h-[56px] sm:min-h-0 relative ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/30 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
-                  onClick={() => day && setContextDay(contextDay === dayStr ? null : dayStr)}
+                  className={`border-b border-r border-gray-100 p-1.5 sm:p-2 min-h-[80px] sm:min-h-[110px] relative ${!day ? 'bg-gray-50/40' : 'hover:bg-orange-50/20 cursor-pointer'} ${i % 7 === 6 ? 'border-r-0' : ''}`}
+                  onClick={handleCellClick}
                 >
                   {day && (
                     <>
-                      <span className={`text-[10px] sm:text-xs font-medium block mb-0.5 sm:mb-1 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
+                      <span className={`text-[10px] sm:text-xs font-medium block mb-1 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-400'}`}>
                         {day}
                       </span>
                       <div className="space-y-1 hidden sm:block" onClick={(e) => e.stopPropagation()}>
+                        {dayMetrics.slice(0, 3).map((m, idx) => (
+                          <button
+                            key={idx}
+                            title={m.description || m.post_type}
+                            onClick={(e) => { e.stopPropagation(); if (m.link) { window.open(m.link, '_blank', 'noopener,noreferrer') } else { setSelectedMetric(m) } }}
+                            className="w-full flex flex-col gap-0.5 px-1.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors text-left"
+                          >
+                            <div className="flex items-center gap-1 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                              <span className="text-[10px] text-emerald-700 truncate leading-tight font-medium">
+                                {m.description ? m.description.slice(0, 24) : m.post_type || 'Post'}
+                              </span>
+                            </div>
+                            {(m.likes || m.impressions || m.comments) && (
+                              <div className="flex items-center gap-2 pl-2.5 text-[9px] text-emerald-500">
+                                {m.likes > 0 && <span>♥ {Number(m.likes).toLocaleString('pt-BR')}</span>}
+                                {m.comments > 0 && <span>💬 {Number(m.comments).toLocaleString('pt-BR')}</span>}
+                                {m.impressions > 0 && <span>👁 {Number(m.impressions).toLocaleString('pt-BR')}</span>}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                        {dayMetrics.length > 3 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}
+                            className="text-[10px] text-emerald-500 pl-1 hover:text-emerald-700 hover:underline"
+                          >
+                            +{dayMetrics.length - 3} posts
+                          </button>
+                        )}
                         {dayIdeas.slice(0, 2).map((idea) => (
                           <KanbanMiniCard
                             key={idea.id}
@@ -313,13 +375,21 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
                           </button>
                         )}
                       </div>
-                      {/* Mobile: show dot indicators */}
-                      {dayIdeas.length > 0 && (
-                        <div className="flex gap-0.5 mt-0.5 sm:hidden" onClick={(e) => { e.stopPropagation(); onCardClick(dayIdeas[0]) }}>
-                          {dayIdeas.slice(0, 3).map((idea, idx) => (
-                            <span key={idx} className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                      {/* Mobile: dots */}
+                      {totalItems > 0 && (
+                        <div className="flex flex-wrap gap-0.5 mt-1 sm:hidden">
+                          {dayMetrics.slice(0, 3).map((m, idx) => (
+                            <button key={'m'+idx} onClick={(e) => { e.stopPropagation(); if (m.link) { window.open(m.link, '_blank', 'noopener,noreferrer') } else { setSelectedMetric(m) } }}
+                              className="w-2 h-2 rounded-full bg-emerald-400" />
                           ))}
-                          {dayIdeas.length > 3 && <span className="text-[8px] text-gray-400">+{dayIdeas.length - 3}</span>}
+                          {dayMetrics.length > 3 && (
+                            <button onClick={(e) => { e.stopPropagation(); setDayMetricsList({ label: dayStr, items: dayMetrics }) }}
+                              className="text-[8px] text-emerald-500">+{dayMetrics.length - 3}</button>
+                          )}
+                          {dayIdeas.slice(0, 3).map((idea, idx) => (
+                            <button key={idx} onClick={(e) => { e.stopPropagation(); onCardClick(idea) }}
+                              className="w-2 h-2 rounded-full bg-orange-400" />
+                          ))}
                         </div>
                       )}
                       {/* Context menu — add idea or gap */}
@@ -348,7 +418,8 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-gray-400">
+      <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /><span className="font-medium text-gray-700">{metrics.filter(m => m.date?.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)).length}</span> publicados (CSV)</span>
         <span><span className="font-medium text-gray-700">{scheduled.length}</span> agendadas</span>
         <span><span className="font-medium text-gray-700">{unscheduled.length}</span> sem data</span>
         <span className="ml-auto text-[10px] text-gray-300">Clique em uma data para criar</span>
@@ -364,6 +435,105 @@ function CalendarView({ ideas, onCardClick, onNewIdea, onDelete, onAddGap }) {
           </div>
         </div>
       )}
+
+      {/* Modal: lista de todos os posts do dia */}
+      <Modal
+        open={!!dayMetricsList}
+        onClose={() => setDayMetricsList(null)}
+        title={dayMetricsList ? `Posts publicados — ${new Date(dayMetricsList.label + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}` : ''}
+        maxWidth="max-w-lg"
+      >
+        {dayMetricsList && (
+          <div className="space-y-2">
+            {dayMetricsList.items.map((m, idx) => (
+              <button
+                key={idx}
+                onClick={() => { setDayMetricsList(null); setSelectedMetric(m) }}
+                className="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-colors text-left"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-800 truncate">
+                    {m.description || m.post_type || 'Post sem descrição'}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-0.5 flex gap-2">
+                    {m.platform && <span className="capitalize">{m.platform}</span>}
+                    {m.post_type && <span>{m.post_type}</span>}
+                    {m.likes != null && <span>♥ {m.likes}</span>}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal: detalhe do post publicado (CSV) */}
+      <Modal
+        open={!!selectedMetric}
+        onClose={() => setSelectedMetric(null)}
+        title="Post Publicado"
+        maxWidth="max-w-lg"
+      >
+        {selectedMetric && (
+          <div className="space-y-4">
+            {/* Plataforma + tipo + data */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedMetric.platform && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 capitalize">
+                  {selectedMetric.platform}
+                </span>
+              )}
+              {selectedMetric.post_type && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                  {selectedMetric.post_type}
+                </span>
+              )}
+              {selectedMetric.date && (
+                <span className="text-xs text-gray-400 ml-auto">
+                  {new Date(selectedMetric.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+
+            {/* Descrição */}
+            {selectedMetric.description && (
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line border-l-2 border-emerald-300 pl-3">
+                {selectedMetric.description}
+              </p>
+            )}
+
+            {/* Link */}
+            {selectedMetric.link && (
+              <a
+                href={selectedMetric.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-orange-600 hover:underline break-all"
+              >
+                {selectedMetric.link}
+              </a>
+            )}
+
+            {/* Métricas */}
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100">
+              {[
+                { label: 'Impressões',     value: selectedMetric.impressions },
+                { label: 'Alcance',        value: selectedMetric.reach },
+                { label: 'Curtidas',       value: selectedMetric.likes },
+                { label: 'Comentários',    value: selectedMetric.comments },
+                { label: 'Compartilhamentos', value: selectedMetric.shares },
+                { label: 'Salvamentos',    value: selectedMetric.saves },
+              ].filter(m => m.value != null && m.value !== '' && m.value !== 0).map(({ label, value }) => (
+                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-base font-bold text-gray-900">{Number(value).toLocaleString('pt-BR')}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
@@ -651,6 +821,9 @@ function GenerateView() {
 
   return (
     <div className="space-y-5">
+
+      {/* Daily agent banner */}
+      <DailyAgentBanner />
 
       {/* Mode selector */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1051,6 +1224,8 @@ const DAY_OFFSET = { 'Segunda': 0, 'Quarta': 2, 'Quinta': 3, 'Sábado': 5 }
 function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
   const [weekOffset, setWeekOffset] = useState(0)
 
+  const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+
   const today = new Date()
   const dow = today.getDay()
   const monday = new Date(today)
@@ -1063,7 +1238,7 @@ function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
   const getDate = (slot) => {
     const d = new Date(weekStart)
     d.setDate(weekStart.getDate() + DAY_OFFSET[slot.day])
-    return d.toISOString().slice(0, 10)
+    return localDateStr(d)
   }
 
   const weekLabel = () => {
@@ -1100,7 +1275,7 @@ function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
     updateIdea(idea.id, { tags: [...(idea.tags || []).filter(t => t !== 'impulsionar'), 'impulsionar'] })
   }
 
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = localDateStr(today)
   const weekIdeas = WEEK_SLOTS.map(s => getIdea(s)).filter(Boolean)
   const publishedCount = weekIdeas.filter(i => i.status === 'published').length
   const readyCount = weekIdeas.filter(i => i.status === 'ready').length
@@ -1346,14 +1521,19 @@ export default function IdeasHub() {
   const deleteIdea           = useStore((s) => s.deleteIdea)
   const deleteIdeasByStatus  = useStore((s) => s.deleteIdeasByStatus)
   const convertIdeaToPost    = useStore((s) => s.convertIdeaToPost)
+  const importIdeas          = useStore((s) => s.importIdeas)
+  const hasGaveta = ideas.some((i) => (i.tags || []).includes('gaveta-21dias'))
+  const handleImportGaveta = () => importIdeas(GAVETA_IDEAS)
 
   const [tab, setTab]                       = useState('kanban')
   const [formOpen, setFormOpen]             = useState(false)
   const [editTarget, setEditTarget]         = useState(null)
   const [search, setSearch]                 = useState('')
+  const [filterClient, setFilterClient]     = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
   const [filterStatus, setFilterStatus]     = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
+  const [filterFormat, setFilterFormat]     = useState('all')
   const [filterTag, setFilterTag]           = useState(null)  // tag selecionável
   const [showFilters, setShowFilters]       = useState(false)
 
@@ -1371,11 +1551,13 @@ export default function IdeasHub() {
       if (filterPlatform !== 'all' && !platforms.includes(filterPlatform)) return false
       if (filterStatus !== 'all' && i.status !== filterStatus) return false
       if (filterPriority !== 'all' && i.priority !== filterPriority) return false
+      if (filterFormat !== 'all' && (i.format || '').toLowerCase() !== filterFormat) return false
       if (filterTag && !(i.tags || []).includes(filterTag)) return false
       if (search && !i.title?.toLowerCase().includes(search.toLowerCase()) &&
           !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
+    .filter((i) => !filterClient || i.client === filterClient)
     .sort((a, b) => {
       const dateA = a.scheduled_date || ''
       const dateB = b.scheduled_date || ''
@@ -1436,6 +1618,15 @@ export default function IdeasHub() {
           <button onClick={() => navigate('/generate')} className="btn-secondary text-xs sm:text-sm px-3 sm:px-4">
             <Zap size={14} /> <span className="hidden sm:inline">Gerar com IA</span>
           </button>
+          {!hasGaveta && (
+            <button
+              onClick={handleImportGaveta}
+              title="Importar conteúdo de gaveta — 21 dias"
+              className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 border-orange-300 text-orange-700 hover:bg-orange-50"
+            >
+              <FileText size={14} /> <span className="hidden sm:inline">Gaveta 21d</span>
+            </button>
+          )}
           {ideas.length > 0 && (
             <button onClick={() => openNew()} className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
               <Plus size={15} /> <span className="hidden sm:inline">Nova Ideia</span>
@@ -1446,7 +1637,7 @@ export default function IdeasHub() {
 
       {/* Filtros */}
       {(tab === 'kanban' || tab === 'calendar' || tab === 'order') && (() => {
-        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
+        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterFormat !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
         return (
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
@@ -1454,6 +1645,17 @@ export default function IdeasHub() {
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className="input pl-8" placeholder="Buscar ideias..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
+            {/* Filtro por cliente */}
+            <select
+              className="select text-xs"
+              value={filterClient}
+              onChange={(e) => setFilterClient(e.target.value)}
+            >
+              <option value="">Todos os clientes</option>
+              {[...new Set(ideas.filter((i) => i.client).map((i) => i.client))].sort().map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
             <button
               onClick={() => setShowFilters((f) => !f)}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border transition-all ${
@@ -1484,6 +1686,19 @@ export default function IdeasHub() {
                 </select>
                 <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
                   {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
+                </select>
+                <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterFormat} onChange={(e) => setFilterFormat(e.target.value)}>
+                  <option value="all">Tipo de conteúdo</option>
+                  <option value="reel">Reel</option>
+                  <option value="reels/tiktok">Reels/TikTok</option>
+                  <option value="carrossel">Carrossel</option>
+                  <option value="stories">Stories</option>
+                  <option value="story">Story</option>
+                  <option value="video">Vídeo</option>
+                  <option value="imagem">Imagem</option>
+                  <option value="artigo">Artigo</option>
+                  <option value="thread">Thread</option>
+                  <option value="post">Post</option>
                 </select>
               </div>
 
@@ -1540,7 +1755,7 @@ export default function IdeasHub() {
 
       {/* Visualização Calendário */}
       {tab === 'calendar' && (
-        <CalendarView ideas={filtered} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} onAddGap={handleAddGap} />
+        <CalendarView ideas={filtered} filterFormat={filterFormat} onCardClick={openEdit} onNewIdea={handleCalendarDateClick} onDelete={deleteIdea} onAddGap={handleAddGap} />
       )}
 
       {/* Visualização Ordem */}

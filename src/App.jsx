@@ -5,6 +5,7 @@ import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
+import FloatingActions from './components/global/FloatingActions'
 import CommandPalette from './components/common/CommandPalette'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -16,6 +17,7 @@ const IdeasHub = lazy(() => import('./components/ideas/IdeasHub'))
 const TrendRadar = lazy(() => import('./components/trends/TrendRadar'))
 const Analytics = lazy(() => import('./components/analytics/Analytics'))
 const SocialDashboard = lazy(() => import('./components/analytics/SocialDashboard'))
+const AudienceAnalytics = lazy(() => import('./components/analytics/AudienceAnalytics'))
 const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
 const ThoughtCapture = lazy(() => import('./components/thoughts/ThoughtCapture'))
 const TextStudio = lazy(() => import('./components/text/TextStudio'))
@@ -33,6 +35,11 @@ const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
 const ReportsPage = lazy(() => import('./components/reports/ReportsPage'))
 const BrandVoiceSetup = lazy(() => import('./components/brand/BrandVoiceSetup'))
 const DesafioSorteador = lazy(() => import('./components/desafio/DesafioSorteador'))
+const WebClipper = lazy(() => import('./components/clipper/WebClipper'))
+const NewsGenerator = lazy(() => import('./components/news/NewsGenerator'))
+const PDFContentGenerator = lazy(() => import('./components/pdf/PDFContentGenerator'))
+const ContentBrain = lazy(() => import('./components/brain/ContentBrain'))
+const CommunityStudio = lazy(() => import('./components/community/CommunityStudio'))
 
 function PageLoader() {
   return (
@@ -91,6 +98,19 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
+    const resize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }
+    const onInput = (e) => { if (e.target.tagName === 'TEXTAREA') resize(e.target) }
+    const init = () => document.querySelectorAll('textarea').forEach(resize)
+    if (!CSS.supports('field-sizing', 'content')) {
+      document.addEventListener('input', onInput)
+      const obs = new MutationObserver(init)
+      obs.observe(document.body, { childList: true, subtree: true })
+      init()
+      return () => { document.removeEventListener('input', onInput); obs.disconnect() }
+    }
+  }, [])
+
+  useEffect(() => {
     if (isSupabaseConfigured()) loadFromDB()
   }, [])
 
@@ -98,6 +118,7 @@ export default function App() {
     <LoginGate>
       <BrowserRouter>
         <FavoritesDrawer />
+        <FloatingActions />
         <Layout>
           <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -106,6 +127,7 @@ export default function App() {
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<SocialDashboard />} />
+            <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
             <Route path="/video" element={<VideoAnalyzer />} />
             <Route path="/create" element={<UnifiedCreator />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />
@@ -121,6 +143,11 @@ export default function App() {
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
+            <Route path="/clipper" element={<WebClipper />} />
+            <Route path="/news" element={<NewsGenerator />} />
+            <Route path="/pdf-studio" element={<div className="p-0 animate-fade-in"><PDFContentGenerator /></div>} />
+            <Route path="/brain" element={<ContentBrain />} />
+            <Route path="/community" element={<CommunityStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
             <Route path="/desafio" element={<div className="p-6 animate-fade-in"><DesafioSorteador /></div>} />
             {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}

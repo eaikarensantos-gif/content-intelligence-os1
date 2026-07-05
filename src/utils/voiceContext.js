@@ -28,14 +28,27 @@ export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords 
 
   if (dislikedContent.length > 0) {
     const recent = dislikedContent.slice(-15)
-    const patterns = recent.map(d => {
+
+    const allPatterns = [...new Set(recent.flatMap(d => d.patterns || []).filter(Boolean))]
+    if (allPatterns.length > 0) {
+      ctx += `\nPADRÕES DETECTADOS E REPROVADOS — nunca use:\n${allPatterns.map(p => `- "${p}"`).join('\n')}\n`
+    }
+
+    const hooks = recent.map(d => d.hook).filter(Boolean)
+    if (hooks.length > 0) {
+      ctx += `\nGANCHOS REPROVADOS — evite estruturas similares:\n${hooks.slice(0, 5).map(h => `- "${h.slice(0, 80)}"`).join('\n')}\n`
+    }
+
+    const items = recent.map(d => {
       const parts = []
       if (d.title) parts.push(`título: "${d.title}"`)
       if (d.reason) parts.push(`motivo: ${d.reason}`)
-      if (d.hook) parts.push(`gancho: "${d.hook}"`)
       return parts.join(', ')
-    })
-    ctx += `\nCONTEÚDOS REJEITADOS PELO CRIADOR (NUNCA repetir esses padrões):\n${patterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`
+    }).filter(Boolean)
+    if (items.length > 0) {
+      ctx += `\nCONTEÚDOS REJEITADOS PELO CRIADOR (NUNCA repetir esses padrões):\n${items.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`
+    }
+
     ctx += `\nREGRA: Analise os padrões rejeitados acima e EVITE abordagens similares. O criador está buscando algo diferente.\n`
   }
 

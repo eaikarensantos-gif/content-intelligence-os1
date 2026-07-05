@@ -7,17 +7,20 @@ import {
 import {
   Lightbulb, BarChart2, Eye, TrendingUp, Plus, ArrowRight,
   Sparkles, Radar, Zap, Video, Brain, Wand2, Calendar,
-  ChevronRight, FileText, Film, Clock, Target, Flame,
-  CheckCircle2, AlignLeft, Layers, Star, Bookmark,
+  ChevronRight, Clock, Target, Flame,
+  CheckCircle2, AlignLeft, Layers, Star, ClipboardList,
+  Instagram, Youtube, Linkedin, Trophy, AlertCircle,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
-import { enrichMetric, aggregateByFormat } from '../../utils/analytics'
+import { enrichMetric, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
 import { PlatformBadge, StatusBadge } from '../common/Badge'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const PIE_COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6']
 const STATUS_PT = { idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
 const STATUS_COLORS = { idea: 'bg-orange-400', draft: 'bg-blue-400', ready: 'bg-emerald-400', published: 'bg-violet-400' }
+const TASK_STATUS_COLORS = { todo: 'bg-gray-300', in_progress: 'bg-blue-400', done: 'bg-emerald-400', blocked: 'bg-red-400' }
+const TASK_STATUS_PT = { todo: 'A Fazer', in_progress: 'Em Andamento', done: 'Concluída', blocked: 'Bloqueada' }
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -75,7 +78,6 @@ function PipelineBar({ statusCounts, total, navigate }) {
         </button>
       </div>
 
-      {/* Progress bar */}
       {total > 0 ? (
         <>
           <div className="flex rounded-full overflow-hidden h-3 mb-4 bg-gray-100">
@@ -90,7 +92,6 @@ function PipelineBar({ statusCounts, total, navigate }) {
               )
             ))}
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {stages.map(({ key, label, count, color, hoverBg }) => (
               <button
@@ -119,84 +120,208 @@ function PipelineBar({ statusCounts, total, navigate }) {
   )
 }
 
-// ── Activity Feed ─────────────────────────────────────────────────────────────
-function ActivityFeed({ activities, navigate }) {
-  if (activities.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <Clock size={20} className="text-gray-300 mx-auto mb-2" />
-        <p className="text-xs text-gray-400">Nenhuma atividade recente</p>
-        <p className="text-[10px] text-gray-300 mt-1">Crie ideias, analise vídeos ou explore tendências para começar</p>
-      </div>
-    )
-  }
-
-  const ACTIVITY_META = {
-    idea:     { icon: Lightbulb, color: 'bg-orange-100 text-orange-600', label: 'Nova ideia' },
-    video:    { icon: Video, color: 'bg-violet-100 text-violet-600', label: 'Vídeo analisado' },
-    thought:  { icon: Brain, color: 'bg-cyan-100 text-cyan-600', label: 'Pensamento capturado' },
-    insight:  { icon: Sparkles, color: 'bg-amber-100 text-amber-600', label: 'Insight gerado' },
-    trend:    { icon: Radar, color: 'bg-blue-100 text-blue-600', label: 'Tendência explorada' },
-  }
+// ── Top Posts ─────────────────────────────────────────────────────────────────
+function TopPostsCard({ posts, metrics, navigate }) {
+  const best = useMemo(() => topPosts(posts, metrics, 5), [posts, metrics])
 
   return (
-    <div className="space-y-1.5">
-      {activities.slice(0, 8).map((act, i) => {
-        const meta = ACTIVITY_META[act.type] || ACTIVITY_META.idea
-        const Icon = meta.icon
-        return (
-          <button
-            key={i}
-            onClick={() => navigate(act.to)}
-            className="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-gray-50 transition-colors text-left group"
-          >
-            <div className={`w-7 h-7 rounded-lg ${meta.color} flex items-center justify-center shrink-0`}>
-              <Icon size={13} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-800 font-medium truncate">{act.title}</p>
-              <p className="text-[10px] text-gray-400">{meta.label} · {formatRelative(act.date)}</p>
-            </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-gray-500 shrink-0" />
+    <div className="card p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <Trophy size={14} className="text-amber-500" /> Top Posts
+        </h3>
+        <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
+          Ver Analytics <ChevronRight size={11} />
+        </button>
+      </div>
+
+      {best.length > 0 ? (
+        <div className="space-y-2">
+          {best.map((item, i) => {
+            const er = item.metric ? (enrichMetric(item.metric).engagement_rate * 100).toFixed(1) : null
+            return (
+              <div key={item.post.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 hover:bg-amber-50/50 transition-colors">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-800 truncate">{item.post.title || item.post.topic || 'Post sem título'}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <PlatformBadge platform={item.metric?.platform || item.post.platform} />
+                    {er && <span className="text-[10px] text-emerald-600 font-semibold">{er}% eng.</span>}
+                    {item.metric?.impressions > 0 && (
+                      <span className="text-[10px] text-gray-400">{item.metric.impressions.toLocaleString()} imp.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="h-44 flex flex-col items-center justify-center">
+          <Trophy size={24} className="text-gray-200 mb-2" />
+          <p className="text-xs text-gray-400 text-center">Importe métricas em<br/><span className="text-amber-600 font-medium">Analytics</span> para ver seus top posts</p>
+          <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 font-medium mt-2 hover:underline">
+            Ir para Analytics →
           </button>
-        )
-      })}
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Quick Action Card ─────────────────────────────────────────────────────────
-function QuickAction({ icon: Icon, label, sub, to, gradient, iconColor, navigate, badge }) {
+// ── Tasks Overview ────────────────────────────────────────────────────────────
+function TasksOverview({ tasks, navigate }) {
+  const todo = tasks.filter(t => t.status === 'todo')
+  const inProgress = tasks.filter(t => t.status === 'in_progress')
+  const done = tasks.filter(t => t.status === 'done')
+  const blocked = tasks.filter(t => t.status === 'blocked')
+
+  const today = new Date().toISOString().slice(0, 10)
+  const overdue = tasks.filter(t => t.due_date && t.due_date < today && t.status !== 'done')
+  const dueToday = tasks.filter(t => t.due_date === today && t.status !== 'done')
+
+  const recent = [...tasks]
+    .filter(t => t.status !== 'done')
+    .sort((a, b) => (a.due_date || '9999') > (b.due_date || '9999') ? 1 : -1)
+    .slice(0, 4)
+
   return (
-    <button
-      onClick={() => navigate(to)}
-      className={`bg-gradient-to-br ${gradient} border rounded-xl p-3 sm:p-4 text-left hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 relative overflow-hidden group`}
-    >
-      <div className="flex items-start justify-between">
-        <Icon size={18} className={`${iconColor} mb-1.5`} />
-        {badge && (
-          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/80 text-gray-600 border border-white">
-            {badge}
-          </span>
-        )}
+    <div className="card p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <ClipboardList size={14} className="text-blue-500" /> Tarefas
+        </h3>
+        <button onClick={() => navigate('/tasks')} className="text-[11px] text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+          Ver todas <ChevronRight size={11} />
+        </button>
       </div>
-      <div className="text-xs sm:text-sm font-semibold text-gray-800">{label}</div>
-      <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{sub}</div>
-      <ArrowRight size={12} className="absolute bottom-3 right-3 text-gray-300 group-hover:text-gray-500 transition-colors" />
-    </button>
+
+      {tasks.length > 0 ? (
+        <>
+          {/* Alertas */}
+          {overdue.length > 0 && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100 mb-3">
+              <AlertCircle size={12} className="text-red-500 shrink-0" />
+              <p className="text-[11px] text-red-600 font-medium">{overdue.length} tarefa{overdue.length > 1 ? 's' : ''} atrasada{overdue.length > 1 ? 's' : ''}</p>
+            </div>
+          )}
+          {dueToday.length > 0 && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-100 mb-3">
+              <Clock size={12} className="text-amber-500 shrink-0" />
+              <p className="text-[11px] text-amber-600 font-medium">{dueToday.length} tarefa{dueToday.length > 1 ? 's' : ''} para hoje</p>
+            </div>
+          )}
+
+          {/* Contadores */}
+          <div className="grid grid-cols-4 gap-1.5 mb-3">
+            {[
+              { label: 'A Fazer', count: todo.length, color: 'text-gray-600', bg: 'bg-gray-50' },
+              { label: 'Em Andamento', count: inProgress.length, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Concluídas', count: done.length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Bloqueadas', count: blocked.length, color: 'text-red-600', bg: 'bg-red-50' },
+            ].map(({ label, count, color, bg }) => (
+              <div key={label} className={`${bg} rounded-lg p-2 text-center`}>
+                <p className={`text-base font-bold ${color}`}>{count}</p>
+                <p className="text-[9px] text-gray-400 leading-tight">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Lista recente */}
+          <div className="space-y-1.5">
+            {recent.map(task => (
+              <button
+                key={task.id}
+                onClick={() => navigate('/tasks')}
+                className="flex items-center gap-2.5 w-full p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${TASK_STATUS_COLORS[task.status] || 'bg-gray-300'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-700 font-medium truncate">{task.title}</p>
+                  {task.due_date && (
+                    <p className={`text-[10px] ${task.due_date < today ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                      Vence {formatRelative(task.due_date)}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight size={11} className="text-gray-300 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="h-36 flex flex-col items-center justify-center">
+          <ClipboardList size={24} className="text-gray-200 mb-2" />
+          <p className="text-xs text-gray-400 mb-2">Nenhuma tarefa criada</p>
+          <button onClick={() => navigate('/tasks')} className="text-[11px] text-blue-600 font-medium hover:underline">
+            Criar primeira tarefa →
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
-// ── Upcoming Calendar ─────────────────────────────────────────────────────────
+// ── Platform Breakdown ────────────────────────────────────────────────────────
+function PlatformBreakdown({ posts, metrics, navigate }) {
+  const byPlatform = useMemo(() =>
+    aggregateByPlatform(posts, metrics)
+      .sort((a, b) => b.impressions - a.impressions)
+      .slice(0, 5)
+      .map(d => ({
+        name: d.platform?.charAt(0).toUpperCase() + d.platform?.slice(1) || 'Outros',
+        impressões: d.impressions,
+        engajamento: +(d.avg_engagement_rate * 100).toFixed(2),
+        posts: d.count,
+      })),
+    [posts, metrics]
+  )
+
+  return (
+    <div className="card p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <BarChart2 size={14} className="text-orange-500" /> Performance por Plataforma
+        </h3>
+        <button onClick={() => navigate('/analytics')} className="text-[11px] text-orange-600 font-medium flex items-center gap-1">
+          Detalhes <ChevronRight size={11} />
+        </button>
+      </div>
+      <p className="text-[10px] text-gray-400 mb-4">Impressões totais por plataforma</p>
+
+      {byPlatform.length > 0 ? (
+        <ResponsiveContainer width="100%" height={160}>
+          <BarChart data={byPlatform} barSize={28}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} width={40} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="impressões" name="Impressões" fill="#f97316" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="h-40 flex flex-col items-center justify-center">
+          <BarChart2 size={24} className="text-gray-200 mb-2" />
+          <p className="text-xs text-gray-400 text-center">Importe métricas em<br/><span className="text-orange-600 font-medium">Analytics</span> para ver o breakdown</p>
+          <button onClick={() => navigate('/analytics')} className="text-[11px] text-orange-600 font-medium mt-2 hover:underline">
+            Importar dados →
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Upcoming Schedule ─────────────────────────────────────────────────────────
 function UpcomingSchedule({ ideas, navigate }) {
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = ideas
     .filter(i => i.scheduled_date && i.scheduled_date >= today)
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
-    .slice(0, 5)
-
-  const overdue = ideas
-    .filter(i => i.scheduled_date && i.scheduled_date < today && i.status !== 'published')
+    .slice(0, 4)
+  const overdue = ideas.filter(i => i.scheduled_date && i.scheduled_date < today && i.status !== 'published')
 
   if (upcoming.length === 0 && overdue.length === 0) {
     return (
@@ -213,7 +338,7 @@ function UpcomingSchedule({ ideas, navigate }) {
   return (
     <div className="space-y-2">
       {overdue.length > 0 && (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100 mb-2">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
           <p className="text-[11px] text-red-600 font-medium">{overdue.length} atrasada{overdue.length > 1 ? 's' : ''}</p>
         </div>
@@ -222,7 +347,6 @@ function UpcomingSchedule({ ideas, navigate }) {
         const date = new Date(idea.scheduled_date + 'T12:00:00')
         const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' })
         const dayNum = date.getDate()
-        const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
         const isToday = idea.scheduled_date === today
         return (
           <button
@@ -250,49 +374,50 @@ function UpcomingSchedule({ ideas, navigate }) {
 }
 
 // ── Smart Suggestion ──────────────────────────────────────────────────────────
-function SmartSuggestion({ ideas, videoAnalyses, thoughtCaptures, insights, navigate }) {
+function SmartSuggestion({ ideas, metrics, tasks, navigate }) {
   const readyCount = ideas.filter(i => i.status === 'ready').length
   const draftCount = ideas.filter(i => i.status === 'draft').length
   const noDateCount = ideas.filter(i => !i.scheduled_date && i.status !== 'published').length
-  const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
+  const today = new Date().toISOString().slice(0, 10)
+  const overdueTasks = tasks.filter(t => t.due_date && t.due_date < today && t.status !== 'done')
 
   let suggestion = null
 
-  if (readyCount >= 3) {
+  if (overdueTasks.length > 0) {
+    suggestion = {
+      icon: AlertCircle, color: 'text-red-600 bg-red-50 border-red-200',
+      text: `Você tem ${overdueTasks.length} tarefa${overdueTasks.length > 1 ? 's' : ''} atrasada${overdueTasks.length > 1 ? 's' : ''}. Resolva logo para manter o ritmo.`,
+      action: 'Ver Tarefas', to: '/tasks',
+    }
+  } else if (readyCount >= 3) {
     suggestion = {
       icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
       text: `Você tem ${readyCount} conteúdos prontos para publicar! Hora de colocar no mundo.`,
       action: 'Ver Prontos', to: '/ideas',
     }
+  } else if (metrics.length === 0 && ideas.filter(i => i.status === 'published').length > 0) {
+    suggestion = {
+      icon: BarChart2, color: 'text-orange-600 bg-orange-50 border-orange-200',
+      text: 'Você tem conteúdo publicado. Importe as métricas para ver o que está performando melhor.',
+      action: 'Importar Métricas', to: '/analytics',
+    }
   } else if (ideas.length === 0) {
     suggestion = {
       icon: Lightbulb, color: 'text-orange-600 bg-orange-50 border-orange-200',
-      text: 'Comece capturando um pensamento ou explorando tendências do seu nicho.',
-      action: 'Capturar Pensamento', to: '/thoughts',
+      text: 'Comece capturando um pensamento ou gerando ideias com IA.',
+      action: 'Gerar Ideias', to: '/generate',
     }
   } else if (noDateCount > 5) {
     suggestion = {
       icon: Calendar, color: 'text-blue-600 bg-blue-50 border-blue-200',
-      text: `${noDateCount} ideias sem data. Agende-as no calendário para manter consistência.`,
+      text: `${noDateCount} ideias sem data. Agende-as para manter consistência.`,
       action: 'Abrir Calendário', to: '/ideas',
     }
   } else if (draftCount >= 3) {
     suggestion = {
       icon: AlignLeft, color: 'text-violet-600 bg-violet-50 border-violet-200',
-      text: `${draftCount} rascunhos esperando. Finalize-os para manter seu pipeline fluindo.`,
+      text: `${draftCount} rascunhos esperando. Finalize-os para manter o pipeline fluindo.`,
       action: 'Ver Rascunhos', to: '/ideas',
-    }
-  } else if (hasApiKey && videoAnalyses.length === 0) {
-    suggestion = {
-      icon: Video, color: 'text-purple-600 bg-purple-50 border-purple-200',
-      text: 'Analise um vídeo de referência para extrair estruturas e ideias de conteúdo.',
-      action: 'Analisar Vídeo', to: '/video',
-    }
-  } else if (hasApiKey && thoughtCaptures.length === 0) {
-    suggestion = {
-      icon: Brain, color: 'text-cyan-600 bg-cyan-50 border-cyan-200',
-      text: 'Capture um pensamento e transforme-o em 7 formatos de conteúdo prontos para usar.',
-      action: 'Capturar Pensamento', to: '/thoughts',
     }
   }
 
@@ -310,6 +435,28 @@ function SmartSuggestion({ ideas, videoAnalyses, thoughtCaptures, insights, navi
   )
 }
 
+// ── Quick Action Card ─────────────────────────────────────────────────────────
+function QuickAction({ icon: Icon, label, sub, to, gradient, iconColor, navigate, badge }) {
+  return (
+    <button
+      onClick={() => navigate(to)}
+      className={`bg-gradient-to-br ${gradient} border rounded-xl p-3 sm:p-4 text-left hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 relative overflow-hidden group`}
+    >
+      <div className="flex items-start justify-between">
+        <Icon size={18} className={`${iconColor} mb-1.5`} />
+        {badge && (
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/80 text-gray-600 border border-white">
+            {badge}
+          </span>
+        )}
+      </div>
+      <div className="text-xs sm:text-sm font-semibold text-gray-800">{label}</div>
+      <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{sub}</div>
+      <ArrowRight size={12} className="absolute bottom-3 right-3 text-gray-300 group-hover:text-gray-500 transition-colors" />
+    </button>
+  )
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD
 // ══════════════════════════════════════════════════════════════════════════════
@@ -321,9 +468,9 @@ export default function Dashboard() {
   const insights = useStore((s) => s.insights)
   const videoAnalyses = useStore((s) => s.videoAnalyses)
   const thoughtCaptures = useStore((s) => s.thoughtCaptures)
-  const trendResults = useStore((s) => s.trendResults)
+  const tasks = useStore((s) => s.tasks)
 
-  // ── Computed data ───────────────────────────────────────────────────────────
+  // ── Computed ────────────────────────────────────────────────────────────────
   const statusCounts = {
     idea: ideas.filter((i) => i.status === 'idea').length,
     draft: ideas.filter((i) => i.status === 'draft').length,
@@ -332,32 +479,11 @@ export default function Dashboard() {
   }
 
   const totalImpressions = metrics.reduce((s, m) => s + (m.impressions || 0), 0)
+  const totalEngagement = metrics.reduce((s, m) => s + enrichMetric(m).engagement, 0)
   const avgER = metrics.length
     ? (metrics.reduce((s, m) => s + enrichMetric(m).engagement_rate, 0) / metrics.length * 100).toFixed(1)
     : 0
-
-  const byFormat = aggregateByFormat(posts, metrics).map((d) => ({
-    name: d.format.charAt(0).toUpperCase() + d.format.slice(1),
-    engajamento: +(d.avg_engagement_rate * 100).toFixed(2),
-    posts: d.count,
-  }))
-
-  const pieData = Object.entries(statusCounts)
-    .map(([name, value]) => ({ name: STATUS_PT[name] || name, value }))
-    .filter(d => d.value > 0)
-
-  // ── Activity feed (all features merged, sorted by date) ─────────────────────
-  const activities = useMemo(() => {
-    const items = []
-    ideas.forEach(i => items.push({ type: 'idea', title: i.title, date: i.created_at, to: '/ideas' }))
-    videoAnalyses.forEach(v => items.push({ type: 'video', title: v.title || v.url || 'Vídeo analisado', date: v.analyzed_at, to: '/video' }))
-    thoughtCaptures.forEach(t => items.push({ type: 'thought', title: t.original_thought?.slice(0, 80) || 'Pensamento', date: t.created_at, to: '/thoughts' }))
-    insights.forEach(ins => items.push({ type: 'insight', title: ins.description || ins.text || 'Insight', date: ins.created_at, to: '/analytics' }))
-    if (trendResults?.topic) items.push({ type: 'trend', title: `Tendências: ${trendResults.topic}`, date: new Date().toISOString(), to: '/trends' })
-    return items.sort((a, b) => new Date(b.date) - new Date(a.date))
-  }, [ideas, videoAnalyses, thoughtCaptures, insights, trendResults])
-
-  const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
+  const tasksOpen = tasks.filter(t => t.status !== 'done').length
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 animate-fade-in">
@@ -371,18 +497,18 @@ export default function Dashboard() {
             <span className="text-orange-600 font-medium">{ideas.length} ideia{ideas.length !== 1 ? 's' : ''}</span> no banco
             {statusCounts.ready > 0 && <> · <span className="text-emerald-600 font-medium">{statusCounts.ready} pronta{statusCounts.ready !== 1 ? 's' : ''}</span> para publicar</>}
             {statusCounts.draft > 0 && <> · <span className="text-blue-600 font-medium">{statusCounts.draft} em rascunho</span></>}
-            {videoAnalyses.length > 0 && <> · <span className="text-violet-600 font-medium">{videoAnalyses.length} vídeo{videoAnalyses.length !== 1 ? 's' : ''}</span> analisado{videoAnalyses.length !== 1 ? 's' : ''}</>}
-            {thoughtCaptures.length > 0 && <> · <span className="text-cyan-600 font-medium">{thoughtCaptures.length} pensamento{thoughtCaptures.length !== 1 ? 's' : ''}</span> capturado{thoughtCaptures.length !== 1 ? 's' : ''}</>}
+            {tasksOpen > 0 && <> · <span className="text-blue-600 font-medium">{tasksOpen} tarefa{tasksOpen !== 1 ? 's' : ''}</span> em aberto</>}
+            {metrics.length > 0 && <> · <span className="text-violet-600 font-medium">{metrics.length} post{metrics.length !== 1 ? 's' : ''}</span> com métricas</>}
           </p>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => navigate('/ideas')} className="btn-primary text-xs py-1.5 px-3">
               <Plus size={13} /> Nova Ideia
             </button>
-            <button onClick={() => navigate('/thoughts')} className="btn-secondary text-xs py-1.5 px-3">
-              <Brain size={13} /> Capturar Pensamento
+            <button onClick={() => navigate('/create')} className="btn-secondary text-xs py-1.5 px-3">
+              <Wand2 size={13} /> Studio de Criação
             </button>
-            <button onClick={() => navigate('/trends')} className="btn-secondary text-xs py-1.5 px-3 hidden sm:flex">
-              <Radar size={13} /> Explorar Tendências
+            <button onClick={() => navigate('/analytics')} className="btn-secondary text-xs py-1.5 px-3 hidden sm:flex">
+              <BarChart2 size={13} /> Analytics
             </button>
           </div>
         </div>
@@ -390,41 +516,10 @@ export default function Dashboard() {
       </div>
 
       {/* ── Smart Suggestion ────────────────────────────────────────────────── */}
-      <SmartSuggestion
-        ideas={ideas}
-        videoAnalyses={videoAnalyses}
-        thoughtCaptures={thoughtCaptures}
-        insights={insights}
-        navigate={navigate}
-      />
+      <SmartSuggestion ideas={ideas} metrics={metrics} tasks={tasks} navigate={navigate} />
 
-      {/* ── Pipeline de Conteúdo ────────────────────────────────────────────── */}
-      <PipelineBar statusCounts={statusCounts} total={ideas.length} navigate={navigate} />
-
-      {/* ── Stats Row (compact) ─────────────────────────────────────────────── */}
+      {/* ── KPIs ────────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button onClick={() => navigate('/video')} className="card p-3 sm:p-4 border border-gray-100 hover:border-violet-200 transition-all text-left group">
-          <div className="flex items-center justify-between mb-1">
-            <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
-              <Video size={14} className="text-violet-600" />
-            </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-violet-400" />
-          </div>
-          <p className="text-lg sm:text-xl font-bold text-gray-900">{videoAnalyses.length}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Vídeos analisados</p>
-        </button>
-
-        <button onClick={() => navigate('/thoughts')} className="card p-3 sm:p-4 border border-gray-100 hover:border-cyan-200 transition-all text-left group">
-          <div className="flex items-center justify-between mb-1">
-            <div className="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center">
-              <Brain size={14} className="text-cyan-600" />
-            </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-cyan-400" />
-          </div>
-          <p className="text-lg sm:text-xl font-bold text-gray-900">{thoughtCaptures.length}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Pensamentos capturados</p>
-        </button>
-
         <button onClick={() => navigate('/analytics')} className="card p-3 sm:p-4 border border-gray-100 hover:border-emerald-200 transition-all text-left group">
           <div className="flex items-center justify-between mb-1">
             <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -446,40 +541,38 @@ export default function Dashboard() {
           <p className="text-lg sm:text-xl font-bold text-gray-900">{avgER > 0 ? `${avgER}%` : '—'}</p>
           <p className="text-[10px] sm:text-xs text-gray-400">Engajamento médio</p>
         </button>
+
+        <button onClick={() => navigate('/analytics')} className="card p-3 sm:p-4 border border-gray-100 hover:border-violet-200 transition-all text-left group">
+          <div className="flex items-center justify-between mb-1">
+            <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+              <Zap size={14} className="text-violet-600" />
+            </div>
+            <ChevronRight size={12} className="text-gray-300 group-hover:text-violet-400" />
+          </div>
+          <p className="text-lg sm:text-xl font-bold text-gray-900">{totalEngagement > 0 ? totalEngagement.toLocaleString() : '—'}</p>
+          <p className="text-[10px] sm:text-xs text-gray-400">Engajamento total</p>
+        </button>
+
+        <button onClick={() => navigate('/tasks')} className="card p-3 sm:p-4 border border-gray-100 hover:border-blue-200 transition-all text-left group">
+          <div className="flex items-center justify-between mb-1">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+              <ClipboardList size={14} className="text-blue-600" />
+            </div>
+            <ChevronRight size={12} className="text-gray-300 group-hover:text-blue-400" />
+          </div>
+          <p className="text-lg sm:text-xl font-bold text-gray-900">{tasksOpen}</p>
+          <p className="text-[10px] sm:text-xs text-gray-400">Tarefas em aberto</p>
+        </button>
       </div>
 
-      {/* ── Middle Row: Charts + Calendar + Activity ────────────────────────── */}
+      {/* ── Pipeline ────────────────────────────────────────────────────────── */}
+      <PipelineBar statusCounts={statusCounts} total={ideas.length} navigate={navigate} />
+
+      {/* ── Charts + Calendar + Tasks ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <PlatformBreakdown posts={posts} metrics={metrics} navigate={navigate} />
 
-        {/* Left: Engajamento por Formato (or placeholder) */}
-        <div className="card p-4 sm:p-5 lg:col-span-1">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <BarChart2 size={14} className="text-orange-500" /> Engajamento por Formato
-          </h3>
-          <p className="text-[10px] text-gray-400 mb-4">Taxa média de engajamento (%) por formato de conteúdo</p>
-          {byFormat.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={byFormat} barSize={24} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} unit="%" />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={70} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="engajamento" name="Engajamento %" fill="#f97316" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-44 flex flex-col items-center justify-center">
-              <BarChart2 size={24} className="text-gray-200 mb-2" />
-              <p className="text-xs text-gray-400 text-center">Adicione métricas em<br/><span className="text-orange-600 font-medium">Analytics</span> para ver o gráfico</p>
-              <button onClick={() => navigate('/analytics')} className="text-[11px] text-orange-600 font-medium mt-2 hover:underline">
-                Ir para Analytics →
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Center: Agenda Próxima */}
-        <div className="card p-4 sm:p-5 lg:col-span-1">
+        <div className="card p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
               <Calendar size={14} className="text-blue-500" /> Próximos Conteúdos
@@ -491,127 +584,42 @@ export default function Dashboard() {
           <UpcomingSchedule ideas={ideas} navigate={navigate} />
         </div>
 
-        {/* Right: Atividade Recente */}
-        <div className="card p-4 sm:p-5 lg:col-span-1">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock size={14} className="text-gray-400" /> Atividade Recente
-          </h3>
-          <ActivityFeed activities={activities} navigate={navigate} />
-        </div>
+        <TasksOverview tasks={tasks} navigate={navigate} />
       </div>
 
-      {/* ── Quick Actions (all features) ────────────────────────────────────── */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Zap size={14} className="text-orange-500" /> Ações Rápidas
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-          <QuickAction
-            icon={Plus} label="Nova Ideia" sub="Criar manualmente"
-            to="/ideas" navigate={navigate}
-            gradient="from-orange-50 to-orange-100/50 border-orange-200" iconColor="text-orange-500"
-          />
-          <QuickAction
-            icon={Brain} label="Pensamento" sub="Capturar e transformar"
-            to="/thoughts" navigate={navigate}
-            gradient="from-cyan-50 to-cyan-100/50 border-cyan-200" iconColor="text-cyan-500"
-            badge={thoughtCaptures.length > 0 ? `${thoughtCaptures.length}` : null}
-          />
-          <QuickAction
-            icon={Wand2} label="Text Studio" sub="Adaptar textos com IA"
-            to="/text" navigate={navigate}
-            gradient="from-violet-50 to-violet-100/50 border-violet-200" iconColor="text-violet-500"
-          />
-          <QuickAction
-            icon={Video} label="Analisar Vídeo" sub="Extrair estruturas"
-            to="/video" navigate={navigate}
-            gradient="from-purple-50 to-purple-100/50 border-purple-200" iconColor="text-purple-500"
-            badge={videoAnalyses.length > 0 ? `${videoAnalyses.length}` : null}
-          />
-          <QuickAction
-            icon={Radar} label="Tendências" sub="Criadores e padrões"
-            to="/trends" navigate={navigate}
-            gradient="from-blue-50 to-blue-100/50 border-blue-200" iconColor="text-blue-500"
-          />
-          <QuickAction
-            icon={Flame} label="Gerar Ideias" sub="IA + sinais culturais"
-            to="/generate" navigate={navigate}
-            gradient="from-amber-50 to-amber-100/50 border-amber-200" iconColor="text-amber-500"
-          />
-        </div>
-      </div>
+      {/* ── Top Posts + Insights ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TopPostsCard posts={posts} metrics={metrics} navigate={navigate} />
 
-      {/* ── Insights Spotlight (if available) ───────────────────────────────── */}
-      {insights.length > 0 && (
-        <div className="card p-4 sm:p-5 border border-amber-100">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Sparkles size={14} className="text-amber-500" /> Insights do Seu Conteúdo
-            </h3>
-            <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
-              Ver todos <ChevronRight size={11} />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {insights.slice(0, 3).map((ins, i) => (
-              <div key={ins.id || i} className="p-3 rounded-xl bg-amber-50/50 border border-amber-100">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <Star size={11} className="text-amber-500" />
-                  <span className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide">{ins.type || 'Insight'}</span>
-                </div>
-                <p className="text-xs text-gray-700 leading-relaxed">{ins.description || ins.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Ideias por Status (pie) — compact, only if has ideas ─────────────── */}
-      {ideas.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="card p-4 sm:p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Layers size={14} className="text-gray-400" /> Distribuição por Status
-            </h3>
-            <div className="flex items-center gap-6">
-              <div className="w-32 h-32 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={3} dataKey="value">
-                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2 flex-1">
-                {Object.entries(statusCounts).map(([key, count], i) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i] }} />
-                      <span className="text-xs text-gray-600">{STATUS_PT[key]}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">{count}</span>
-                      {ideas.length > 0 && (
-                        <span className="text-[10px] text-gray-400">
-                          ({Math.round((count / ideas.length) * 100)}%)
-                        </span>
-                      )}
-                    </div>
+        {insights.length > 0 ? (
+          <div className="card p-4 sm:p-5 border border-amber-100">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <Sparkles size={14} className="text-amber-500" /> Insights do Seu Conteúdo
+              </h3>
+              <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
+                Ver todos <ChevronRight size={11} />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {insights.slice(0, 4).map((ins, i) => (
+                <div key={ins.id || i} className="p-3 rounded-xl bg-amber-50/50 border border-amber-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Star size={11} className="text-amber-500" />
+                    <span className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide">{ins.type || 'Insight'}</span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-xs text-gray-700 leading-relaxed">{ins.description || ins.text}</p>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Recent ideas */}
+        ) : (
           <div className="card p-4 sm:p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Lightbulb size={14} className="text-orange-500" /> Últimas Ideias
               </h3>
-              <button onClick={() => navigate('/ideas')} className="text-[11px] text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
+              <button onClick={() => navigate('/ideas')} className="text-[11px] text-orange-600 font-medium flex items-center gap-1">
                 Ver todas <ChevronRight size={11} />
               </button>
             </div>
@@ -628,9 +636,6 @@ export default function Dashboard() {
                     <div className="flex items-center gap-1.5 mt-1">
                       <PlatformBadge platform={idea.platform || idea.platforms?.[0]} />
                       <StatusBadge status={idea.status} />
-                      {idea.tags?.length > 0 && (
-                        <span className="text-[9px] text-gray-400">{idea.tags[0]}</span>
-                      )}
                     </div>
                   </div>
                   <span className="text-[10px] text-gray-300 shrink-0">{formatRelative(idea.created_at)}</span>
@@ -641,8 +646,32 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* ── Quick Actions ────────────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Zap size={14} className="text-orange-500" /> Ações Rápidas
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+          <QuickAction icon={Plus} label="Nova Ideia" sub="Criar manualmente" to="/ideas" navigate={navigate}
+            gradient="from-orange-50 to-orange-100/50 border-orange-200" iconColor="text-orange-500" />
+          <QuickAction icon={Brain} label="Pensamento" sub="Capturar e transformar" to="/thoughts" navigate={navigate}
+            gradient="from-cyan-50 to-cyan-100/50 border-cyan-200" iconColor="text-cyan-500"
+            badge={thoughtCaptures.length > 0 ? `${thoughtCaptures.length}` : null} />
+          <QuickAction icon={Wand2} label="Text Studio" sub="Adaptar textos com IA" to="/text" navigate={navigate}
+            gradient="from-violet-50 to-violet-100/50 border-violet-200" iconColor="text-violet-500" />
+          <QuickAction icon={Video} label="Analisar Vídeo" sub="Extrair estruturas" to="/video" navigate={navigate}
+            gradient="from-purple-50 to-purple-100/50 border-purple-200" iconColor="text-purple-500"
+            badge={videoAnalyses.length > 0 ? `${videoAnalyses.length}` : null} />
+          <QuickAction icon={Radar} label="Tendências" sub="Criadores e padrões" to="/trends" navigate={navigate}
+            gradient="from-blue-50 to-blue-100/50 border-blue-200" iconColor="text-blue-500" />
+          <QuickAction icon={Flame} label="Gerar Ideias" sub="IA + sinais culturais" to="/generate" navigate={navigate}
+            gradient="from-amber-50 to-amber-100/50 border-amber-200" iconColor="text-amber-500" />
         </div>
-      )}
+      </div>
+
     </div>
   )
 }

@@ -5,8 +5,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wand2, Copy, Check, RefreshCw,
   AlignLeft, X, Zap, Save, ExternalLink,
-  Sparkles, Mic, ArrowLeft, Heart, ThumbsDown,
+  Sparkles, Mic, ArrowLeft, Heart, ThumbsDown, Paperclip,
 } from 'lucide-react'
+import * as pdfjsLib from 'pdfjs-dist'
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
@@ -147,7 +150,7 @@ Responda SOMENTE com um JSON válido neste formato:
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       system: withAntiAIFilter('You are a sharp Brazilian content repurposing expert. Write in natural, conversational Brazilian Portuguese. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER use clickbait like "isso vai mudar tudo". PREFER energizing language: "A parte boa é que...", "Isso me surpreendeu...", "O mais interessante aqui é...". Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.'),
       messages: [{ role: 'user', content: prompt }],
@@ -417,6 +420,39 @@ export default function TextStudio() {
   const [regenAttempt, setRegenAttempt] = useState(0)
 
   const textRef = useRef(null)
+  const pdfRef = useRef(null)
+  const [pdfName, setPdfName] = useState('')
+  const [pdfLoading, setPdfLoading] = useState(false)
+
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPdfName(file.name)
+    setPdfLoading(true)
+    try {
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+        let extracted = ''
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const content = await page.getTextContent()
+          extracted += content.items.map(item => item.str).join(' ') + '\n\n'
+        }
+        setText(extracted.trim())
+      } else {
+        const reader = new FileReader()
+        reader.onload = () => setText(reader.result)
+        reader.readAsText(file)
+      }
+    } catch {
+      setError('Erro ao ler o arquivo. Tente colar o texto diretamente.')
+      setPdfName('')
+    } finally {
+      setPdfLoading(false)
+    }
+    e.target.value = ''
+  }
 
   const autoResize = useCallback((el) => {
     if (!el) return
@@ -565,6 +601,22 @@ export default function TextStudio() {
             <p className="text-sm font-semibold text-gray-800">Texto Original</p>
             {wordCount > 0 && (
               <span className="text-[11px] text-gray-400 ml-auto">{wordCount} palavras</span>
+            )}
+            <input type="file" ref={pdfRef} accept=".pdf,.txt,.md" className="hidden" onChange={handlePdfUpload} />
+            {pdfName ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-violet-50 border border-violet-200 text-violet-700 rounded-lg ml-auto">
+                <Paperclip size={11} />
+                <span className="max-w-[120px] truncate">{pdfName}</span>
+                <button onClick={() => { setPdfName(''); setText('') }} className="text-violet-400 hover:text-red-500"><X size={11} /></button>
+              </div>
+            ) : (
+              <button
+                onClick={() => pdfRef.current?.click()}
+                disabled={pdfLoading}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium bg-gray-50 border border-gray-200 text-gray-500 rounded-lg hover:bg-violet-50 hover:border-violet-200 hover:text-violet-600 transition-all ml-auto disabled:opacity-50"
+              >
+                <Paperclip size={11} /> {pdfLoading ? 'Lendo...' : 'Subir PDF'}
+              </button>
             )}
           </div>
 
