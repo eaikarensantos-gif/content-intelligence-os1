@@ -31,6 +31,7 @@ const useStore = create(
       bannedPhrases: [],
       theme: 'light',
       desafioHistory: [],
+      brainItems: [],
 
       // ── Perfil do Criador ────────────────────────────────
       creatorProfile: {
@@ -52,6 +53,31 @@ const useStore = create(
         set((s) => ({ desafioHistory: [...s.desafioHistory, desafio] })),
 
       clearDesafioHistory: () => set({ desafioHistory: [] }),
+
+      // ── Content Brain ────────────────────────────────────────────────────
+      addBrainItem: (item) =>
+        set((s) => ({
+          brainItems: [...s.brainItems, {
+            id: uuidv4(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            status: 'inbox',
+            impact: 3,
+            effort: 3,
+            notes: '',
+            ...item,
+          }],
+        })),
+
+      updateBrainItem: (id, updates) =>
+        set((s) => ({
+          brainItems: s.brainItems.map((b) =>
+            b.id === id ? { ...b, ...updates, updated_at: new Date().toISOString() } : b
+          ),
+        })),
+
+      deleteBrainItem: (id) =>
+        set((s) => ({ brainItems: s.brainItems.filter((b) => b.id !== id) })),
 
       // ── Brand Voice (Master Prompt) ─────────────────────────
       brandVoice: null,
@@ -521,6 +547,7 @@ const useStore = create(
         theme: s.theme,
         creatorProfile: s.creatorProfile,
         desafioHistory: s.desafioHistory,
+        brainItems: s.brainItems,
       }),
     }
   )
