@@ -1,44 +1,11 @@
 import { AlertCircle, CheckCircle, AlertTriangle, Zap, Sparkles, RefreshCw, X, Check, Copy } from 'lucide-react'
 import { useState } from 'react'
-import { extractJsonArray } from '../../utils/aiJson.js'
+import { fetchToneAlternatives } from '../../utils/toneAlternatives.js'
 import clsx from 'clsx'
 import { lintText } from '../../utils/brandLinter'
 
-const LS_KEY = 'cio-anthropic-key'
-
 const HIGH_PRIORITY = ['not-x-but-y', 'ninguem-te-conta', 'a-verdade-e', 'voce-sente', 'missao-vida', 'jornada-do']
 const MEDIUM_PRIORITY = ['segredo-de', 'proximo-nivel', 'guia-definitivo', 'vai-mudar-tudo', 'voce-precisa', 'voce-merece']
-
-async function fetchAlternatives(match, category, suggestion) {
-  const apiKey = localStorage.getItem(LS_KEY)
-  if (!apiKey) return null
-  const prompt = `Você é um consultor de tom de voz para Karen Santos, estrategista de conteúdo com posicionamento Premium/Analítico. Slogan: "Maturidade profissional na era da IA".
-
-TOM: Direto, técnico, observacional, sem floreios. Fala como especialista — não como coach ou creator de massa.
-
-A expressão abaixo foi sinalizada como padrão genérico de IA ("${category}"):
-EXPRESSÃO ORIGINAL: "${match}"
-Problema: ${suggestion}
-
-Gere 3 alternativas concretas para substituir APENAS essa expressão no texto, mantendo o sentido original mas no tom correto. As alternativas devem soar como uma pessoa real falando — não como IA, não como coach.
-
-Responda APENAS com JSON:
-["alternativa 1", "alternativa 2", "alternativa 3"]`
-
-  const res = await fetch('/api/ai?action=anthropic', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
-  })
-  if (!res.ok) throw new Error('API error')
-  const data = await res.json()
-  const text = data.content?.[0]?.text || ''
-  return extractJsonArray(text, 'No JSON')
-}
 
 function ViolationItem({ violation, severity, onFix }) {
   const [alts, setAlts] = useState(null)
@@ -53,7 +20,7 @@ function ViolationItem({ violation, severity, onFix }) {
   const handleSuggest = async () => {
     setLoadingAlts(true)
     try {
-      const result = await fetchAlternatives(violation.match, violation.category, violation.suggestion)
+      const result = await fetchToneAlternatives(violation.match, violation.category, violation.suggestion)
       setAlts(result || [])
     } catch {
       setAlts([])

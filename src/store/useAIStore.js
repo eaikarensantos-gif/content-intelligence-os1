@@ -2,12 +2,25 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { PROVIDERS } from '../lib/aiService'
 
+// The Anthropic key is also entered in Settings (localStorage), used by the
+// app's direct Claude calls. Bridge it here so choosing Anthropic as the AI
+// engine works with the key the user already saved — no double entry.
+const LS_ANTHROPIC = 'cio-anthropic-key'
+
+function readAnthropicKey() {
+  try {
+    return (typeof localStorage !== 'undefined' && localStorage.getItem(LS_ANTHROPIC)) || ''
+  } catch {
+    return ''
+  }
+}
+
 const useAIStore = create(
   persist(
     (set, get) => ({
-      provider: 'groq',
+      provider: 'anthropic',
       apiKey: '',
-      model: PROVIDERS.groq.defaultModel,
+      model: PROVIDERS.anthropic.defaultModel,
       customBaseUrl: '',
       youtubeApiKey: '',
 
@@ -26,10 +39,16 @@ const useAIStore = create(
 
       getSettings: () => {
         const { provider, apiKey, model, customBaseUrl } = get()
-        return { provider, apiKey, model, customBaseUrl }
+        // Fall back to the Settings-stored Anthropic key when running on Claude.
+        const key = apiKey?.trim() || (provider === 'anthropic' ? readAnthropicKey() : '')
+        return { provider, apiKey: key, model, customBaseUrl }
       },
 
-      isConfigured: () => !!get().apiKey?.trim(),
+      isConfigured: () => {
+        const { provider, apiKey } = get()
+        if (apiKey?.trim()) return true
+        return provider === 'anthropic' && !!readAnthropicKey().trim()
+      },
       isYoutubeConfigured: () => !!get().youtubeApiKey?.trim(),
     }),
     {

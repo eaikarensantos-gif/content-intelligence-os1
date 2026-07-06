@@ -3,37 +3,41 @@ import { Heart, Search, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TITLES = {
+  '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
   '/social': { title: 'Analytics', sub: 'Visão geral do desempenho das suas redes sociais' },
   '/audience': { title: 'Audiência', sub: 'Quem é o público que consome seu conteúdo' },
   '/ideas': { title: 'Hub de Ideias', sub: 'Capture e organize suas ideias de conteúdo' },
   '/trends': { title: 'Creator Insights', sub: 'Criadores, padrões e oportunidades do seu nicho analisados com IA' },
+  '/analytics': { title: 'Analytics', sub: 'Acompanhe o desempenho dos seus posts' },
   '/video': { title: 'Analisador de Vídeo', sub: 'Analise e aprenda com vídeos de referência' },
   '/dna': { title: 'Content DNA', sub: 'Descubra os padrões que fazem seu conteúdo funcionar' },
   '/tasks': { title: 'Tarefas', sub: 'Organize suas tarefas do dia e acompanhe o progresso' },
   '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
   '/security': { title: 'Registro de Acessos', sub: 'Histórico completo de logins e tentativas' },
   '/create': { title: 'Studio de Criação', sub: 'Crie conteúdo em qualquer formato com IA e sua voz de marca' },
+  '/reports': { title: 'Relatórios', sub: 'Relatórios de performance prontos para compartilhar' },
+  '/naomi': { title: 'Naomi Studio', sub: 'Roteiros e prompts de vídeo para a personagem Naomi' },
+  '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },
+  '/settings': { title: 'Configurações', sub: 'Sincronização, banco de dados e preferências' },
+  '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade — alimenta todos os geradores' },
+  '/desafio': { title: 'Desafio de Formato', sub: 'Sorteie um briefing criativo para sair da zona de conforto' },
+  '/brain': { title: 'Content Brain', sub: 'Priorize pelo score: Impacto² ÷ Esforço' },
+  '/news': { title: 'Notícias', sub: 'Gere conteúdo a partir das notícias do seu nicho' },
+  '/community': { title: 'Community Studio', sub: 'Engajamento e recursos para a sua comunidade' },
+  '/clipper': { title: 'Web Clipper', sub: 'Salve referências da web no seu segundo cérebro' },
+  '/pdf-studio': { title: 'PDF Studio', sub: 'Gere conteúdo estruturado a partir de PDFs' },
   '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
   '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo', parent: '/create' },
   '/presentation': { title: 'Modo Apresentação', sub: 'Transforme ideias em talks com roteiro em linguagem falada', parent: '/create' },
-  '/brain': { title: 'Content Brain', sub: 'Priorize pelo score: Impacto² ÷ Esforço' },
-  '/reports': { title: 'Relatórios', sub: 'Relatórios de performance prontos para compartilhar' },
-  '/news': { title: 'Notícias', sub: 'Gere conteúdo a partir das notícias do seu nicho' },
-  '/naomi': { title: 'Naomi Studio', sub: 'Roteiros e prompts de vídeo para a personagem Naomi' },
-  '/community': { title: 'Community Studio', sub: 'Engajamento e recursos para a sua comunidade' },
-  '/clipper': { title: 'Web Clipper', sub: 'Salve referências da web no seu segundo cérebro' },
-  '/pdf-studio': { title: 'PDF Studio', sub: 'Gere conteúdo estruturado a partir de PDFs' },
-  '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },
-  '/settings': { title: 'Configurações', sub: 'Sincronização, banco de dados e preferências' },
 }
 
 const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])
 
 export default function Header({ onMenuClick, onSearchClick }) {
   const { pathname } = useLocation()
-  const info = TITLES[pathname] || TITLES['/social']
+  const info = TITLES[pathname] || TITLES['/']
   const isCreateChild = CREATE_ROUTES.has(pathname)
   const favorites = useStore((s) => s.favorites)
   const unseenFavorites = useStore((s) => s.unseenFavorites)
