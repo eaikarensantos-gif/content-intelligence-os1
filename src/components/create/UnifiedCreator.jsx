@@ -377,14 +377,12 @@ EXEMPLOS DE EXERCÍCIO ERRADO:
 ❌ "Tente notar quando isso aparecer no seu trabalho."
 
 LEGENDA:
-Estrutura: 1 linha de observação seca + exercício prático em 2 frases.
+Estrutura: apenas 1 linha de observação seca.
 A observação seca não resume o carrossel nem entrega a conclusão.
-O exercício acessa memória específica da pessoa, não pede observação futura.
+NÃO inclua o exercício prático na legenda — ele já aparece em campo separado (exercicio_pratico) e será exibido isoladamente. Repeti-lo na legenda duplica o mesmo texto na tela.
 
 EXEMPLO DE LEGENDA COMPLETA:
-"implementar sem explicar o porquê cria usuários, não parceiros
-
-Pensa na última ferramenta nova que chegou no seu trabalho sem explicação. Você ainda usa o sistema antigo em paralelo?"
+"implementar sem explicar o porquê cria usuários, não parceiros"
 
 RESPOSTAS PARA COMENTÁRIOS:
 Gere 3 respostas no estilo Karen. A função não é fechar — é puxar mais fundo.
@@ -398,7 +396,8 @@ Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta.
   ✅ "Isso acontece mais: no começo do projeto ou quando está quase pronto?"
   ❌ "O que você faz quando isso acontece?" (pergunta aberta — proibida no CTA fechado)
   ❌ "Conta nos comentários" (vago, sem estrutura binária)
-O CTA fechado é diferente da pergunta final. A pergunta final pede relato. O CTA fechado pede posição.
+  ❌ Reformular a pergunta final com outras palavras (ex.: pergunta final "você calculou antes ou depois de assinar?" → CTA "você calculou antes ou depois que o pagamento caiu?" — é a MESMA pergunta, proibido)
+O CTA fechado é diferente da pergunta final, sobre um ASSUNTO diferente dentro do mesmo tema — não uma reformulação. A pergunta final pede relato de uma situação específica. O CTA fechado pede posição sobre um comportamento ou preferência geral.
 
 CRITÉRIOS DE VALIDAÇÃO — rode os cinco testes antes de entregar:
 Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
@@ -472,9 +471,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
     ],
     "pergunta_final": "a pergunta mais exigente das três"
   },
-  "legenda": "1 linha de observação seca\\n\\nexercício em 2 frases — no passado ou presente imediato, sobre comportamento próprio",
+  "legenda": "apenas 1 linha de observação seca — NÃO inclua o exercício aqui, ele vai só no campo exercicio_pratico",
   "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
-  "cta_fechado": "escolha binária — sim ou não / isso ou aquilo — que pede posição, não relato",
+  "cta_fechado": "escolha binária sobre um comportamento ou preferência diferente da pergunta final — não pode ser a mesma pergunta reformulada",
   "comentarios": [
     { "comentario": "o que a pessoa provavelmente vai escrever", "resposta": "pergunta que puxa mais fundo" },
     { "comentario": "segundo comentário provável", "resposta": "pergunta que puxa mais fundo" },
@@ -665,6 +664,49 @@ const TEMAS_CARROSSEL = [
     ],
   },
 ]
+
+// Detecta se dois textos são essencialmente o mesmo conteúdo (repetição literal
+// ou reformulação próxima) — usado para não exibir duas vezes o exercício
+// prático/CTA quando a IA acaba repetindo o mesmo texto em campos diferentes.
+function normalizeForCompare(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isNearDuplicateText(a, b) {
+  const na = normalizeForCompare(a)
+  const nb = normalizeForCompare(b)
+  if (!na || !nb) return false
+  if (na === nb) return true
+  if (na.includes(nb) || nb.includes(na)) return true
+  const wordsA = new Set(na.split(' ').filter((w) => w.length > 2))
+  const wordsB = new Set(nb.split(' ').filter((w) => w.length > 2))
+  if (!wordsA.size || !wordsB.size) return false
+  let shared = 0
+  wordsA.forEach((w) => { if (wordsB.has(w)) shared += 1 })
+  const overlap = shared / Math.min(wordsA.size, wordsB.size)
+  return overlap > 0.6
+}
+
+// Remove o exercício prático da legenda quando a IA o repete lá (a legenda
+// deve trazer só a observação seca; o exercício já tem seu próprio card).
+function getCleanLegenda(legenda, exercicio) {
+  if (!legenda) return legenda
+  if (!exercicio) return legenda
+  const paragraphs = legenda.split(/\n\s*\n/)
+  if (paragraphs.length > 1) {
+    const last = paragraphs[paragraphs.length - 1]
+    if (isNearDuplicateText(last, exercicio)) {
+      return paragraphs.slice(0, -1).join('\n\n').trim() || ''
+    }
+  }
+  if (isNearDuplicateText(legenda, exercicio)) return ''
+  return legenda
+}
 
 /* ── Componente Principal ── */
 export default function UnifiedCreator() {
@@ -2289,8 +2331,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </div>
               )}
 
-              {/* CTA Fechado */}
-              {carResult.cta_fechado && (
+              {/* CTA Fechado — só exibe se não repetir a pergunta final da versão ativa */}
+              {carResult.cta_fechado && !isNearDuplicateText(
+                carResult.cta_fechado,
+                (carResult.versao_principal && carActiveVersion === 'principal' && carResult.versao_principal.pergunta_final)
+                  || (carResult.variacao_emocional && carActiveVersion === 'emocional' && carResult.variacao_emocional.pergunta_final)
+                  || (carResult.variacao_provocativa && carActiveVersion === 'provocativa' && carResult.variacao_provocativa.pergunta_final)
+                  || carResult.versao_principal?.pergunta_final
+              ) && (
                 <div className="relative overflow-hidden rounded-2xl bg-gray-900 px-4 py-3 text-white">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-semibold text-white/50 uppercase flex items-center gap-1.5">
@@ -2306,15 +2354,17 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
 
               {/* Legenda + Comentários agrupados */}
-              {(carResult.legenda || (carResult.comentarios || []).length > 0) && (
+              {(() => {
+                const cleanLegenda = getCleanLegenda(carResult.legenda, carResult.exercicio_pratico)
+                return (cleanLegenda || (carResult.comentarios || []).length > 0) && (
                 <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-                  {carResult.legenda && (
+                  {cleanLegenda && (
                     <div className="px-4 py-3 flex items-start justify-between gap-3 group">
                       <div className="flex-1">
                         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Legenda</span>
-                        <p className="text-sm text-gray-700 leading-relaxed">{carResult.legenda}</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{cleanLegenda}</p>
                       </div>
-                      <button onClick={() => handleCarCopy(carResult.legenda, 'car-legenda')}
+                      <button onClick={() => handleCarCopy(cleanLegenda, 'car-legenda')}
                         className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-5">
                         {carCopied === 'car-legenda' ? <Check size={12} /> : <Copy size={12} />}
                       </button>
@@ -2341,7 +2391,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     </div>
                   )}
                 </div>
-              )}
+                )
+              })()}
 
               {/* Validação — pills inline */}
               {carResult.validacao && (
