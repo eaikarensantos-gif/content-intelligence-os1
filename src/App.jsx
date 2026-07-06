@@ -5,7 +5,6 @@ import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
 import IdeasHub from './components/ideas/IdeasHub'
 import TrendRadar from './components/trends/TrendRadar'
-import Analytics from './components/analytics/Analytics'
 import SocialDashboard from './components/analytics/SocialDashboard'
 import AudienceAnalytics from './components/analytics/AudienceAnalytics'
 import VideoAnalyzer from './components/video/VideoAnalyzer'
@@ -22,6 +21,7 @@ import PerformanceReport from './components/reports/PerformanceReport'
 import CarouselStudio from './components/trends/CarouselStudio'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import FloatingActions from './components/global/FloatingActions'
+import CommandPalette from './components/common/CommandPalette'
 import NaomiStudio from './components/naomi/NaomiStudio'
 import WebClipper from './components/clipper/WebClipper'
 import NewsGenerator from './components/news/NewsGenerator'
@@ -36,6 +36,19 @@ import { isSupabaseConfigured } from './lib/supabase'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Atalho global Cmd/Ctrl+K para a busca
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -47,11 +60,12 @@ function Layout({ children }) {
       )}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} onSearchClick={() => setSearchOpen(true)} />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   )
 }
@@ -116,6 +130,8 @@ export default function App() {
             <Route path="/brain" element={<ContentBrain />} />
             <Route path="/community" element={<CommunityStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
+            {/* Rotas desconhecidas voltam à home em vez de tela em branco */}
+            <Route path="*" element={<Navigate to="/social" replace />} />
           </Routes>
         </Layout>
       </BrowserRouter>
