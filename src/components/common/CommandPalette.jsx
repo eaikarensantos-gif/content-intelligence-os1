@@ -4,29 +4,37 @@ import {
   Search, Lightbulb, Brain, Video, ClipboardList, ArrowRight,
   LayoutDashboard, BarChart2, PenTool, Clapperboard, Radar, Dna,
   Activity, FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft, Dices, FileText,
+  Newspaper, Shield, Users, Bookmark, PieChart,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 
-// Páginas navegáveis (mesma estrutura da sidebar)
+// Páginas navegáveis — inclui páginas que só existem por URL (audiência,
+// web clipper, pdf studio), que a busca torna acessíveis.
 const PAGES = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { to: '/audience', label: 'Audiência', icon: PieChart },
   { to: '/create', label: 'Studio de Criação', icon: PenTool },
   { to: '/naomi', label: 'Naomi Studio', icon: Clapperboard },
   { to: '/ideas', label: 'Hub de Ideias', icon: Lightbulb },
   { to: '/tasks', label: 'Tarefas', icon: ClipboardList },
+  { to: '/brain', label: 'Content Brain', icon: Brain },
   { to: '/social', label: 'Social Dashboard', icon: Activity },
   { to: '/reports', label: 'Relatórios', icon: FileBarChart },
+  { to: '/news', label: 'Notícias', icon: Newspaper },
   { to: '/dna', label: 'Content DNA', icon: Dna },
   { to: '/trends', label: 'Creator Insights', icon: Radar },
   { to: '/video', label: 'Analisador de Vídeo', icon: Video },
   { to: '/swipe', label: 'Video Swipe', icon: Flame },
   { to: '/desafio', label: 'Desafio de Formato', icon: Dices },
   { to: '/ads', label: 'Publicidade & Preços', icon: DollarSign },
+  { to: '/community', label: 'Community Studio', icon: Users },
+  { to: '/clipper', label: 'Web Clipper', icon: Bookmark },
   { to: '/pdf-studio', label: 'Conteúdo de PDF', icon: FileText },
   { to: '/brand-voice', label: 'Minha Voz', icon: Mic },
   { to: '/settings', label: 'Configurações', icon: Settings },
+  { to: '/security', label: 'Registro de Acessos', icon: Shield },
 ]
 
 const GROUP_LABELS = {
@@ -35,10 +43,12 @@ const GROUP_LABELS = {
   thought: 'Pensamentos',
   video: 'Vídeos analisados',
   task: 'Tarefas',
+  clip: 'Web Clips',
+  brain: 'Content Brain',
 }
 
 function normalize(s) {
-  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
 export default function CommandPalette({ open, onClose }) {
@@ -51,6 +61,8 @@ export default function CommandPalette({ open, onClose }) {
   const thoughtCaptures = useStore((s) => s.thoughtCaptures)
   const videoAnalyses = useStore((s) => s.videoAnalyses)
   const tasks = useStore((s) => s.tasks)
+  const clips = useStore((s) => s.clips)
+  const brainItems = useStore((s) => s.brainItems)
 
   useEffect(() => {
     if (open) {
@@ -65,8 +77,9 @@ export default function CommandPalette({ open, onClose }) {
     const q = normalize(query.trim())
     const items = []
 
-    const pages = PAGES.filter((p) => !q || normalize(p.label).includes(q))
-    pages.forEach((p) => items.push({ type: 'page', label: p.label, icon: p.icon, to: p.to }))
+    PAGES
+      .filter((p) => !q || normalize(p.label).includes(q))
+      .forEach((p) => items.push({ type: 'page', label: p.label, icon: p.icon, to: p.to }))
 
     if (q) {
       ideas
@@ -77,12 +90,7 @@ export default function CommandPalette({ open, onClose }) {
       thoughtCaptures
         .filter((t) => normalize(t.original_thought).includes(q))
         .slice(0, 4)
-        .forEach((t) => items.push({
-          type: 'thought',
-          label: (t.original_thought || '').slice(0, 80),
-          icon: Brain,
-          to: '/thoughts',
-        }))
+        .forEach((t) => items.push({ type: 'thought', label: (t.original_thought || '').slice(0, 80), icon: Brain, to: '/thoughts' }))
 
       videoAnalyses
         .filter((v) => normalize(v.title || v.url).includes(q))
@@ -93,10 +101,20 @@ export default function CommandPalette({ open, onClose }) {
         .filter((t) => normalize(t.title).includes(q))
         .slice(0, 4)
         .forEach((t) => items.push({ type: 'task', label: t.title, icon: ClipboardList, to: '/tasks' }))
+
+      clips
+        .filter((c) => normalize(c.title || c.url).includes(q) || normalize(c.summary).includes(q))
+        .slice(0, 4)
+        .forEach((c) => items.push({ type: 'clip', label: c.title || c.url || 'Clip', icon: Bookmark, to: '/clipper' }))
+
+      brainItems
+        .filter((b) => normalize(b.title).includes(q) || normalize(b.notes).includes(q))
+        .slice(0, 4)
+        .forEach((b) => items.push({ type: 'brain', label: b.title || 'Item', icon: Brain, to: '/brain' }))
     }
 
-    return items.slice(0, 20)
-  }, [query, ideas, thoughtCaptures, videoAnalyses, tasks])
+    return items.slice(0, 24)
+  }, [query, ideas, thoughtCaptures, videoAnalyses, tasks, clips, brainItems])
 
   // Mantém o cursor dentro dos limites quando os resultados mudam
   useEffect(() => {
@@ -141,7 +159,7 @@ export default function CommandPalette({ open, onClose }) {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCursor(0) }}
             onKeyDown={handleKeyDown}
-            placeholder="Buscar páginas, ideias, pensamentos, vídeos, tarefas..."
+            placeholder="Buscar páginas, ideias, pensamentos, vídeos, tarefas, clips..."
             className="flex-1 text-sm text-gray-900 placeholder-gray-400 outline-none bg-transparent"
           />
           <kbd className="hidden sm:block text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5">Esc</kbd>
