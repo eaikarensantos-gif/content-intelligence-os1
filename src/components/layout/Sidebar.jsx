@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
-  ClipboardList, Clapperboard, Flame, Mic, Dices,
+  ClipboardList, Clapperboard, Flame, Mic, Dices, Brain, Newspaper, Users,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -16,6 +16,7 @@ const TOP_NAV = [
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
+  { to: '/brain', icon: Brain, label: 'Content Brain' },
 ]
 
 const NAV_GROUPS = [
@@ -25,6 +26,7 @@ const NAV_GROUPS = [
     children: [
       { to: '/social', icon: Activity, label: 'Social Dashboard' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
+      { to: '/news', icon: Newspaper, label: 'Notícias' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
       { to: '/trends', icon: Radar, label: 'Creator Insights' },
     ],
@@ -37,6 +39,7 @@ const NAV_GROUPS = [
       { to: '/swipe', icon: Flame, label: 'Video Swipe' },
       { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
+      { to: '/community', icon: Users, label: 'Community Studio' },
     ],
   },
 ]

@@ -9,6 +9,7 @@ const useStore = create(
   persist(
     (set, get) => ({
       // ── Estado ─────────────────────────────────────────────
+      clips: [],
       ideas: [],
       posts: [],
       metrics: [],
@@ -27,6 +28,7 @@ const useStore = create(
       unseenFavorites: 0,
       hiddenReportTags: [],
       bannedWords: [],
+      bannedPhrases: [],
       theme: 'light',
       desafioHistory: [],
 
@@ -62,14 +64,17 @@ const useStore = create(
           dislikedContent: [...s.dislikedContent.slice(-49), {
             id: uuidv4(),
             created_at: new Date().toISOString(),
-            ...item,
+            title: item.title || '',
+            hook: item.hook || '',
+            reason: item.reason || '',
+            patterns: item.patterns || [],
           }],
         })),
 
       // ── Favoritos ─────────────────────────────────────────────
       toggleFavorites: () => set((s) => ({
         favoritesOpen: !s.favoritesOpen,
-        unseenFavorites: s.favoritesOpen ? s.unseenFavorites : 0, // reset when opening
+        unseenFavorites: s.favoritesOpen ? s.unseenFavorites : 0,
       })),
       closeFavorites: () => set({ favoritesOpen: false, unseenFavorites: 0 }),
 
@@ -91,6 +96,14 @@ const useStore = create(
 
       clearHiddenReportTags: () => set({ hiddenReportTags: [] }),
 
+      // ── Frases Banidas ────────────────────────────────────
+      addBannedPhrase: (phrase) =>
+        set((s) => ({
+          bannedPhrases: s.bannedPhrases.includes(phrase) ? s.bannedPhrases : [...s.bannedPhrases, phrase],
+        })),
+      removeBannedPhrase: (phrase) =>
+        set((s) => ({ bannedPhrases: s.bannedPhrases.filter((p) => p !== phrase) })),
+
       // ── Palavras Proibidas ─────────────────────────────────
       addBannedWord: (word) =>
         set((s) => {
@@ -101,12 +114,53 @@ const useStore = create(
       removeBannedWord: (word) =>
         set((s) => ({ bannedWords: s.bannedWords.filter((w) => w !== word) })),
 
+      // ── Web Clips (Segundo Cérebro) ────────────────────────
+      addClip: (clip) =>
+        set((s) => {
+          if (clip.id && s.clips.some((c) => c.id === clip.id)) return s
+          return {
+            clips: [
+              {
+                id: uuidv4(),
+                savedAt: new Date().toISOString(),
+                status: 'inbox',
+                summary: '',
+                tags: [],
+                notes: '',
+                ...clip,
+              },
+              ...s.clips,
+            ],
+          }
+        }),
+
+      updateClip: (id, updates) =>
+        set((s) => ({
+          clips: s.clips.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        })),
+
+      deleteClip: (id) =>
+        set((s) => ({ clips: s.clips.filter((c) => c.id !== id) })),
+
       // ── Ideias ─────────────────────────────────────────────
       addIdea: (idea) =>
         set((s) => ({
           ideas: [
             ...s.ideas,
             { id: uuidv4(), created_at: new Date().toISOString(), tags: [], ...idea },
+          ],
+        })),
+
+      importIdeas: (newIdeas) =>
+        set((s) => ({
+          ideas: [
+            ...s.ideas,
+            ...newIdeas.map((idea) => ({
+              id: uuidv4(),
+              created_at: new Date().toISOString(),
+              tags: [],
+              ...idea,
+            })),
           ],
         })),
 
@@ -366,7 +420,7 @@ const useStore = create(
         set((s) => ({ hybridArchetypes: s.hybridArchetypes.filter((h) => h.id !== id) })),
 
       // ── Supabase sync ─────────────────────────────────────
-      dbStatus: 'idle', // idle | loading | connected | error
+      dbStatus: 'idle',
       dbError: '',
       setDbStatus: (status, err = '') => set({ dbStatus: status, dbError: err }),
 
@@ -391,6 +445,7 @@ const useStore = create(
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
             ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
             ...(data.bannedWords?.length      ? { bannedWords: data.bannedWords }           : {}),
+            ...(data.bannedPhrases?.length    ? { bannedPhrases: data.bannedPhrases }       : {}),
             ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
             ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
             ...(data.brandVoice ? { brandVoice: data.brandVoice } : {}),
@@ -426,7 +481,23 @@ const useStore = create(
     }),
     {
       name: 'content-intelligence-os-v3',
+      storage: {
+        getItem: (name) => {
+          try {
+            const val = localStorage.getItem(name)
+            return val ? JSON.parse(val) : null
+          } catch {
+            localStorage.removeItem(name)
+            return null
+          }
+        },
+        setItem: (name, value) => {
+          try { localStorage.setItem(name, JSON.stringify(value)) } catch { /* quota exceeded — ignore */ }
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
       partialize: (s) => ({
+        clips: s.clips,
         ideas: s.ideas,
         posts: s.posts,
         metrics: s.metrics,
@@ -446,6 +517,7 @@ const useStore = create(
         proposals: s.proposals,
         hiddenReportTags: s.hiddenReportTags,
         bannedWords: s.bannedWords,
+        bannedPhrases: s.bannedPhrases,
         theme: s.theme,
         creatorProfile: s.creatorProfile,
         desafioHistory: s.desafioHistory,

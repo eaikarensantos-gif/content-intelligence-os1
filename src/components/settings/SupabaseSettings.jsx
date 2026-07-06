@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
+import { PROVIDERS } from '../../lib/aiService'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
 
 const LS_ANTHROPIC  = 'cio-anthropic-key'
 const LS_GROQ       = 'cio-groq-key'
 const LS_YOUTUBE    = 'cio-youtube-key'
+const LS_VIMEO      = 'cio-vimeo-token'
+const LS_RAPIDAPI   = 'cio-rapidapi-key'
+const LS_RAPIDAPI_HOST = 'cio-rapidapi-tiktok-host'
 const SUPABASE_URL_KEY = 'supabase-url'
 const SUPABASE_KEY_KEY = 'supabase-key'
 
@@ -18,16 +23,33 @@ export default function SupabaseSettings() {
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
 
+  const aiProvider = useAIStore((s) => s.provider)
+  const aiModel = useAIStore((s) => s.model)
+  const setAiProvider = useAIStore((s) => s.setProvider)
+  const setAiModel = useAIStore((s) => s.setModel)
+
   const [sbUrl, setSbUrl]     = useState(getSupabaseUrl)
   const [sbKey, setSbKey]     = useState(getSupabaseKey)
   const [showSbKey, setShowSbKey] = useState(false)
 
   const [anthropicKey, setAnthropicKey]   = useState(() => localStorage.getItem(LS_ANTHROPIC) || '')
   const [groqKey, setGroqKey]             = useState(() => localStorage.getItem(LS_GROQ) || '')
-  const [youtubeKey, setYoutubeKey]       = useState(() => localStorage.getItem(LS_YOUTUBE) || '')
+  const [youtubeKey, setYoutubeKey]       = useState(() => {
+    const stored = localStorage.getItem(LS_YOUTUBE) || ''
+    // Sync to AIStore on mount if AIStore doesn't have it yet
+    if (stored && !useAIStore.getState().youtubeApiKey?.trim()) {
+      useAIStore.getState().setYoutubeApiKey(stored)
+    }
+    return stored
+  })
+  const [vimeoToken, setVimeoToken]       = useState(() => localStorage.getItem(LS_VIMEO) || '')
+  const [rapidApiKey, setRapidApiKey]     = useState(() => localStorage.getItem(LS_RAPIDAPI) || '')
+  const [rapidHost, setRapidHost]         = useState(() => localStorage.getItem(LS_RAPIDAPI_HOST) || '')
   const [showAnthropicKey, setShowAnthropicKey] = useState(false)
   const [showGroqKey, setShowGroqKey]           = useState(false)
   const [showYoutubeKey, setShowYoutubeKey]     = useState(false)
+  const [showVimeoToken, setShowVimeoToken]     = useState(false)
+  const [showRapidKey, setShowRapidKey]         = useState(false)
 
   const [testing, setTesting] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -65,6 +87,14 @@ export default function SupabaseSettings() {
     localStorage.setItem(LS_GROQ, groqKey.trim())
     if (youtubeKey.trim()) localStorage.setItem(LS_YOUTUBE, youtubeKey.trim())
     else localStorage.removeItem(LS_YOUTUBE)
+    if (vimeoToken.trim()) localStorage.setItem(LS_VIMEO, vimeoToken.trim())
+    else localStorage.removeItem(LS_VIMEO)
+    if (rapidApiKey.trim()) localStorage.setItem(LS_RAPIDAPI, rapidApiKey.trim())
+    else localStorage.removeItem(LS_RAPIDAPI)
+    if (rapidHost.trim()) localStorage.setItem(LS_RAPIDAPI_HOST, rapidHost.trim())
+    else localStorage.removeItem(LS_RAPIDAPI_HOST)
+    // Sync YouTube key to AIStore so VideoSwipe picks it up immediately
+    useAIStore.getState().setYoutubeApiKey(youtubeKey.trim())
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -203,6 +233,34 @@ alter table user_data disable row level security;`}</pre>
           <Key size={15} className="text-violet-500" /> Chaves de API de IA
         </h2>
 
+        {/* Motor de IA — modelo por trás dos insights, ideias e trends */}
+        <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-3 space-y-2">
+          <label className="text-xs text-gray-600 font-semibold block">Motor de IA (insights, ideias e trends)</label>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={aiProvider}
+              onChange={(e) => setAiProvider(e.target.value)}
+              className="input w-full text-sm"
+            >
+              {Object.entries(PROVIDERS).map(([key, p]) => (
+                <option key={key} value={key}>{p.label}</option>
+              ))}
+            </select>
+            <select
+              value={aiModel}
+              onChange={(e) => setAiModel(e.target.value)}
+              className="input w-full text-sm"
+            >
+              {(PROVIDERS[aiProvider]?.models || []).map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-[10px] text-gray-400">
+            Recomendado: Anthropic → claude-fable-5. Usa a chave Anthropic abaixo automaticamente.
+          </p>
+        </div>
+
         <div className="space-y-3">
           <div>
             <label className="text-xs text-gray-500 font-medium mb-1.5 block">Anthropic (Claude)</label>
@@ -252,6 +310,54 @@ alter table user_data disable row level security;`}</pre>
             </div>
             <p className="text-[10px] text-gray-400 mt-1">Gratuito. Crie em Google Cloud Console → APIs → YouTube Data API v3 → Credentials.</p>
           </div>
+
+          {/* Video Swipe — fontes adicionais */}
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5">
+              <Key size={12} className="text-sky-500" /> Vimeo access token (opcional — Video Swipe)
+            </label>
+            <div className="relative">
+              <input
+                type={showVimeoToken ? 'text' : 'password'}
+                value={vimeoToken}
+                onChange={(e) => setVimeoToken(e.target.value)}
+                placeholder="Token pessoal do Vimeo"
+                className="input w-full pr-10 text-sm font-mono"
+              />
+              <button onClick={() => setShowVimeoToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+                {showVimeoToken ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">Crie em developer.vimeo.com → My Apps → Generate Access Token (scope public).</p>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5">
+              <Key size={12} className="text-pink-500" /> RapidAPI key (opcional — TikTok no Video Swipe)
+            </label>
+            <div className="relative">
+              <input
+                type={showRapidKey ? 'text' : 'password'}
+                value={rapidApiKey}
+                onChange={(e) => setRapidApiKey(e.target.value)}
+                placeholder="Chave RapidAPI"
+                className="input w-full pr-10 text-sm font-mono"
+              />
+              <button onClick={() => setShowRapidKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+                {showRapidKey ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            <input
+              type="text"
+              value={rapidHost}
+              onChange={(e) => setRapidHost(e.target.value)}
+              placeholder="Host RapidAPI (ex.: tiktok-scraper7.p.rapidapi.com)"
+              className="input w-full text-sm font-mono mt-2"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Assine um provedor de TikTok no RapidAPI e informe a chave + host. Busca best-effort.</p>
+          </div>
+
+          <p className="text-[10px] text-gray-400">Dailymotion já é buscado automaticamente no Video Swipe, sem chave.</p>
         </div>
 
         <button onClick={handleSaveApiKeys} className="btn-primary text-xs">

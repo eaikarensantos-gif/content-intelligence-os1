@@ -1,6 +1,11 @@
 // ─── Provider definitions ────────────────────────────────────────────────────
 
 export const PROVIDERS = {
+  anthropic: {
+    label: 'Anthropic (Claude)',
+    models: ['claude-fable-5', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+    defaultModel: 'claude-fable-5',
+  },
   openai: {
     label: 'OpenAI',
     models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
@@ -286,6 +291,36 @@ export async function youtubeSearch(youtubeApiKey, query) {
   const data = await res.json()
   if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
   return data.results ?? []
+}
+
+// ─── Other video platforms (via serverless proxy) ─────────────────────────────
+
+async function platformSearch(body) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data.results ?? []
+}
+
+// Dailymotion needs no key.
+export async function dailymotionSearch(query) {
+  return platformSearch({ action: 'dailymotion-search', query })
+}
+
+// Vimeo needs a personal access token.
+export async function vimeoSearch(vimeoToken, query) {
+  if (!vimeoToken?.trim()) throw new Error('Vimeo token não configurado.')
+  return platformSearch({ action: 'vimeo-search', vimeoToken, query })
+}
+
+// TikTok needs a RapidAPI key (and optionally a host).
+export async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
+  if (!rapidApiKey?.trim()) throw new Error('RapidAPI key não configurada.')
+  return platformSearch({ action: 'tiktok-search', rapidApiKey, rapidApiHost, query })
 }
 
 // ─── Whisper transcription (via serverless proxy) ─────────────────────────────
