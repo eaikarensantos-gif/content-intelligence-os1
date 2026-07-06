@@ -37,6 +37,40 @@ async function callOpenAICompatible(url, apiKey, model, messages, options = {}, 
   return data.choices?.[0]?.message?.content ?? ''
 }
 
+async function callAnthropic(apiKey, model, messages, options = {}) {
+  // Anthropic keeps the system prompt separate from the message list, and the
+  // conversation may only contain user/assistant turns — mirror callGemini's split.
+  const systemMsg = messages.find((m) => m.role === 'system')
+  const convo = messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    }))
+
+  const body = {
+    model,
+    max_tokens:  options.maxTokens ?? 2000,
+    temperature: options.temperature ?? 0.7,
+    messages:    convo,
+  }
+  if (systemMsg) body.system = systemMsg.content
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: {
+      'Content-Type':      'application/json',
+      'x-api-key':         apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(body),
+  })
+
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error?.message || `Anthropic error ${res.status}`)
+  return data.content?.[0]?.text ?? ''
+}
+
 async function callGemini(apiKey, model, messages, options = {}) {
   const systemMsg = messages.find((m) => m.role === 'system')
   const contents = messages
@@ -395,7 +429,9 @@ export default async function handler(req, res) {
 
     let content
 
-    if (provider === 'gemini') {
+    if (provider === 'anthropic') {
+      content = await callAnthropic(apiKey, model, messages, options)
+    } else if (provider === 'gemini') {
       content = await callGemini(apiKey, model, messages, options)
     } else {
       let url = PROVIDER_URLS[provider]

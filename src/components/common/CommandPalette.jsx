@@ -1,33 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search, Lightbulb, Brain, Video, ClipboardList, ArrowRight, CornerDownLeft,
-  BarChart2, PenTool, Clapperboard, Radar, Dna, Newspaper, FileBarChart,
-  DollarSign, Flame, Settings, Shield, Users, Bookmark, FileText, PieChart,
+  Search, Lightbulb, Brain, Video, ClipboardList, ArrowRight,
+  LayoutDashboard, BarChart2, PenTool, Clapperboard, Radar, Dna,
+  Activity, FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft, Dices, FileText,
+  Newspaper, Shield, Users, Bookmark, PieChart,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 
 // Páginas navegáveis — inclui páginas que só existem por URL (audiência,
-// web clipper, pdf studio), que a busca agora torna acessíveis.
+// web clipper, pdf studio), que a busca torna acessíveis.
 const PAGES = [
-  { to: '/social', label: 'Analytics', icon: BarChart2 },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/analytics', label: 'Analytics', icon: BarChart2 },
   { to: '/audience', label: 'Audiência', icon: PieChart },
   { to: '/create', label: 'Studio de Criação', icon: PenTool },
   { to: '/naomi', label: 'Naomi Studio', icon: Clapperboard },
   { to: '/ideas', label: 'Hub de Ideias', icon: Lightbulb },
   { to: '/tasks', label: 'Tarefas', icon: ClipboardList },
   { to: '/brain', label: 'Content Brain', icon: Brain },
+  { to: '/social', label: 'Social Dashboard', icon: Activity },
   { to: '/reports', label: 'Relatórios', icon: FileBarChart },
   { to: '/news', label: 'Notícias', icon: Newspaper },
   { to: '/dna', label: 'Content DNA', icon: Dna },
   { to: '/trends', label: 'Creator Insights', icon: Radar },
   { to: '/video', label: 'Analisador de Vídeo', icon: Video },
   { to: '/swipe', label: 'Video Swipe', icon: Flame },
-  { to: '/ads', label: 'Publicidade', icon: DollarSign },
+  { to: '/desafio', label: 'Desafio de Formato', icon: Dices },
+  { to: '/ads', label: 'Publicidade & Preços', icon: DollarSign },
   { to: '/community', label: 'Community Studio', icon: Users },
   { to: '/clipper', label: 'Web Clipper', icon: Bookmark },
-  { to: '/pdf-studio', label: 'PDF Studio', icon: FileText },
+  { to: '/pdf-studio', label: 'Conteúdo de PDF', icon: FileText },
+  { to: '/brand-voice', label: 'Minha Voz', icon: Mic },
   { to: '/settings', label: 'Configurações', icon: Settings },
   { to: '/security', label: 'Registro de Acessos', icon: Shield },
 ]
@@ -43,7 +48,7 @@ const GROUP_LABELS = {
 }
 
 function normalize(s) {
-  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
 export default function CommandPalette({ open, onClose }) {
@@ -63,6 +68,7 @@ export default function CommandPalette({ open, onClose }) {
     if (open) {
       setQuery('')
       setCursor(0)
+      // foca após o modal montar
       setTimeout(() => inputRef.current?.focus(), 30)
     }
   }, [open])
@@ -110,6 +116,7 @@ export default function CommandPalette({ open, onClose }) {
     return items.slice(0, 24)
   }, [query, ideas, thoughtCaptures, videoAnalyses, tasks, clips, brainItems])
 
+  // Mantém o cursor dentro dos limites quando os resultados mudam
   useEffect(() => {
     setCursor((c) => Math.min(c, Math.max(results.length - 1, 0)))
   }, [results.length])
@@ -137,12 +144,14 @@ export default function CommandPalette({ open, onClose }) {
 
   if (!open) return null
 
+  // Agrupa mantendo a ordem para exibir cabeçalhos
   let lastType = null
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in">
+        {/* Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
           <Search size={16} className="text-gray-400 shrink-0" />
           <input
@@ -156,6 +165,7 @@ export default function CommandPalette({ open, onClose }) {
           <kbd className="hidden sm:block text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5">Esc</kbd>
         </div>
 
+        {/* Results */}
         <div className="max-h-[50vh] overflow-y-auto py-1.5">
           {results.length === 0 && (
             <p className="text-xs text-gray-400 text-center py-8">Nada encontrado para "{query}"</p>

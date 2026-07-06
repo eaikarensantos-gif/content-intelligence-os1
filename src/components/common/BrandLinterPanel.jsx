@@ -1,8 +1,6 @@
 import { AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Sparkles, RefreshCw, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
-import { extractJsonArray } from '../../utils/aiJson.js'
-
-const LS_KEY = 'cio-anthropic-key'
+import { fetchToneAlternatives } from '../../utils/toneAlternatives.js'
 
 const CATEGORY_COLORS = {
   'Estrutura de Massa':     'text-red-600 bg-red-50 border-red-200',
@@ -13,44 +11,6 @@ const CATEGORY_COLORS = {
   'Vocabulário de Coach':   'text-pink-600 bg-pink-50 border-pink-200',
 }
 
-async function fetchAlternatives(match, category, suggestion) {
-  const apiKey = localStorage.getItem(LS_KEY)
-  if (!apiKey) return null
-
-  const prompt = `Você é um consultor de tom de voz para Karen Santos, estrategista de conteúdo com posicionamento Premium/Analítico. Slogan: "Maturidade profissional na era da IA".
-
-TOM: Direto, técnico, observacional, sem floreios. Fala como especialista — não como coach ou creator de massa.
-
-A frase abaixo foi sinalizada como violação de tom ("${category}"):
-FRASE ORIGINAL: "${match}"
-
-Problema: ${suggestion}
-
-Gere 3 alternativas concretas para reescrever APENAS a parte sinalizada, mantendo o sentido original mas no tom correto da Karen. As alternativas devem soar como uma pessoa real falando — não como IA, não como coach, não genérico.
-
-Responda APENAS com JSON:
-["alternativa 1", "alternativa 2", "alternativa 3"]`
-
-  const res = await fetch('/api/ai?action=anthropic', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!res.ok) throw new Error('API error')
-  const data = await res.json()
-  const text = data.content?.[0]?.text || ''
-  return extractJsonArray(text, 'No JSON')
-}
-
 function ViolationRow({ v }) {
   const [alts, setAlts] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -59,7 +19,7 @@ function ViolationRow({ v }) {
   const handleSuggest = async () => {
     setLoading(true)
     try {
-      const result = await fetchAlternatives(v.match, v.category, v.suggestion)
+      const result = await fetchToneAlternatives(v.match, v.category, v.suggestion)
       setAlts(result)
     } catch {
       setAlts([])

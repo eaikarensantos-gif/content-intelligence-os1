@@ -30,6 +30,7 @@ const useStore = create(
       bannedWords: [],
       bannedPhrases: [],
       theme: 'light',
+      desafioHistory: [],
       brainItems: [],
 
       // ── Perfil do Criador ────────────────────────────────
@@ -43,6 +44,15 @@ const useStore = create(
       },
 
       setTheme: (t) => set({ theme: t }),
+
+      setCreatorProfile: (profile) =>
+        set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
+
+      // ── Desafio de Formato (sorteador) ───────────────────────────────────
+      addDesafio: (desafio) =>
+        set((s) => ({ desafioHistory: [...s.desafioHistory, desafio] })),
+
+      clearDesafioHistory: () => set({ desafioHistory: [] }),
 
       // ── Content Brain ────────────────────────────────────────────────────
       addBrainItem: (item) =>
@@ -68,9 +78,6 @@ const useStore = create(
 
       deleteBrainItem: (id) =>
         set((s) => ({ brainItems: s.brainItems.filter((b) => b.id !== id) })),
-
-      setCreatorProfile: (profile) =>
-        set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
 
       // ── Brand Voice (Master Prompt) ─────────────────────────
       brandVoice: null,
@@ -538,8 +545,9 @@ const useStore = create(
         bannedWords: s.bannedWords,
         bannedPhrases: s.bannedPhrases,
         theme: s.theme,
-        brainItems: s.brainItems,
         creatorProfile: s.creatorProfile,
+        desafioHistory: s.desafioHistory,
+        brainItems: s.brainItems,
       }),
     }
   )
