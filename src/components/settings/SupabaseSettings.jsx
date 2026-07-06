@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
+import { PROVIDERS } from '../../lib/aiService'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
 
@@ -21,6 +22,11 @@ export default function SupabaseSettings() {
   const loadFromDB  = useStore((s) => s.loadFromDB)
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
+
+  const aiProvider = useAIStore((s) => s.provider)
+  const aiModel = useAIStore((s) => s.model)
+  const setAiProvider = useAIStore((s) => s.setProvider)
+  const setAiModel = useAIStore((s) => s.setModel)
 
   const [sbUrl, setSbUrl]     = useState(getSupabaseUrl)
   const [sbKey, setSbKey]     = useState(getSupabaseKey)
@@ -226,6 +232,34 @@ alter table user_data disable row level security;`}</pre>
         <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
           <Key size={15} className="text-violet-500" /> Chaves de API de IA
         </h2>
+
+        {/* Motor de IA — modelo por trás dos insights, ideias e trends */}
+        <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-3 space-y-2">
+          <label className="text-xs text-gray-600 font-semibold block">Motor de IA (insights, ideias e trends)</label>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={aiProvider}
+              onChange={(e) => setAiProvider(e.target.value)}
+              className="input w-full text-sm"
+            >
+              {Object.entries(PROVIDERS).map(([key, p]) => (
+                <option key={key} value={key}>{p.label}</option>
+              ))}
+            </select>
+            <select
+              value={aiModel}
+              onChange={(e) => setAiModel(e.target.value)}
+              className="input w-full text-sm"
+            >
+              {(PROVIDERS[aiProvider]?.models || []).map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-[10px] text-gray-400">
+            Recomendado: Anthropic → claude-fable-5. Usa a chave Anthropic abaixo automaticamente.
+          </p>
+        </div>
 
         <div className="space-y-3">
           <div>
