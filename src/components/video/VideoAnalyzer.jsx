@@ -995,7 +995,7 @@ Responda APENAS com este JSON:
   const canAnalyze = !extractingFrames && hasAnyData && !!apiKey
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5 animate-fade-in">
       {showKeyModal && <ApiKeyModal onClose={() => setShowKeyModal(false)} onSave={handleSaveKey} />}
       {showGroqModal && <GroqKeyModal onClose={() => setShowGroqModal(false)} onSave={handleSaveGroqKey} />}
       {generatedScript && <ScriptModal script={generatedScript} onClose={() => setGeneratedScript(null)} />}
@@ -1176,27 +1176,31 @@ Responda APENAS com este JSON:
 
           {/* What this tool analyzes — visual overview */}
           <div className="card overflow-hidden">
-            <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">O que será analisado</p>
+            <div className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-violet-50 to-transparent border-b border-gray-100">
+              <div className="p-1 rounded-md bg-violet-100">
+                <Sparkles size={12} className="text-violet-600" />
+              </div>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">O que será analisado</p>
+              <span className="ml-auto text-[10px] text-gray-400 font-medium">8 dimensões</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-y divide-gray-100">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4">
               {[
                 { icon: Zap,        color: 'text-orange-500 bg-orange-50', label: 'Gancho & Estrutura',    desc: 'Hook, promessa, seções, CTA' },
                 { icon: Mic,        color: 'text-purple-500 bg-purple-50', label: 'Tom de Voz',            desc: 'Formalidade, estilo, persona' },
-                { icon: TrendingUp, color: 'text-amber-500  bg-amber-50',  label: 'Padrões de Conteúdo',  desc: 'Lista, storytelling, contrário…' },
-                { icon: Eye,        color: 'text-sky-500    bg-sky-50',    label: 'Retenção',              desc: 'Técnicas de engajamento' },
-                { icon: Film,       color: 'text-gray-500   bg-gray-100',  label: 'Estilo Visual',         desc: 'Edição, pacing, texto na tela' },
+                { icon: TrendingUp, color: 'text-amber-500 bg-amber-50',   label: 'Padrões de Conteúdo',  desc: 'Lista, storytelling, contrário…' },
+                { icon: Eye,        color: 'text-sky-500 bg-sky-50',       label: 'Retenção',              desc: 'Técnicas de engajamento' },
+                { icon: Film,       color: 'text-gray-500 bg-gray-100',    label: 'Estilo Visual',         desc: 'Edição, pacing, texto na tela' },
                 { icon: Star,       color: 'text-orange-500 bg-orange-50', label: 'Por Que Funciona',      desc: 'Fatores de sucesso do vídeo' },
                 { icon: BookOpen,   color: 'text-violet-500 bg-violet-50', label: 'Template Reutilizável', desc: 'Fórmulas prontas para copiar' },
                 { icon: Lightbulb,  color: 'text-emerald-500 bg-emerald-50', label: 'Ideias de Conteúdo', desc: '5 ideias com gancho e ângulo' },
               ].map(({ icon: Icon, color, label, desc }) => (
-                <div key={label} className="flex items-start gap-2.5 p-3.5 hover:bg-gray-50/70 transition-colors">
+                <div key={label} className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all">
                   <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${color}`}>
                     <Icon size={13} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-800 leading-tight">{label}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{desc}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{desc}</p>
                   </div>
                 </div>
               ))}
