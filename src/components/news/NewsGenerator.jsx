@@ -162,7 +162,7 @@ Regras:
 - Ordene por relevance (alto primeiro)
 - Retorne APENAS o JSON, sem texto antes ou depois`
       const res = await mkClient(apiKey).messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4-5',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       })
@@ -297,7 +297,7 @@ Resumo: ${desc}
 
 Retorne JSON: {"titulo": "...", "resumo": "..."}`
       const res = await mkClient(apiKey).messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4-5',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       })

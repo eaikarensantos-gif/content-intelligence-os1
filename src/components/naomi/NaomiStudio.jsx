@@ -194,7 +194,7 @@ export default function NaomiStudio() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-haiku-4-5',
           max_tokens: 1000,
           messages: [{ role: 'user', content: `Translate this video generation prompt from Portuguese to English. Keep all technical terms, character descriptions, camera instructions, and formatting intact. Return ONLY the translated prompt, no preamble:\n\n${result.video_prompt}` }],
         }),

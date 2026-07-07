@@ -573,7 +573,7 @@ export default function VideoAnalyzer() {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-haiku-4-5',
           max_tokens: 4096,
           messages: [{ role: 'user', content: `Traduza o texto abaixo para português brasileiro de forma fiel e natural. Mantenha a formatação, parágrafos e estrutura original. Retorne APENAS a tradução, sem introdução nem comentários.\n\n${text.trim()}` }],
         }),

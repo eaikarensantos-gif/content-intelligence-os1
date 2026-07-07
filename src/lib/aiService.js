@@ -3,7 +3,7 @@
 export const PROVIDERS = {
   anthropic: {
     label: 'Anthropic (Claude)',
-    models: ['claude-fable-5', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+    models: ['claude-fable-5', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
     defaultModel: 'claude-fable-5',
   },
   openai: {
