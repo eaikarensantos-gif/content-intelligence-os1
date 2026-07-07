@@ -1,11 +1,6 @@
 // ─── Provider definitions ────────────────────────────────────────────────────
 
 export const PROVIDERS = {
-  anthropic: {
-    label: 'Anthropic (Claude)',
-    models: ['claude-fable-5', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
-    defaultModel: 'claude-fable-5',
-  },
   openai: {
     label: 'OpenAI',
     models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
@@ -97,37 +92,7 @@ export async function aiTrendSearch(aiSettings, topic) {
     },
     {
       role: 'user',
-      content: `Analyze content trends for the topic: "${topic}"
-
-Return this JSON structure exactly:
-{
-  "opportunities": [
-    {
-      "id": "opp-1",
-      "title": "...",
-      "description": "...",
-      "hook": "List Hook",
-      "hook_example": "...",
-      "format": "carousel",
-      "platform": "linkedin",
-      "content_gap": "...",
-      "potential": "Very High"
-    }
-  ],
-  "emerging_topics": ["topic1", "topic2", "topic3", "topic4", "topic5", "topic6"],
-  "recurring_hooks": [
-    { "hook": "List Hook", "example": "...", "frequency": "38%" }
-  ]
-}
-
-Rules:
-- Generate exactly 5 opportunities
-- platform: linkedin | twitter | instagram | youtube | tiktok
-- format: carousel | thread | video | reel | article
-- hook: List Hook | Contrarian Hook | Story Hook | Data Hook | Problem Hook | Question Hook
-- potential: Very High | High | Medium
-- Generate 4 recurring_hooks
-- Return ONLY the JSON object`,
+      content: `Analyze content trends for the topic: "${topic}"\n\nReturn this JSON structure exactly:\n{\n  "opportunities": [\n    {\n      "id": "opp-1",\n      "title": "...",\n      "description": "...",\n      "hook": "List Hook",\n      "hook_example": "...",\n      "format": "carousel",\n      "platform": "linkedin",\n      "content_gap": "...",\n      "potential": "Very High"\n    }\n  ],\n  "emerging_topics": ["topic1", "topic2", "topic3", "topic4", "topic5", "topic6"],\n  "recurring_hooks": [\n    { "hook": "List Hook", "example": "...", "frequency": "38%" }\n  ]\n}\n\nRules:\n- Generate exactly 5 opportunities\n- platform: linkedin | twitter | instagram | youtube | tiktok\n- format: carousel | thread | video | reel | article\n- hook: List Hook | Contrarian Hook | Story Hook | Data Hook | Problem Hook | Question Hook\n- potential: Very High | High | Medium\n- Generate 4 recurring_hooks\n- Return ONLY the JSON object`,
     },
   ]
 
@@ -170,31 +135,7 @@ export async function aiGenerateIdeas(aiSettings, { insights, trendResults, coun
     },
     {
       role: 'user',
-      content: `Generate ${count} creative content ideas for a creator based on this context:
-${context}
-
-Return a JSON array:
-[
-  {
-    "id": "idea-1",
-    "title": "...",
-    "description": "2-3 sentence description",
-    "topic": "...",
-    "hook": "list",
-    "format": "carousel",
-    "platform": "linkedin",
-    "priority": "high",
-    "source_type": "${sourceType}"
-  }
-]
-
-Rules:
-- hook: list | contrarian | story | data | problem | question
-- format: carousel | thread | video | reel | article
-- platform: linkedin | twitter | instagram | youtube | tiktok
-- priority: high | medium | low
-- Make titles specific and compelling, not generic
-- Return ONLY the JSON array`,
+      content: `Generate ${count} creative content ideas for a creator based on this context:\n${context}\n\nReturn a JSON array:\n[\n  {\n    "id": "idea-1",\n    "title": "...",\n    "description": "2-3 sentence description",\n    "topic": "...",\n    "hook": "list",\n    "format": "carousel",\n    "platform": "linkedin",\n    "priority": "high",\n    "source_type": "${sourceType}"\n  }\n]\n\nRules:\n- hook: list | contrarian | story | data | problem | question\n- format: carousel | thread | video | reel | article\n- platform: linkedin | twitter | instagram | youtube | tiktok\n- priority: high | medium | low\n- Make titles specific and compelling, not generic\n- Return ONLY the JSON array`,
     },
   ]
 
@@ -234,29 +175,7 @@ export async function aiGenerateInsights(aiSettings, { posts, metrics }) {
     },
     {
       role: 'user',
-      content: `Analyze this content performance data and generate actionable insights.
-
-Posts (${postsData.length}): ${JSON.stringify(postsData)}
-Metrics (${metricsData.length}): ${JSON.stringify(metricsData)}
-
-Return a JSON array:
-[
-  {
-    "id": "ins-1",
-    "type": "format",
-    "title": "Specific insight title",
-    "description": "Detailed explanation with data references",
-    "recommendation": "Specific, actionable next step",
-    "value": 0.05
-  }
-]
-
-Rules:
-- type: format | hook | platform | topic | summary
-- Generate 6 to 8 insights
-- value: 0–1 representing impact
-- Reference actual platforms, formats, numbers from the data
-- Return ONLY the JSON array`,
+      content: `Analyze this content performance data and generate actionable insights.\n\nPosts (${postsData.length}): ${JSON.stringify(postsData)}\nMetrics (${metricsData.length}): ${JSON.stringify(metricsData)}\n\nReturn a JSON array:\n[\n  {\n    "id": "ins-1",\n    "type": "format",\n    "title": "Specific insight title",\n    "description": "Detailed explanation with data references",\n    "recommendation": "Specific, actionable next step",\n    "value": 0.05\n  }\n]\n\nRules:\n- type: format | hook | platform | topic | summary\n- Generate 6 to 8 insights\n- value: 0–1 representing impact\n- Reference actual platforms, formats, numbers from the data\n- Return ONLY the JSON array`,
     },
   ]
 
@@ -277,7 +196,7 @@ export async function testConnection(aiSettings) {
 
 // ─── YouTube real search (via serverless proxy) ───────────────────────────────
 
-export async function youtubeSearch(youtubeApiKey, query) {
+export async function youtubeSearch(youtubeApiKey, query, opts = {}) {
   if (!youtubeApiKey?.trim()) {
     throw new Error('YouTube API key não configurada. Adicione em Configurações → YouTube.')
   }
@@ -285,7 +204,7 @@ export async function youtubeSearch(youtubeApiKey, query) {
   const res = await fetch('/api/ai', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'youtube-search', youtubeApiKey, query }),
+    body: JSON.stringify({ action: 'youtube-search', youtubeApiKey, query, ...opts }),
   })
 
   const data = await res.json()
@@ -306,18 +225,15 @@ async function platformSearch(body) {
   return data.results ?? []
 }
 
-// Dailymotion needs no key.
-export async function dailymotionSearch(query) {
-  return platformSearch({ action: 'dailymotion-search', query })
+export async function dailymotionSearch(query, opts = {}) {
+  return platformSearch({ action: 'dailymotion-search', query, ...opts })
 }
 
-// Vimeo needs a personal access token.
-export async function vimeoSearch(vimeoToken, query) {
+export async function vimeoSearch(vimeoToken, query, opts = {}) {
   if (!vimeoToken?.trim()) throw new Error('Vimeo token não configurado.')
-  return platformSearch({ action: 'vimeo-search', vimeoToken, query })
+  return platformSearch({ action: 'vimeo-search', vimeoToken, query, ...opts })
 }
 
-// TikTok needs a RapidAPI key (and optionally a host).
 export async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
   if (!rapidApiKey?.trim()) throw new Error('RapidAPI key não configurada.')
   return platformSearch({ action: 'tiktok-search', rapidApiKey, rapidApiHost, query })
