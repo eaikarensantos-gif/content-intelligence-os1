@@ -1525,7 +1525,7 @@ export default function IdeasHub() {
   const hasGaveta = ideas.some((i) => (i.tags || []).includes('gaveta-21dias'))
   const handleImportGaveta = () => importIdeas(GAVETA_IDEAS)
 
-  const [tab, setTab]                       = useState('calendar')
+  const [tab, setTab]                       = useState('kanban')
   const [formOpen, setFormOpen]             = useState(false)
   const [editTarget, setEditTarget]         = useState(null)
   const [search, setSearch]                 = useState('')
