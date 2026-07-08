@@ -1033,47 +1033,30 @@ Responda APENAS com este JSON:
         </div>
       </div>
 
-      {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit flex-wrap">
-        <button
-          onClick={() => { setAnalysisMode('reference'); setAnalysis(null); setError('') }}
-          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'reference' ? 'bg-violet-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Sparkles size={13} /> Analisar Referência
-        </button>
-        <button
-          onClick={() => { setAnalysisMode('mine'); setAnalysis(null); setError('') }}
-          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'mine' ? 'bg-orange-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Target size={13} /> Meu Vídeo
-        </button>
-        <button
-          onClick={() => { setAnalysisMode('script'); setAnalysis(null); setError('') }}
-          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'script' ? 'bg-indigo-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <FileText size={13} /> Meu Roteiro
-        </button>
+      {/* Mode selector — cards descritivos (a descrição vive no card, sem banner extra) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {[
+          { id: 'reference', icon: Sparkles, label: 'Analisar Referência', desc: 'Aprenda com vídeos de outros criadores', on: 'border-violet-300 bg-violet-50/70 ring-1 ring-violet-200', iconOn: 'bg-violet-600 text-white shadow-sm' },
+          { id: 'mine', icon: Target, label: 'Meu Vídeo', desc: 'Feedback crítico do seu próprio vídeo', on: 'border-orange-300 bg-orange-50/70 ring-1 ring-orange-200', iconOn: 'bg-orange-500 text-white shadow-sm' },
+          { id: 'script', icon: FileText, label: 'Meu Roteiro', desc: 'Avalie o roteiro antes de gravar', on: 'border-indigo-300 bg-indigo-50/70 ring-1 ring-indigo-200', iconOn: 'bg-indigo-600 text-white shadow-sm' },
+        ].map(({ id, icon: Icon, label, desc, on, iconOn }) => (
+          <button
+            key={id}
+            onClick={() => { setAnalysisMode(id); setAnalysis(null); setError('') }}
+            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+              analysisMode === id ? on : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className={`p-2 rounded-lg shrink-0 transition-colors ${analysisMode === id ? iconOn : 'bg-gray-100 text-gray-400'}`}>
+              <Icon size={15} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-900">{label}</p>
+              <p className="text-[10px] text-gray-400 leading-snug">{desc}</p>
+            </div>
+          </button>
+        ))}
       </div>
-
-      {analysisMode === 'mine' && !analysis && (
-        <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3">
-          <Target size={15} className="text-orange-500 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Feedback do Meu Vídeo</p>
-            <p className="text-xs text-gray-600">Envie seu próprio vídeo ou cole a transcrição. A IA vai analisar criticamente e apontar o que melhorar com base no seu posicionamento e objetivos como criadora.</p>
-          </div>
-        </div>
-      )}
-
-      {analysisMode === 'script' && !analysis && (
-        <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-start gap-3">
-          <FileText size={15} className="text-indigo-500 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Análise de Roteiro</p>
-            <p className="text-xs text-gray-600">Cole o roteiro do vídeo que você ainda vai gravar. A IA vai analisar gancho, estrutura, tom de voz, CTA e pontuar o que precisa melhorar antes de você gravar.</p>
-          </div>
-        </div>
-      )}
 
       {/* No API key banner */}
       {!apiKey && !analysis && (
@@ -1334,9 +1317,10 @@ Responda APENAS com este JSON:
 
             {/* LEFT — Video source */}
             <div className="card p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-violet-50 text-violet-500"><Video size={13} /></div>
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-lg bg-violet-100 text-violet-600 text-[11px] font-bold flex items-center justify-center shrink-0">1</span>
                 <p className="text-sm font-semibold text-gray-900">Fonte do Vídeo</p>
+                <span className="ml-auto text-[10px] text-gray-400">URL ou arquivo</span>
               </div>
 
               {/* URL input */}
@@ -1377,7 +1361,7 @@ Responda APENAS com este JSON:
 
               {/* File upload */}
               <div
-                className={`border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer ${
+                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
                   videoFile ? 'border-violet-300 bg-violet-50/30' : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/20'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
@@ -1405,9 +1389,11 @@ Responda APENAS com este JSON:
                   </div>
                 ) : (
                   <>
-                    <Upload size={18} className="mx-auto text-gray-300 mb-1.5" />
-                    <p className="text-xs text-gray-500 font-medium">Arraste ou clique para selecionar</p>
-                    <p className="text-[10px] text-gray-300 mt-0.5">MP4, MOV, AVI, MP3, M4A — áudio e vídeo</p>
+                    <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
+                      <Upload size={16} className="text-gray-400" />
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">Arraste ou clique para selecionar</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">MP4, MOV, AVI, MP3, M4A — áudio e vídeo</p>
                     {groqKey && (
                       <p className="text-[10px] text-emerald-500 mt-1">🎙 Whisper transcreve automaticamente ao analisar</p>
                     )}
@@ -1515,8 +1501,8 @@ Responda APENAS com este JSON:
             {/* RIGHT — Transcript */}
             <div className="card p-5 space-y-4 flex flex-col">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600"><AlignLeft size={13} /></div>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 text-[11px] font-bold flex items-center justify-center shrink-0">2</span>
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Transcrição do Vídeo</p>
                     <p className="text-[10px] text-emerald-600 font-medium">Análise mais precisa — IA lê o conteúdo real</p>
@@ -1565,9 +1551,9 @@ Responda APENAS com este JSON:
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-2 p-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 text-center">
-                        <p className="text-[11px] text-emerald-600 w-full">
-                          Envie um arquivo de vídeo ou áudio no painel ao lado para transcrever automaticamente
+                      <div className="p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/60">
+                        <p className="text-[11px] text-gray-500 text-center">
+                          Envie um arquivo em <strong className="text-gray-600">Fonte do Vídeo</strong> para transcrever automaticamente
                         </p>
                       </div>
                     )}
@@ -1731,21 +1717,28 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </button>
           )}
           {analysisMode !== 'script' && (
-          <button
-            onClick={handleAnalyze}
-            disabled={extractingFrames || !hasAnyData}
-            className="btn-primary w-full py-3 text-sm"
-            style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
-          >
-            {extractingFrames
-              ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
-              : transcribing
-              ? <><RefreshCw size={15} className="animate-spin" /> {transcribingStatus || 'Transcrevendo...'}</>
-              : videoFile && groqKey && transcript.trim().length < 30
-              ? <><Mic size={15} /> Transcrever e Analisar com IA</>
-              : <><Sparkles size={15} /> Analisar Vídeo com IA</>
-            }
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={handleAnalyze}
+              disabled={extractingFrames || !hasAnyData}
+              className="btn-primary w-full py-3.5 text-sm rounded-xl shadow-lg shadow-violet-200/60"
+              style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
+            >
+              {extractingFrames
+                ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
+                : transcribing
+                ? <><RefreshCw size={15} className="animate-spin" /> {transcribingStatus || 'Transcrevendo...'}</>
+                : videoFile && groqKey && transcript.trim().length < 30
+                ? <><Mic size={15} /> Transcrever e Analisar com IA</>
+                : <><Sparkles size={15} /> Analisar Vídeo com IA</>
+              }
+            </button>
+            {!hasAnyData && !extractingFrames && (
+              <p className="text-[11px] text-gray-400 text-center">
+                Adicione uma URL, um arquivo ou uma transcrição acima para liberar a análise
+              </p>
+            )}
+          </div>
           )}
         </div>
       )}
