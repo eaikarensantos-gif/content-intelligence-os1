@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import { extractJsonObject } from '../../utils/aiJson.js'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
+import { withManualOperacional } from '../../lib/manualOperacional'
 import {
   Loader2, Sparkles, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
@@ -124,9 +125,9 @@ Responda APENAS com JSON válido:
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 6000,
-      system: withAntiAIFilter(`Você é um expert em carrosseis virais para Instagram e LinkedIn. Responda APENAS com JSON válido, sem markdown, sem code blocks.
+      system: withManualOperacional(withAntiAIFilter(`Você é um expert em carrosseis virais para Instagram e LinkedIn. Responda APENAS com JSON válido, sem markdown, sem code blocks.
 
-REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitado. NUNCA misture temas. NUNCA invente dados, citações, estatísticas ou fatos. Se o tema é sobre um livro, fale APENAS sobre o livro real. Se é sobre uma ferramenta, fale APENAS sobre a ferramenta real. O nicho do criador define APENAS o tom e estilo visual, NUNCA o conteúdo dos slides.`),
+REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitado. NUNCA misture temas. NUNCA invente dados, citações, estatísticas ou fatos. Se o tema é sobre um livro, fale APENAS sobre o livro real. Se é sobre uma ferramenta, fale APENAS sobre a ferramenta real. O nicho do criador define APENAS o tom e estilo visual, NUNCA o conteúdo dos slides.`)),
       messages: [{ role: 'user', content: prompt }],
     }),
   })

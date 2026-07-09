@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
+import { withManualOperacional } from '../../lib/manualOperacional'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
@@ -946,7 +947,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 4000,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
@@ -1000,7 +1001,7 @@ TEXTO:\n${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1500,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
@@ -1056,7 +1057,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 2000,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
@@ -1088,7 +1089,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 2000,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
