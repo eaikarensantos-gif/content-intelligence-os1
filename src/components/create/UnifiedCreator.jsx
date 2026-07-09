@@ -7,6 +7,7 @@ import {
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
   MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
+  AlertCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -743,7 +744,21 @@ export default function UnifiedCreator() {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'engagement' | 'carousel' | 'stories'
+  const [mode, setMode] = useState('studio') // 'studio' | 'revisor' | 'engagement' | 'carousel' | 'stories'
+
+  // ── Revisor de Texto ──
+  const [revText, setRevText] = useState('')
+  const [revLoading, setRevLoading] = useState(false)
+  const [revResult, setRevResult] = useState(null)
+  const [revError, setRevError] = useState('')
+  const [revCopied, setRevCopied] = useState(false)
+  const [revApplied, setRevApplied] = useState(null)
+  const [revRewritten, setRevRewritten] = useState('')
+  const [revRewriteLoading, setRevRewriteLoading] = useState(false)
+  const [revShortened, setRevShortened] = useState('')
+  const [revShortenLoading, setRevShortenLoading] = useState(false)
+  const [revBanInput, setRevBanInput] = useState('')
+
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
   const [engIdeia, setEngIdeia] = useState('')
@@ -965,6 +980,129 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
     navigator.clipboard.writeText(text)
     setCopied(key)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  // ── Revisor de Texto: análise, reescrita e encurtamento ──
+  async function revisorAnalyze() {
+    if (!revText.trim() || !apiKey) { setRevError(!apiKey ? 'Configure sua API key em Configurações.' : ''); return }
+    setRevLoading(true); setRevResult(null); setRevError(''); setRevRewritten('')
+    const bannedList = bannedWords.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use estas expressões nas sugestões, nem variações delas:\n${bannedWords.map(p => `- "${p}"`).join('\n')}\nSe uma sugestão contiver qualquer uma dessas frases → reescreva do zero.`
+      : ''
+    const prompt = `Você é um revisor especialista em conteúdo para criadores digitais brasileiros. Analise o texto e retorne APENAS um JSON válido:
+{"score":<0-100>,"dimensoes":{"clareza":<0-100>,"tom":<0-100>,"impacto":<0-100>,"autenticidade":<0-100>},"parecer":"<frase resumo>","linguagem_robotica":["<trecho artificial>"],"sugestoes":[{"problema":"<trecho original>","melhoria":"<versão melhorada>"}],"pontos_fortes":["<ponto>"]}
+${bannedList}
+TEXTO:\n${revText.trim()}`
+    try {
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1500,
+          system: ANTI_AI_FILTER,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      const raw = data.content?.[0]?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (match) setRevResult(JSON.parse(match[0]))
+      else throw new Error('inválido')
+    } catch {
+      setRevError('Erro ao analisar. Verifique sua API key.')
+    } finally {
+      setRevLoading(false)
+    }
+  }
+
+  function revisorApply(problema, melhoria, idx) {
+    setRevText(prev => prev.includes(problema) ? prev.replace(problema, melhoria) : prev.replace(problema.trim(), melhoria))
+    setRevApplied(idx)
+    setTimeout(() => {
+      setRevResult(prev => prev ? { ...prev, sugestoes: prev.sugestoes.filter((_, i) => i !== idx) } : prev)
+      setRevApplied(null)
+    }, 600)
+  }
+
+  async function revisorShorten() {
+    if (!revText.trim() || !apiKey) return
+    setRevShortenLoading(true); setRevShortened('')
+    const bannedList = bannedWords.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${bannedWords.map(p => `- "${p}"`).join('\n')}`
+      : ''
+    const prompt = `Reescreva o texto abaixo de forma MAIS CURTA E SUCINTA — corte pelo menos 30% das palavras sem perder nenhuma ideia central.
+
+REGRAS OBRIGATÓRIAS:
+- Elimine frases redundantes, explicações desnecessárias e repetições
+- Cada frase deve ganhar peso — se não acrescenta, corta
+- Mantenha o gancho de abertura e o CTA final intactos
+- Preserve o tom e a voz originais — apenas enxugue, não mude o estilo
+- Mantenha a estrutura de parágrafos — NÃO junte tudo em um bloco
+- O resultado deve soar mais direto e preciso, não truncado${bannedList}
+
+Retorne APENAS o texto encurtado, sem introdução nem comentários.
+
+TEXTO:
+${revText.trim()}`
+    try {
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          system: ANTI_AI_FILTER,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      setRevShortened(data.content?.[0]?.text?.trim() || '')
+    } catch {
+      /* silent */
+    } finally {
+      setRevShortenLoading(false)
+    }
+  }
+
+  async function revisorRewrite() {
+    if (!revResult?.sugestoes?.length || !apiKey) return
+    setRevRewriteLoading(true); setRevRewritten('')
+    const list = revResult.sugestoes.map((s, i) => `${i + 1}. "${s.problema}" → "${s.melhoria}"`).join('\n')
+    const bannedList = bannedWords.length
+      ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use no texto reescrito:\n${bannedWords.map(p => `- "${p}"`).join('\n')}`
+      : ''
+    const prompt = `Reescreva o texto incorporando as melhorias. Preserve estilo e voz. Retorne APENAS o texto reescrito.${bannedList}\n\nTEXTO:\n${revText.trim()}\n\nMELHORIAS:\n${list}`
+    try {
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          system: ANTI_AI_FILTER,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      setRevRewritten(data.content?.[0]?.text?.trim() || '')
+    } catch {
+      /* silent */
+    } finally {
+      setRevRewriteLoading(false)
+    }
   }
 
   const handleAdapt = (newFormat) => {
@@ -1642,7 +1780,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
       </div>
 
       {/* ── Seletor de modo ── */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl flex-wrap">
+        <button onClick={() => setMode('revisor')}
+          className={clsx('flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'revisor' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-400 hover:text-violet-600'
+          )}>
+          <Sparkles size={13} /> Revisor
+        </button>
         <button onClick={() => setMode('studio')}
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
             mode === 'studio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
@@ -1668,6 +1812,262 @@ Responda EXCLUSIVAMENTE com JSON válido:
           <Film size={13} /> Stories
         </button>
       </div>
+
+      {/* ── Revisor de Texto ── */}
+      {mode === 'revisor' && (
+        <div className="space-y-5 animate-fade-in">
+          {(() => {
+            const REV_DIMS = [
+              { key: 'clareza', label: 'Clareza', color: '#3b82f6' },
+              { key: 'tom', label: 'Tom', color: '#8b5cf6' },
+              { key: 'impacto', label: 'Impacto', color: '#f59e0b' },
+              { key: 'autenticidade', label: 'Autenticidade', color: '#10b981' },
+            ]
+            const scoreColor = revResult ? (revResult.score >= 75 ? '#10b981' : revResult.score >= 50 ? '#f59e0b' : '#ef4444') : '#e5e7eb'
+            const r = 30, circ = 2 * Math.PI * r
+            const offset = revResult ? circ - (revResult.score / 100) * circ : circ
+            return (
+              <>
+                {/* Input + Analyze */}
+                <div className="bg-white rounded-2xl border border-violet-100 p-5 shadow-sm space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-200 shrink-0">
+                      <Sparkles size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">Revisor de Texto</p>
+                      <p className="text-xs text-gray-400">Cole qualquer texto gerado — roteiro, legenda, carrossel — e receba uma análise completa</p>
+                    </div>
+                  </div>
+                  <textarea
+                    value={revText}
+                    onChange={(e) => setRevText(e.target.value)}
+                    rows={7}
+                    placeholder="Cole aqui o roteiro, legenda ou qualquer texto gerado para revisar..."
+                    className="w-full text-sm border border-gray-200 rounded-xl p-4 resize-none outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 placeholder:text-gray-300 leading-relaxed"
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-gray-300">{revText.length} caracteres</span>
+                    {revText && <button onClick={() => { setRevText(''); setRevResult(null); setRevRewritten(''); setRevError('') }} className="text-[11px] text-gray-400 hover:text-gray-600">Limpar</button>}
+                  </div>
+                  {/* Frases/Palavras Banidas */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                      Frases Banidas <span className="text-gray-300 font-normal">(o revisor vai sinalizar e evitar ao reescrever)</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        value={revBanInput}
+                        onChange={e => setRevBanInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && revBanInput.trim()) { addBannedWord(revBanInput.trim()); setRevBanInput('') } }}
+                        placeholder='Ex: "Em resumo", "Não é à toa que..."'
+                        className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-300"
+                      />
+                      <button
+                        onClick={() => { if (revBanInput.trim()) { addBannedWord(revBanInput.trim()); setRevBanInput('') } }}
+                        className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                      >
+                        Banir
+                      </button>
+                    </div>
+                    {bannedWords.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {bannedWords.map(phrase => (
+                          <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+                            "{phrase.length > 35 ? phrase.slice(0, 35) + '...' : phrase}"
+                            <button onClick={() => removeBannedWord(phrase)} className="hover:text-red-800 shrink-0"><X size={9} /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {revError && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
+                      <AlertCircle size={14} className="text-red-400 shrink-0" />
+                      <p className="text-sm text-red-600">{revError}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={revisorAnalyze}
+                    disabled={revLoading || !revText.trim()}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                    style={{ background: revLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                  >
+                    {revLoading ? <><RefreshCw size={14} className="animate-spin" /> Analisando...</> : <><Sparkles size={14} /> Revisar Texto</>}
+                  </button>
+                </div>
+
+                {/* Results */}
+                {revResult && (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Score + Dimensions */}
+                    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                      <div className="flex items-center gap-6">
+                        {/* Score ring */}
+                        <div className="relative w-20 h-20 shrink-0">
+                          <svg width="80" height="80" className="-rotate-90">
+                            <circle cx="40" cy="40" r={r} fill="none" stroke="#f3f4f6" strokeWidth="6" />
+                            <circle cx="40" cy="40" r={r} fill="none" stroke={scoreColor} strokeWidth="6"
+                              strokeDasharray={circ} strokeDashoffset={offset}
+                              strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-xl font-bold text-gray-800">{revResult.score}</span>
+                            <span className="text-[10px] text-gray-400">/100</span>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Score Geral</p>
+                          <p className="text-sm text-gray-700 font-medium leading-snug mb-3">{revResult.parecer}</p>
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                            {REV_DIMS.map(({ key, label, color }) => (
+                              <div key={key}>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <span className="text-[10px] text-gray-500">{label}</span>
+                                  <span className="text-[10px] font-bold text-gray-600">{revResult.dimensoes?.[key]}</span>
+                                </div>
+                                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${revResult.dimensoes?.[key] || 0}%`, background: color }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Robotic/cliché language */}
+                    {revResult.linguagem_robotica?.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-red-100 p-5 shadow-sm space-y-3">
+                        <p className="text-xs font-semibold text-red-500 uppercase tracking-wide">Soa artificial / clichê</p>
+                        <div className="space-y-2">
+                          {revResult.linguagem_robotica.map((t, i) => (
+                            <div key={i} className="px-3 py-2 rounded-lg bg-red-50 border border-red-100">
+                              <p className="text-sm text-red-700 italic">"{t}"</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggestions */}
+                    {revResult.sugestoes?.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
+                        <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Sugestões de melhoria</p>
+                        <div className="space-y-3">
+                          {revResult.sugestoes.map((s, i) => (
+                            <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
+                              <div className="px-4 py-2.5 bg-red-50/60 border-b border-gray-100">
+                                <p className="text-[10px] text-red-500 font-medium uppercase tracking-wide mb-1">Antes</p>
+                                <p className="text-sm text-gray-700 italic">"{s.problema}"</p>
+                              </div>
+                              <div className="px-4 py-2.5 bg-emerald-50/60">
+                                <p className="text-[10px] text-emerald-600 font-medium uppercase tracking-wide mb-1">Sugestão</p>
+                                <p className="text-sm text-gray-800 font-medium mb-2.5">"{s.melhoria}"</p>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => revisorApply(s.problema, s.melhoria, i)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${revApplied === i ? 'bg-emerald-500 text-white' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
+                                  >
+                                    {revApplied === i ? <><Check size={11} /> Aplicado!</> : <><Wand2 size={11} /> Aplicar no texto</>}
+                                  </button>
+                                  <button
+                                    onClick={() => { navigator.clipboard.writeText(s.melhoria); setRevCopied(i); setTimeout(() => setRevCopied(false), 1500) }}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
+                                  >
+                                    {revCopied === i ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Rewrite + Shorten buttons */}
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={revisorRewrite}
+                            disabled={revRewriteLoading}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                            style={{ background: revRewriteLoading ? '#a78bfa' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+                          >
+                            {revRewriteLoading ? <><RefreshCw size={14} className="animate-spin" /> Reescrevendo...</> : <><Wand2 size={14} /> Reescrever Completo</>}
+                          </button>
+                          <button
+                            onClick={revisorShorten}
+                            disabled={revShortenLoading}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
+                            style={{ background: revShortenLoading ? '#6b7280' : 'linear-gradient(135deg, #374151, #1f2937)' }}
+                          >
+                            {revShortenLoading ? <><RefreshCw size={14} className="animate-spin" /> Encurtando...</> : <><Layers size={14} /> Encurtar Texto</>}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rewritten result */}
+                    {revRewritten && (
+                      <div className="bg-violet-50 rounded-2xl border border-violet-100 p-5 shadow-sm space-y-3 animate-fade-in">
+                        <p className="text-xs font-semibold text-violet-600 uppercase tracking-wide">Roteiro Reescrito</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{revRewritten}</p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(revRewritten); setRevCopied('rewrite'); setTimeout(() => setRevCopied(false), 1500) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium border border-violet-200 text-violet-700 hover:bg-white transition-colors"
+                          >
+                            {revCopied === 'rewrite' ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
+                          </button>
+                          <button
+                            onClick={() => { setRevText(revRewritten); setRevRewritten(''); setRevResult(null) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+                          >
+                            <Check size={13} /> Usar este texto
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shortened result */}
+                    {revShortened && (
+                      <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm space-y-3 animate-fade-in">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Texto Encurtado</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{revShortened}</p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(revShortened); setRevCopied('shorten'); setTimeout(() => setRevCopied(false), 1500) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-700 hover:bg-white transition-colors"
+                          >
+                            {revCopied === 'shorten' ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar</>}
+                          </button>
+                          <button
+                            onClick={() => { setRevText(revShortened); setRevShortened(''); setRevResult(null) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-gray-800 text-white hover:bg-gray-900 transition-colors"
+                          >
+                            <Check size={13} /> Usar este texto
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Strengths */}
+                    {revResult.pontos_fortes?.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm space-y-2">
+                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Pontos fortes</p>
+                        {revResult.pontos_fortes.map((p, i) => (
+                          <p key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                            <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>{p}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )
+          })()}
+        </div>
+      )}
 
       {/* ── Formulário de Engajamento ── */}
       {mode === 'engagement' && (
