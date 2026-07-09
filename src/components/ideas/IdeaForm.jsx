@@ -28,8 +28,8 @@ const HOOK_LABELS = { lista: 'Lista', contrario: 'Contrário', historia: 'Histó
 const PRIORITIES = ['high', 'medium', 'low']
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Média', low: 'Baixa' }
 
-const STATUSES = ['idea', 'draft', 'ready', 'published']
-const STATUS_LABELS = { idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', published: 'Publicado' }
+const STATUSES = ['idea', 'draft', 'ready', 'scheduled', 'published']
+const STATUS_LABELS = { idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', scheduled: 'Agendado', published: 'Publicado' }
 
 const CONTENT_TYPES = [
   { id: 'organic',     label: 'Orgânico',  cls: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
