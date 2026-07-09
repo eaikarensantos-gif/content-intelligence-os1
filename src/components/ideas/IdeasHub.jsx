@@ -29,6 +29,14 @@ const KANBAN_COLUMNS = [
   { id: 'published',  label: 'Publicado',     color: 'border-green-200 bg-green-50/60',      dot: 'bg-green-400',    count_bg: 'bg-green-100 text-green-700' },
 ]
 
+const STATUS_META = {
+  idea:      { label: 'Ideia',     className: 'bg-orange-100 text-orange-700 border-orange-200' },
+  draft:     { label: 'Rascunho',  className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  ready:     { label: 'Pronto',    className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  scheduled: { label: 'Agendado',  className: 'bg-violet-100 text-violet-700 border-violet-200' },
+  published: { label: 'Publicado', className: 'bg-green-100 text-green-700 border-green-200' },
+}
+
 const SOURCE_COLORS = {
   insight: 'bg-purple-100 text-purple-700 border-purple-200',
   trend:   'bg-blue-100 text-blue-700 border-blue-200',
@@ -52,9 +60,10 @@ const getPlatforms = (idea) =>
       : []
 
 // ─── Card compartilhado ───────────────────────────────────────────────────────
-function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick, onDelete, compact }) {
+function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick, onDelete, compact, showStatus }) {
   const platforms = getPlatforms(idea)
   const tags = idea.tags || []
+  const status = showStatus ? STATUS_META[idea.status] : null
 
   return (
     <div
@@ -75,6 +84,13 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
         >
           <Trash2 size={compact ? 10 : 11} />
         </button>
+      )}
+
+      {/* Status — visível fora do corpo do card */}
+      {status && (
+        <span className={`inline-flex items-center w-fit text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${status.className}`}>
+          {status.label}
+        </span>
       )}
 
       <div className="flex items-start gap-2">
@@ -365,6 +381,7 @@ function CalendarView({ ideas, filterFormat, onCardClick, onNewIdea, onDelete, o
                             onClick={() => onCardClick(idea)}
                             onDelete={onDelete}
                             compact
+                            showStatus
                           />
                         ))}
                         {dayIdeas.length > 2 && (
@@ -431,7 +448,7 @@ function CalendarView({ ideas, filterFormat, onCardClick, onNewIdea, onDelete, o
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Ideias Sem Data</p>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {unscheduled.map((idea) => (
-              <KanbanMiniCard key={idea.id} idea={idea} onClick={() => onCardClick(idea)} onDelete={onDelete} />
+              <KanbanMiniCard key={idea.id} idea={idea} onClick={() => onCardClick(idea)} onDelete={onDelete} showStatus />
             ))}
           </div>
         </div>
