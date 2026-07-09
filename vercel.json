@@ -11,7 +11,7 @@
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "functions": {
     "api/ai.js": {
-      "maxDuration": 30
+      "maxDuration": 300
     },
     "api/renderVideo.js": {
       "maxDuration": 300
