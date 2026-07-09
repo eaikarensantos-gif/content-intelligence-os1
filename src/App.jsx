@@ -38,7 +38,6 @@ const DesafioSorteador = lazy(() => import('./components/desafio/DesafioSorteado
 const WebClipper = lazy(() => import('./components/clipper/WebClipper'))
 const NewsGenerator = lazy(() => import('./components/news/NewsGenerator'))
 const PDFContentGenerator = lazy(() => import('./components/pdf/PDFContentGenerator'))
-const ContentBrain = lazy(() => import('./components/brain/ContentBrain'))
 const CommunityStudio = lazy(() => import('./components/community/CommunityStudio'))
 
 function PageLoader() {
@@ -146,7 +145,6 @@ export default function App() {
             <Route path="/clipper" element={<WebClipper />} />
             <Route path="/news" element={<NewsGenerator />} />
             <Route path="/pdf-studio" element={<div className="p-0 animate-fade-in"><PDFContentGenerator /></div>} />
-            <Route path="/brain" element={<ContentBrain />} />
             <Route path="/community" element={<CommunityStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
             <Route path="/desafio" element={<div className="p-6 animate-fade-in"><DesafioSorteador /></div>} />

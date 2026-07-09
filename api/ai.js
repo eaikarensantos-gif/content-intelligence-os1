@@ -1,20 +1,19 @@
-// Vercel Serverless Function — AI proxy + YouTube search + Whisper transcription
-// Solves CORS by making all external API calls server-side.
-//
-// Routing (action via ?action= query or body.action):
-//   action === 'anthropic'       → Anthropic Messages API (key from x-api-key header)
-//   action === 'youtube-search'  → YouTube Data API v3 (real creator/video data)
-//   action === 'transcribe'      → OpenAI Whisper API (real audio transcription)
-//   (default)                    → AI chat completion (OpenAI-compatible or Gemini)
+// Vercel Serverless Function — AI proxy + multi-platform video search + Whisper
+// Routing (action via body.action):
+//   'anthropic'        → Anthropic Messages API
+//   'youtube-search'   → YouTube Data API v3 (supports duration + sort filters)
+//   'dailymotion-search' → Dailymotion public API (no key, supports sort)
+//   'vimeo-search'     → Vimeo API (token required, supports sort)
+//   'tiktok-search'    → TikTok via RapidAPI provider
+//   'transcribe'       → OpenAI Whisper
+//   (default)          → AI chat completion
 
 const PROVIDER_URLS = {
   openai:     'https://api.openai.com/v1/chat/completions',
   groq:       'https://api.groq.com/openai/v1/chat/completions',
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
-  custom:     null, // uses customBaseUrl
+  custom:     null,
 }
-
-// ─── AI chat helpers ─────────────────────────────────────────────────────────
 
 async function callOpenAICompatible(url, apiKey, model, messages, options = {}, extraHeaders = {}) {
   const res = await fetch(url, {
@@ -28,74 +27,28 @@ async function callOpenAICompatible(url, apiKey, model, messages, options = {}, 
       model,
       messages,
       temperature: options.temperature ?? 0.7,
-      max_tokens:  options.maxTokens ?? 2000,
+      max_tokens:  options.maxTokens  ?? 2000,
     }),
   })
-
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`)
   return data.choices?.[0]?.message?.content ?? ''
 }
 
-async function callAnthropic(apiKey, model, messages, options = {}) {
-  // Anthropic keeps the system prompt separate from the message list, and the
-  // conversation may only contain user/assistant turns — mirror callGemini's split.
-  const systemMsg = messages.find((m) => m.role === 'system')
-  const convo = messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-    }))
-
-  const body = {
-    model,
-    max_tokens:  options.maxTokens ?? 2000,
-    temperature: options.temperature ?? 0.7,
-    messages:    convo,
-  }
-  if (systemMsg) body.system = systemMsg.content
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:  'POST',
-    headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-  })
-
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message || `Anthropic error ${res.status}`)
-  return data.content?.[0]?.text ?? ''
-}
-
 async function callGemini(apiKey, model, messages, options = {}) {
   const systemMsg = messages.find((m) => m.role === 'system')
-  const contents = messages
+  const contents  = messages
     .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }))
+    .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
 
   const body = {
     contents,
-    generationConfig: {
-      temperature:     options.temperature ?? 0.7,
-      maxOutputTokens: options.maxTokens ?? 2000,
-    },
+    generationConfig: { temperature: options.temperature ?? 0.7, maxOutputTokens: options.maxTokens ?? 2000 },
   }
   if (systemMsg) body.systemInstruction = { parts: [{ text: systemMsg.content }] }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
-  const res  = await fetch(url, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(body),
-  })
-
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message || `Gemini error ${res.status}`)
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
@@ -103,39 +56,37 @@ async function callGemini(apiKey, model, messages, options = {}) {
 
 // ─── YouTube Data API v3 ──────────────────────────────────────────────────────
 
-async function youtubeSearch(youtubeApiKey, query) {
+async function youtubeSearch(youtubeApiKey, query, opts = {}) {
   const base = 'https://www.googleapis.com/youtube/v3'
 
-  // Step 1: search videos
-  const searchUrl = `${base}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&relevanceLanguage=pt&key=${youtubeApiKey}`
-  const searchRes = await fetch(searchUrl)
-  const searchData = await searchRes.json()
+  const orderMap = { recent: 'date', views: 'viewCount' }
+  let searchUrl = `${base}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&relevanceLanguage=pt&key=${youtubeApiKey}`
+  if (opts.duration && opts.duration !== 'any') searchUrl += `&videoDuration=${opts.duration}`
+  searchUrl += `&order=${orderMap[opts.sort] || 'relevance'}`
 
+  const searchRes  = await fetch(searchUrl)
+  const searchData = await searchRes.json()
   if (!searchRes.ok || searchData.error) {
     throw new Error(searchData.error?.message || `YouTube search error ${searchRes.status}`)
   }
-
   if (!searchData.items?.length) return []
 
-  // Step 2: fetch statistics (views, likes, comments)
   const videoIds = searchData.items.map((i) => i.id.videoId).join(',')
   const statsUrl = `${base}/videos?part=statistics,contentDetails&id=${videoIds}&key=${youtubeApiKey}`
-  const statsRes = await fetch(statsUrl)
+  const statsRes  = await fetch(statsUrl)
   const statsData = await statsRes.json()
 
   const statsMap = {}
   statsData.items?.forEach((v) => { statsMap[v.id] = v.statistics })
 
-  // Step 3: merge into creator cards
   return searchData.items.map((item) => {
-    const stats = statsMap[item.id.videoId] || {}
+    const stats        = statsMap[item.id.videoId] || {}
     const viewCount    = parseInt(stats.viewCount    || 0)
     const likeCount    = parseInt(stats.likeCount    || 0)
     const commentCount = parseInt(stats.commentCount || 0)
     const engagementRate = viewCount > 0
       ? ((likeCount + commentCount) / viewCount * 100).toFixed(2) + '%'
       : null
-
     return {
       id:            item.id.videoId,
       videoId:       item.id.videoId,
@@ -157,17 +108,17 @@ async function youtubeSearch(youtubeApiKey, query) {
   })
 }
 
-// ─── Dailymotion (public search — no API key required) ────────────────────────
+// ─── Dailymotion (public — no API key required) ───────────────────────────────
 
-async function dailymotionSearch(query) {
-  const fields = 'id,title,owner.screenname,thumbnail_360_url,views_total,url'
+async function dailymotionSearch(query, opts = {}) {
+  const sortMap = { recent: 'recent', views: 'visited' }
+  const sortVal = sortMap[opts.sort] || 'relevance'
+  const fields  = 'id,title,owner.screenname,thumbnail_360_url,views_total,url'
   const url = `https://api.dailymotion.com/videos?search=${encodeURIComponent(query)}` +
-    `&fields=${encodeURIComponent(fields)}&limit=10&sort=relevance`
-  const res = await fetch(url)
+    `&fields=${encodeURIComponent(fields)}&limit=10&sort=${sortVal}`
+  const res  = await fetch(url)
   const data = await res.json()
-  if (!res.ok || data.error) {
-    throw new Error(data.error?.message || `Dailymotion error ${res.status}`)
-  }
+  if (!res.ok || data.error) throw new Error(data.error?.message || `Dailymotion error ${res.status}`)
   return (data.list || []).map((v) => ({
     id:         v.id,
     videoId:    v.id,
@@ -181,21 +132,19 @@ async function dailymotionSearch(query) {
   }))
 }
 
-// ─── Vimeo (requires a personal access token) ─────────────────────────────────
+// ─── Vimeo (requires personal access token) ───────────────────────────────────
 
-async function vimeoSearch(accessToken, query) {
-  const fields = 'uri,name,link,user.name,pictures.sizes,stats.plays'
+async function vimeoSearch(accessToken, query, opts = {}) {
+  const sortMap = { recent: 'newest', views: 'plays' }
+  const sortVal = sortMap[opts.sort] || 'relevant'
+  const fields  = 'uri,name,link,user.name,pictures.sizes,stats.plays'
   const url = `https://api.vimeo.com/videos?query=${encodeURIComponent(query)}&per_page=10` +
-    `&fields=${encodeURIComponent(fields)}`
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-  })
+    `&sort=${sortVal}&direction=desc&filter=playable&fields=${encodeURIComponent(fields)}`
+  const res  = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } })
   const data = await res.json()
-  if (!res.ok || data.error) {
-    throw new Error(data.error || data.developer_message || `Vimeo error ${res.status}`)
-  }
+  if (!res.ok || data.error) throw new Error(data.error || data.developer_message || `Vimeo error ${res.status}`)
   return (data.data || []).map((v) => {
-    const id = String(v.uri || '').split('/').pop()
+    const id    = String(v.uri || '').split('/').pop()
     const sizes = v.pictures?.sizes || []
     const thumb = sizes.length ? sizes[Math.min(3, sizes.length - 1)].link : null
     return {
@@ -212,28 +161,20 @@ async function vimeoSearch(accessToken, query) {
   })
 }
 
-// ─── TikTok (best-effort, via a RapidAPI provider) ────────────────────────────
-// TikTok has no official search API; this targets a RapidAPI host. The two most
-// common providers use different search endpoints and response shapes, so we
-// pick the endpoint by host and parse fields defensively (camelCase + snake_case).
+// ─── TikTok via RapidAPI ──────────────────────────────────────────────────────
 
 function tiktokSearchUrl(host, query) {
   const kw = encodeURIComponent(query)
-  // tiktok-api23: web-style search, camelCase fields.
-  if (host.includes('tiktok-api23')) {
-    return `https://${host}/api/search/general?keyword=${kw}&cursor=0&search_id=0`
-  }
-  // tiktok-scraper7 (and default): snake_case feed search.
+  if (host.includes('tiktok-api23')) return `https://${host}/api/search/general?keyword=${kw}&cursor=0&search_id=0`
   return `https://${host}/feed/search?keywords=${kw}&count=10&region=br`
 }
 
 function normalizeTiktokItem(raw) {
-  // Some providers wrap the actual video in .item / .aweme_info.
-  const v = raw.item || raw.aweme_info || raw
+  const v      = raw.item || raw.aweme_info || raw
   const author = v.author || {}
-  const stats = v.stats || v.statistics || {}
-  const video = v.video || {}
-  const id = String(v.id || v.aweme_id || v.video_id || '')
+  const stats  = v.stats  || v.statistics || {}
+  const video  = v.video  || {}
+  const id     = String(v.id || v.aweme_id || v.video_id || '')
   const unique = author.uniqueId || author.unique_id || '_'
   return {
     id,
@@ -241,8 +182,7 @@ function normalizeTiktokItem(raw) {
     platform:   'tiktok',
     videoTitle: v.desc || v.title || 'TikTok',
     name:       author.nickname || author.unique_id || author.uniqueId || 'TikTok',
-    thumbnail:  video.cover || video.originCover || video.origin_cover ||
-                v.cover || v.origin_cover || v.ai_dynamic_cover || null,
+    thumbnail:  video.cover || video.originCover || video.origin_cover || v.cover || null,
     url:        `https://www.tiktok.com/@${unique}/video/${id}`,
     viewCount:  String(stats.playCount ?? stats.play_count ?? v.play_count ?? '') || null,
     likeCount:  String(stats.diggCount ?? stats.digg_count ?? v.digg_count ?? '') || null,
@@ -251,13 +191,11 @@ function normalizeTiktokItem(raw) {
 
 async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
   const host = (rapidApiHost && rapidApiHost.trim()) || 'tiktok-scraper7.p.rapidapi.com'
-  const res = await fetch(tiktokSearchUrl(host, query), {
+  const res  = await fetch(tiktokSearchUrl(host, query), {
     headers: { 'x-rapidapi-key': rapidApiKey, 'x-rapidapi-host': host },
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.message || `TikTok error ${res.status}`)
-
-  // Items can live under several keys depending on the provider.
   const items =
     data.data?.videos ||
     data.item_list ||
@@ -265,59 +203,45 @@ async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
     (Array.isArray(data.data) ? data.data : null) ||
     (Array.isArray(data.data?.data) ? data.data.data : null) ||
     []
-
-  return (Array.isArray(items) ? items : [])
-    .map(normalizeTiktokItem)
-    .filter((v) => v.id)
+  return (Array.isArray(items) ? items : []).map(normalizeTiktokItem).filter((v) => v.id)
 }
 
-// ─── Whisper transcription ────────────────────────────────────────────────────
+// ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
   const audioRes = await fetch(audioUrl)
   if (!audioRes.ok) throw new Error(`Could not fetch audio: ${audioRes.status}`)
   const audioBuffer = await audioRes.arrayBuffer()
-
   const urlPath = new URL(audioUrl).pathname
-  const ext = urlPath.split('.').pop()?.toLowerCase() || 'mp3'
-  const supportedExts = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac']
-  const fileExt = supportedExts.includes(ext) ? ext : 'mp3'
-
-  const formData = new FormData()
+  const ext     = urlPath.split('.').pop()?.toLowerCase() || 'mp3'
+  const supported = ['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac']
+  const fileExt   = supported.includes(ext) ? ext : 'mp3'
+  const formData  = new FormData()
   formData.append('file', new Blob([audioBuffer], { type: `audio/${fileExt}` }), `audio.${fileExt}`)
   formData.append('model', 'whisper-1')
   formData.append('response_format', 'json')
-
   const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${openaiApiKey}` },
     body: formData,
   })
-
   const data = await whisperRes.json()
   if (!whisperRes.ok) throw new Error(data.error?.message || `Whisper error ${whisperRes.status}`)
   return data.text
 }
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-// Restrict the proxy to the app's own origins instead of a wildcard `*`.
-// Allowed: localhost (dev), the project's *.vercel.app deployments, and any
-// extra origins listed in the ALLOWED_ORIGINS env var (comma-separated).
+
 function isAllowedOrigin(origin) {
   if (!origin) return false
-  const extra = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean)
+  const extra = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean)
   if (extra.includes(origin)) return true
   try {
     const { hostname, protocol } = new URL(origin)
     if (protocol !== 'http:' && protocol !== 'https:') return false
     if (hostname === 'localhost' || hostname === '127.0.0.1') return true
     if (hostname.endsWith('.vercel.app')) return true
-  } catch {
-    return false
-  }
+  } catch { return false }
   return false
 }
 
@@ -337,29 +261,17 @@ function applyCors(req, res) {
 export default async function handler(req, res) {
   const originAllowed = applyCors(req, res)
 
-  if (req.method === 'OPTIONS') {
-    return res.status(originAllowed ? 200 : 403).end()
-  }
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
-  // Reject cross-site browser requests from origins outside the allowlist.
-  if (req.headers.origin && !originAllowed) {
-    return res.status(403).json({ error: 'Origin not allowed' })
-  }
+  if (req.method === 'OPTIONS') return res.status(originAllowed ? 200 : 403).end()
+  if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' })
+  if (req.headers.origin && !originAllowed) return res.status(403).json({ error: 'Origin not allowed' })
 
   const action = (req.body && req.body.action) || (req.query && req.query.action)
 
   try {
-    // ── Anthropic (Claude) proxy ──────────────────────────────────────────────
-    // The browser posts the same Anthropic Messages body it used to send
-    // directly, but to this same-origin proxy. The user's key travels in the
-    // x-api-key header to our backend (never cross-origin to Anthropic with the
-    // dangerous-direct-browser-access flag). We forward server-side and mirror
-    // Anthropic's status and JSON so the client response shape is unchanged.
+    // ── Anthropic ────────────────────────────────────────────────────────────
     if (action === 'anthropic') {
       const apiKey = req.headers['x-api-key']
       if (!apiKey) return res.status(400).json({ error: 'API key is required' })
-
       const { action: _drop, ...anthropicBody } = req.body || {}
       const upstream = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -370,68 +282,61 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify(anthropicBody),
       })
-
       const data = await upstream.json().catch(() => ({ error: { message: `Anthropic error ${upstream.status}` } }))
       return res.status(upstream.status).json(data)
     }
 
     // ── YouTube search ────────────────────────────────────────────────────────
     if (action === 'youtube-search') {
-      const { youtubeApiKey, query } = req.body
+      const { youtubeApiKey, query, duration, sort } = req.body
       if (!youtubeApiKey?.trim()) return res.status(400).json({ error: 'YouTube API key is required' })
-      if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
-
-      const results = await youtubeSearch(youtubeApiKey, query)
+      if (!query?.trim())         return res.status(400).json({ error: 'Search query is required' })
+      const results = await youtubeSearch(youtubeApiKey, query, { duration, sort })
       return res.status(200).json({ results })
     }
 
-    // ── Dailymotion search (no key) ─────────────────────────────────────────────
+    // ── Dailymotion ───────────────────────────────────────────────────────────
     if (action === 'dailymotion-search') {
-      const { query } = req.body
+      const { query, sort } = req.body
       if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
-      const results = await dailymotionSearch(query)
+      const results = await dailymotionSearch(query, { sort })
       return res.status(200).json({ results })
     }
 
-    // ── Vimeo search ────────────────────────────────────────────────────────────
+    // ── Vimeo ─────────────────────────────────────────────────────────────────
     if (action === 'vimeo-search') {
-      const { vimeoToken, query } = req.body
+      const { vimeoToken, query, sort } = req.body
       if (!vimeoToken?.trim()) return res.status(400).json({ error: 'Vimeo access token is required' })
-      if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
-      const results = await vimeoSearch(vimeoToken, query)
+      if (!query?.trim())      return res.status(400).json({ error: 'Search query is required' })
+      const results = await vimeoSearch(vimeoToken, query, { sort })
       return res.status(200).json({ results })
     }
 
-    // ── TikTok search (via RapidAPI) ─────────────────────────────────────────────
+    // ── TikTok ────────────────────────────────────────────────────────────────
     if (action === 'tiktok-search') {
       const { rapidApiKey, rapidApiHost, query } = req.body
       if (!rapidApiKey?.trim()) return res.status(400).json({ error: 'RapidAPI key is required' })
-      if (!query?.trim()) return res.status(400).json({ error: 'Search query is required' })
+      if (!query?.trim())       return res.status(400).json({ error: 'Search query is required' })
       const results = await tiktokSearch(rapidApiKey, rapidApiHost, query)
       return res.status(200).json({ results })
     }
 
-    // ── Whisper transcription ─────────────────────────────────────────────────
+    // ── Whisper ───────────────────────────────────────────────────────────────
     if (action === 'transcribe') {
       const { openaiApiKey, audioUrl } = req.body
-      if (!openaiApiKey?.trim()) return res.status(400).json({ error: 'OpenAI API key is required for transcription' })
-      if (!audioUrl?.trim()) return res.status(400).json({ error: 'Audio URL is required' })
-
+      if (!openaiApiKey?.trim()) return res.status(400).json({ error: 'OpenAI API key is required' })
+      if (!audioUrl?.trim())     return res.status(400).json({ error: 'Audio URL is required' })
       const transcript = await transcribeAudio(openaiApiKey, audioUrl)
       return res.status(200).json({ transcript })
     }
 
     // ── AI chat completion (default) ──────────────────────────────────────────
     const { provider, apiKey, model, messages, options = {}, customBaseUrl } = req.body
-
-    if (!apiKey?.trim()) return res.status(400).json({ error: 'API key is required' })
-    if (!messages?.length) return res.status(400).json({ error: 'Messages are required' })
+    if (!apiKey?.trim())    return res.status(400).json({ error: 'API key is required' })
+    if (!messages?.length)  return res.status(400).json({ error: 'Messages are required' })
 
     let content
-
-    if (provider === 'anthropic') {
-      content = await callAnthropic(apiKey, model, messages, options)
-    } else if (provider === 'gemini') {
+    if (provider === 'gemini') {
       content = await callGemini(apiKey, model, messages, options)
     } else {
       let url = PROVIDER_URLS[provider]
@@ -440,14 +345,9 @@ export default async function handler(req, res) {
         url = `${customBaseUrl.replace(/\/$/, '')}/chat/completions`
       }
       if (!url) return res.status(400).json({ error: `Unknown provider: ${provider}` })
-
       const extraHeaders = provider === 'openrouter'
-        ? {
-            'HTTP-Referer': req.headers.origin || 'https://content-intelligence-os1.vercel.app',
-            'X-Title': 'Content Intelligence OS',
-          }
+        ? { 'HTTP-Referer': req.headers.origin || 'https://content-intelligence-os1.vercel.app', 'X-Title': 'Content Intelligence OS' }
         : {}
-
       content = await callOpenAICompatible(url, apiKey, model, messages, options, extraHeaders)
     }
 
