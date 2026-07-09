@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
-  ClipboardList, Clapperboard, Flame, Mic, Dices, Brain, Newspaper, Users, FileText,
+  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -16,7 +16,6 @@ const TOP_NAV = [
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
-  { to: '/brain', icon: Brain, label: 'Content Brain' },
 ]
 
 const NAV_GROUPS = [

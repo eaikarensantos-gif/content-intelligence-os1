@@ -2,64 +2,77 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { PROVIDERS } from '../lib/aiService'
 
-// The Anthropic key is also entered in Settings (localStorage), used by the
-// app's direct Claude calls. Bridge it here so choosing Anthropic as the AI
-// engine works with the key the user already saved — no double entry.
-const LS_ANTHROPIC = 'cio-anthropic-key'
-
-function readAnthropicKey() {
-  try {
-    return (typeof localStorage !== 'undefined' && localStorage.getItem(LS_ANTHROPIC)) || ''
-  } catch {
-    return ''
-  }
-}
+const LS_YOUTUBE      = 'cio-youtube-key'
+const LS_VIMEO        = 'cio-vimeo-token'
+const LS_RAPIDAPI     = 'cio-rapidapi-key'
+const LS_RAPIDAPI_HOST = 'cio-rapidapi-tiktok-host'
 
 const useAIStore = create(
   persist(
     (set, get) => ({
-      provider: 'anthropic',
+      provider: 'groq',
       apiKey: '',
-      model: PROVIDERS.anthropic.defaultModel,
+      model: PROVIDERS.groq.defaultModel,
       customBaseUrl: '',
       youtubeApiKey: '',
+      vimeoToken: '',
+      rapidApiKey: '',
+      rapidApiHost: '',
 
       setProvider: (provider) => {
         const def = PROVIDERS[provider]
-        set({
-          provider,
-          model: def?.defaultModel || '',
-        })
+        set({ provider, model: def?.defaultModel || '' })
       },
-
-      setApiKey: (apiKey) => set({ apiKey }),
-      setModel: (model) => set({ model }),
+      setApiKey:      (apiKey)      => set({ apiKey }),
+      setModel:       (model)       => set({ model }),
       setCustomBaseUrl: (customBaseUrl) => set({ customBaseUrl }),
       setYoutubeApiKey: (youtubeApiKey) => set({ youtubeApiKey }),
+      setVimeoToken:    (vimeoToken)    => set({ vimeoToken }),
+      setRapidApiKey:   (rapidApiKey)   => set({ rapidApiKey }),
+      setRapidApiHost:  (rapidApiHost)  => set({ rapidApiHost }),
 
       getSettings: () => {
         const { provider, apiKey, model, customBaseUrl } = get()
-        // Fall back to the Settings-stored Anthropic key when running on Claude.
-        const key = apiKey?.trim() || (provider === 'anthropic' ? readAnthropicKey() : '')
-        return { provider, apiKey: key, model, customBaseUrl }
+        return { provider, apiKey, model, customBaseUrl }
       },
 
-      isConfigured: () => {
-        const { provider, apiKey } = get()
-        if (apiKey?.trim()) return true
-        return provider === 'anthropic' && !!readAnthropicKey().trim()
-      },
+      isConfigured:       () => !!get().apiKey?.trim(),
       isYoutubeConfigured: () => !!get().youtubeApiKey?.trim(),
+      isVimeoConfigured:   () => !!get().vimeoToken?.trim(),
+      isTiktokConfigured:  () => !!get().rapidApiKey?.trim(),
     }),
     {
       name: 'content-intelligence-ai-settings',
       partialize: (s) => ({
-        provider: s.provider,
-        apiKey: s.apiKey,
-        model: s.model,
+        provider:     s.provider,
+        apiKey:       s.apiKey,
+        model:        s.model,
         customBaseUrl: s.customBaseUrl,
         youtubeApiKey: s.youtubeApiKey,
+        vimeoToken:    s.vimeoToken,
+        rapidApiKey:   s.rapidApiKey,
+        rapidApiHost:  s.rapidApiHost,
       }),
+      // Bridge existing localStorage keys saved by SupabaseSettings
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        if (!state.youtubeApiKey) {
+          const v = localStorage.getItem(LS_YOUTUBE)
+          if (v) state.youtubeApiKey = v
+        }
+        if (!state.vimeoToken) {
+          const v = localStorage.getItem(LS_VIMEO)
+          if (v) state.vimeoToken = v
+        }
+        if (!state.rapidApiKey) {
+          const v = localStorage.getItem(LS_RAPIDAPI)
+          if (v) state.rapidApiKey = v
+        }
+        if (!state.rapidApiHost) {
+          const v = localStorage.getItem(LS_RAPIDAPI_HOST)
+          if (v) state.rapidApiHost = v
+        }
+      },
     }
   )
 )
