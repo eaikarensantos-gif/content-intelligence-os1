@@ -718,6 +718,70 @@ const TEMAS_CARROSSEL = [
   },
 ]
 
+// Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
+const PERSONAL_TEMAS_SUGESTOES = [
+  {
+    categoria: 'Naomi',
+    temas: [
+      'A Naomi rosnando pro entregador que ela já conhece',
+      'Tentando tirar foto profissional e ela só quer brincar',
+      'O ronco dela enquanto eu tento trabalhar',
+      'Ela escondendo o brinquedo debaixo do sofá',
+      'A cara de decepção quando eu saio sem ela',
+    ],
+  },
+  {
+    categoria: 'Casa & Rotina',
+    temas: [
+      'O dia que eu decidi organizar um armário e desisti na metade',
+      'A lista de compras que eu nunca sigo no mercado',
+      'Café da manhã em pé porque atrasei',
+      'A parede que eu quero pintar há um ano',
+      'Domingo de faxina que vira documentário no fundo',
+    ],
+  },
+  {
+    categoria: 'Fé',
+    temas: [
+      'O versículo que grudou sem eu pedir',
+      'Rezar no trânsito porque não deu tempo antes',
+      'A dúvida que eu não conto pra ninguém da igreja',
+      'Gratidão em dia que não teve nada de especial',
+      'A oração que eu repito sem prestar atenção',
+    ],
+  },
+  {
+    categoria: 'Comprinhas & Achados',
+    temas: [
+      'O item que ficou 3 meses no carrinho até eu comprar',
+      'A resenha que me convenceu contra minha vontade',
+      'O produto que todo mundo recomendou e eu não gostei',
+      'A promoção que eu jurei que não ia cair',
+      'O achado de R$15 que virou queridinho',
+    ],
+  },
+  {
+    categoria: 'Hobbies & Gostos',
+    temas: [
+      'O podcast que eu escuto lavando louça',
+      'A receita que eu erro sempre do mesmo jeito',
+      'O documentário que eu assisto sozinha porque ninguém quer',
+      'A playlist que muda meu humor em 2 minutos',
+      'O hobby que eu larguei e quero retomar',
+    ],
+  },
+  {
+    categoria: 'Vida',
+    temas: [
+      'A ligação que eu adio há semanas',
+      'O silêncio que eu preciso depois de um dia cheio',
+      'A frase da minha avó que eu repito sem perceber',
+      'O jeito que eu percebo que preciso descansar',
+      'A saudade de uma fase que eu não queria voltar, só visitar',
+    ],
+  },
+]
+
 // Detecta se dois textos são essencialmente o mesmo conteúdo (repetição literal
 // ou reformulação próxima) — usado para não exibir duas vezes o exercício
 // prático/CTA quando a IA acaba repetindo o mesmo texto em campos diferentes.
@@ -1844,9 +1908,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
             </div>
 
-            {/* Accordion por categoria — temas salvos + sugestões */}
+            {/* Accordion por categoria — temas salvos + sugestões (lista de categorias
+                muda por persona: Studio Pessoal nunca deve mostrar seções profissionais) */}
             <div className="px-4 py-3 space-y-1.5">
-              {TEMAS_CARROSSEL.map(({ categoria, temas: sugestoes }) => {
+              {(isPessoal ? PERSONAL_TEMAS_SUGESTOES : TEMAS_CARROSSEL).map(({ categoria, temas: sugestoes }) => {
                 const isOpen = bankOpenCategory === categoria
                 const savedInCat = savedThemes.filter(s => s.categoria === categoria)
                 const savedSet = new Set(savedThemes.map(s => s.tema))
