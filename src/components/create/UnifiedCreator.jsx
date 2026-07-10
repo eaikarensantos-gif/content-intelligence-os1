@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
+import { withManualOperacional } from '../../lib/manualOperacional'
+import { detectCliches } from '../../lib/clicheDetector'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
@@ -882,6 +884,30 @@ export default function UnifiedCreator() {
     e.target.value = ''
   }
 
+  /* ── Reescrita corretiva anti-clichê ──
+     O filtro no prompt é probabilístico: o modelo às vezes emite a estrutura
+     proibida mesmo assim. Quando o detector determinístico encontra um bloco,
+     esta chamada reescreve só os trechos apontados antes de mostrar na tela. */
+  const rewriteWithoutCliches = async (text, hits) => {
+    const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
+    const res = await fetch('/api/ai?action=anthropic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: withManualOperacional(ANTI_AI_FILTER),
+        messages: [{
+          role: 'user',
+          content: `O texto abaixo saiu com padrões proibidos pelo filtro de autenticidade. Reescreva SOMENTE os trechos apontados, em declaração direta (sujeito + verbo + complemento, sem negação prévia, sem contraste corretivo, sem pergunta retórica no fechamento — fechamento é conclusão prática, dado ou observação seca). Mantenha todo o resto idêntico: estrutura, quebras de linha, indicações. Retorne APENAS o texto completo corrigido, sem comentários.\n\nPADRÕES ENCONTRADOS:\n${list}\n\nTEXTO:\n${text}`,
+        }],
+      }),
+    })
+    if (!res.ok) throw new Error(`Erro ${res.status}`)
+    const data = await res.json()
+    return data.content?.[0]?.text?.trim() || text
+  }
+
   /* ── Gerar conteúdo ── */
   const generate = async (overrides = {}) => {
     const text = overrides.input || input
@@ -946,7 +972,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 4000,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
@@ -962,6 +988,14 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
       if (!jsonMatch) throw new Error('Resposta inválida')
 
       const parsed = JSON.parse(jsonMatch[0])
+
+      // Passagem determinística anti-clichê sobre o texto gerado
+      try {
+        for (const field of ['content', 'caption']) {
+          const hits = detectCliches(parsed[field]).blocks
+          if (hits.length) parsed[field] = await rewriteWithoutCliches(parsed[field], hits)
+        }
+      } catch { /* se a correção falhar, mantém o texto original */ }
 
       // Salvar no histórico antes de atualizar
       if (result) setHistory(prev => [result, ...prev].slice(0, 10))
@@ -1000,7 +1034,7 @@ TEXTO:\n${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1500,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
@@ -1011,8 +1045,16 @@ TEXTO:\n${revText.trim()}`
       const data = await res.json()
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
-      if (match) setRevResult(JSON.parse(match[0]))
-      else throw new Error('inválido')
+      if (!match) throw new Error('inválido')
+      const parsed = JSON.parse(match[0])
+      // Detector determinístico: garante que estrutura proibida aparece na análise
+      // mesmo quando o modelo deixa passar
+      const det = detectCliches(revText)
+      const detected = [...det.blocks, ...det.warns].map(h => `"${h.match}" — ${h.label}`)
+      if (detected.length) {
+        parsed.linguagem_robotica = [...new Set([...(parsed.linguagem_robotica || []), ...detected])]
+      }
+      setRevResult(parsed)
     } catch {
       setRevError('Erro ao analisar. Verifique sua API key.')
     } finally {
@@ -1056,7 +1098,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 2000,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })
@@ -1088,7 +1130,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 2000,
-          system: ANTI_AI_FILTER,
+          system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
       })

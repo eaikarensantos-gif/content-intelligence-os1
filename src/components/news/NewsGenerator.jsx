@@ -6,6 +6,7 @@ import {
 import clsx from 'clsx'
 import Anthropic from '@anthropic-ai/sdk'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
+import { withManualOperacional } from '../../lib/manualOperacional'
 
 const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
@@ -325,7 +326,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
       const res = await mkClient(apiKey).messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 1200,
-        system: withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.'),
+        system: withManualOperacional(withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.')),
         messages: [{ role: 'user', content: prompt }],
       })
       const text = res.content.find(b => b.type === 'text')?.text || ''
