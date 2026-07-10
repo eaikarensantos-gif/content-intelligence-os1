@@ -73,6 +73,28 @@ TONS DE VOZ:
 NUNCA FAZER:
 - Transformar a vida em conteúdo de marca, romantizar rotina, estetizar demais, moral da história, gancho de dor profissional, falsa espontaneidade ensaiada`
 
+/* ── Temas iniciais do Banco de Temas pessoal ── */
+const PERSONAL_SEED_THEMES = [
+  { tema: 'A Naomi decidiu que o sofá é dela', categoria: 'Naomi' },
+  { tema: 'O que a Naomi faz quando eu choro', categoria: 'Naomi' },
+  { tema: 'Passeio com buldogue no calor de 35 graus', categoria: 'Naomi' },
+  { tema: 'A planta que eu me recuso a deixar morrer', categoria: 'Casa & Rotina' },
+  { tema: 'Meu domingo começa na feira', categoria: 'Casa & Rotina' },
+  { tema: 'A gaveta da bagunça que todo mundo tem', categoria: 'Casa & Rotina' },
+  { tema: 'A oração que eu volto quando nada faz sentido', categoria: 'Fé' },
+  { tema: 'Fé em semana ruim', categoria: 'Fé' },
+  { tema: 'A palavra que me pegou desprevenida no culto', categoria: 'Fé' },
+  { tema: 'A comprinha de R$30 que eu uso todo dia', categoria: 'Comprinhas & Achados' },
+  { tema: 'O achado da Shopee que superou o hype', categoria: 'Comprinhas & Achados' },
+  { tema: 'A compra cara que me arrependi caladinha', categoria: 'Comprinhas & Achados' },
+  { tema: 'O livro que eu abandonei sem culpa', categoria: 'Hobbies & Gostos' },
+  { tema: 'O café da manhã que virou ritual', categoria: 'Hobbies & Gostos' },
+  { tema: 'A série que eu assisto pela terceira vez', categoria: 'Hobbies & Gostos' },
+  { tema: 'Coisas que eu faço quando ninguém vê', categoria: 'Vida' },
+  { tema: 'A mania que eu herdei da minha mãe', categoria: 'Vida' },
+  { tema: 'O elogio que eu não soube receber', categoria: 'Vida' },
+]
+
 /* ── Formatos ── */
 const FORMATS = [
   { id: 'reels', label: 'Reels', icon: Video, desc: '30-60s roteiro com cenas', color: 'from-purple-500 to-pink-500' },
@@ -856,11 +878,17 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [savedThemes, setSavedThemes] = useState(() => {
     try {
       const raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
+      // Banco pessoal nasce semeado com temas de vida (só na primeira visita)
+      if (raw.length === 0 && isPessoal) {
+        return PERSONAL_SEED_THEMES.map((t, i) => ({
+          id: Date.now() + i, ...t, fonte: 'seed', criadoEm: new Date().toISOString().slice(0, 10),
+        }))
+      }
       if (raw.length > 0 && typeof raw[0] === 'string') {
-        return raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
+        return raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       }
       // migrar itens sem categoria
-      return raw.map(item => ({ ...item, categoria: item.categoria || 'Carreira' }))
+      return raw.map(item => ({ ...item, categoria: item.categoria || (isPessoal ? 'Vida' : 'Carreira') }))
     } catch { return [] }
   })
   const [newThemeInput, setNewThemeInput] = useState('')
@@ -1600,7 +1628,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
     setNewThemeInput('')
     setCategorizingThemes(true)
 
-    const categorias = ['Carreira', 'Maturidade Profissional', 'Tomada de Decisão', 'Dinâmicas Corporativas', 'IA e Futuro do Trabalho']
+    const categorias = isPessoal
+      ? ['Naomi', 'Casa & Rotina', 'Fé', 'Comprinhas & Achados', 'Hobbies & Gostos', 'Vida']
+      : ['Carreira', 'Maturidade Profissional', 'Tomada de Decisão', 'Dinâmicas Corporativas', 'IA e Futuro do Trabalho']
 
     let classificados = novos.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now }))
 
@@ -1615,11 +1645,18 @@ Responda EXCLUSIVAMENTE com JSON válido:
             system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
-- IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
+${isPessoal
+    ? `- Cachorra, pet, buldogue, bicho → "Naomi"
+- Casa, decoração, cozinha, faxina, rotina doméstica → "Casa & Rotina"
+- Fé, oração, igreja, gratidão, espiritualidade → "Fé"
+- Compras, achados, resenhas de produto, unboxing → "Comprinhas & Achados"
+- Livros, séries, viagens, comida, música, treino, hobbies → "Hobbies & Gostos"
+- Sentimentos, manias, memórias, família, cenas banais do dia → "Vida"`
+    : `- IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
 - Reuniões, gestores, liderança, política de escritório, equipe, hierarquia → "Dinâmicas Corporativas"
 - Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
 - Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
-- Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`,
+- Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`}`,
             messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
           }),
         })
@@ -1668,7 +1705,9 @@ Regras:
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 800,
-          messages: [{ role: 'user', content: `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.
+          messages: [{ role: 'user', content: `${isPessoal
+            ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`
+            : `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.`}
 
 ${contextoCategoria}
 
@@ -1692,7 +1731,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
           .map(t => ({
             id: Date.now() + Math.random(),
             tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
-            categoria: categoria || 'Carreira',
+            categoria: categoria || (isPessoal ? categorizeTheme(t.tema) : 'Carreira'),
             fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
           }))
         setSavedThemes(prev => [...prev, ...novos])
