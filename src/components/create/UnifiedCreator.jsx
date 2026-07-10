@@ -48,6 +48,31 @@ ELEMENTOS OBRIGATÓRIOS:
 NUNCA FAZER:
 - Motivação baça, corporativismo vazio, superficialidade, só problema sem solução, julgamento moral, soluções simplistas, hype sem fundamento`
 
+/* ── Master Prompt Pessoal (Studio Pessoal — vida fora do trabalho) ── */
+const PERSONAL_MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo PESSOAL para Karen Santos (@karensantosperfil).
+Neste modo Karen NÃO é a consultora tech nem a mentora de carreira. Aqui ela é a pessoa fora do trabalho: a casa, a Naomi (buldogue francês), a fé, as comprinhas, os hobbies, as coisas banais do dia que a tornam humana.
+
+OBJETIVO: conexão real, não autoridade. O leitor precisa sentir "eu também", não "que profissional incrível". É esse conteúdo que constrói comunidade de verdade.
+
+REGRAS DESTE MODO:
+- PROIBIDO enquadrar pelo trabalho: nada de carreira, tecnologia, mentoria, liderança, produtividade ou lição profissional disfarçada. Se o tema puxar pra trabalho, puxa de volta pra vida.
+- Banal é o ponto, não o problema. Uma comprinha, uma mania, um perrengue doméstico valem post — a força está no detalhe específico (nome do produto, hora do dia, o que a Naomi fez), não em moral da história.
+- Vulnerabilidade só quando carrega informação real: o que ela sentiu, o que não resolveu, o que ainda não entende. Vulnerabilidade performada ("confesso que...") é proibida — lê pior que texto perfeito.
+- Sem CTA de engajamento, sem lição no final. Fechamento é observação seca, detalhe concreto ou piada — nunca moral.
+
+RECONHECIMENTO AUTOMÁTICO DE CONTEXTO:
+- Momento íntimo, fé, sentimento, algo não resolvido → Tom Diário
+- Cena do dia, perrengue, comprinha, mania, Naomi → Tom Cotidiano
+- Algo que ela viu ou notou no mundo, sem ser corporativo → Tom Observação
+
+TONS DE VOZ:
+1. DIÁRIO: primeira pessoa, confessional de verdade, como quem conta pra amiga próxima. Pode terminar sem resposta.
+2. COTIDIANO: leve, engraçado, autoirônico, cheio de detalhe específico.
+3. OBSERVAÇÃO: curiosa, sem julgamento, termina em constatação seca.
+
+NUNCA FAZER:
+- Transformar a vida em conteúdo de marca, romantizar rotina, estetizar demais, moral da história, gancho de dor profissional, falsa espontaneidade ensaiada`
+
 /* ── Formatos ── */
 const FORMATS = [
   { id: 'reels', label: 'Reels', icon: Video, desc: '30-60s roteiro com cenas', color: 'from-purple-500 to-pink-500' },
@@ -712,8 +737,9 @@ function getCleanLegenda(legenda, exercicio) {
 }
 
 /* ── Componente Principal ── */
-export default function UnifiedCreator() {
+export default function UnifiedCreator({ persona = 'trabalho' }) {
   const navigate = useNavigate()
+  const isPessoal = persona === 'pessoal'
   const brandVoice = useStore(s => s.brandVoice)
   const dislikedContent = useStore(s => s.dislikedContent)
   const addDislike = useStore(s => s.addDislike)
@@ -809,6 +835,14 @@ export default function UnifiedCreator() {
 
   const categorizeTheme = (tema) => {
     const t = tema.toLowerCase()
+    if (isPessoal) {
+      if (/naomi|cachorr|pet|buldogue|bulldog/.test(t)) return 'Naomi'
+      if (/casa|decora|cozinha|planta|apartamento|reforma|fax|limpeza|rotina/.test(t)) return 'Casa & Rotina'
+      if (/f[ée]\b|deus|igreja|ora[çc]|b[ií]blia|culto|gratid[aã]o/.test(t)) return 'Fé'
+      if (/compr|achado|shopee|amazon|resenha|make|skincare|roupa|look|unboxing/.test(t)) return 'Comprinhas & Achados'
+      if (/livro|s[ée]rie|filme|viagem|restaurante|caf[ée]|m[uú]sica|treino|corrida|hobby|receita/.test(t)) return 'Hobbies & Gostos'
+      return 'Vida'
+    }
     if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|dados|machine|llm|prompt/.test(t)) return 'IA e Futuro do Trabalho'
     if (/reuni[aã]o|gestor|empresa|corporat|chefe|pol[ií]tica|feedback|equipe|\btime\b|cargo|hierarquia|escrit[oó]rio|demiss|colega/.test(t)) return 'Dinâmicas Corporativas'
     if (/decid|decis[aã]o|escolha|op[çc][aã]o|dilema|paralisa|risco|incerteza|\bsair\b|\bficar\b|mudan[çc]a/.test(t)) return 'Tomada de Decisão'
@@ -816,9 +850,12 @@ export default function UnifiedCreator() {
     return 'Carreira'
   }
 
+  // Banco de temas separado por persona: vida e trabalho não se misturam
+  const themesKey = isPessoal ? 'cio-saved-themes-pessoal' : 'cio-saved-themes'
+
   const [savedThemes, setSavedThemes] = useState(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem('cio-saved-themes') || '[]')
+      const raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
       if (raw.length > 0 && typeof raw[0] === 'string') {
         return raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       }
@@ -836,8 +873,8 @@ export default function UnifiedCreator() {
   useEffect(() => { inputRef.current?.focus() }, [])
 
   useEffect(() => {
-    localStorage.setItem('cio-saved-themes', JSON.stringify(savedThemes))
-  }, [savedThemes])
+    localStorage.setItem(themesKey, JSON.stringify(savedThemes))
+  }, [savedThemes, themesKey])
 
   // ── Brand Linter com debounce ──
   useEffect(() => {
@@ -918,11 +955,12 @@ export default function UnifiedCreator() {
     setError(null)
     if (overrides.adjustment) setAdjusting(overrides.adjustment)
 
-    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords)
+    // No modo pessoal a voz de marca profissional fica de fora; frases proibidas e dislikes continuam
+    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords)
     const regenInstr = overrides.regen ? buildRegenerateInstruction(history.length) : ''
     const selectedFormat = overrides.format || format
 
-    const prompt = `${MASTER_PROMPT}
+    const prompt = `${isPessoal ? PERSONAL_MASTER_PROMPT : MASTER_PROMPT}
 ${voiceCtx}
 ${regenInstr}
 
@@ -950,7 +988,7 @@ ${selectedFormat ? FORMAT_PROMPTS[selectedFormat] : `DETECTE automaticamente o m
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
-  "detected_context": "reflexivo|engracado|mentora",
+  "detected_context": "${isPessoal ? 'diario|cotidiano|observacao' : 'reflexivo|engracado|mentora'}",
   "detected_context_reason": "por que este contexto foi escolhido (1 frase)",
   "suggested_format": "reels|carrossel|caption|thread|stories",
   "format_reason": "por que este formato é o melhor (1 frase)",
@@ -1667,6 +1705,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
     reflexivo: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', label: 'Reflexivo' },
     engracado: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Engraçado' },
     mentora: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', label: 'Mentora' },
+    // Tons do Studio Pessoal
+    diario: { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', label: 'Diário' },
+    cotidiano: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Cotidiano' },
+    observacao: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', label: 'Observação' },
   }
 
   return (
@@ -1674,12 +1716,17 @@ Responda EXCLUSIVAMENTE com JSON válido:
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-200">
-            <PenTool size={20} className="text-white" />
+          <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center shadow-lg',
+            isPessoal ? 'bg-gradient-to-br from-rose-400 to-pink-600 shadow-pink-200' : 'bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-200')}>
+            {isPessoal ? <Heart size={20} className="text-white" /> : <PenTool size={20} className="text-white" />}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Criar Conteúdo</h1>
-            <p className="text-xs text-gray-400">Descreva o que quer criar — a IA detecta o tom e formato ideal</p>
+            <h1 className="text-xl font-bold text-gray-900">{isPessoal ? 'Studio Pessoal' : 'Criar Conteúdo'}</h1>
+            <p className="text-xs text-gray-400">
+              {isPessoal
+                ? 'Sua vida fora do trabalho — casa, Naomi, fé, comprinhas e o resto que te faz humana'
+                : 'Descreva o que quer criar — a IA detecta o tom e formato ideal'}
+            </p>
           </div>
         </div>
         {inspiration && (
@@ -1835,24 +1882,28 @@ Responda EXCLUSIVAMENTE com JSON válido:
           )}>
           <PenTool size={13} /> Studio Livre
         </button>
-        <button onClick={() => setMode('engagement')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <MessageCircle size={13} /> Reels
-        </button>
-        <button onClick={() => setMode('carousel')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <LayoutGrid size={13} /> Carrossel
-        </button>
-        <button onClick={() => setMode('stories')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-            mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-          )}>
-          <Film size={13} /> Stories
-        </button>
+        {/* Protocolos de Reels/Carrossel/Stories são calibrados pra meta de engajamento
+            profissional — no Studio Pessoal esses formatos saem pelo Studio Livre */}
+        {!isPessoal && (<>
+          <button onClick={() => setMode('engagement')}
+            className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+              mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            )}>
+            <MessageCircle size={13} /> Reels
+          </button>
+          <button onClick={() => setMode('carousel')}
+            className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+              mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            )}>
+            <LayoutGrid size={13} /> Carrossel
+          </button>
+          <button onClick={() => setMode('stories')}
+            className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+              mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            )}>
+            <Film size={13} /> Stories
+          </button>
+        </>)}
       </div>
 
       {/* ── Revisor de Texto ── */}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
-  Zap, ChevronRight, Video, X, PenTool,
+  Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
   ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText,
 } from 'lucide-react'
@@ -13,6 +13,7 @@ const TOP_NAV = [
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/create', icon: PenTool, label: 'Studio de Criação' },
+  { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
   { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
   { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },

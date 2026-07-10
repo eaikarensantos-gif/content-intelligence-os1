@@ -4,7 +4,7 @@ import {
   Search, Lightbulb, Brain, Video, ClipboardList, ArrowRight,
   LayoutDashboard, BarChart2, PenTool, Clapperboard, Radar, Dna,
   Activity, FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft, Dices, FileText,
-  Newspaper, Shield, Users, Bookmark, PieChart,
+  Newspaper, Shield, Users, Bookmark, PieChart, Heart,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -16,6 +16,7 @@ const PAGES = [
   { to: '/analytics', label: 'Analytics', icon: BarChart2 },
   { to: '/audience', label: 'Audiência', icon: PieChart },
   { to: '/create', label: 'Studio de Criação', icon: PenTool },
+  { to: '/create-pessoal', label: 'Studio Pessoal', icon: Heart },
   { to: '/naomi', label: 'Naomi Studio', icon: Clapperboard },
   { to: '/ideas', label: 'Hub de Ideias', icon: Lightbulb },
   { to: '/tasks', label: 'Tarefas', icon: ClipboardList },
