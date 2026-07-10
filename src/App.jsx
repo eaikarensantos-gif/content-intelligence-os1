@@ -129,6 +129,7 @@ export default function App() {
             <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
             <Route path="/video" element={<VideoAnalyzer />} />
             <Route path="/create" element={<UnifiedCreator />} />
+            <Route path="/create-pessoal" element={<UnifiedCreator persona="pessoal" />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />
             <Route path="/text" element={<TextStudio />} />
             <Route path="/generate" element={<IdeaGenerator />} />
