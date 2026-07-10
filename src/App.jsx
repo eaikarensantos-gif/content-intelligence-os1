@@ -128,8 +128,10 @@ export default function App() {
             <Route path="/social" element={<SocialDashboard />} />
             <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
             <Route path="/video" element={<VideoAnalyzer />} />
-            <Route path="/create" element={<UnifiedCreator />} />
-            <Route path="/create-pessoal" element={<UnifiedCreator persona="pessoal" />} />
+            {/* key força remount ao trocar de rota — sem ele o React reaproveita a
+                instância e o estado de um estúdio vaza pro outro */}
+            <Route path="/create" element={<UnifiedCreator key="trabalho" />} />
+            <Route path="/create-pessoal" element={<UnifiedCreator key="pessoal" persona="pessoal" />} />
             <Route path="/thoughts" element={<ThoughtCapture />} />
             <Route path="/text" element={<TextStudio />} />
             <Route path="/generate" element={<IdeaGenerator />} />
