@@ -73,6 +73,9 @@ TONS DE VOZ:
 NUNCA FAZER:
 - Transformar a vida em conteúdo de marca, romantizar rotina, estetizar demais, moral da história, gancho de dor profissional, falsa espontaneidade ensaiada`
 
+/* ── Categorias do Banco de Temas pessoal ── */
+const PERSONAL_CATEGORIES = ['Naomi', 'Casa & Rotina', 'Fé', 'Comprinhas & Achados', 'Hobbies & Gostos', 'Vida']
+
 /* ── Temas iniciais do Banco de Temas pessoal ── */
 const PERSONAL_SEED_THEMES = [
   { tema: 'A Naomi decidiu que o sofá é dela', categoria: 'Naomi' },
@@ -877,18 +880,25 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
   const [savedThemes, setSavedThemes] = useState(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
-      // Banco pessoal nasce semeado com temas de vida (só na primeira visita)
+      let raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
+      if (raw.length > 0 && typeof raw[0] === 'string') {
+        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
+      } else {
+        // migrar itens sem categoria
+        raw = raw.map(item => ({ ...item, categoria: item.categoria || (isPessoal ? 'Vida' : 'Carreira') }))
+      }
+      // Sanitização: uma versão anterior vazava temas entre os estúdios (componente
+      // não remontava na troca de rota). Cada banco fica só com categorias da sua persona.
+      raw = isPessoal
+        ? raw.filter(t => PERSONAL_CATEGORIES.includes(t.categoria))
+        : raw.filter(t => !PERSONAL_CATEGORIES.includes(t.categoria))
+      // Banco pessoal vazio nasce semeado com temas de vida
       if (raw.length === 0 && isPessoal) {
         return PERSONAL_SEED_THEMES.map((t, i) => ({
           id: Date.now() + i, ...t, fonte: 'seed', criadoEm: new Date().toISOString().slice(0, 10),
         }))
       }
-      if (raw.length > 0 && typeof raw[0] === 'string') {
-        return raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
-      }
-      // migrar itens sem categoria
-      return raw.map(item => ({ ...item, categoria: item.categoria || (isPessoal ? 'Vida' : 'Carreira') }))
+      return raw
     } catch { return [] }
   })
   const [newThemeInput, setNewThemeInput] = useState('')
@@ -1629,7 +1639,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
     setCategorizingThemes(true)
 
     const categorias = isPessoal
-      ? ['Naomi', 'Casa & Rotina', 'Fé', 'Comprinhas & Achados', 'Hobbies & Gostos', 'Vida']
+      ? PERSONAL_CATEGORIES
       : ['Carreira', 'Maturidade Profissional', 'Tomada de Decisão', 'Dinâmicas Corporativas', 'IA e Futuro do Trabalho']
 
     let classificados = novos.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now }))
