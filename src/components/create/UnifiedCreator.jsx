@@ -236,9 +236,11 @@ Se houver qualquer sinal de artificialidade → reescrever completamente.
 
 CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
 
-const HOOK_SYSTEM = `Você gera hooks de abertura para reels de Karen Santos.
+const buildHookSystem = (isPessoal) => `Você gera hooks de abertura para reels de Karen Santos.
 
-Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+${isPessoal
+    ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.'
+    : 'Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.'}
 
 REGRA CENTRAL:
 O hook prende porque é específico e real — não porque promete revelação ou usa drama.
@@ -247,18 +249,21 @@ TRÊS TIPOS DE HOOK VÁLIDOS:
 
 Tipo 1 — OBSERVAÇÃO CORTANTE:
 Nomeia algo que a pessoa faz mas nunca colocou em palavras. Sem prometer nada. Sem drama.
-Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
-Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."
+${isPessoal ? `Exemplo: "Você provavelmente já fingiu que ia limpar a casa inteira e só arrumou uma gaveta."
+Exemplo: "Tem uma coisa que você faz com seu pet que você nunca vai admitir em voz alta."` : `Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
+Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."`}
 
 Tipo 2 — DADO + LEITURA INESPERADA:
 Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
-Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
-Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."
+${isPessoal ? `Exemplo: "A maioria das pessoas reza mais no trânsito do que na igreja. Eu incluída."
+Exemplo: "Quanto mais cara a comprinha, menos eu conto pra alguém quanto custou."` : `Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
+Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."`}
 
 Tipo 3 — CENA ESPECÍFICA:
 Começa no meio de uma situação concreta que a pessoa reconhece imediatamente. Sem setup, sem contexto.
-Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
-Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."
+${isPessoal ? `Exemplo: "A Naomi está me encarando. Eu já sei o que ela quer. Finjo que não sei."
+Exemplo: "O carrinho ficou parado no site três dias. Hoje eu comprei."` : `Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
+Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."`}
 
 LISTA NEGRA — NUNCA usar nesses hooks:
 - "Isso aqui ninguém fala"
@@ -283,7 +288,7 @@ CRITÉRIO DE APROVAÇÃO:
 Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
 Se promete → reprova. Se é específica e reconhecível → aprovado.`
 
-const buildHookPrompt = (tema, roteiro) => `
+const buildHookPrompt = (tema, roteiro, isPessoal) => `
 TEMA DO REELS: ${tema}
 ${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
 
@@ -291,7 +296,7 @@ Gere 3 hooks de abertura para este reels — um de cada tipo.
 
 Cada hook deve:
 - Prender nos primeiros 1-3 segundos
-- Ser compatível com o tom de Karen Santos (analítico, seco, sem floreio)
+- Ser compatível com o tom de Karen Santos (${isPessoal ? 'próximo, humano, sem performar autoridade — vida fora do trabalho' : 'analítico, seco, sem floreio'})
 - Ter indicação visual e sonora específica
 - NÃO usar clickbait, drama ou promessa de revelação
 
@@ -362,7 +367,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
 }`
 
 /* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
-const CAROUSEL_SYSTEM = `Você é um gerador de carrossel para Karen Santos. Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.
+const buildCarouselSystem = (isPessoal) => `Você é um gerador de carrossel para Karen Santos. ${isPessoal
+    ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.'
+    : 'Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.'}
 Seu trabalho não é criar conteúdo bonito. É criar conteúdo que faz a pessoa escrever mais de uma linha nos comentários.
 
 OBJETIVO DE ENGAJAMENTO:
@@ -542,11 +549,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
 }`
 
 /* ── Protocolo de Stories ── */
-const BASE_STORIES_SYSTEM = `— IDENTIDADE —
+const buildStoriesSystem = (isPessoal) => `— IDENTIDADE —
 
 Você é um gerador de roteiros de stories para Instagram.
 
-A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.
+${isPessoal
+    ? 'A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.'
+    : 'A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.'}
 
 
 — CONTEXTO DA GERAÇÃO —
@@ -563,9 +572,11 @@ A autora fala como conversa. Não como post.
 Escreva como ela falaria em voz alta, não como ela escreveria num artigo.
 
 Referências de tom correto:
-- "Trabalhando aqui de casa, vi uma coisa acontecer direto."
+${isPessoal ? `- "A Naomi fez de novo aquilo que só ela sabe fazer."
+- "Ontem eu quase comprei uma coisa que eu nem precisava."
+- "Tenho uma mania boba que eu não consigo largar."` : `- "Trabalhando aqui de casa, vi uma coisa acontecer direto."
 - "Num cliente meu semana passada..."
-- "Tenho uma opinião sobre isso que muita gente não concorda."
+- "Tenho uma opinião sobre isso que muita gente não concorda."`}
 
 
 — REGRAS GLOBAIS OBRIGATÓRIAS —
@@ -617,6 +628,25 @@ const STORIES_STRUCTURES = {
     label: 'Padrão que repete',
     desc: 'Um padrão que continua aparecendo nos ambientes observados',
     prompt: 'Escreva sobre um padrão que a autora continua vendo nos ambientes que ela observa. Seja específica na descrição do padrão. Termine com uma pergunta genuína que a autora ainda não sabe responder.',
+  },
+}
+
+/* ── Estruturas de Stories do Studio Pessoal (mesmos 3 tons do modo Studio Livre pessoal) ── */
+const PERSONAL_STORIES_STRUCTURES = {
+  diario: {
+    label: 'Diário',
+    desc: 'Momento íntimo, fé ou sentimento não resolvido',
+    prompt: 'Escreva em primeira pessoa, confessional de verdade, como quem conta pra amiga próxima. Pode terminar sem resposta, sem moral. Sem CTA de engajamento.',
+  },
+  cotidiano: {
+    label: 'Cotidiano',
+    desc: 'Cena do dia, perrengue, mania ou a Naomi',
+    prompt: 'Escreva leve, engraçado, autoirônico, cheio de detalhe específico (nome do produto, hora do dia, o que a Naomi fez). Termine em observação seca ou piada — nunca moral.',
+  },
+  observacao: {
+    label: 'Observação',
+    desc: 'Algo que ela viu ou notou no mundo, sem ser corporativo',
+    prompt: 'Escreva como uma observação curiosa, sem julgamento, sobre algo que ela viu ou notou fora do trabalho. Termine em constatação seca, sem moral e sem CTA de engajamento.',
   },
 }
 
@@ -1373,8 +1403,8 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 3000,
-          system: HOOK_SYSTEM,
-          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal) }],
+          system: buildHookSystem(isPessoal),
+          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
         }),
       })
       if (!res.ok) {
@@ -1404,7 +1434,7 @@ ${revText.trim()}`
     setCarHooksLoading(true)
     setCarHooks([])
     try {
-      const tema = carTema.trim() || 'carreira e maturidade profissional'
+      const tema = carTema.trim() || (isPessoal ? 'vida e cotidiano' : 'carreira e maturidade profissional')
       const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
@@ -1412,7 +1442,9 @@ ${revText.trim()}`
           model: 'claude-sonnet-4-6',
           max_tokens: 600,
           system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
-Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.
+${isPessoal
+    ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.'
+    : 'Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.'}
 
 PRINCÍPIO CENTRAL:
 O hook não pode ser conceito. Tem que ser situação + comportamento.
@@ -1429,11 +1461,15 @@ DEPOIS (certo):
 → cria uma cena visual imediata
 
 EXEMPLOS DO QUE FUNCIONA:
-- "você já pensou em sair… e ficou mesmo assim?"
+${isPessoal ? `- "eu juro que ia arrumar só uma gaveta… quatro horas depois"
+- "tem gente que reza mais no trânsito do que na igreja… eu incluída"
+- "a Naomi decide o dia dela antes de mim"
+- "comprar também é uma forma de descansar mesmo quando parece besteira"
+- "domingo chega e eu já sei que vou adiar a mesma coisa"` : `- "você já pensou em sair… e ficou mesmo assim?"
 - "tem gente que reclama do trabalho todo dia… mas não consegue sair"
 - "tem decisão que a gente adia… e chama de 'pensar melhor'"
 - "ficar também é uma escolha mesmo quando parece que não é"
-- "segunda-feira chega e você já sabe que não queria estar ali"
+- "segunda-feira chega e você já sabe que não queria estar ali"`}
 
 REGRAS:
 - Curto — entre 6 e 18 palavras. Pode ter quebra de linha com "…"
@@ -1472,8 +1508,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: CAROUSEL_SYSTEM,
-          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
+          system: buildCarouselSystem(isPessoal),
+          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
       })
       if (!res.ok) {
@@ -1584,7 +1620,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
 
   const handleStrSaveHub = () => {
     if (!strResult) return
-    const estrutura = STORIES_STRUCTURES[strEstrutura]
+    const estrutura = (isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES)[strEstrutura]
     addIdea({
       title: strTema,
       description: strResult.slice(0, 300),
@@ -1610,8 +1646,9 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setStrResult(null)
     setStrSavedHub(false)
     try {
-      const estrutura = STORIES_STRUCTURES[strEstrutura] || STORIES_STRUCTURES.observacao
-      const systemPrompt = BASE_STORIES_SYSTEM
+      const structuresMap = isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES
+      const estrutura = structuresMap[strEstrutura] || structuresMap.observacao
+      const systemPrompt = buildStoriesSystem(isPessoal)
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
       const res = await fetch('/api/ai?action=anthropic', {
@@ -1996,28 +2033,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
           )}>
           <PenTool size={13} /> Studio Livre
         </button>
-        {/* Protocolos de Reels/Carrossel/Stories são calibrados pra meta de engajamento
-            profissional — no Studio Pessoal esses formatos saem pelo Studio Livre */}
-        {!isPessoal && (<>
-          <button onClick={() => setMode('engagement')}
-            className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-              mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-            )}>
-            <MessageCircle size={13} /> Reels
-          </button>
-          <button onClick={() => setMode('carousel')}
-            className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-              mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-            )}>
-            <LayoutGrid size={13} /> Carrossel
-          </button>
-          <button onClick={() => setMode('stories')}
-            className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
-              mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-            )}>
-            <Film size={13} /> Stories
-          </button>
-        </>)}
+        <button onClick={() => setMode('engagement')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'engagement' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <MessageCircle size={13} /> Reels
+        </button>
+        <button onClick={() => setMode('carousel')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'carousel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <LayoutGrid size={13} /> Carrossel
+        </button>
+        <button onClick={() => setMode('stories')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Film size={13} /> Stories
+        </button>
       </div>
 
       {/* ── Revisor de Texto ── */}
@@ -2299,7 +2332,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 value={engTema}
                 onChange={e => setEngTema(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateEngagement()}
-                placeholder="Ex: solidão na carreira, síndrome da impostora, burnout disfarçado de produtividade..."
+                placeholder={isPessoal ? 'Ex: a Naomi e o sofá, comprinha de domingo, mania que herdei da minha mãe...' : 'Ex: solidão na carreira, síndrome da impostora, burnout disfarçado de produtividade...'}
                 className="input text-sm w-full"
                 autoFocus
               />
@@ -2686,31 +2719,33 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
             </div>
 
-            {/* Template de Slides */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-                Template de slides <span className="text-gray-300">(opcional)</span>
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {Object.entries(CAROUSEL_TEMPLATES).map(([key, t]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setCarTemplate(prev => prev === key ? null : key)}
-                    title={t.desc}
-                    className={clsx(
-                      'text-left px-2.5 py-2 rounded-lg border transition-all',
-                      carTemplate === key
-                        ? 'bg-orange-50 border-orange-300 text-orange-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                    )}
-                  >
-                    <p className="text-[11px] font-semibold leading-tight">{t.label}</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 capitalize">{t.alavanca}</p>
-                  </button>
-                ))}
+            {/* Template de Slides — templates são de ferramentas/tech, não fazem sentido no Studio Pessoal */}
+            {!isPessoal && (
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                  Template de slides <span className="text-gray-300">(opcional)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {Object.entries(CAROUSEL_TEMPLATES).map(([key, t]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setCarTemplate(prev => prev === key ? null : key)}
+                      title={t.desc}
+                      className={clsx(
+                        'text-left px-2.5 py-2 rounded-lg border transition-all',
+                        carTemplate === key
+                          ? 'bg-orange-50 border-orange-300 text-orange-700'
+                          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                      )}
+                    >
+                      <p className="text-[11px] font-semibold leading-tight">{t.label}</p>
+                      <p className="text-[9px] text-gray-400 mt-0.5 capitalize">{t.alavanca}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Meta de E/R */}
             <div>
@@ -2748,7 +2783,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 value={carTema}
                 onChange={e => { setCarTema(e.target.value); setCarHooks([]) }}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateCarousel()}
-                placeholder="Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho..."
+                placeholder={isPessoal ? 'Ex: a mania que herdei da minha mãe, achado da Shopee, domingo na feira...' : 'Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho...'}
                 className="input text-sm w-full"
               />
               {carHooks.length > 0 && (
@@ -3072,7 +3107,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Stories</p>
-                <p className="text-xs text-gray-400 mt-0.5">Observação real — ponto de entrada da empreendedora, conexão com o corporativo.</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {isPessoal ? 'Observação real — a vida fora do trabalho, sem performar.' : 'Observação real — ponto de entrada da empreendedora, conexão com o corporativo.'}
+                </p>
               </div>
             </div>
 
@@ -3085,7 +3122,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 value={strTema}
                 onChange={e => setStrTema(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateStories()}
-                placeholder="Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento..."
+                placeholder={isPessoal ? 'Ex: passeio com a Naomi, culto de domingo, achado que virou queridinho...' : 'Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento...'}
                 className="input text-sm w-full"
                 autoFocus
               />
@@ -3097,7 +3134,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 Estrutura <span className="text-red-400">*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(STORIES_STRUCTURES).map(([key, s]) => (
+                {Object.entries(isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES).map(([key, s]) => (
                   <button
                     key={key}
                     onClick={() => setStrEstrutura(key)}
@@ -3135,7 +3172,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-teal-500" />
                     <span className="text-[10px] font-semibold text-gray-700 uppercase">
-                      Stories — {STORIES_STRUCTURES[strEstrutura]?.label}
+                      Stories — {(isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES)[strEstrutura]?.label}
                     </span>
                   </div>
                   <button onClick={handleStrCopy}
