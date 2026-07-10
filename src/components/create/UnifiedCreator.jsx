@@ -84,9 +84,9 @@ const PERSONAL_SEED_THEMES = [
   { tema: 'A planta que eu me recuso a deixar morrer', categoria: 'Casa & Rotina' },
   { tema: 'Meu domingo começa na feira', categoria: 'Casa & Rotina' },
   { tema: 'A gaveta da bagunça que todo mundo tem', categoria: 'Casa & Rotina' },
-  { tema: 'A oração que eu volto quando nada faz sentido', categoria: 'Fé' },
-  { tema: 'Fé em semana ruim', categoria: 'Fé' },
-  { tema: 'A palavra que me pegou desprevenida no culto', categoria: 'Fé' },
+  { tema: 'O jogo de búzios que eu não esperava ouvir', categoria: 'Fé' },
+  { tema: 'Preparar a roupa branca de sexta pro terreiro', categoria: 'Fé' },
+  { tema: 'O que o meu vodum me pede em semana ruim', categoria: 'Fé' },
   { tema: 'A comprinha de R$30 que eu uso todo dia', categoria: 'Comprinhas & Achados' },
   { tema: 'O achado da Shopee que superou o hype', categoria: 'Comprinhas & Achados' },
   { tema: 'A compra cara que me arrependi caladinha', categoria: 'Comprinhas & Achados' },
@@ -255,7 +255,7 @@ Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admiti
 
 Tipo 2 — DADO + LEITURA INESPERADA:
 Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
-${isPessoal ? `Exemplo: "A maioria das pessoas reza mais no trânsito do que na igreja. Eu incluída."
+${isPessoal ? `Exemplo: "A maioria das pessoas pede mais no jogo de búzios do que reza sozinha em casa. Eu incluída."
 Exemplo: "Quanto mais cara a comprinha, menos eu conto pra alguém quanto custou."` : `Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
 Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."`}
 
@@ -773,11 +773,11 @@ const PERSONAL_TEMAS_SUGESTOES = [
   {
     categoria: 'Fé',
     temas: [
-      'O versículo que grudou sem eu pedir',
-      'Rezar no trânsito porque não deu tempo antes',
-      'A dúvida que eu não conto pra ninguém da igreja',
-      'Gratidão em dia que não teve nada de especial',
-      'A oração que eu repito sem prestar atenção',
+      'O que o búzio disse que eu não queria ouvir',
+      'Separar a roupa branca de sexta com pressa',
+      'A dúvida que eu não conto nem pro povo de santo',
+      'Gratidão ao meu vodum num dia que não teve nada de especial',
+      'A obrigação que eu adiei até não dar mais',
     ],
   },
   {
@@ -957,7 +957,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     if (isPessoal) {
       if (/naomi|cachorr|pet|buldogue|bulldog/.test(t)) return 'Naomi'
       if (/casa|decora|cozinha|planta|apartamento|reforma|fax|limpeza|rotina/.test(t)) return 'Casa & Rotina'
-      if (/f[ée]\b|deus|igreja|ora[çc]|b[ií]blia|culto|gratid[aã]o/.test(t)) return 'Fé'
+      if (/f[ée]\b|deus|ora[çc]|gratid[aã]o|terreiro|orix|vodum|jeje|candombl|b[uú]zio|ax[eé]|ancestral|obriga[çc][aã]o|povo de santo/.test(t)) return 'Fé'
       if (/compr|achado|shopee|amazon|resenha|make|skincare|roupa|look|unboxing/.test(t)) return 'Comprinhas & Achados'
       if (/livro|s[ée]rie|filme|viagem|restaurante|caf[ée]|m[uú]sica|treino|corrida|hobby|receita/.test(t)) return 'Hobbies & Gostos'
       return 'Vida'
@@ -1462,7 +1462,7 @@ DEPOIS (certo):
 
 EXEMPLOS DO QUE FUNCIONA:
 ${isPessoal ? `- "eu juro que ia arrumar só uma gaveta… quatro horas depois"
-- "tem gente que reza mais no trânsito do que na igreja… eu incluída"
+- "tem coisa que o jogo de búzios me diz que eu já sabia e fingia não saber"
 - "a Naomi decide o dia dela antes de mim"
 - "comprar também é uma forma de descansar mesmo quando parece besteira"
 - "domingo chega e eu já sei que vou adiar a mesma coisa"` : `- "você já pensou em sair… e ficou mesmo assim?"
@@ -1759,7 +1759,7 @@ Regras:
 ${isPessoal
     ? `- Cachorra, pet, buldogue, bicho → "Naomi"
 - Casa, decoração, cozinha, faxina, rotina doméstica → "Casa & Rotina"
-- Fé, oração, igreja, gratidão, espiritualidade → "Fé"
+- Fé, terreiro, candomblé jejê, vodum, búzios, ancestralidade, gratidão, espiritualidade → "Fé"
 - Compras, achados, resenhas de produto, unboxing → "Comprinhas & Achados"
 - Livros, séries, viagens, comida, música, treino, hobbies → "Hobbies & Gostos"
 - Sentimentos, manias, memórias, família, cenas banais do dia → "Vida"`
@@ -3122,7 +3122,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 value={strTema}
                 onChange={e => setStrTema(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateStories()}
-                placeholder={isPessoal ? 'Ex: passeio com a Naomi, culto de domingo, achado que virou queridinho...' : 'Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento...'}
+                placeholder={isPessoal ? 'Ex: passeio com a Naomi, jogo de búzios, achado que virou queridinho...' : 'Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento...'}
                 className="input text-sm w-full"
                 autoFocus
               />
