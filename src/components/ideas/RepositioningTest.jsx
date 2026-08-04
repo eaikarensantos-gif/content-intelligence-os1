@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react'
 import {
   CalendarRange, ListChecks, Target, BarChart3, AlertTriangle, Check,
-  Megaphone, Clock, ChevronRight, Trash2, Info,
+  Megaphone, Clock, ChevronRight, Trash2, Info, Link2, Clapperboard,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import Modal from '../common/Modal'
 import {
-  CONTAINERS, PILLARS, TEST_STATUSES, TEST_STATUS_ORDER, RESULT_FIELDS, BASELINE,
-  REPOSITIONING_TAG, buildRepositioningIdeas, validateRepositioningPlan,
-  nextMonday, isMonday, toISO, measuredValue,
+  CONTAINERS, PILLARS, SERIES, TEST_STATUSES, TEST_STATUS_ORDER, RESULT_FIELDS, BASELINE,
+  REPOSITIONING_TAG, BACKLOG_TAG, buildRepositioningIdeas, buildBacklogIdeas,
+  validateRepositioningPlan, nextMonday, isMonday, toISO, measuredValue, seriesRetention,
 } from '../../data/repositioningTest'
 
 const SUBTABS = [
@@ -47,6 +47,32 @@ function PillarChip({ pillar }) {
 function TestStatusChip({ status }) {
   const s = TEST_STATUSES[status] || TEST_STATUSES['a produzir']
   return <span className={`chip border text-[10px] ${s.chip}`}>{s.label}</span>
+}
+
+function SeriesChip({ piece, compact }) {
+  if (!piece.series) return null
+  const s = SERIES[piece.series]
+  return (
+    <span
+      className={`chip border text-[10px] ${s.chip}`}
+      title={piece.series_role && piece.series_role !== 'a definir' ? `${s.label} como ${piece.series_role}` : s.label}
+    >
+      <Clapperboard size={9} />
+      {compact ? `${s.label} ${piece.episode}` : `${s.label} · ep. ${piece.episode}`}
+      {piece.series_role && piece.series_role !== 'a definir' && !compact && (
+        <span className="opacity-60"> · {piece.series_role}</span>
+      )}
+    </span>
+  )
+}
+
+function BridgeChip({ piece }) {
+  if (!piece.bridge_with) return null
+  return (
+    <span className="chip border text-[10px] bg-sky-100 text-sky-700 border-sky-200" title="Continua o reel da mesma semana — citar no primeiro slide">
+      <Link2 size={9} /> Ponte com {piece.bridge_with}
+    </span>
+  )
 }
 
 function CampaignChip() {
@@ -94,7 +120,8 @@ function LoadPanel({ onLoad }) {
           <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-2xl">
             18 peças em 3 slots por semana, com formato, data, prazo de produção e alvo já definidos pelo
             relatório de 90 dias. Nada é gerado por IA aqui — o calendário entra como está. Defina a segunda-feira
-            da semana 1 e todas as datas são derivadas dela.
+            da semana 1 e todas as datas são derivadas dela. Junto entram as 2 pautas de fora do teste,
+            sem data, para depois da semana 6.
           </p>
         </div>
 
@@ -142,11 +169,25 @@ function LoadPanel({ onLoad }) {
           <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
             <p className="text-[11px] text-emerald-700 leading-relaxed">
               <span className="font-semibold">Verificação ok:</span> 18 registros, 3 por semana, sem data duplicada,
-              todo prazo de produção anterior à publicação, nenhuma publicação depois das 21h.
+              todo prazo de produção anterior à publicação, nenhuma publicação depois das 21h,
+              série Wilson com 6 episódios em sequência, B3 e B4 apontando para A3 e A4.
               Primeira peça em {fmtDateLong(preview[0].scheduled_date)}, última em {fmtDateLong(preview[17].scheduled_date)}.
             </p>
           </div>
         )}
+      </div>
+
+      {/* Séries */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {Object.values(SERIES).map((s) => (
+          <div key={s.id} className="card p-4 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className={`chip border text-[10px] ${s.chip}`}><Clapperboard size={9} /> {s.label}</span>
+              <span className="text-[10px] text-gray-400">{s.episodes} episódios</span>
+            </div>
+            <p className="text-[11px] text-gray-500 leading-relaxed">{s.note}</p>
+          </div>
+        ))}
       </div>
 
       {/* Containers */}
@@ -223,6 +264,8 @@ function WeekView({ pieces, today, onStatusChange, onOpen }) {
                 <PieceId id={p.internal_id} />
                 {dueToday && <span className="text-[9px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">PRODUZIR HOJE</span>}
                 {late && <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">ATRASADO</span>}
+                <SeriesChip piece={p} />
+                <BridgeChip piece={p} />
                 <PillarChip pillar={p.pillar} />
                 {p.campaign_ready && <CampaignChip />}
                 <div className="ml-auto">
@@ -306,10 +349,18 @@ function SixWeekGrid({ pieces, today, onOpen }) {
                         <span className="text-[10px] text-gray-500">{fmtDate(p.scheduled_date)} · {p.publish_time}</span>
                         {p.campaign_ready && <Megaphone size={10} className="text-fuchsia-600" />}
                       </div>
+                      {p.series && <SeriesChip piece={p} compact />}
                       <p className="text-[11px] text-gray-800 leading-snug line-clamp-3">
                         {p.angle_pending ? <span className="text-gray-400 italic">{p.angle}</span> : p.angle}
                       </p>
-                      <TestStatusChip status={p.test_status} />
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <TestStatusChip status={p.test_status} />
+                        {p.bridge_with && (
+                          <span className="chip border text-[9px] bg-sky-100 text-sky-700 border-sky-200">
+                            <Link2 size={8} /> {p.bridge_with}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   )
                 })}
@@ -358,6 +409,8 @@ function ProductionQueue({ pieces, today, onStatusChange, onOpen }) {
               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpen(p)}>
                 <p className="text-xs font-medium text-gray-800 truncate">{p.angle}</p>
                 <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <SeriesChip piece={p} compact />
+                  <BridgeChip piece={p} />
                   <PillarChip pillar={p.pillar} />
                   <span className="text-[10px] text-gray-400">
                     {CONTAINERS[p.container].short} · publica {fmtDate(p.scheduled_date)} {p.publish_time}
@@ -408,6 +461,60 @@ function ResultCell({ target, result }) {
   )
 }
 
+function WilsonRetention({ pieces }) {
+  const rows = seriesRetention(pieces, 'Wilson')
+  const serie = SERIES.Wilson
+  const hasData = rows.some((r) => r.alcance != null)
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-baseline gap-2 flex-wrap mb-1">
+        <p className="text-xs font-bold text-gray-900">Série {serie.label} · retenção de alcance</p>
+        <p className="text-[10px] text-gray-400">
+          alvo: cada episódio retém {serie.retentionTarget}%+ do alcance do anterior
+        </p>
+      </div>
+      <p className="text-[11px] text-gray-500 leading-relaxed mb-3">
+        Se cada episódio cai pela metade sem o anterior sustentar o seguinte, a série não está
+        serializando — virou reel avulso com nome.
+      </p>
+      <div className="overflow-x-auto">
+        <div className="flex items-stretch gap-2 min-w-[560px]">
+          {rows.map((r, idx) => {
+            const hit = r.retention != null && r.retention >= r.target
+            return (
+              <div key={r.id} className="flex items-stretch gap-2 flex-1">
+                {idx > 0 && (
+                  <div className="flex flex-col items-center justify-center px-1">
+                    <ChevronRight size={12} className="text-gray-300" />
+                    <span className={`text-[10px] font-bold ${
+                      r.retention == null ? 'text-gray-300' : hit ? 'text-emerald-600' : 'text-red-500'
+                    }`}>
+                      {r.retention == null ? '—' : `${Math.round(r.retention)}%`}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 rounded-xl border border-gray-200 p-2.5 text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">ep. {r.episode}</p>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">
+                    {r.alcance != null ? r.alcance.toLocaleString('pt-BR') : '—'}
+                  </p>
+                  <p className="text-[9px] text-gray-400 mt-0.5">{r.role || 'a definir'}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {!hasData && (
+        <p className="text-[10px] text-gray-400 mt-2">
+          Preencha o alcance de 72h dos episódios para acompanhar a retenção.
+        </p>
+      )}
+    </div>
+  )
+}
+
 function MeasurementView({ pieces, onOpenResults }) {
   const published = pieces
     .filter((p) => ['publicado', 'medido'].includes(p.test_status))
@@ -440,6 +547,9 @@ function MeasurementView({ pieces, onOpenResults }) {
         </div>
       </div>
 
+      {/* Retenção da série Wilson */}
+      <WilsonRetention pieces={pieces} />
+
       {/* Peças publicadas */}
       {published.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-14 text-center">
@@ -464,8 +574,9 @@ function MeasurementView({ pieces, onOpenResults }) {
               {published.map((p) => (
                 <tr key={p.id} className="border-b border-gray-50 align-top">
                   <td className="py-3 pr-3">
-                    <div className="flex items-center gap-1.5 mb-1">
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                       <PieceId id={p.internal_id} />
+                      {p.series && <SeriesChip piece={p} compact />}
                       {p.campaign_ready && <Megaphone size={10} className="text-fuchsia-600" />}
                     </div>
                     <p className="text-[11px] text-gray-700 max-w-[220px] line-clamp-2">{p.angle}</p>
@@ -497,6 +608,36 @@ function MeasurementView({ pieces, onOpenResults }) {
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Banco de pautas fora do teste ───────────────────────────────────────────
+
+function BacklogPanel({ items, onOpen }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 space-y-2">
+      <p className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5">
+        <Info size={12} className="text-gray-400" />
+        Banco de pautas fora do teste — sem data, para depois da semana 6
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {items.map((i) => (
+          <button
+            key={i.id}
+            onClick={() => onOpen(i)}
+            className="text-left bg-white border border-gray-200 rounded-lg p-3 hover:border-orange-300 transition-all"
+          >
+            <p className="text-xs font-semibold text-gray-800">{i.title}</p>
+            <p className="text-[10px] text-gray-500 leading-relaxed mt-1 line-clamp-3">{i.backlog_note}</p>
+            {i.container && (
+              <span className="chip border text-[10px] bg-gray-100 text-gray-600 border-gray-200 mt-2">
+                Container {i.container}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -582,11 +723,17 @@ export default function RepositioningTest({ onOpenIdea }) {
     [ideas]
   )
 
+  const backlog = useMemo(
+    () => ideas.filter((i) => (i.tags || []).includes(BACKLOG_TAG)),
+    [ideas]
+  )
+
   const handleLoad = (built) => {
     const errors = validateRepositioningPlan(built)
     if (errors.length) { setLoadError(errors); return }
     setLoadError(null)
-    importIdeas(built)
+    // As 18 peças do calendário + as pautas de fora do teste, essas sem data.
+    importIdeas([...built, ...buildBacklogIdeas()])
     setSub('calendario')
   }
 
@@ -610,7 +757,7 @@ export default function RepositioningTest({ onOpenIdea }) {
   }
 
   const handleClear = () => {
-    pieces.forEach((p) => deleteIdea(p.id))
+    ;[...pieces, ...backlog].forEach((p) => deleteIdea(p.id))
     setConfirmClear(false)
   }
 
@@ -675,6 +822,7 @@ export default function RepositioningTest({ onOpenIdea }) {
 
       {sub === 'semana'     && <WeekView pieces={pieces} today={today} onStatusChange={handleStatusChange} onOpen={onOpenIdea} />}
       {sub === 'calendario' && <SixWeekGrid pieces={pieces} today={today} onOpen={onOpenIdea} />}
+      {sub === 'calendario' && backlog.length > 0 && <BacklogPanel items={backlog} onOpen={onOpenIdea} />}
       {sub === 'fila'       && <ProductionQueue pieces={pieces} today={today} onStatusChange={handleStatusChange} onOpen={onOpenIdea} />}
       {sub === 'medicao'    && <MeasurementView pieces={pieces} onOpenResults={setResultsTarget} />}
 

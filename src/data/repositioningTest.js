@@ -8,6 +8,7 @@
 // Regras de escrita: exatamente 18 itens, sem desdobrar, sem reordenar.
 
 export const REPOSITIONING_TAG = 'teste-posicionamento'
+export const BACKLOG_TAG = 'pauta-pos-teste'
 
 // ─── Containers (formatos provados) ──────────────────────────────────────────
 
@@ -20,7 +21,7 @@ export const CONTAINERS = {
     dayLabel: 'Segunda',
     time: '15:00',
     prova: '9.516 de alcance, 72% de não seguidores, 205 compartilhamentos',
-    spec: 'Formato que abriu o perfil. Cena cotidiana, gancho nos primeiros 2 segundos, sem introdução.',
+    spec: 'Formato que abriu o perfil. Cena cotidiana, gancho nos primeiros 2 segundos, sem introdução. Os seis episódios são a série Wilson — a numeração precisa aparecer na peça e no app, porque a serialização é o que faz o público voltar.',
     targets: [
       { key: 'alcance',              label: 'Alcance',            target: 3000, kind: 'abs' },
       { key: 'pct_nao_seguidores',   label: 'Não seguidores',     target: 50,   kind: 'pct' },
@@ -57,10 +58,32 @@ export const CONTAINERS = {
   },
 }
 
+// ─── Séries ──────────────────────────────────────────────────────────────────
+
+export const SERIES = {
+  Wilson: {
+    id: 'Wilson',
+    label: 'Wilson',
+    chip: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    episodes: 6,
+    note: 'Personagem recorrente no slot A. Episódios 1 e 2 com Wilson como chefe, do 3 em diante como cliente — a migração é intencional: o público atual tem chefe, o público alvo é dono de negócio, e o personagem atravessa levando a audiência junto.',
+    // Alvo específico da série: cada episódio retém pelo menos metade do alcance do anterior.
+    retentionTarget: 50,
+  },
+  Favoritos: {
+    id: 'Favoritos',
+    label: 'Favoritos do mês',
+    chip: 'bg-rose-100 text-rose-700 border-rose-200',
+    episodes: 2,
+    note: 'Reformulado como critério de decisão em vez de lista — o que uso, o que troquei, o que não valeu o dinheiro. É a peça mais compatível com entrega de campanha do grid.',
+    retentionTarget: null,
+  },
+}
+
 // ─── Pilares ─────────────────────────────────────────────────────────────────
 
 export const PILLARS = {
-  'negócio-estrutura': { label: 'Negócio & estrutura', chip: 'bg-blue-100 text-blue-700 border-blue-200',       dot: 'bg-blue-500',    cell: 'border-blue-200 bg-blue-50/60' },
+  'negocio-estrutura': { label: 'Negócio & estrutura', chip: 'bg-blue-100 text-blue-700 border-blue-200',       dot: 'bg-blue-500',    cell: 'border-blue-200 bg-blue-50/60' },
   'ia-critica':        { label: 'IA crítica',          chip: 'bg-purple-100 text-purple-700 border-purple-200', dot: 'bg-purple-500',  cell: 'border-purple-200 bg-purple-50/60' },
   'celular-operacao':  { label: 'Celular & operação',  chip: 'bg-teal-100 text-teal-700 border-teal-200',       dot: 'bg-teal-500',    cell: 'border-teal-200 bg-teal-50/60' },
   'identidade':        { label: 'Identidade',          chip: 'bg-amber-100 text-amber-700 border-amber-200',    dot: 'bg-amber-500',   cell: 'border-amber-200 bg-amber-50/60' },
@@ -107,29 +130,45 @@ export const BASELINE = [
 // Ordem e conteúdo fiéis ao calendário. Não adicionar, não desdobrar.
 
 export const PIECES = [
-  { id: 'A1', week: 1, slot: 'A', container: 'A', pillar: 'negócio-estrutura', angle: 'POV: o cliente pede "só um ajustinho" na sexta 18h', campaign: false },
-  { id: 'B1', week: 1, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negócio-estrutura', angle: 'O projeto que deu errado, quanto custou, e o que você cobra hoje por causa disso', campaign: false },
+  { id: 'A1', week: 1, slot: 'A', container: 'A', series: 'Wilson', episode: 1, role: 'chefe',   pillar: 'negocio-estrutura', angle: 'Wilson é o chefe que exige presencial e faz a reunião online', campaign: false },
+  { id: 'B1', week: 1, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negocio-estrutura', angle: 'O projeto que deu errado, quanto custou, e o que você cobra hoje por causa disso', campaign: false },
   { id: 'C1', week: 1, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'O que dá pra resolver do negócio pelo celular antes das 9h', campaign: true },
 
-  { id: 'A2', week: 2, slot: 'A', container: 'A', pillar: 'identidade', angle: 'POV: você é a única pessoa negra na call e alguém repete sua ideia 5 minutos depois', campaign: false },
+  { id: 'A2', week: 2, slot: 'A', container: 'A', series: 'Wilson', episode: 2, role: 'chefe',   pillar: 'identidade', angle: 'Wilson repete sua ideia 5 minutos depois na call', campaign: false },
   { id: 'B2', week: 2, slot: 'B', container: 'B', variant: 'opinião', pillar: 'ia-critica', angle: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno', campaign: false },
   { id: 'C2', week: 2, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'Um fluxo de IA no celular do início ao fim, com print de cada passo', campaign: true },
 
-  { id: 'A3', week: 3, slot: 'A', container: 'A', pillar: 'negócio-estrutura', angle: 'POV: o cliente pergunta quanto custa a sua hora', campaign: false },
-  { id: 'B3', week: 3, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negócio-estrutura', angle: 'Ponte com A3. Por que parei de vender hora e passei a vender escopo fixo', campaign: false },
-  { id: 'C3', week: 3, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'O que resolver no celular e o que ainda exige computador', campaign: true },
+  { id: 'A3', week: 3, slot: 'A', container: 'A', series: 'Wilson', episode: 3, role: 'cliente', pillar: 'negocio-estrutura', angle: 'Wilson agora é cliente. Pede "só um ajustinho" na sexta 18h', campaign: false },
+  { id: 'B3', week: 3, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negocio-estrutura', angle: 'Por que parei de vender hora e passei a vender escopo fixo', bridge: 'A3', campaign: false },
+  { id: 'C3', week: 3, slot: 'C', container: 'C', series: 'Favoritos', episode: 1, pillar: 'celular-operacao', angle: 'O kit que roda o negócio: o que uso, o que troquei, o que não valeu o dinheiro', campaign: true },
 
-  { id: 'A4', week: 4, slot: 'A', container: 'A', pillar: 'negócio-estrutura', angle: 'POV: é segunda de manhã e ninguém vai te dizer o que fazer hoje', campaign: false },
-  { id: 'B4', week: 4, slot: 'B', container: 'B', variant: 'opinião', pillar: 'negócio-estrutura', angle: 'Ponte com A4. Separar quem decide de quem executa dentro de uma pessoa só', campaign: false },
-  { id: 'C4', week: 4, slot: 'C', container: 'C', pillar: 'ia-critica', angle: 'Checklist de decisão antes de contratar qualquer ferramenta de IA', campaign: false },
+  { id: 'A4', week: 4, slot: 'A', container: 'A', series: 'Wilson', episode: 4, role: 'cliente', pillar: 'negocio-estrutura', angle: 'Wilson cliente exige reunião presencial e entra pela chamada', campaign: false },
+  { id: 'B4', week: 4, slot: 'B', container: 'B', variant: 'opinião', pillar: 'negocio-estrutura', angle: 'Separar quem decide de quem executa dentro de uma pessoa só', bridge: 'A4', campaign: false },
+  { id: 'C4', week: 4, slot: 'C', container: 'C', pillar: 'ia-critica', angle: 'Traduzir uma capacidade de IA em custo e decisão, em palavras curtas', campaign: false },
 
-  { id: 'A5', week: 5, slot: 'A', container: 'A', pillar: 'a definir', angle: 'Repetir o ângulo do reel com melhor alcance das semanas 1 a 4', campaign: false, pending: true },
-  { id: 'B5', week: 5, slot: 'B', container: 'B', variant: 'opinião', pillar: 'identidade', angle: 'Peça mensal de identidade/ancestralidade. Segura a base, ~20% de engajamento', campaign: false },
-  { id: 'C5', week: 5, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'As oportunidades em tech abertas este mês', campaign: false },
+  { id: 'A5', week: 5, slot: 'A', container: 'A', series: 'Wilson', episode: 5, role: 'a definir', pillar: 'a definir', angle: 'Repetir o ângulo do episódio de Wilson com maior alcance', campaign: false, pending: true },
+  { id: 'B5', week: 5, slot: 'B', container: 'B', variant: 'opinião', pillar: 'identidade', angle: 'Peça mensal de identidade e ancestralidade. Segura a base, ~20% de engajamento', campaign: false },
+  { id: 'C5', week: 5, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'Comparativo: o que resolver no celular e o que ainda exige computador', campaign: true },
 
-  { id: 'A6', week: 6, slot: 'A', container: 'A', pillar: 'a definir', angle: 'Repetir o segundo melhor reel das semanas 1 a 4', campaign: false, pending: true },
-  { id: 'B6', week: 6, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negócio-estrutura', angle: 'Repetir a peça de melhor conversão em clique das semanas 1 a 4', campaign: false, pending: true },
-  { id: 'C6', week: 6, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'Repetir o formato de melhor salvamento das semanas 1 a 4', campaign: true, pending: true },
+  { id: 'A6', week: 6, slot: 'A', container: 'A', series: 'Wilson', episode: 6, role: 'a definir', pillar: 'a definir', angle: 'Repetir o segundo melhor episódio de Wilson', campaign: false, pending: true },
+  { id: 'B6', week: 6, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negocio-estrutura', angle: 'Repetir a peça de melhor conversão em clique das semanas 1 a 4', campaign: false, pending: true },
+  { id: 'C6', week: 6, slot: 'C', container: 'C', series: 'Favoritos', episode: 2, pillar: 'celular-operacao', angle: 'Repetir o formato de melhor salvamento. Candidato padrão: Favoritos edição 2', campaign: true, pending: true },
+]
+
+// ─── Banco de pautas fora do teste ───────────────────────────────────────────
+// Entram como ideias sem data, para depois da semana 6. Não vão para o calendário.
+
+export const BACKLOG_PIECES = [
+  {
+    title: 'Um livro me disse',
+    note: 'Formato sem performance medida — entra na semana 7. Quando entrar, montado como Container B, com o trecho do livro abrindo uma opinião forte sobre o mercado, não como resumo do livro.',
+    container: 'B',
+  },
+  {
+    title: 'Oportunidades e editais para negócio pequeno',
+    note: 'Reaproveita o formato de melhor salvamento do histórico (2,9% sobre alcance), trocando o público de quem busca emprego para quem tem negócio. Mantém o formato, troca o público.',
+    container: 'C',
+  },
 ]
 
 // ─── Cálculo de datas ────────────────────────────────────────────────────────
@@ -189,6 +228,12 @@ function description(piece) {
     `Prova de performance: ${c.prova}`,
     `Alvo: ${c.targets.map((t) => `${t.label} ${t.kind === 'pct' ? `${String(t.target).replace('.', ',')}%+` : `${t.target}+`}`).join(' · ')}`,
   ]
+  if (piece.series) {
+    lines.push(`Série ${SERIES[piece.series].label} · episódio ${piece.episode}${piece.role && piece.role !== 'a definir' ? ` — Wilson como ${piece.role}` : ''}`)
+  }
+  if (piece.bridge) {
+    lines.push(`Ponte com ${piece.bridge}: citar o reel da mesma semana no primeiro slide.`)
+  }
   if (piece.pending) {
     lines.push('Ângulo pendente — depende da revisão dos resultados das semanas 1 a 4. O slot está reservado, não produza antes da revisão.')
   }
@@ -207,7 +252,9 @@ export function buildRepositioningIdeas(dataInicio) {
 
     return {
       // ── campos do app ──
-      title: piece.angle,
+      title: piece.series
+        ? `${SERIES[piece.series].label} ${piece.episode} — ${piece.angle}`
+        : piece.angle,
       description: description(piece),
       topic: PILLARS[piece.pillar].label,
       format: c.format,
@@ -223,6 +270,7 @@ export function buildRepositioningIdeas(dataInicio) {
         REPOSITIONING_TAG,
         `semana-${piece.week}`,
         piece.pillar,
+        ...(piece.series ? [`serie-${piece.series.toLowerCase()}`] : []),
         ...(piece.campaign ? ['campanha'] : []),
       ],
 
@@ -232,6 +280,10 @@ export function buildRepositioningIdeas(dataInicio) {
       test_slot: piece.slot,
       container: piece.container,
       container_variant: piece.variant || null,
+      series: piece.series || null,
+      episode: piece.episode || null,
+      series_role: piece.role || null,
+      bridge_with: piece.bridge || null,
       pillar: piece.pillar,
       angle: piece.angle,
       angle_pending: !!piece.pending,
@@ -243,6 +295,27 @@ export function buildRepositioningIdeas(dataInicio) {
       result_14d: { ...EMPTY_RESULT },
     }
   })
+}
+
+/** Pautas fora do teste — sem data, para depois da semana 6. */
+export function buildBacklogIdeas() {
+  return BACKLOG_PIECES.map((p) => ({
+    title: p.title,
+    description: `${p.note}\n\nContainer previsto: ${CONTAINERS[p.container].label}`,
+    topic: 'Fora do teste',
+    format: CONTAINERS[p.container].format,
+    platform: 'instagram',
+    platforms: ['instagram'],
+    priority: 'low',
+    status: 'idea',
+    scheduled_date: '',
+    content_type: 'organic',
+    source: 'Teste de Posicionamento · banco de pautas',
+    creation_order: null,
+    tags: [BACKLOG_TAG, 'pos-semana-6'],
+    container: p.container,
+    backlog_note: p.note,
+  }))
 }
 
 // ─── Verificação (roda antes de escrever no app) ─────────────────────────────
@@ -278,10 +351,37 @@ export function validateRepositioningPlan(items) {
     if (dow !== expectedDow) {
       errors.push(`${i.internal_id}: slot ${i.test_slot} caiu em dia da semana ${dow} (esperado ${expectedDow}).`)
     }
+
+    if (i.bridge_with && !items.some((o) => o.internal_id === i.bridge_with)) {
+      errors.push(`${i.internal_id}: ponte aponta para ${i.bridge_with}, que não existe no calendário.`)
+    }
   })
 
   const ids = new Set(items.map((i) => i.internal_id))
   if (ids.size !== items.length) errors.push('IDs internos duplicados.')
+
+  // Séries: episódios numerados em sequência, sem buraco
+  Object.values(SERIES).forEach((serie) => {
+    const eps = items
+      .filter((i) => i.series === serie.id)
+      .map((i) => i.episode)
+      .sort((a, b) => a - b)
+    if (eps.length !== serie.episodes) {
+      errors.push(`Série ${serie.label}: ${eps.length} episódios (esperado ${serie.episodes}).`)
+    }
+    eps.forEach((ep, idx) => {
+      if (ep !== idx + 1) errors.push(`Série ${serie.label}: numeração fora de sequência em ${ep}.`)
+    })
+  })
+
+  // Pontes obrigatórias do plano
+  const expectedBridges = { B3: 'A3', B4: 'A4' }
+  Object.entries(expectedBridges).forEach(([from, to]) => {
+    const piece = items.find((i) => i.internal_id === from)
+    if (piece && piece.bridge_with !== to) {
+      errors.push(`${from}: ponte deveria apontar para ${to} (encontrado ${piece.bridge_with || 'nenhuma'}).`)
+    }
+  })
 
   return errors
 }
@@ -304,4 +404,32 @@ export function measuredValue(target, result) {
   if (raw === '' || raw == null) return null
   const n = Number(raw)
   return Number.isFinite(n) ? n : null
+}
+
+/**
+ * Retenção de alcance de um episódio para o seguinte dentro de uma série.
+ * O alvo do plano: cada episódio retém pelo menos metade do alcance do anterior —
+ * se cada um cai pela metade sem o anterior sustentar o seguinte, a série não
+ * está serializando e virou reel avulso com nome.
+ */
+export function seriesRetention(items, serieId = 'Wilson', field = 'result_72h') {
+  const eps = items
+    .filter((i) => i.series === serieId)
+    .sort((a, b) => a.episode - b.episode)
+
+  let previous = null
+  return eps.map((piece) => {
+    const alcance = Number(piece[field]?.alcance)
+    const value = Number.isFinite(alcance) && alcance > 0 ? alcance : null
+    const retention = value != null && previous != null ? (value / previous) * 100 : null
+    if (value != null) previous = value
+    return {
+      id: piece.internal_id,
+      episode: piece.episode,
+      role: piece.series_role,
+      alcance: value,
+      retention,
+      target: SERIES[serieId]?.retentionTarget ?? null,
+    }
+  })
 }
