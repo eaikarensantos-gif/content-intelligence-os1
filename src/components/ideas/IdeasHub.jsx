@@ -7,10 +7,12 @@ import {
   Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
   ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound, Trash2,
   TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal, ListOrdered,
+  FlaskConical, Megaphone,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
 import IdeaForm from './IdeaForm'
+import RepositioningTest from './RepositioningTest'
 import DailyAgentBanner from './DailyAgentBanner'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import Modal from '../common/Modal'
@@ -107,6 +109,19 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
       </div>
 
       <div className={`flex flex-wrap gap-1 ${dragHandleProps ? 'ml-5' : ''}`}>
+        {idea.internal_id && (
+          <span className="inline-flex items-center justify-center min-w-[24px] h-[18px] px-1 rounded-md bg-gray-900 text-white text-[9px] font-black tracking-wide">
+            {idea.internal_id}
+          </span>
+        )}
+        {idea.campaign_ready && (
+          <span
+            className="chip border text-[9px] bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200"
+            title="Compatível com campanha — uso duplo"
+          >
+            <Megaphone size={8} /> Campanha
+          </span>
+        )}
         {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
         <FormatBadge format={idea.format} />
         {idea.content_type && idea.content_type !== 'organic' && CONTENT_TYPE_LABELS[idea.content_type] && (
@@ -1187,6 +1202,7 @@ const TABS = [
   { id: 'kanban',   label: 'Quadro',    icon: Kanban },
   { id: 'order',    label: 'Ordem',     icon: ListOrdered },
   { id: 'week',     label: 'Semana',    icon: Target },
+  { id: 'teste',    label: 'Teste 6 semanas', icon: FlaskConical },
 ]
 
 // ─── Plano Semanal ────────────────────────────────────────────────────────────
@@ -1783,6 +1799,9 @@ export default function IdeasHub() {
       {tab === 'order' && (
         <OrderView ideas={filtered} updateIdea={updateIdea} onCardClick={openEdit} />
       )}
+
+      {/* Teste de reposicionamento — 6 semanas / 18 peças */}
+      {tab === 'teste' && <RepositioningTest onOpenIdea={openEdit} />}
 
       {/* Visualização Plano Semanal */}
       {tab === 'week' && (
