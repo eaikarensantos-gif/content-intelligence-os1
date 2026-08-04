@@ -1,0 +1,307 @@
+// Teste de Reposicionamento — 6 semanas / 18 peças
+//
+// Calendário derivado de relatório de performance de 90 dias (@karensantosperfil).
+// Cada peça herda a especificação do seu container. Nada aqui é sugestão criativa:
+// os formatos já têm performance medida e as datas são calculadas a partir de
+// DATA_INICIO (segunda-feira da semana 1).
+//
+// Regras de escrita: exatamente 18 itens, sem desdobrar, sem reordenar.
+
+export const REPOSITIONING_TAG = 'teste-posicionamento'
+
+// ─── Containers (formatos provados) ──────────────────────────────────────────
+
+export const CONTAINERS = {
+  A: {
+    id: 'A',
+    label: 'Container A · reel de cena com tensão real',
+    short: 'Reel de cena',
+    format: 'reel',
+    dayLabel: 'Segunda',
+    time: '15:00',
+    prova: '9.516 de alcance, 72% de não seguidores, 205 compartilhamentos',
+    spec: 'Formato que abriu o perfil. Cena cotidiana, gancho nos primeiros 2 segundos, sem introdução.',
+    targets: [
+      { key: 'alcance',              label: 'Alcance',            target: 3000, kind: 'abs' },
+      { key: 'pct_nao_seguidores',   label: 'Não seguidores',     target: 50,   kind: 'pct' },
+      { key: 'compartilhamentos',    label: 'Compartilhamentos',  target: 40,   kind: 'abs' },
+    ],
+  },
+  B: {
+    id: 'B',
+    label: 'Container B · carrossel de argumento',
+    short: 'Carrossel de argumento',
+    format: 'carrossel',
+    dayLabel: 'Quarta',
+    time: '15:00',
+    prova: 'Fracasso: 144 visitas ao perfil e 40 cliques numa peça só · Opinião: 69 compartilhamentos, 60 salvamentos',
+    spec: 'Duas variantes que se alternam: fracasso concreto + número + credencial, ou opinião forte sobre o mercado. Pergunta direta no último slide.',
+    targets: [
+      { key: 'visitas_perfil', label: 'Visitas ao perfil', target: 50, kind: 'abs' },
+      { key: 'cliques',        label: 'Cliques no link',   target: 10, kind: 'abs' },
+      { key: 'salvamentos',    label: 'Salvamentos',       target: 20, kind: 'abs' },
+    ],
+  },
+  C: {
+    id: 'C',
+    label: 'Container C · carrossel de utilidade pura',
+    short: 'Carrossel de utilidade',
+    format: 'carrossel',
+    dayLabel: 'Sexta',
+    time: '07:00',
+    prova: 'Melhor salvamento do histórico: 2,9% sobre alcance, quatro vezes a média do perfil',
+    spec: 'Passo a passo, checklist ou comparativo. O slide final tem que ser inútil se a pessoa não salvar. Teste da janela 6h–9h.',
+    targets: [
+      { key: 'taxa_salvamento', label: 'Salvamento / alcance', target: 1.5, kind: 'pct' },
+    ],
+  },
+}
+
+// ─── Pilares ─────────────────────────────────────────────────────────────────
+
+export const PILLARS = {
+  'negócio-estrutura': { label: 'Negócio & estrutura', chip: 'bg-blue-100 text-blue-700 border-blue-200',       dot: 'bg-blue-500',    cell: 'border-blue-200 bg-blue-50/60' },
+  'ia-critica':        { label: 'IA crítica',          chip: 'bg-purple-100 text-purple-700 border-purple-200', dot: 'bg-purple-500',  cell: 'border-purple-200 bg-purple-50/60' },
+  'celular-operacao':  { label: 'Celular & operação',  chip: 'bg-teal-100 text-teal-700 border-teal-200',       dot: 'bg-teal-500',    cell: 'border-teal-200 bg-teal-50/60' },
+  'identidade':        { label: 'Identidade',          chip: 'bg-amber-100 text-amber-700 border-amber-200',    dot: 'bg-amber-500',   cell: 'border-amber-200 bg-amber-50/60' },
+  'a definir':         { label: 'A definir',           chip: 'bg-gray-100 text-gray-600 border-gray-200',       dot: 'bg-gray-400',    cell: 'border-gray-200 bg-gray-50/60' },
+}
+
+// ─── Status de produção (vocabulário do teste) ───────────────────────────────
+
+export const TEST_STATUSES = {
+  'a definir':  { label: 'A definir',  chip: 'bg-gray-100 text-gray-600 border-gray-200',          appStatus: 'idea' },
+  'a produzir': { label: 'A produzir', chip: 'bg-orange-100 text-orange-700 border-orange-200',    appStatus: 'idea' },
+  'produzido':  { label: 'Produzido',  chip: 'bg-blue-100 text-blue-700 border-blue-200',          appStatus: 'ready' },
+  'publicado':  { label: 'Publicado',  chip: 'bg-emerald-100 text-emerald-700 border-emerald-200', appStatus: 'published' },
+  'medido':     { label: 'Medido',     chip: 'bg-violet-100 text-violet-700 border-violet-200',    appStatus: 'published' },
+}
+
+export const TEST_STATUS_ORDER = ['a definir', 'a produzir', 'produzido', 'publicado', 'medido']
+
+// ─── Campos de resultado (vazios na carga, preenchidos depois) ───────────────
+
+export const RESULT_FIELDS = [
+  { key: 'alcance',            label: 'Alcance',            unit: '' },
+  { key: 'pct_nao_seguidores', label: '% não seguidores',   unit: '%' },
+  { key: 'salvamentos',        label: 'Salvamentos',        unit: '' },
+  { key: 'compartilhamentos',  label: 'Compartilhamentos',  unit: '' },
+  { key: 'visitas_perfil',     label: 'Visitas ao perfil',  unit: '' },
+  { key: 'cliques',            label: 'Cliques',            unit: '' },
+  { key: 'seguidores',         label: 'Seguidores',         unit: '' },
+]
+
+const EMPTY_RESULT = RESULT_FIELDS.reduce((acc, f) => ({ ...acc, [f.key]: '' }), {})
+
+// ─── Linha de base do perfil (view de medição) ───────────────────────────────
+
+export const BASELINE = [
+  { metric: 'Salvamento (% do alcance)',        base: '0,65%', goal: '1,5%' },
+  { metric: 'Não seguidores nas visualizações', base: '21,6%', goal: '35%' },
+  { metric: 'Cliques no link por mês',          base: '19',    goal: '50' },
+  { metric: 'Visitas ao perfil por carrossel',  base: '22',    goal: '50' },
+  { metric: 'Peças de feed por semana',         base: '1,5',   goal: '3' },
+]
+
+// ─── As 18 peças ─────────────────────────────────────────────────────────────
+// Ordem e conteúdo fiéis ao calendário. Não adicionar, não desdobrar.
+
+export const PIECES = [
+  { id: 'A1', week: 1, slot: 'A', container: 'A', pillar: 'negócio-estrutura', angle: 'POV: o cliente pede "só um ajustinho" na sexta 18h', campaign: false },
+  { id: 'B1', week: 1, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negócio-estrutura', angle: 'O projeto que deu errado, quanto custou, e o que você cobra hoje por causa disso', campaign: false },
+  { id: 'C1', week: 1, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'O que dá pra resolver do negócio pelo celular antes das 9h', campaign: true },
+
+  { id: 'A2', week: 2, slot: 'A', container: 'A', pillar: 'identidade', angle: 'POV: você é a única pessoa negra na call e alguém repete sua ideia 5 minutos depois', campaign: false },
+  { id: 'B2', week: 2, slot: 'B', container: 'B', variant: 'opinião', pillar: 'ia-critica', angle: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno', campaign: false },
+  { id: 'C2', week: 2, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'Um fluxo de IA no celular do início ao fim, com print de cada passo', campaign: true },
+
+  { id: 'A3', week: 3, slot: 'A', container: 'A', pillar: 'negócio-estrutura', angle: 'POV: o cliente pergunta quanto custa a sua hora', campaign: false },
+  { id: 'B3', week: 3, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negócio-estrutura', angle: 'Ponte com A3. Por que parei de vender hora e passei a vender escopo fixo', campaign: false },
+  { id: 'C3', week: 3, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'O que resolver no celular e o que ainda exige computador', campaign: true },
+
+  { id: 'A4', week: 4, slot: 'A', container: 'A', pillar: 'negócio-estrutura', angle: 'POV: é segunda de manhã e ninguém vai te dizer o que fazer hoje', campaign: false },
+  { id: 'B4', week: 4, slot: 'B', container: 'B', variant: 'opinião', pillar: 'negócio-estrutura', angle: 'Ponte com A4. Separar quem decide de quem executa dentro de uma pessoa só', campaign: false },
+  { id: 'C4', week: 4, slot: 'C', container: 'C', pillar: 'ia-critica', angle: 'Checklist de decisão antes de contratar qualquer ferramenta de IA', campaign: false },
+
+  { id: 'A5', week: 5, slot: 'A', container: 'A', pillar: 'a definir', angle: 'Repetir o ângulo do reel com melhor alcance das semanas 1 a 4', campaign: false, pending: true },
+  { id: 'B5', week: 5, slot: 'B', container: 'B', variant: 'opinião', pillar: 'identidade', angle: 'Peça mensal de identidade/ancestralidade. Segura a base, ~20% de engajamento', campaign: false },
+  { id: 'C5', week: 5, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'As oportunidades em tech abertas este mês', campaign: false },
+
+  { id: 'A6', week: 6, slot: 'A', container: 'A', pillar: 'a definir', angle: 'Repetir o segundo melhor reel das semanas 1 a 4', campaign: false, pending: true },
+  { id: 'B6', week: 6, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negócio-estrutura', angle: 'Repetir a peça de melhor conversão em clique das semanas 1 a 4', campaign: false, pending: true },
+  { id: 'C6', week: 6, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'Repetir o formato de melhor salvamento das semanas 1 a 4', campaign: true, pending: true },
+]
+
+// ─── Cálculo de datas ────────────────────────────────────────────────────────
+// Slot A: segunda da semana N, 15h — produzir até a sexta anterior.
+// Slot B: quarta da semana N, 15h — produzir até a segunda da mesma semana.
+// Slot C: sexta  da semana N,  7h — produzir até a quarta da mesma semana.
+
+const pad = (n) => String(n).padStart(2, '0')
+
+export const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+export function addDays(iso, n) {
+  const d = new Date(`${iso}T12:00:00`)
+  d.setDate(d.getDate() + n)
+  return toISO(d)
+}
+
+// Offsets a partir da segunda-feira da semana N
+const SLOT_OFFSETS = {
+  A: { publish: 0, produce: -3 },  // segunda / sexta anterior
+  B: { publish: 2, produce: 0 },   // quarta  / segunda da mesma semana
+  C: { publish: 4, produce: 2 },   // sexta   / quarta da mesma semana
+}
+
+/** Segunda-feira mais próxima no futuro (ou hoje, se hoje for segunda). */
+export function nextMonday(from = new Date()) {
+  const d = new Date(from)
+  d.setHours(12, 0, 0, 0)
+  const dow = d.getDay() // 0 dom … 6 sáb
+  const delta = dow === 1 ? 0 : (8 - dow) % 7
+  d.setDate(d.getDate() + delta)
+  return toISO(d)
+}
+
+export function isMonday(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return false
+  return new Date(`${iso}T12:00:00`).getDay() === 1
+}
+
+export function pieceDates(piece, dataInicio) {
+  const weekStart = addDays(dataInicio, (piece.week - 1) * 7)
+  const { publish, produce } = SLOT_OFFSETS[piece.slot]
+  return {
+    publish_date: addDays(weekStart, publish),
+    produce_by: addDays(weekStart, produce),
+    publish_time: CONTAINERS[piece.container].time,
+  }
+}
+
+// ─── Construção dos registros para o app ─────────────────────────────────────
+
+function description(piece) {
+  const c = CONTAINERS[piece.container]
+  const lines = [
+    `${c.label}${piece.variant ? ` · variante ${piece.variant}` : ''}`,
+    c.spec,
+    `Prova de performance: ${c.prova}`,
+    `Alvo: ${c.targets.map((t) => `${t.label} ${t.kind === 'pct' ? `${String(t.target).replace('.', ',')}%+` : `${t.target}+`}`).join(' · ')}`,
+  ]
+  if (piece.pending) {
+    lines.push('Ângulo pendente — depende da revisão dos resultados das semanas 1 a 4. O slot está reservado, não produza antes da revisão.')
+  }
+  return lines.join('\n\n')
+}
+
+/**
+ * Monta as 18 peças no formato de ideia do app a partir de DATA_INICIO
+ * (segunda-feira da semana 1, AAAA-MM-DD).
+ */
+export function buildRepositioningIdeas(dataInicio) {
+  return PIECES.map((piece) => {
+    const c = CONTAINERS[piece.container]
+    const { publish_date, produce_by, publish_time } = pieceDates(piece, dataInicio)
+    const testStatus = piece.pending ? 'a definir' : 'a produzir'
+
+    return {
+      // ── campos do app ──
+      title: piece.angle,
+      description: description(piece),
+      topic: PILLARS[piece.pillar].label,
+      format: c.format,
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: piece.week <= 2 ? 'high' : 'medium',
+      status: TEST_STATUSES[testStatus].appStatus,
+      scheduled_date: publish_date,
+      content_type: 'organic',
+      source: 'Teste de Posicionamento · 6 semanas',
+      creation_order: null,
+      tags: [
+        REPOSITIONING_TAG,
+        `semana-${piece.week}`,
+        piece.pillar,
+        ...(piece.campaign ? ['campanha'] : []),
+      ],
+
+      // ── campos do teste ──
+      internal_id: piece.id,
+      test_week: piece.week,
+      test_slot: piece.slot,
+      container: piece.container,
+      container_variant: piece.variant || null,
+      pillar: piece.pillar,
+      angle: piece.angle,
+      angle_pending: !!piece.pending,
+      publish_time,
+      produce_by,
+      test_status: testStatus,
+      campaign_ready: !!piece.campaign,
+      result_72h: { ...EMPTY_RESULT },
+      result_14d: { ...EMPTY_RESULT },
+    }
+  })
+}
+
+// ─── Verificação (roda antes de escrever no app) ─────────────────────────────
+
+/** Retorna lista de erros. Vazia = calendário íntegro. */
+export function validateRepositioningPlan(items) {
+  const errors = []
+
+  if (items.length !== 18) errors.push(`Esperado 18 registros, encontrado ${items.length}.`)
+
+  for (let week = 1; week <= 6; week++) {
+    const n = items.filter((i) => i.test_week === week).length
+    if (n !== 3) errors.push(`Semana ${week} tem ${n} peças (esperado 3).`)
+  }
+
+  const seenDates = new Map()
+  items.forEach((i) => {
+    const key = `${i.scheduled_date} ${i.publish_time}`
+    if (seenDates.has(key)) errors.push(`Data duplicada em ${key}: ${seenDates.get(key)} e ${i.internal_id}.`)
+    else seenDates.set(key, i.internal_id)
+
+    if (!(i.produce_by < i.scheduled_date)) {
+      errors.push(`${i.internal_id}: prazo de produção (${i.produce_by}) não é anterior à publicação (${i.scheduled_date}).`)
+    }
+
+    const [h, m] = (i.publish_time || '').split(':').map(Number)
+    if (!Number.isFinite(h) || !Number.isFinite(m) || h * 60 + m > 21 * 60) {
+      errors.push(`${i.internal_id}: publicação às ${i.publish_time} — depois das 21h.`)
+    }
+
+    const expectedDow = { A: 1, B: 3, C: 5 }[i.test_slot]
+    const dow = new Date(`${i.scheduled_date}T12:00:00`).getDay()
+    if (dow !== expectedDow) {
+      errors.push(`${i.internal_id}: slot ${i.test_slot} caiu em dia da semana ${dow} (esperado ${expectedDow}).`)
+    }
+  })
+
+  const ids = new Set(items.map((i) => i.internal_id))
+  if (ids.size !== items.length) errors.push('IDs internos duplicados.')
+
+  return errors
+}
+
+/** Alvo do container em texto, para a view de medição. */
+export function containerTargets(containerId) {
+  return CONTAINERS[containerId]?.targets || []
+}
+
+/** Valor medido de um alvo, derivado dos campos de resultado. */
+export function measuredValue(target, result) {
+  if (!result) return null
+  if (target.key === 'taxa_salvamento') {
+    const alcance = Number(result.alcance)
+    const saves = Number(result.salvamentos)
+    if (!alcance || !saves) return null
+    return (saves / alcance) * 100
+  }
+  const raw = result[target.key]
+  if (raw === '' || raw == null) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
+}
