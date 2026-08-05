@@ -20,7 +20,8 @@ import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
 import {
-  WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme, WORK_NICHE,
+  WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme,
+  WORK_NICHE, WORK_CATEGORY_BRIEF, isCltFramed,
 } from '../../utils/themeCategories'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
@@ -2004,9 +2005,21 @@ Se o tema fala de IA dentro do celular, é "Celular & operação". Se fala do cu
     if (!categoria && savedThemes.length === 0) return
     setExpandingThemes(true)
     try {
-      const contextoCategoria = categoria
-        ? `Categoria focada: "${categoria}"\n\nTemas já existentes nessa categoria:\n${temasNaCategoria.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`
-        : `Temas gerais já existentes:\n${savedThemes.map(t => `- ${t.tema}`).join('\n')}`
+      // Os temas existentes entram como referência do que já foi coberto. Mas os
+      // que sobraram do posicionamento antigo não podem servir de exemplo: se o
+      // modelo vê "pedir aumento" como exemplo da categoria, gera mais rotina de
+      // CLT. Eles vão como contraexemplo.
+      const base = categoria ? temasNaCategoria : savedThemes
+      const noPosicionamento = isPessoal ? base : base.filter(t => !isCltFramed(t.tema))
+      const foraDoPosicionamento = isPessoal ? [] : base.filter(t => isCltFramed(t.tema))
+
+      const contextoCategoria = [
+        categoria ? `Categoria focada: "${categoria}"` : null,
+        `Temas já existentes${categoria ? ' nessa categoria' : ''}:\n${noPosicionamento.map(t => `- ${t.tema}`).join('\n') || '(nenhum ainda)'}`,
+        foraDoPosicionamento.length
+          ? `Estes estão no banco mas são do posicionamento antigo, de vida de empregado. NÃO use como referência e NÃO gere nada parecido:\n${foraDoPosicionamento.map(t => `- ${t.tema}`).join('\n')}`
+          : null,
+      ].filter(Boolean).join('\n\n')
       const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
@@ -2015,7 +2028,13 @@ Se o tema fala de IA dentro do celular, é "Celular & operação". Se fala do cu
           max_tokens: 800,
           messages: [{ role: 'user', content: `${isPessoal
             ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`
-            : `Você é um estrategista de conteúdo para criadores na área de carreira, tecnologia e comportamento profissional no Brasil.`}
+            : `Você é estrategista de conteúdo para Karen Santos. ${WORK_NICHE}
+
+O leitor é dono do próprio negócio. Ele não tem chefe, não busca promoção e não passa por RH.
+PROIBIDO sugerir tema de rotina de empregado: promoção, aumento, chefe, gestor, feedback, avaliação de desempenho, entrevista, currículo, vaga, demissão, política de escritório, síndrome do impostor em cargo.
+O equivalente do lado de cá: no lugar de "pedir aumento", reajustar preço com cliente antigo; no lugar de "chefe que microgerencia", cliente que pede ajuste fora do escopo; no lugar de "medo de ser demitido", cliente âncora que representa metade do faturamento.${categoria && WORK_CATEGORY_BRIEF[categoria] ? `
+
+O que a categoria "${categoria}" quer dizer: ${WORK_CATEGORY_BRIEF[categoria]}` : ''}`}
 
 ${contextoCategoria}
 
@@ -2153,6 +2172,29 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
             </div>
 
+            {!isPessoal && (() => {
+              const clt = savedThemes.filter(t => isCltFramed(t.tema))
+              if (clt.length === 0) return null
+              return (
+                <div className="flex items-center gap-2 flex-wrap text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2">
+                  <span>
+                    {clt.length} tema{clt.length > 1 ? 's' : ''} do posicionamento antigo — escrito{clt.length > 1 ? 's' : ''} do lugar de empregado, não de dono de negócio.
+                  </span>
+                  <button
+                    onClick={() => {
+                      const ids = new Set(clt.map(t => t.id))
+                      if (window.confirm(`Remover ${clt.length} tema${clt.length > 1 ? 's' : ''} de rotina CLT do banco?`)) {
+                        setSavedThemes(prev => prev.filter(t => !ids.has(t.id)))
+                      }
+                    }}
+                    className="font-semibold text-amber-700 hover:text-amber-900 underline underline-offset-2"
+                  >
+                    Remover {clt.length > 1 ? 'todos' : ''}
+                  </button>
+                </div>
+              )
+            })()}
+
             {reclassifyResult != null && (
               <p className="text-[11px] text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 mb-2">
                 {reclassifyResult === 0
@@ -2197,6 +2239,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
                               className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
                             >
                               {item.tema}
+                              {!isPessoal && isCltFramed(item.tema) && (
+                                <span
+                                  className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200"
+                                  title="Tema escrito do lugar de empregado — veio do posicionamento antigo. Reescreva do lado de quem é dono ou remova."
+                                >
+                                  CLT
+                                </span>
+                              )}
                             </button>
                             <button
                               onClick={() => removeTheme(item.id)}
