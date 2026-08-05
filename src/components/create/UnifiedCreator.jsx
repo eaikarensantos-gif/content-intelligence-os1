@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { detectCliches } from '../../lib/clicheDetector'
+import { sweepResult, blockingFindings, countBlocks, SHORT_FIELDS } from '../../lib/clicheSweep'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
@@ -107,6 +108,15 @@ const FORMATS = [
   { id: 'stories', label: 'Stories', icon: Film, desc: 'Sequência de stories', color: 'from-amber-500 to-orange-500' },
 ]
 
+/* Rótulos dos campos no relatório da varredura anti-clichê */
+const FIELD_LABELS = {
+  content: 'Conteúdo',
+  caption: 'Legenda',
+  title: 'Título',
+  title_options: 'Título sugerido',
+  hook_alternatives: 'Gancho',
+}
+
 const FORMAT_PROMPTS = {
   reels: `FORMATO: REELS (30-60 segundos)
 - Abertura impactante (0-3s) — gancho visual + frase de impacto
@@ -117,11 +127,25 @@ const FORMAT_PROMPTS = {
 - Sugestão de áudio/trilha
 - Legenda para o post + 5-8 hashtags`,
   carrossel: `FORMATO: CARROSSEL (5-10 slides)
-- Slide 1: Gancho provocador (frase que para o scroll)
+- Slide 1: abertura concreta — uma cena, um número ou uma consequência real. NÃO use frase de efeito, promessa de revelação ("o segredo de…", "a verdade sobre…", "o que ninguém te conta") nem pergunta retórica.
 - Slides 2-8: Desenvolvimento com 1 ideia por slide
 - Slides 9-10: Conclusão + CTA
 - Inclua: texto exato de cada slide, sugestão visual por slide
-- Legenda para o post + 5-8 hashtags`,
+- Legenda para o post + 5-8 hashtags
+
+REGRA ESPECÍFICA DO CARROSSEL — o formato empurra para o clichê porque cada slide
+pede uma frase curta de impacto. Cada slide é uma unidade de leitura e precisa
+passar sozinho no filtro de autenticidade:
+- Um slide inteiro nunca é só uma frase de efeito. Se o slide não tem informação
+  (dado, cena, critério, consequência), ele não existe — corte e junte com outro.
+- Proibido o slide construído por contraste corretivo: "não é X, é Y", "não se
+  trata de X", "mais do que X, é Y". Afirme direto o que é.
+- Proibido slide de pergunta retórica no meio do carrossel ("já parou pra pensar…").
+  Pergunta só no último slide, e sendo pergunta direta que a pessoa consegue
+  responder no comentário — não convite genérico à reflexão.
+- Proibida a escadinha de negações em slides seguidos ("Não é A." / "Não é B." / "É C.").
+- Último slide: útil sozinho. Se a pessoa fechar o carrossel sem salvar, ela tem
+  que perder alguma coisa concreta.`,
   caption: `FORMATO: CAPTION (Instagram/LinkedIn)
 - Abertura: Gancho direto (primeira linha que aparece no feed — CRUCIAL)
 - Corpo: 3-5 parágrafos curtos, espaço branco
@@ -887,6 +911,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [inspiration, setInspiration] = useState(null)
   const [brandViolations, setBrandViolations] = useState([])
   const [showLinter, setShowLinter] = useState(false)
+  const [sweepReport, setSweepReport] = useState(null) // varredura anti-clichê da última geração
   const linterTimeoutRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -1055,7 +1080,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
   /* ── Reescrita corretiva anti-clichê ──
      O filtro no prompt é probabilístico: o modelo às vezes emite a estrutura
-     proibida mesmo assim. Quando o detector determinístico encontra um bloco,
+     proibida mesmo assim. Quando a varredura determinística encontra um bloco,
      esta chamada reescreve só os trechos apontados antes de mostrar na tela. */
   const rewriteWithoutCliches = async (text, hits) => {
     const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
@@ -1077,6 +1102,73 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     return data.content?.[0]?.text?.trim() || text
   }
 
+  /* Reescrita em lote das linhas curtas — título, opções de título e ganchos.
+     São o slide 1 do carrossel e a primeira frase do reel, e até agora saíam
+     da geração sem passar por nenhum filtro. */
+  const rewriteShortLines = async (entries) => {
+    const list = entries.map((e, i) =>
+      `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}`
+    ).join('\n')
+
+    const res = await fetch('/api/ai?action=anthropic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: withManualOperacional(ANTI_AI_FILTER),
+        messages: [{
+          role: 'user',
+          content: `As linhas abaixo saíram com padrões proibidos pelo filtro de autenticidade. Reescreva cada uma em declaração direta, mantendo o mesmo assunto e o mesmo comprimento aproximado. Sem contraste corretivo, sem promessa de revelação, sem pergunta retórica, sem frase de efeito genérica. Seja concreto: cena, número ou consequência real.\n\n${list}\n\nResponda APENAS com um array JSON de ${entries.length} strings, na mesma ordem, sem markdown.`,
+        }],
+      }),
+    })
+    if (!res.ok) throw new Error(`Erro ${res.status}`)
+    const data = await res.json()
+    const raw = data.content?.[0]?.text || ''
+    const match = raw.match(/\[[\s\S]*\]/)
+    if (!match) throw new Error('Resposta inválida')
+    const parsed = JSON.parse(match[0])
+    if (!Array.isArray(parsed) || parsed.length !== entries.length) throw new Error('Tamanho inesperado')
+    return parsed.map((s, i) => (typeof s === 'string' && s.trim() ? s.trim() : entries[i].text))
+  }
+
+  /* Varredura completa do resultado: content, caption, título, opções de título
+     e ganchos. Reescreve o que estiver bloqueado e confere de novo — a reescrita
+     também é probabilística e pode reintroduzir o padrão. Até 2 passadas por
+     campo; o que sobrar vai para o relatório em vez de sumir em silêncio. */
+  const sweepAndFix = async (parsed, selectedFormat) => {
+    const MAX_PASSES = 2
+    let fixed = 0
+
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      const findings = blockingFindings(sweepResult(parsed, { format: selectedFormat }))
+      if (!findings.length) break
+
+      const longFields = findings.filter((f) => !SHORT_FIELDS.includes(f.field))
+      const shortFields = findings.filter((f) => SHORT_FIELDS.includes(f.field))
+
+      for (const f of longFields) {
+        const rewritten = await rewriteWithoutCliches(f.text, f.blocks)
+        if (rewritten && rewritten !== f.text) { parsed[f.field] = rewritten; fixed += f.blocks.length }
+      }
+
+      if (shortFields.length) {
+        const rewritten = await rewriteShortLines(shortFields)
+        shortFields.forEach((f, i) => {
+          const value = rewritten[i]
+          if (!value || value === f.text) return
+          if (f.index == null) parsed[f.field] = value
+          else parsed[f.field][f.index] = value
+          fixed += f.blocks.length
+        })
+      }
+    }
+
+    const remaining = blockingFindings(sweepResult(parsed, { format: selectedFormat }))
+    return { fixed, remaining, warns: sweepResult(parsed, { format: selectedFormat }).flatMap((f) => f.warns) }
+  }
+
   /* ── Gerar conteúdo ── */
   const generate = async (overrides = {}) => {
     const text = overrides.input || input
@@ -1085,6 +1177,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
     setLoading(true)
     setError(null)
+    setSweepReport(null)
     if (overrides.adjustment) setAdjusting(overrides.adjustment)
 
     // No modo pessoal a voz de marca profissional fica de fora; frases proibidas e dislikes continuam
@@ -1159,13 +1252,12 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
 
       const parsed = JSON.parse(jsonMatch[0])
 
-      // Passagem determinística anti-clichê sobre o texto gerado
+      // Varredura determinística anti-clichê sobre tudo que foi gerado
+      let report = null
       try {
-        for (const field of ['content', 'caption']) {
-          const hits = detectCliches(parsed[field]).blocks
-          if (hits.length) parsed[field] = await rewriteWithoutCliches(parsed[field], hits)
-        }
+        report = await sweepAndFix(parsed, selectedFormat || parsed.suggested_format)
       } catch { /* se a correção falhar, mantém o texto original */ }
+      setSweepReport(report)
 
       // Salvar no histórico antes de atualizar
       if (result) setHistory(prev => [result, ...prev].slice(0, 10))
@@ -3371,7 +3463,40 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
                 {FORMATS.find(f => f.id === result.suggested_format)?.label || result.suggested_format}
               </span>
             )}
+            {sweepReport && sweepReport.fixed > 0 && sweepReport.remaining.length === 0 && (
+              <span
+                className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"
+                title="A varredura anti-clichê corrigiu o texto antes de mostrar"
+              >
+                <ShieldCheck size={10} /> {sweepReport.fixed} clichê{sweepReport.fixed > 1 ? 's' : ''} corrigido{sweepReport.fixed > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
+
+          {/* Varredura anti-clichê: o que sobrou depois das reescritas */}
+          {sweepReport?.remaining?.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-1.5">
+              <p className="text-[11px] font-semibold text-amber-800 flex items-center gap-1.5">
+                <AlertCircle size={12} />
+                {countBlocks(sweepReport.remaining)} clichê{countBlocks(sweepReport.remaining) > 1 ? 's' : ''} que a reescrita não resolveu
+                {sweepReport.fixed > 0 && <span className="font-normal text-amber-600">· {sweepReport.fixed} já corrigido{sweepReport.fixed > 1 ? 's' : ''}</span>}
+              </p>
+              {sweepReport.remaining.map((f, i) => (
+                <p key={i} className="text-[11px] text-amber-700 leading-relaxed">
+                  <span className="font-medium">{FIELD_LABELS[f.field] || f.field}{f.index != null ? ` ${f.index + 1}` : ''}</span>
+                  {f.blocks.map((h, j) => (
+                    <span key={j}>
+                      {j === 0 ? ' — ' : ' · '}
+                      {h.slide ? `${h.slide}: ` : ''}“{h.match}”
+                    </span>
+                  ))}
+                </p>
+              ))}
+              <p className="text-[10px] text-amber-600 pt-0.5">
+                Regenere ou edite esses trechos à mão — o filtro não sobrescreve sem você ver.
+              </p>
+            </div>
+          )}
 
           {/* Título */}
           <div className="flex items-start justify-between gap-3">

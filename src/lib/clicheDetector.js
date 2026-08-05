@@ -64,6 +64,18 @@ const WARN_WORDS = [
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+// A voz da Karen é oral, então o texto sai com contração: "pra" no lugar de
+// "para", "pro" no lugar de "para o". Sem isso, "já parou pra pensar" passava
+// batido enquanto "já parou para pensar" era bloqueado.
+const phraseToRegex = (phrase) =>
+  new RegExp(
+    escapeRe(phrase)
+      .replace(/\bpara o\b/gi, '(?:para o|pro)')
+      .replace(/\bpara a\b/gi, '(?:para a|pra)')
+      .replace(/\bpara\b/gi, '(?:para|pra)'),
+    'gi'
+  )
+
 export function detectCliches(text) {
   const blocks = []
   const warns = []
@@ -74,7 +86,7 @@ export function detectCliches(text) {
   }
 
   for (const phrase of BLOCK_PHRASES) {
-    const re = new RegExp(escapeRe(phrase), 'gi')
+    const re = phraseToRegex(phrase)
     for (const m of text.matchAll(re)) {
       blocks.push({ id: 'frase-proibida', label: 'Frase da lista proibida', match: m[0] })
     }
