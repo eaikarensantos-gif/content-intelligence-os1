@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractJsonObject, extractJsonArray } from './aiJson.js'
+import { extractJsonObject, extractJsonArray, assertNotTruncated } from './aiJson.js'
 
 describe('extractJsonObject', () => {
   it('parses a clean JSON object', () => {
@@ -48,5 +48,35 @@ describe('extractJsonArray', () => {
 
   it('throws a friendly error when no array is present', () => {
     expect(() => extractJsonArray('{"a":1}')).toThrow('Resposta inválida da IA')
+  })
+
+  it('reproduces the reported bug: a response cut off mid-array', () => {
+    // Response gets cut off by max_tokens while emitting the 2nd array
+    // element — this is exactly "Expected ',' or ']' after array element",
+    // because the last `}` the regex can find belongs to the completed 1st
+    // element, and the array/object around it was never closed.
+    const truncated = '{"patterns":[{"name":"a","example":"x"},{"name":"b","example":"y"'
+    expect(() => extractJsonObject(truncated)).toThrow('Resposta inválida da IA')
+  })
+})
+
+describe('assertNotTruncated', () => {
+  it('throws when the model stopped for hitting max_tokens', () => {
+    expect(() => assertNotTruncated({ stop_reason: 'max_tokens' })).toThrow(/cortada/)
+  })
+
+  it('does not throw for a response that finished normally', () => {
+    expect(() => assertNotTruncated({ stop_reason: 'end_turn' })).not.toThrow()
+    expect(() => assertNotTruncated({ stop_reason: 'stop_sequence' })).not.toThrow()
+  })
+
+  it('does not throw on malformed or missing data — that is extractJson*\'s job', () => {
+    expect(() => assertNotTruncated(null)).not.toThrow()
+    expect(() => assertNotTruncated({})).not.toThrow()
+    expect(() => assertNotTruncated(undefined)).not.toThrow()
+  })
+
+  it('honors a custom message', () => {
+    expect(() => assertNotTruncated({ stop_reason: 'max_tokens' }, 'boom')).toThrow('boom')
   })
 })
