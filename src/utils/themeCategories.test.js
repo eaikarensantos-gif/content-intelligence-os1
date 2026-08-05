@@ -6,6 +6,7 @@ import {
   categorizeWorkTheme,
   categorizePersonalTheme,
   categorizeTheme,
+  tokenize,
   WORK_NICHE,
 } from './themeCategories'
 
@@ -110,6 +111,57 @@ describe('classificação de tema de trabalho', () => {
     ;['preço', 'ia', 'celular', 'negra', 'nada disso'].forEach((t) => {
       expect(WORK_CATEGORIES).toContain(categorizeWorkTheme(t))
     })
+  })
+})
+
+describe('palavra inteira, não pedaço de palavra', () => {
+  it('não confunde pedaço de palavra no banco de trabalho', () => {
+    const casos = [
+      // "racia" casava dentro de burocracia, meritocracia, democracia
+      ['A burocracia de abrir CNPJ sozinho', 'Negócio & estrutura'],
+      ['O mito da meritocracia no mercado', 'Negócio & estrutura'],
+      ['Democracia na decisão com sócio', 'Negócio & estrutura'],
+      // "assinatura" e "ferramenta" sozinhas não são crítica de IA
+      ['Assinatura de contrato com cliente novo', 'Negócio & estrutura'],
+      ['Que ferramenta uso pra emitir nota fiscal', 'Negócio & estrutura'],
+    ]
+    casos.forEach(([tema, esperado]) => expect(categorizeWorkTheme(tema), tema).toBe(esperado))
+  })
+
+  it('"ia" verbo não é a sigla IA', () => {
+    expect(categorizeWorkTheme('O cliente que ia fechar e sumiu')).toBe('Negócio & estrutura')
+    expect(categorizeWorkTheme('Eu ia mandar a proposta na sexta')).toBe('Negócio & estrutura')
+    // com contexto de ferramenta, aí sim
+    expect(categorizeWorkTheme('Usar IA pra responder cliente')).toBe('IA crítica')
+    expect(categorizeWorkTheme('O que eu gero com IA hoje')).toBe('IA crítica')
+  })
+
+  it('assinatura e ferramenta contam quando o contexto é de ferramenta', () => {
+    expect(categorizeWorkTheme('A assinatura mensal que eu cancelei')).toBe('IA crítica')
+    expect(categorizeWorkTheme('Vale a pena contratar essa ferramenta')).toBe('IA crítica')
+  })
+
+  it('não confunde pedaço de palavra no banco de vida', () => {
+    const casos = [
+      ['Ninguém me compreende quando falo disso', 'Vida'],   // "compr" em compreende
+      ['Competência não é tudo', 'Vida'],                     // "pet" em competência
+      ['Casaco novo que comprei', 'Comprinhas & Achados'],    // "casa" em casaco
+      ['Petiscos no fim de semana', 'Hobbies & Gostos'],      // "pet" em petisco não é a Naomi
+    ]
+    casos.forEach(([tema, esperado]) => expect(categorizePersonalTheme(tema), tema).toBe(esperado))
+  })
+
+  it('"fé" com acento é reconhecida — \\b do JS não enxerga letra acentuada', () => {
+    expect(categorizePersonalTheme('fé em dia difícil')).toBe('Fé')
+    expect(categorizePersonalTheme('minha fé')).toBe('Fé')
+    // e café não vira fé por causa da terminação
+    expect(categorizePersonalTheme('Tomar café na padaria')).toBe('Hobbies & Gostos')
+  })
+
+  it('tokenize quebra por letra, respeitando acento', () => {
+    expect(tokenize('Fé, ancestralidade — e negócio!')).toEqual(['fé', 'ancestralidade', 'e', 'negócio'])
+    expect(tokenize('')).toEqual([])
+    expect(tokenize(null)).toEqual([])
   })
 })
 
