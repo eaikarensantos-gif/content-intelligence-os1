@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
+import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
 import { CDN, LS_KEY, LS_KEY_GROQ, TABS, MY_VIDEO_TABS, TYPE_OPTIONS, ARCHETYPE_COLORS, ARCHETYPE_LABELS } from './constants'
 import { GroqKeyModal, ApiKeyModal, ScriptModal } from './modals'
 import CommentAnalyzer from './CommentAnalyzer'
@@ -184,7 +185,7 @@ async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
 }
 
 // ── Claude API — supports image frames via Vision ─────────────────────────────
-async function callClaudeAPI(apiKey, prompt, frames = []) {
+async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000) {
   const content = frames.length > 0
     ? [
         { type: 'text', text: prompt },
@@ -204,7 +205,7 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 6000,
+      max_tokens: maxTokens,
       system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown. STRICT RULE: When given a real transcript, every quote in hook.text, promise.text, cta.text, patterns[].example, retention[].example must be an EXACT verbatim quote from that transcript — never paraphrase, never invent. When given video frames, describe only what you actually see in the images. NEVER fabricate quotes, invented sentences, or fictional examples. If a field requires a quote and you cannot find one in the data, use null. Your response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content }],
     }),
@@ -214,6 +215,11 @@ async function callClaudeAPI(apiKey, prompt, frames = []) {
     await handleApiError(res)
   }
   const data = await res.json()
+  // A resposta cortada no meio (limite de tokens) ainda tem `res.ok`: a API
+  // não erra, ela só para de escrever. O JSON fica com chave/array aberto e
+  // o JSON.parse mais adiante falha com um erro de sintaxe que não diz nada
+  // pra quem está usando o app — melhor detectar aqui e avisar direto.
+  assertNotTruncated(data, 'A análise ficou grande demais para este vídeo e foi cortada pela IA antes de terminar. Tente novamente — se persistir, use uma transcrição mais curta.')
   return data.content[0].text
 }
 
@@ -250,7 +256,6 @@ RULES:
 - Classify tone as one of: educational, storytelling, provocative, contrarian, tutorial, motivational, humorous
 - All analysis text in Brazilian Portuguese
 - Generate 5 content_ideas based on the topic
-- For transcript_reconstruction: ${hasTranscript ? 'reproduce the FULL transcript verbatim, exactly as provided, without any changes' : 'return null'}
 - Respond with ONLY the JSON below (no markdown fences, no extra text):
 
 {
@@ -333,7 +338,6 @@ RULES:
     "main_message": "A mensagem central do vídeo",
     "creator_positioning": "Como o criador se posiciona neste vídeo"
   },
-  "transcript_reconstruction": ${hasTranscript ? '"[reproduza a transcrição completa verbatim aqui]"' : 'null'},
   "why_it_works": [
     { "reason": "Motivo específico", "impact": "Impacto na performance" },
     { "reason": "Motivo específico", "impact": "Impacto na performance" },
@@ -500,10 +504,8 @@ Return ONLY this JSON:
     await handleApiError(res)
   }
   const data = await res.json()
-  const match = data.content[0].text.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Resposta inválida da IA')
-  const sanitized = match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')
-  return JSON.parse(sanitized)
+  assertNotTruncated(data, 'O roteiro ficou grande demais e foi cortado pela IA antes de terminar. Tente novamente.')
+  return extractJsonObject(data.content[0].text)
 }
 
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
@@ -791,9 +793,7 @@ export default function VideoAnalyzer() {
           })
       setLoadingStep(3)
       const raw = await callClaudeAPI(apiKey, prompt, analysisMode === 'script' ? [] : hasFramesData ? frames : [])
-      const jsonMatch = raw.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) throw new Error('A IA não retornou uma análise estruturada. Tente novamente.')
-      const result = JSON.parse(jsonMatch[0])
+      const result = extractJsonObject(raw, 'A IA não retornou uma análise estruturada. Tente novamente.')
       setLoadingStep(4)
       await new Promise((r) => setTimeout(r, 300))
       analysisTranscriptRef.current = hasFinalTranscript ? finalTranscript : ''
@@ -888,9 +888,7 @@ Responda APENAS com este JSON:
 }`
 
       const raw = await callClaudeAPI(apiKey, prompt)
-      const m = raw.match(/\{[\s\S]*\}/)
-      if (!m) throw new Error('A IA não retornou um roteiro estruturado.')
-      setImprovedScript(JSON.parse(m[0]))
+      setImprovedScript(extractJsonObject(raw, 'A IA não retornou um roteiro estruturado.'))
     } catch (e) {
       setError(e.message)
     } finally {
