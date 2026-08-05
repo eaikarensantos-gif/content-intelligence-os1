@@ -70,9 +70,11 @@ export const SERIES = {
     // Alvo específico da série: cada episódio retém pelo menos metade do alcance do anterior.
     retentionTarget: 50,
   },
+  // Sem "do mês" no rótulo: as duas edições saem com 21 dias de distância dentro
+  // da janela de teste, então chamar de mensal descreveria errado o que acontece.
   Favoritos: {
     id: 'Favoritos',
-    label: 'Favoritos do mês',
+    label: 'Favoritos',
     chip: 'bg-rose-100 text-rose-700 border-rose-200',
     episodes: 2,
     note: 'Reformulado como critério de decisão em vez de lista — o que uso, o que troquei, o que não valeu o dinheiro. É a peça mais compatível com entrega de campanha do grid.',
@@ -134,7 +136,10 @@ export const PIECES = [
   { id: 'B1', week: 1, slot: 'B', container: 'B', variant: 'fracasso', pillar: 'negocio-estrutura', angle: 'O projeto que deu errado, quanto custou, e o que você cobra hoje por causa disso', campaign: false },
   { id: 'C1', week: 1, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'O que dá pra resolver do negócio pelo celular antes das 9h', campaign: true },
 
-  { id: 'A2', week: 2, slot: 'A', container: 'A', series: 'Wilson', episode: 2, role: 'chefe',   pillar: 'identidade', angle: 'Wilson repete sua ideia 5 minutos depois na call', campaign: false },
+  // O ângulo que abriu o perfil (9.516 de alcance, 72% de não seguidores) era o da
+  // única pessoa negra na sala. Sem esse recorte a peça vira dinâmica corporativa
+  // genérica e o pilar `identidade` deixa de descrever o que está na tela.
+  { id: 'A2', week: 2, slot: 'A', container: 'A', series: 'Wilson', episode: 2, role: 'chefe',   pillar: 'identidade', angle: 'Wilson repete sua ideia 5 minutos depois na call — e você é a única pessoa negra na sala', campaign: false },
   { id: 'B2', week: 2, slot: 'B', container: 'B', variant: 'opinião', pillar: 'ia-critica', angle: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno', campaign: false },
   { id: 'C2', week: 2, slot: 'C', container: 'C', pillar: 'celular-operacao', angle: 'Um fluxo de IA no celular do início ao fim, com print de cada passo', campaign: true },
 
@@ -170,6 +175,29 @@ export const BACKLOG_PIECES = [
     container: 'C',
   },
 ]
+
+// ─── Feriados nacionais ──────────────────────────────────────────────────────
+// Publicar num feriado não quebra nada, mas contamina a leitura: a audiência do
+// dia é atípica e o número deixa de ser comparável com o das outras semanas.
+// Numa grade que existe para medir, isso custa a peça inteira.
+
+export const FERIADOS_BR = {
+  '2026-01-01': 'Confraternização Universal',
+  '2026-02-16': 'Carnaval',
+  '2026-02-17': 'Carnaval',
+  '2026-04-03': 'Sexta-feira Santa',
+  '2026-04-21': 'Tiradentes',
+  '2026-05-01': 'Dia do Trabalho',
+  '2026-06-04': 'Corpus Christi',
+  '2026-09-07': 'Independência',
+  '2026-10-12': 'Nossa Senhora Aparecida',
+  '2026-11-02': 'Finados',
+  '2026-11-15': 'Proclamação da República',
+  '2026-11-20': 'Consciência Negra',
+  '2026-12-25': 'Natal',
+}
+
+export const isHoliday = (iso) => !!FERIADOS_BR[iso]
 
 // ─── Cálculo de datas ────────────────────────────────────────────────────────
 // Slot A: segunda da semana N, 15h — produzir até a sexta anterior.
@@ -211,11 +239,68 @@ export function isMonday(iso) {
 export function pieceDates(piece, dataInicio) {
   const weekStart = addDays(dataInicio, (piece.week - 1) * 7)
   const { publish, produce } = SLOT_OFFSETS[piece.slot]
+  const nominal = addDays(weekStart, publish)
+
+  // Feriado empurra a publicação para o próximo dia útil não-feriado, mantendo
+  // o horário do container. O prazo de produção continua o mesmo — o que muda
+  // é só o dia em que a peça vai ao ar.
+  let publish_date = nominal
+  let holiday_shift = null
+  if (isHoliday(nominal)) {
+    let candidate = nominal
+    for (let i = 0; i < 7 && (isHoliday(candidate) || candidate === nominal); i++) {
+      candidate = addDays(candidate, 1)
+      const dow = new Date(`${candidate}T12:00:00`).getDay()
+      if (dow === 0 || dow === 6) continue // não joga para o fim de semana
+      if (!isHoliday(candidate)) break
+    }
+    publish_date = candidate
+    holiday_shift = { from: nominal, reason: FERIADOS_BR[nominal] }
+  }
+
   return {
-    publish_date: addDays(weekStart, publish),
+    publish_date,
     produce_by: addDays(weekStart, produce),
     publish_time: CONTAINERS[piece.container].time,
+    holiday_shift,
   }
+}
+
+/**
+ * Que dado vai existir quando a peça pendente precisar ser decidida.
+ *
+ * As quatro peças de repetição foram desenhadas para usar o resultado das
+ * semanas 1 a 4, mas o prazo de produção de cada uma chega antes de parte
+ * desses dados fechar. Em vez de fingir que o número está lá, a peça carrega
+ * quais referências têm 14 dias completos e quais entram só com 72h.
+ */
+export function decisionWindow(piece, allPieces) {
+  if (!piece?.angle_pending) return null
+  const deadline = piece.produce_by
+
+  const refs = allPieces
+    .filter((p) => p.test_slot === piece.test_slot && p.test_week < piece.test_week && !p.angle_pending)
+    .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
+
+  const completo = []
+  const parcial = []
+  refs.forEach((p) => {
+    const d14 = addDays(p.scheduled_date, 14)
+    const d72h = addDays(p.scheduled_date, 3)
+    if (d14 <= deadline) completo.push(p.internal_id)
+    else if (d72h <= deadline) parcial.push(p.internal_id)
+  })
+
+  return { deadline, completo, parcial }
+}
+
+// Critério de escolha de cada peça de repetição, escrito para o dado que
+// realmente existe no prazo — não para o dado ideal.
+const DECISION_RULES = {
+  A5: 'Maior alcance de 72h entre os episódios de Wilson já publicados. Alcance de reel se define nas primeiras 72h, então o dado existe para todos até o prazo.',
+  A6: 'Segundo maior alcance de 72h entre os episódios de Wilson já publicados.',
+  B6: 'Melhor conversão em clique. Use 14 dias fechados onde já houver; a peça da semana 4 entra só com o dado de 72h e vale como desempate, não como base.',
+  C6: 'Melhor salvamento sobre alcance. Use 14 dias fechados onde já houver; a peça da semana 4 entra só com o dado de 72h e vale como desempate, não como base.',
 }
 
 // ─── Construção dos registros para o app ─────────────────────────────────────
@@ -235,7 +320,8 @@ function description(piece) {
     lines.push(`Ponte com ${piece.bridge}: citar o reel da mesma semana no primeiro slide.`)
   }
   if (piece.pending) {
-    lines.push('Ângulo pendente — depende da revisão dos resultados das semanas 1 a 4. O slot está reservado, não produza antes da revisão.')
+    lines.push('Ângulo pendente — depende da revisão dos resultados das semanas anteriores. O slot está reservado, não produza antes da revisão.')
+    if (DECISION_RULES[piece.id]) lines.push(`Critério de escolha: ${DECISION_RULES[piece.id]}`)
   }
   return lines.join('\n\n')
 }
@@ -247,7 +333,7 @@ function description(piece) {
 export function buildRepositioningIdeas(dataInicio) {
   return PIECES.map((piece) => {
     const c = CONTAINERS[piece.container]
-    const { publish_date, produce_by, publish_time } = pieceDates(piece, dataInicio)
+    const { publish_date, produce_by, publish_time, holiday_shift } = pieceDates(piece, dataInicio)
     const testStatus = piece.pending ? 'a definir' : 'a produzir'
 
     return {
@@ -289,6 +375,8 @@ export function buildRepositioningIdeas(dataInicio) {
       angle_pending: !!piece.pending,
       publish_time,
       produce_by,
+      holiday_shift,
+      decision_rule: piece.pending ? DECISION_RULES[piece.id] || null : null,
       test_status: testStatus,
       campaign_ready: !!piece.campaign,
       result_72h: { ...EMPTY_RESULT },
@@ -316,6 +404,84 @@ export function buildBacklogIdeas() {
     container: p.container,
     backlog_note: p.note,
   }))
+}
+
+// ─── Revisão de um calendário já carregado ───────────────────────────────────
+// Quando a especificação muda (correção de ângulo, feriado, critério de decisão),
+// os registros já no app continuam com a versão antiga. Isto compara o que está
+// carregado com o que a especificação diz hoje e devolve só os campos de
+// especificação que mudaram — status, resultados e ordem de criação ficam intactos.
+
+const SPEC_FIELDS = [
+  'title', 'description', 'topic', 'format', 'scheduled_date', 'publish_time', 'produce_by',
+  'angle', 'angle_pending', 'pillar', 'series', 'episode', 'series_role', 'bridge_with',
+  'container', 'container_variant', 'campaign_ready', 'decision_rule', 'holiday_shift',
+  'test_week', 'test_slot',
+]
+
+/** Deriva DATA_INICIO a partir da peça A1 já carregada. */
+export function inferDataInicio(loaded) {
+  const a1 = loaded.find((i) => i.internal_id === 'A1')
+  return a1?.scheduled_date || null
+}
+
+const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+
+/**
+ * Diferenças entre o calendário carregado e a especificação atual.
+ * Retorna [{ id, internal_id, patch, changed: [campo] }] — vazio se estiver em dia.
+ */
+export function revisionPatches(loaded) {
+  const dataInicio = inferDataInicio(loaded)
+  if (!dataInicio) return []
+
+  const canonical = buildRepositioningIdeas(dataInicio)
+  const patches = []
+
+  loaded.forEach((item) => {
+    const spec = canonical.find((c) => c.internal_id === item.internal_id)
+    if (!spec) return
+
+    const patch = {}
+    const changed = []
+    SPEC_FIELDS.forEach((field) => {
+      if (!sameValue(item[field], spec[field])) {
+        patch[field] = spec[field]
+        changed.push(field)
+      }
+    })
+
+    // Tags da especificação entram sem apagar as que a Karen adicionou depois
+    const merged = [...new Set([...(spec.tags || []), ...(item.tags || [])])]
+    if (!sameValue([...(item.tags || [])].sort(), [...merged].sort())) {
+      patch.tags = merged
+      changed.push('tags')
+    }
+
+    if (changed.length) patches.push({ id: item.id, internal_id: item.internal_id, patch, changed })
+  })
+
+  return patches
+}
+
+/** Rótulo curto de cada campo, para explicar a revisão na interface. */
+export const FIELD_LABELS_PT = {
+  title: 'título',
+  description: 'descrição',
+  topic: 'pilar',
+  scheduled_date: 'data de publicação',
+  publish_time: 'horário',
+  produce_by: 'prazo de produção',
+  angle: 'ângulo',
+  pillar: 'pilar',
+  series: 'série',
+  episode: 'episódio',
+  series_role: 'papel na série',
+  bridge_with: 'ponte',
+  campaign_ready: 'marcação de campanha',
+  decision_rule: 'critério de decisão',
+  holiday_shift: 'ajuste de feriado',
+  tags: 'tags',
 }
 
 // ─── Verificação (roda antes de escrever no app) ─────────────────────────────
@@ -348,8 +514,12 @@ export function validateRepositioningPlan(items) {
 
     const expectedDow = { A: 1, B: 3, C: 5 }[i.test_slot]
     const dow = new Date(`${i.scheduled_date}T12:00:00`).getDay()
-    if (dow !== expectedDow) {
+    if (dow !== expectedDow && !i.holiday_shift) {
       errors.push(`${i.internal_id}: slot ${i.test_slot} caiu em dia da semana ${dow} (esperado ${expectedDow}).`)
+    }
+
+    if (isHoliday(i.scheduled_date)) {
+      errors.push(`${i.internal_id}: publicação em ${i.scheduled_date}, feriado (${FERIADOS_BR[i.scheduled_date]}).`)
     }
 
     if (i.bridge_with && !items.some((o) => o.internal_id === i.bridge_with)) {

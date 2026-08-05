@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   CalendarRange, ListChecks, Target, BarChart3, AlertTriangle, Check,
-  Megaphone, Clock, ChevronRight, Trash2, Info, Link2, Clapperboard,
+  Megaphone, Clock, ChevronRight, Trash2, Info, Link2, Clapperboard, RefreshCw,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import Modal from '../common/Modal'
@@ -9,6 +9,7 @@ import {
   CONTAINERS, PILLARS, SERIES, TEST_STATUSES, TEST_STATUS_ORDER, RESULT_FIELDS, BASELINE,
   REPOSITIONING_TAG, BACKLOG_TAG, buildRepositioningIdeas, buildBacklogIdeas,
   validateRepositioningPlan, nextMonday, isMonday, toISO, measuredValue, seriesRetention,
+  decisionWindow, revisionPatches, FIELD_LABELS_PT,
 } from '../../data/repositioningTest'
 
 const SUBTABS = [
@@ -72,6 +73,42 @@ function BridgeChip({ piece }) {
     <span className="chip border text-[10px] bg-sky-100 text-sky-700 border-sky-200" title="Continua o reel da mesma semana — citar no primeiro slide">
       <Link2 size={9} /> Ponte com {piece.bridge_with}
     </span>
+  )
+}
+
+function HolidayChip({ piece }) {
+  if (!piece.holiday_shift) return null
+  return (
+    <span
+      className="chip border text-[10px] bg-yellow-100 text-yellow-800 border-yellow-200"
+      title={`${fmtDate(piece.holiday_shift.from)} é feriado (${piece.holiday_shift.reason}) — publicação movida para não contaminar a leitura`}
+    >
+      <CalendarRange size={9} /> movida do feriado
+    </span>
+  )
+}
+
+/** Nas peças pendentes, mostra que dado vai existir no prazo de decisão. */
+function DecisionNote({ piece, pieces }) {
+  const win = decisionWindow(piece, pieces)
+  if (!win) return null
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-2.5 space-y-1">
+      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+        Decidir até {fmtDateLong(win.deadline)}
+      </p>
+      {piece.decision_rule && (
+        <p className="text-[11px] text-gray-600 leading-relaxed">{piece.decision_rule}</p>
+      )}
+      <p className="text-[10px] text-gray-500">
+        {win.completo.length > 0
+          ? <>Com 14 dias fechados até lá: <span className="font-semibold text-gray-700">{win.completo.join(', ')}</span></>
+          : 'Nenhuma referência terá 14 dias fechados até o prazo.'}
+        {win.parcial.length > 0 && (
+          <> · só com 72h: <span className="font-semibold text-amber-700">{win.parcial.join(', ')}</span></>
+        )}
+      </p>
+    </div>
   )
 }
 
@@ -266,6 +303,7 @@ function WeekView({ pieces, today, onStatusChange, onOpen }) {
                 {late && <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">ATRASADO</span>}
                 <SeriesChip piece={p} />
                 <BridgeChip piece={p} />
+                <HolidayChip piece={p} />
                 <PillarChip pillar={p.pillar} />
                 {p.campaign_ready && <CampaignChip />}
                 <div className="ml-auto">
@@ -291,6 +329,8 @@ function WeekView({ pieces, today, onStatusChange, onOpen }) {
                 </span>
                 <span className="text-gray-400">· {c.short}{p.container_variant ? ` (${p.container_variant})` : ''}</span>
               </div>
+
+              <DecisionNote piece={p} pieces={pieces} />
             </div>
           )
         })}
@@ -347,6 +387,9 @@ function SixWeekGrid({ pieces, today, onOpen }) {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <PieceId id={p.internal_id} />
                         <span className="text-[10px] text-gray-500">{fmtDate(p.scheduled_date)} · {p.publish_time}</span>
+                        {p.holiday_shift && (
+                          <span title={`movida do feriado (${p.holiday_shift.reason})`} className="text-[9px] text-yellow-700 font-bold">★</span>
+                        )}
                         {p.campaign_ready && <Megaphone size={10} className="text-fuchsia-600" />}
                       </div>
                       {p.series && <SeriesChip piece={p} compact />}
@@ -434,10 +477,14 @@ function ProductionQueue({ pieces, today, onStatusChange, onOpen }) {
             {pending.length} slots reservados — não produzir antes da revisão da semana 4
           </p>
           {pending.map((p) => (
-            <div key={p.id} className="flex items-center gap-2 flex-wrap">
-              <PieceId id={p.internal_id} />
-              <span className="text-[11px] text-gray-500 italic">{p.angle}</span>
-              <span className="text-[10px] text-gray-400">· publica {fmtDate(p.scheduled_date)}</span>
+            <div key={p.id} className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <PieceId id={p.internal_id} />
+                <span className="text-[11px] text-gray-500 italic">{p.angle}</span>
+                <span className="text-[10px] text-gray-400">· publica {fmtDate(p.scheduled_date)}</span>
+                <HolidayChip piece={p} />
+              </div>
+              <DecisionNote piece={p} pieces={pieces} />
             </div>
           ))}
         </div>
@@ -612,6 +659,58 @@ function MeasurementView({ pieces, onOpenResults }) {
   )
 }
 
+// ─── Revisão do calendário carregado ─────────────────────────────────────────
+// A especificação mudou depois que as peças foram gravadas. Em vez de recarregar
+// tudo (o que apagaria status e resultados), a revisão atualiza só os campos de
+// especificação — e mostra antes o que vai mudar.
+
+function RevisionBanner({ patches, onApply }) {
+  const [open, setOpen] = useState(false)
+  if (!patches.length) return null
+
+  const campos = [...new Set(patches.flatMap((p) => p.changed))]
+    .map((c) => FIELD_LABELS_PT[c] || c)
+
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 space-y-2">
+      <div className="flex items-start gap-2 flex-wrap">
+        <RefreshCw size={13} className="text-blue-500 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-semibold text-blue-800">
+            {patches.length} peça{patches.length > 1 ? 's' : ''} desatualizada{patches.length > 1 ? 's' : ''} em relação ao calendário revisado
+          </p>
+          <p className="text-[10px] text-blue-600 mt-0.5">
+            Muda {campos.join(', ')}. Status, resultados e ordem de criação ficam como estão.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => setOpen((o) => !o)} className="text-[11px] text-blue-600 hover:underline">
+            {open ? 'Ocultar' : 'Ver o que muda'}
+          </button>
+          <button onClick={onApply} className="btn-primary text-[11px] py-1 px-2.5">
+            <Check size={11} /> Aplicar
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="space-y-1 pt-1 border-t border-blue-200/60">
+          {patches.map((p) => (
+            <p key={p.internal_id} className="text-[10px] text-blue-700 leading-relaxed">
+              <span className="font-bold">{p.internal_id}</span>
+              {' — '}
+              {p.changed.map((c) => FIELD_LABELS_PT[c] || c).join(', ')}
+              {p.patch.scheduled_date && (
+                <span className="text-blue-500"> · publica {fmtDate(p.patch.scheduled_date)}</span>
+              )}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Banco de pautas fora do teste ───────────────────────────────────────────
 
 function BacklogPanel({ items, onOpen }) {
@@ -756,6 +855,12 @@ export default function RepositioningTest({ onOpenIdea }) {
     setResultsTarget(null)
   }
 
+  const patches = useMemo(() => revisionPatches(pieces), [pieces])
+
+  const handleApplyRevision = () => {
+    patches.forEach(({ id, patch }) => updateIdea(id, patch))
+  }
+
   const handleClear = () => {
     ;[...pieces, ...backlog].forEach((p) => deleteIdea(p.id))
     setConfirmClear(false)
@@ -819,6 +924,8 @@ export default function RepositioningTest({ onOpenIdea }) {
           )}
         </div>
       </div>
+
+      <RevisionBanner patches={patches} onApply={handleApplyRevision} />
 
       {sub === 'semana'     && <WeekView pieces={pieces} today={today} onStatusChange={handleStatusChange} onOpen={onOpenIdea} />}
       {sub === 'calendario' && <SixWeekGrid pieces={pieces} today={today} onOpen={onOpenIdea} />}
