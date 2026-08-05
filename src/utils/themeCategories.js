@@ -23,14 +23,23 @@ export const WORK_CATEGORY_MIGRATION = {
 export const migrateWorkCategory = (categoria) =>
   WORK_CATEGORY_MIGRATION[categoria] || categoria
 
+// "Celular & operação" é o celular como ferramenta de operação do negócio —
+// IA, produtividade, gestão e governança rodando do aparelho. Não é o celular
+// como objeto de cena: "reunião começou e celular no silencioso" ou "print
+// enviado pro grupo errado" falam do aparelho no cotidiano, não de operar um
+// negócio com ele. Por isso a palavra do aparelho sozinha não basta — precisa
+// vir junto de um sinal de operação.
+const DEVICE = /celular|smartphone|mobile|telefone|whatsapp|aplicativo|\bapp\b|na palma da m[aã]o|sem (o )?computador|sem (o )?notebook|sem abrir o note/
+const OPERATION = /neg[oó]cio|empresa|opera[çc]|gest[aã]o|governan[çc]a|produtividade|processo|fluxo|rotina|resolver|rodar|gerenciar|administrar|automa[çc]|\bia\b|intelig[eê]ncia artificial|chatgpt|prompt|ferramenta|cliente|proposta|or[çc]amento|cobran[çc]a|cobrar|receb|financeiro|contrato|agenda|estoque|venda|faturamento|nota fiscal|relat[oó]rio|backup|senha|acesso|seguran[çc]a|dado/
+
 /** Classificação de fallback, usada quando não há chave de API para a IA classificar. */
 export function categorizeWorkTheme(tema) {
   const t = (tema || '').toLowerCase()
   // Identidade primeiro: é o recorte mais específico e não pode ser engolido
   // pelos outros quando o tema também fala de negócio ou de ferramenta.
   if (/negra|negro|racia|racismo|representativ|ancestral|diversidade|preconceito|[uú]nica pessoa|povo preto/.test(t)) return 'Identidade'
-  // Celular antes de IA: "fluxo de IA no celular" é operação, não crítica de ferramenta.
-  if (/celular|smartphone|mobile|telefone|whatsapp|aplicativo|\bapp\b|print|na palma|sem (o )?computador|sem (o )?notebook/.test(t)) return 'Celular & operação'
+  // Aparelho + operação: "fluxo de IA no celular" é operação, não crítica de ferramenta.
+  if (DEVICE.test(t) && OPERATION.test(t)) return 'Celular & operação'
   if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|machine|llm|prompt|assinatura|se paga/.test(t)) return 'IA crítica'
   return 'Negócio & estrutura'
 }

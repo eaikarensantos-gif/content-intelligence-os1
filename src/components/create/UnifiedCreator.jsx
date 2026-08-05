@@ -789,6 +789,9 @@ const TEMAS_CARROSSEL = [
       'O kit que roda o negócio: o que uso, o que troquei, o que não valeu o dinheiro',
       'Fechar proposta inteira do celular',
       'Cobrar e acompanhar recebimento sem abrir o notebook',
+      'Rodar a gestão da semana inteira do celular',
+      'Governança no celular: quem acessa o quê no seu negócio',
+      'Produtividade real no aparelho — o que economiza tempo e o que só parece',
     ],
   },
   {
@@ -1046,6 +1049,8 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [showThemesPanel, setShowThemesPanel] = useState(true)
   const [expandingThemes, setExpandingThemes] = useState(false)
   const [categorizingThemes, setCategorizingThemes] = useState(false)
+  const [reclassifying, setReclassifying] = useState(false)
+  const [reclassifyResult, setReclassifyResult] = useState(null)
 
   const apiKey = localStorage.getItem(LS_KEY) || ''
 
@@ -1893,30 +1898,21 @@ Responda EXCLUSIVAMENTE com JSON válido:
     }
   }
 
-  const addTheme = async () => {
-    const existing = new Set(savedThemes.map(s => s.tema))
-    const now = new Date().toISOString().slice(0, 10)
-    const novos = newThemeInput
-      .split(',')
-      .map(t => t.replace(/^[\s–\-•]+/, '').trim())
-      .filter(t => t.length > 0 && !existing.has(t))
-    if (novos.length === 0) return
-    setNewThemeInput('')
-    setCategorizingThemes(true)
-
+  /* Classificação por IA compartilhada: usada ao adicionar temas novos e ao
+     reclassificar os que já estão salvos com as regras atuais. */
+  const classifyThemesWithAI = async (temas) => {
     const categorias = isPessoal ? PERSONAL_CATEGORIES : WORK_CATEGORIES
+    const fallback = () => temas.map(t => categorizeTheme(t))
+    if (!apiKey || temas.length === 0) return fallback()
 
-    let classificados = novos.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now }))
-
-    if (apiKey) {
-      try {
-        const res = await fetch('/api/ai?action=anthropic', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5',
-            max_tokens: 400,
-            system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
+    try {
+      const res = await fetch('/api/ai?action=anthropic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 1500,
+          system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
 ${isPessoal
@@ -1928,31 +1924,68 @@ ${isPessoal
 - Sentimentos, manias, memórias, família, cenas banais do dia → "Vida"`
     : `O público é dono de negócio pequeno, PJ e autônomo — não é profissional em busca de promoção.
 - Raça, ancestralidade, representatividade, ser a única pessoa negra na sala → "Identidade"
-- Resolver o negócio pelo celular, apps, prints, o que dá e o que não dá sem computador → "Celular & operação"
+- O celular como FERRAMENTA DE OPERAÇÃO do negócio: rodar IA, produtividade, gestão, governança, financeiro, atendimento e processo a partir do aparelho → "Celular & operação"
 - Se uma ferramenta de IA se paga, onde ela erra, custo de assinatura, decisão de contratar → "IA crítica"
-- Preço, escopo, contrato, cliente, cobrança, rotina de quem trabalha por conta → "Negócio & estrutura"
+- Preço, escopo, contrato, cliente, cobrança, rotina e limites de quem trabalha por conta → "Negócio & estrutura"
+
+ATENÇÃO em "Celular & operação": a categoria é sobre USAR o celular para operar o negócio, não sobre o celular como objeto de cena do dia a dia.
+NÃO entram aqui (vão para "Negócio & estrutura"): "reunião começou e celular no silencioso", "notificação do trabalho às 23h", "dois chips, um pro trampo e um pra mim", "print enviado pro grupo errado", "bateria acabando em ligação com cliente". Todos falam do aparelho no cotidiano, nenhum ensina a operar um negócio com ele.
+ENTRAM aqui: "fechar proposta inteira do celular", "um fluxo de IA no celular com print de cada passo", "cobrar e acompanhar recebimento sem abrir o notebook", "o que resolver no celular e o que ainda exige computador".
+
 Se o tema fala de IA dentro do celular, é "Celular & operação". Se fala do custo ou do limite da ferramenta, é "IA crítica".`}`,
-            messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
-          }),
-        })
-        const data = await res.json()
-        const text = data.content?.[0]?.text || ''
-        const match = text.match(/\[[\s\S]*\]/)
-        if (match) {
-          const parsed = JSON.parse(match[0])
-          classificados = novos.map((t, i) => ({
-            id: Date.now() + i,
-            tema: t,
-            categoria: parsed.find(p => p.tema === t)?.categoria || categorizeTheme(t),
-            fonte: 'manual',
-            criadoEm: now,
-          }))
-        }
-      } catch { /* usa fallback regex */ }
+          messages: [{ role: 'user', content: `Temas:\n${temas.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
+        }),
+      })
+      const data = await res.json()
+      const match = (data.content?.[0]?.text || '').match(/\[[\s\S]*\]/)
+      if (!match) return fallback()
+      const parsed = JSON.parse(match[0])
+      // Só aceita categoria que existe na lista da persona — modelo às vezes inventa
+      return temas.map((t) => {
+        const sugerida = parsed.find(p => p.tema === t)?.categoria
+        return categorias.includes(sugerida) ? sugerida : categorizeTheme(t)
+      })
+    } catch {
+      return fallback()
     }
+  }
+
+  const addTheme = async () => {
+    const existing = new Set(savedThemes.map(s => s.tema))
+    const now = new Date().toISOString().slice(0, 10)
+    const novos = newThemeInput
+      .split(',')
+      .map(t => t.replace(/^[\s–\-•]+/, '').trim())
+      .filter(t => t.length > 0 && !existing.has(t))
+    if (novos.length === 0) return
+    setNewThemeInput('')
+    setCategorizingThemes(true)
+
+    const categorias = await classifyThemesWithAI(novos)
+    const classificados = novos.map((t, i) => ({
+      id: Date.now() + i, tema: t, categoria: categorias[i], fonte: 'manual', criadoEm: now,
+    }))
 
     setSavedThemes(prev => [...classificados, ...prev])
     setCategorizingThemes(false)
+  }
+
+  /* Reclassifica o que já está salvo com as regras atuais. As categorias mudaram
+     junto com o posicionamento, então tema antigo pode estar na gaveta errada. */
+  const reclassifyThemes = async () => {
+    if (savedThemes.length === 0) return
+    setReclassifying(true)
+    const temas = savedThemes.map(t => t.tema)
+    const categorias = await classifyThemesWithAI(temas)
+    let mudou = 0
+    const atualizados = savedThemes.map((t, i) => {
+      if (categorias[i] && categorias[i] !== t.categoria) mudou++
+      return { ...t, categoria: categorias[i] || t.categoria }
+    })
+    setSavedThemes(atualizados)
+    setReclassifying(false)
+    setReclassifyResult(mudou)
+    setTimeout(() => setReclassifyResult(null), 6000)
   }
 
   const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
@@ -2101,6 +2134,17 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </button>
               {savedThemes.length > 0 && (
                 <button
+                  onClick={reclassifyThemes}
+                  disabled={reclassifying}
+                  title="Reclassifica os temas salvos com as regras atuais das categorias"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-40 shrink-0"
+                >
+                  {reclassifying ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                  Reclassificar
+                </button>
+              )}
+              {savedThemes.length > 0 && (
+                <button
                   onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
                 >
@@ -2108,6 +2152,16 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </button>
               )}
             </div>
+
+            {reclassifyResult != null && (
+              <p className="text-[11px] text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 mb-2">
+                {reclassifyResult === 0
+                  ? 'Todos os temas já estavam na categoria certa.'
+                  : reclassifyResult === 1
+                    ? '1 tema mudou de categoria.'
+                    : `${reclassifyResult} temas mudaram de categoria.`}
+              </p>
+            )}
 
             {/* Accordion por categoria — temas salvos + sugestões (lista de categorias
                 muda por persona: Studio Pessoal nunca deve mostrar seções profissionais) */}
