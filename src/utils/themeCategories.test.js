@@ -7,6 +7,8 @@ import {
   categorizePersonalTheme,
   categorizeTheme,
   tokenize,
+  isCltFramed,
+  WORK_CATEGORY_BRIEF,
   WORK_NICHE,
 } from './themeCategories'
 
@@ -184,6 +186,62 @@ describe('categorizeTheme escolhe o banco pela persona', () => {
   it('ancestralidade é Fé na vida e Identidade no trabalho', () => {
     expect(categorizeTheme('ancestralidade', true)).toBe('Fé')
     expect(categorizeTheme('ancestralidade', false)).toBe('Identidade')
+  })
+})
+
+describe('tema de rotina CLT — o que sobrou do posicionamento antigo', () => {
+  it('reconhece tema escrito do lugar de empregado', () => {
+    const clt = [
+      'Pedir aumento e ter medo da resposta',
+      'Ser promovido e não se sentir pronto',
+      'Medo de ser demitido sem avisar',
+      'Feedback que não muda nada mas precisa ser dado',
+      'Gestor que pede autonomia mas controla tudo',
+      'Síndrome do impostor em cargo de liderança',
+      'Política de escritório que ninguém admite jogar',
+      'Sentir que o mercado de trabalho passou por você',
+    ]
+    clt.forEach((t) => expect(isCltFramed(t), t).toBe(true))
+  })
+
+  it('não confunde tema de dono de negócio com tema de empregado', () => {
+    const dono = [
+      'Reajustar preço com cliente antigo',
+      'O cliente que pede "só um ajustinho" na sexta 18h',
+      'Parar de vender hora e passar a vender escopo fixo',
+      'Cliente âncora que é metade do faturamento',
+      'A burocracia de abrir CNPJ sozinho',
+      'Fechar proposta inteira do celular',
+      'Ser a única pessoa negra na sala',
+    ]
+    dono.forEach((t) => expect(isCltFramed(t), t).toBe(false))
+  })
+
+  it('trata entrada vazia', () => {
+    expect(isCltFramed('')).toBe(false)
+    expect(isCltFramed(null)).toBe(false)
+  })
+
+  it('não casa pedaço de palavra', () => {
+    // "vaga" é CLT, mas "divagar" e "vagarosa" não são
+    expect(isCltFramed('Divagar sobre o preço certo')).toBe(false)
+    expect(isCltFramed('Uma vaga aberta no time')).toBe(true)
+  })
+})
+
+describe('descrição dos pilares para o modelo', () => {
+  it('todo pilar tem descrição', () => {
+    WORK_CATEGORIES.forEach((c) => {
+      expect(WORK_CATEGORY_BRIEF[c], c).toBeTruthy()
+    })
+  })
+
+  it('a descrição de negócio & estrutura fala do lugar de dono, não de empregado', () => {
+    const brief = WORK_CATEGORY_BRIEF['Negócio & estrutura']
+    expect(brief).toMatch(/dono/)
+    expect(brief).toMatch(/nunca de quem é empregado/)
+    expect(brief).toMatch(/quem não tem chefe/)          // define por contraste, não convida a falar de chefe
+    expect(brief).not.toMatch(/promoção|plano de carreira/)
   })
 })
 

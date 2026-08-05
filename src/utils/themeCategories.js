@@ -144,6 +144,51 @@ export function categorizePersonalTheme(tema) {
 export const categorizeTheme = (tema, isPessoal) =>
   isPessoal ? categorizePersonalTheme(tema) : categorizeWorkTheme(tema)
 
+// ─── O que cada pilar quer dizer ─────────────────────────────────────────────
+// Usado tanto para classificar quanto para gerar temas novos. Sem isso, o
+// modelo lia "Negócio & estrutura" como assunto corporativo genérico e devolvia
+// rotina de CLT: promoção, chefe, feedback, entrevista.
+
+export const WORK_CATEGORY_BRIEF = {
+  'Negócio & estrutura':
+    'Como quem trabalha por conta sustenta o próprio negócio: preço, escopo, contrato, proposta, cliente, cobrança, inadimplência, CNPJ, imposto, sócio, rotina e limites de quem não tem chefe. Sempre do lugar de quem é o dono, nunca de quem é empregado.',
+  'IA crítica':
+    'Leitura crítica de ferramenta de IA para negócio pequeno: se paga ou não, onde erra, custo de assinatura, o que dá pra fazer na mão mais barato, como decidir antes de contratar.',
+  'Celular & operação':
+    'O celular como ferramenta de operação do negócio: rodar IA, produtividade, gestão, governança, financeiro e atendimento a partir do aparelho. Não é o celular como objeto de cena do dia.',
+  'Identidade':
+    'Raça, ancestralidade e representatividade dentro do trabalho e do negócio: ser a única pessoa negra na sala, cobrar sendo quem é, autoridade sem performar o que não é seu.',
+}
+
+/* Termos de vida de empregado. O público do teste é dono de negócio pequeno,
+   PJ e autônomo — tema de promoção, chefe, RH ou entrevista é do posicionamento
+   antigo e entrou no banco pela migração das categorias de carreira. */
+const CLT_WORDS = [
+  'promoção', 'promocao', 'promovido', 'promovida', 'aumento', 'salário', 'salario', 'holerite',
+  'chefe', 'gestor', 'gestora', 'liderança', 'lideranca', 'rh', 'currículo', 'curriculo',
+  'entrevista', 'recrutador', 'recrutadora', 'vaga', 'vagas', 'emprego', 'empregada', 'empregado',
+  'clt', 'demissão', 'demissao', 'demitido', 'demitida', 'contratação', 'contratacao',
+  'feedback', 'avaliação', 'avaliacao', 'desempenho', 'cargo', 'promover', 'estágio', 'estagio',
+  'colega', 'colegas', 'equipe', 'escritório', 'escritorio', 'corporativo', 'corporativa',
+]
+
+const CLT_PHRASES = [
+  'meu chefe', 'meu gestor', 'minha gestora', 'pedir aumento', 'mudar de emprego',
+  'mercado de trabalho', 'plano de carreira', 'síndrome do impostor', 'sindrome do impostor',
+  'ser promovido', 'ambiente corporativo', 'política de escritório', 'politica de escritorio',
+]
+
+/**
+ * Tema escrito do lugar de empregado, não de dono de negócio.
+ * Não classifica sozinho — serve para sinalizar na interface o que sobrou do
+ * posicionamento antigo, para a Karen decidir se reescreve ou remove.
+ */
+export function isCltFramed(tema) {
+  const t = (tema || '').toLowerCase()
+  const tk = tokenize(t)
+  return hasWord(tk, ...CLT_WORDS) || hasPhrase(t, ...CLT_PHRASES)
+}
+
 /** Nicho declarado para o modelo em toda geração de conteúdo de trabalho. */
 export const WORK_NICHE =
   'Nicho: IA aplicada a negócio pequeno, estrutura para quem trabalha como PJ ou autônomo, ' +
