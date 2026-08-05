@@ -19,6 +19,9 @@ import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
+import {
+  WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme, WORK_NICHE,
+} from '../../utils/themeCategories'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
 
@@ -78,7 +81,6 @@ NUNCA FAZER:
 - Transformar a vida em conteúdo de marca, romantizar rotina, estetizar demais, moral da história, gancho de dor profissional, falsa espontaneidade ensaiada`
 
 /* ── Categorias do Banco de Temas pessoal ── */
-const PERSONAL_CATEGORIES = ['Naomi', 'Casa & Rotina', 'Fé', 'Comprinhas & Achados', 'Hobbies & Gostos', 'Vida']
 
 /* ── Temas iniciais do Banco de Temas pessoal ── */
 const PERSONAL_SEED_THEMES = [
@@ -303,7 +305,7 @@ const buildHookSystem = (isPessoal) => `Você gera hooks de abertura para reels 
 
 ${isPessoal
     ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.'
-    : 'Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.'}
+    : `Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. ${WORK_NICHE}`}
 
 REGRA CENTRAL:
 O hook prende porque é específico e real — não porque promete revelação ou usa drama.
@@ -432,7 +434,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 /* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
 const buildCarouselSystem = (isPessoal) => `Você é um gerador de carrossel para Karen Santos. ${isPessoal
     ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.'
-    : 'Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. Nicho: Carreira, Maturidade Profissional e Tomada de Decisão.'}
+    : `Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. ${WORK_NICHE}`}
 Seu trabalho não é criar conteúdo bonito. É criar conteúdo que faz a pessoa escrever mais de uma linha nos comentários.
 
 OBJETIVO DE ENGAJAMENTO:
@@ -756,57 +758,47 @@ const CAROUSEL_TEMPLATES = {
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
-    categoria: 'Carreira',
+    categoria: 'Negócio & estrutura',
     temas: [
-      'Medo de ser demitido sem avisar',
-      'Ficar em emprego ruim por medo do desconhecido',
-      'Ser promovido e não se sentir pronto',
-      'Pedir aumento e ter medo da resposta',
-      'Aceitar proposta nova sem contar pra ninguém antes',
-      'Sentir que o mercado passou por você',
+      'O cliente que pede "só um ajustinho" na sexta 18h',
+      'Parar de vender hora e passar a vender escopo fixo',
+      'O projeto que deu errado, quanto custou e o que você cobra hoje por causa disso',
+      'Segunda de manhã sem ninguém pra te dizer o que fazer',
+      'Separar quem decide de quem executa dentro de uma pessoa só',
+      'Reajustar preço com cliente antigo',
+      'O contrato que você fecharia diferente hoje',
     ],
   },
   {
-    categoria: 'Maturidade Profissional',
+    categoria: 'IA crítica',
     temas: [
-      'Perfeccionismo que trava mais do que entrega',
-      'Procrastinar numa tarefa que você sabe fazer',
-      'Síndrome do impostor em cargo de liderança',
-      'Não conseguir pedir ajuda sem se sentir fraco',
-      'Trabalhar demais pra provar que merece estar ali',
-      'Fingir que entendeu pra não parecer perdido',
+      'Qual promessa de ferramenta de IA não se paga em negócio pequeno',
+      'Checklist de decisão antes de contratar qualquer ferramenta de IA',
+      'Traduzir uma capacidade de IA em custo e decisão, em palavras curtas',
+      'A assinatura de IA que você paga e não usa',
+      'Onde a IA ainda erra no seu tipo de entrega',
+      'Quando fazer na mão sai mais barato que automatizar',
     ],
   },
   {
-    categoria: 'Tomada de Decisão',
+    categoria: 'Celular & operação',
     temas: [
-      'Paralisação por análise — quando dados não ajudam a decidir',
-      'Decidir sob pressão e se arrepender depois',
-      'Mudar de opinião e não saber como falar',
-      'Deixar o outro decidir pra não errar sozinho',
-      'Adiar uma decisão esperando o momento certo',
-      'Tomar decisão certa da forma errada',
+      'O que dá pra resolver do negócio pelo celular antes das 9h',
+      'Um fluxo de IA no celular do início ao fim, com print de cada passo',
+      'O que resolver no celular e o que ainda exige computador',
+      'O kit que roda o negócio: o que uso, o que troquei, o que não valeu o dinheiro',
+      'Fechar proposta inteira do celular',
+      'Cobrar e acompanhar recebimento sem abrir o notebook',
     ],
   },
   {
-    categoria: 'Dinâmicas Corporativas',
+    categoria: 'Identidade',
     temas: [
-      'Reunião que todos balançam a cabeça mas ninguém age',
-      'Concordar em público e discordar no corredor',
-      'Gestor que pede autonomia mas controla tudo',
-      'Feedback que não muda nada mas precisa ser dado',
-      'Política de escritório que ninguém admite jogar',
-      'Entregar bem e não ser visto',
-    ],
-  },
-  {
-    categoria: 'IA e Futuro do Trabalho',
-    temas: [
-      'Usar IA no trabalho e não contar pra ninguém',
-      'Medo de ser substituído por automação',
-      'IA que entrega mais rápido do que você explica o que quer',
-      'Não saber até onde vai o seu trabalho e onde começa o da IA',
-      'Atualizar as habilidades sem saber o que vai durar',
+      'Ser a única pessoa negra na sala e ter a ideia repetida cinco minutos depois',
+      'Cobrar o preço certo sendo a única mulher negra na concorrência',
+      'Ancestralidade como método de trabalho, não como enfeite',
+      'O que muda quando o cliente descobre quem está do outro lado',
+      'Construir autoridade sem performar o que não é seu',
     ],
   },
 ]
@@ -1017,22 +1009,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
 
-  const categorizeTheme = (tema) => {
-    const t = tema.toLowerCase()
-    if (isPessoal) {
-      if (/naomi|cachorr|pet|buldogue|bulldog/.test(t)) return 'Naomi'
-      if (/casa|decora|cozinha|planta|apartamento|reforma|fax|limpeza|rotina/.test(t)) return 'Casa & Rotina'
-      if (/f[ée]\b|deus|ora[çc]|gratid[aã]o|terreiro|orix|vodum|jeje|candombl|b[uú]zio|ax[eé]|ancestral|obriga[çc][aã]o|povo de santo/.test(t)) return 'Fé'
-      if (/compr|achado|shopee|amazon|resenha|make|skincare|roupa|look|unboxing/.test(t)) return 'Comprinhas & Achados'
-      if (/livro|s[ée]rie|filme|viagem|restaurante|caf[ée]|m[uú]sica|treino|corrida|hobby|receita/.test(t)) return 'Hobbies & Gostos'
-      return 'Vida'
-    }
-    if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|dados|machine|llm|prompt/.test(t)) return 'IA e Futuro do Trabalho'
-    if (/reuni[aã]o|gestor|empresa|corporat|chefe|pol[ií]tica|feedback|equipe|\btime\b|cargo|hierarquia|escrit[oó]rio|demiss|colega/.test(t)) return 'Dinâmicas Corporativas'
-    if (/decid|decis[aã]o|escolha|op[çc][aã]o|dilema|paralisa|risco|incerteza|\bsair\b|\bficar\b|mudan[çc]a/.test(t)) return 'Tomada de Decisão'
-    if (/perfeccion|procrastin|impostor|s[ií]ndrome|ansiedade|burnout|valida[çc]|inseguran[çc]|merecer|autoconfian|reconhecimento/.test(t)) return 'Maturidade Profissional'
-    return 'Carreira'
-  }
+  const categorizeTheme = (tema) => classifyTheme(tema, isPessoal)
 
   // Banco de temas separado por persona: vida e trabalho não se misturam
   const themesKey = isPessoal ? 'cio-saved-themes-pessoal' : 'cio-saved-themes'
@@ -1041,10 +1018,15 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     try {
       let raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
       if (raw.length > 0 && typeof raw[0] === 'string') {
-        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Carreira', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
+        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Negócio & estrutura', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       } else {
-        // migrar itens sem categoria
-        raw = raw.map(item => ({ ...item, categoria: item.categoria || (isPessoal ? 'Vida' : 'Carreira') }))
+        // migrar itens sem categoria e reclassificar as categorias antigas de trabalho
+        raw = raw.map(item => ({
+          ...item,
+          categoria: isPessoal
+            ? (item.categoria || 'Vida')
+            : migrateWorkCategory(item.categoria || 'Negócio & estrutura'),
+        }))
       }
       // Sanitização: uma versão anterior vazava temas entre os estúdios (componente
       // não remontava na troca de rota). Cada banco fica só com categorias da sua persona.
@@ -1615,7 +1597,7 @@ ${revText.trim()}`
 Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 ${isPessoal
     ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.'
-    : 'Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.'}
+    : WORK_NICHE}
 
 PRINCÍPIO CENTRAL:
 O hook não pode ser conceito. Tem que ser situação + comportamento.
@@ -1878,7 +1860,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-haiku-4-5',
           max_tokens: 800,
-          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora de conteúdo de carreira, tecnologia e comportamento profissional no Brasil. Audiência majoritariamente corporativa.
+          messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora brasileira que fala de IA aplicada a negócio pequeno, estrutura para PJ e autônomo, e o celular como ferramenta de operação. Audiência majoritariamente de donos de negócio pequeno e profissionais por conta.
 
 Temperatura:
 - quente: alto potencial viral agora, gera forte identificação, timely
@@ -1922,9 +1904,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
     setNewThemeInput('')
     setCategorizingThemes(true)
 
-    const categorias = isPessoal
-      ? PERSONAL_CATEGORIES
-      : ['Carreira', 'Maturidade Profissional', 'Tomada de Decisão', 'Dinâmicas Corporativas', 'IA e Futuro do Trabalho']
+    const categorias = isPessoal ? PERSONAL_CATEGORIES : WORK_CATEGORIES
 
     let classificados = novos.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: categorizeTheme(t), fonte: 'manual', criadoEm: now }))
 
@@ -1946,11 +1926,12 @@ ${isPessoal
 - Compras, achados, resenhas de produto, unboxing → "Comprinhas & Achados"
 - Livros, séries, viagens, comida, música, treino, hobbies → "Hobbies & Gostos"
 - Sentimentos, manias, memórias, família, cenas banais do dia → "Vida"`
-    : `- IA, automação, substituição por tecnologia, ferramentas digitais → "IA e Futuro do Trabalho"
-- Reuniões, gestores, liderança, política de escritório, equipe, hierarquia → "Dinâmicas Corporativas"
-- Decisões difíceis, escolhas, dilemas, paralisação, mudar ou ficar → "Tomada de Decisão"
-- Perfeccionismo, síndrome do impostor, medo de errar, autoconfiança, burnout → "Maturidade Profissional"
-- Promoção, emprego, mercado, salário, transição de carreira → "Carreira"`}`,
+    : `O público é dono de negócio pequeno, PJ e autônomo — não é profissional em busca de promoção.
+- Raça, ancestralidade, representatividade, ser a única pessoa negra na sala → "Identidade"
+- Resolver o negócio pelo celular, apps, prints, o que dá e o que não dá sem computador → "Celular & operação"
+- Se uma ferramenta de IA se paga, onde ela erra, custo de assinatura, decisão de contratar → "IA crítica"
+- Preço, escopo, contrato, cliente, cobrança, rotina de quem trabalha por conta → "Negócio & estrutura"
+Se o tema fala de IA dentro do celular, é "Celular & operação". Se fala do custo ou do limite da ferramenta, é "IA crítica".`}`,
             messages: [{ role: 'user', content: `Temas:\n${novos.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
           }),
         })
@@ -2025,7 +2006,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
           .map(t => ({
             id: Date.now() + Math.random(),
             tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
-            categoria: categoria || (isPessoal ? categorizeTheme(t.tema) : 'Carreira'),
+            categoria: categoria || categorizeTheme(t.tema),
             fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
           }))
         setSavedThemes(prev => [...prev, ...novos])
@@ -3425,9 +3406,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
           rows={3}
           placeholder="Descreva o que quer criar...
 
-Ex: 'Reels sobre feminicídio, educativo e reflexivo'
-Ex: 'POV de reunião corporativa, humor'
-Ex: 'Dicas de IA para quem está começando na carreira'"
+Ex: 'POV do cliente pedindo só um ajustinho na sexta 18h'
+Ex: 'O que dá pra resolver do negócio pelo celular antes das 9h'
+Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
           className="w-full text-sm border-0 outline-none resize-none placeholder:text-gray-300 leading-relaxed"
         />
 
