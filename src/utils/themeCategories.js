@@ -3,9 +3,15 @@
 // O banco de trabalho seguia o posicionamento antigo — Carreira, Maturidade
 // Profissional, Tomada de Decisão, Dinâmicas Corporativas, IA e Futuro do
 // Trabalho. Isso descrevia o território de onde o teste de posicionamento está
-// saindo: 14 das 18 peças da grade não tinham categoria onde morar, incluindo
-// todas as compatíveis com campanha. As categorias agora são os quatro pilares
-// do teste.
+// saindo: 14 das 18 peças da grade não tinham categoria onde morar. As
+// categorias agora são os quatro pilares do teste.
+//
+// A classificação trabalha por PALAVRA INTEIRA, não por pedaço de palavra.
+// Procurar "racia" em qualquer posição mandava "burocracia" e "meritocracia"
+// para Identidade; "compr" mandava "compreende" para Comprinhas; "pet" mandava
+// "competência" para Naomi. Casar a borda da palavra com \b também não resolve
+// em português: \b do JS não enxerga letra acentuada, então /f[ée]\b/ não pega
+// "fé". Por isso o texto é quebrado em tokens e comparado termo a termo.
 
 export const WORK_CATEGORIES = ['Negócio & estrutura', 'IA crítica', 'Celular & operação', 'Identidade']
 
@@ -23,34 +29,115 @@ export const WORK_CATEGORY_MIGRATION = {
 export const migrateWorkCategory = (categoria) =>
   WORK_CATEGORY_MIGRATION[categoria] || categoria
 
+// ─── Casamento por palavra ───────────────────────────────────────────────────
+
+const LETTERS = 'a-z0-9àáâãäçèéêëìíîïñòóôõöùúûü'
+const SPLIT = new RegExp(`[^${LETTERS}]+`, 'i')
+
+export const tokenize = (texto) =>
+  (texto || '').toLowerCase().split(SPLIT).filter(Boolean)
+
+/** Palavra exata: "pet" não casa com "competência". */
+const hasWord = (tokens, ...palavras) => palavras.some((p) => tokens.includes(p))
+
+/** Começo de palavra: "automa" casa com "automação" e "automatizar", não com
+ *  qualquer texto que contenha a sequência no meio. */
+const hasStem = (tokens, ...radicais) =>
+  radicais.some((r) => tokens.some((t) => t.startsWith(r)))
+
+/** Expressão de duas ou mais palavras. */
+const hasPhrase = (texto, ...frases) => {
+  const t = (texto || '').toLowerCase()
+  return frases.some((f) => t.includes(f))
+}
+
+// ─── Trabalho ────────────────────────────────────────────────────────────────
+
+const isIdentidade = (tk, t) =>
+  hasWord(tk, 'negra', 'negras', 'negro', 'negros', 'preta', 'pretas', 'preto', 'pretos',
+    'racial', 'raciais', 'racismo', 'racista', 'racistas', 'diversidade', 'preconceito',
+    'representatividade', 'ancestralidade', 'ancestral', 'ancestrais')
+  || hasPhrase(t, 'única pessoa', 'unica pessoa', 'povo preto', 'lugar de fala')
+
+// Termos que identificam IA sem depender do token solto "ia" — que em português
+// é também o verbo ("o cliente que ia fechar", "eu ia mandar a proposta").
+const isIATerm = (tk, t) =>
+  hasWord(tk, 'chatgpt', 'gpt', 'copilot', 'gemini', 'llm', 'llms', 'prompt', 'prompts', 'algoritmo', 'algoritmos')
+  || hasStem(tk, 'automa', 'automatiz')
+  || hasPhrase(t, 'inteligência artificial', 'inteligencia artificial', 'machine learning')
+
+// O token "ia" só conta como sigla quando o tema traz contexto de ferramenta.
+const isIASigla = (tk, t) =>
+  hasWord(tk, 'ia')
+  && (hasStem(tk, 'ferrament', 'us', 'ger', 'model', 'agent', 'trein', 'substitu')
+    || hasPhrase(t, 'com ia', 'de ia', 'da ia', 'na ia', 'por ia'))
+
+const isIACritica = (tk, t) => {
+  if (isIATerm(tk, t) || isIASigla(tk, t)) return true
+  // "ferramenta" e "assinatura" sozinhas são genéricas demais: "assinatura de
+  // contrato" e "ferramenta pra emitir nota" não são crítica de IA.
+  const ferramentaOuAssinatura = hasStem(tk, 'ferrament') || hasWord(tk, 'assinatura', 'assinaturas', 'software')
+  const contextoDeFerramenta = hasWord(tk, 'contratar', 'custo', 'caro', 'cancelar', 'mensal', 'plano', 'digital')
+    || hasPhrase(t, 'se paga', 'vale a pena', 'não usa', 'nao usa')
+  return ferramentaOuAssinatura && contextoDeFerramenta
+}
+
 // "Celular & operação" é o celular como ferramenta de operação do negócio —
-// IA, produtividade, gestão e governança rodando do aparelho. Não é o celular
-// como objeto de cena: "reunião começou e celular no silencioso" ou "print
-// enviado pro grupo errado" falam do aparelho no cotidiano, não de operar um
-// negócio com ele. Por isso a palavra do aparelho sozinha não basta — precisa
-// vir junto de um sinal de operação.
-const DEVICE = /celular|smartphone|mobile|telefone|whatsapp|aplicativo|\bapp\b|na palma da m[aã]o|sem (o )?computador|sem (o )?notebook|sem abrir o note/
-const OPERATION = /neg[oó]cio|empresa|opera[çc]|gest[aã]o|governan[çc]a|produtividade|processo|fluxo|rotina|resolver|rodar|gerenciar|administrar|automa[çc]|\bia\b|intelig[eê]ncia artificial|chatgpt|prompt|ferramenta|cliente|proposta|or[çc]amento|cobran[çc]a|cobrar|receb|financeiro|contrato|agenda|estoque|venda|faturamento|nota fiscal|relat[oó]rio|backup|senha|acesso|seguran[çc]a|dado/
+// IA, produtividade, gestão, governança rodando do aparelho. Não é o celular
+// como objeto de cena: "reunião começou e celular no silencioso" fala do
+// aparelho no cotidiano. Por isso o aparelho sozinho não basta.
+const isDevice = (tk, t) =>
+  hasWord(tk, 'celular', 'celulares', 'smartphone', 'mobile', 'telefone', 'whatsapp', 'app', 'apps', 'aplicativo', 'aplicativos')
+  || hasPhrase(t, 'na palma da mão', 'sem computador', 'sem o computador', 'sem notebook',
+    'sem o notebook', 'sem abrir o note', 'do bolso')
+
+const isOperation = (tk, t) =>
+  hasStem(tk, 'negóci', 'negoci', 'opera', 'gest', 'gerenc', 'administr', 'process', 'client',
+    'propost', 'orçament', 'orcament', 'cobran', 'cobr', 'receb', 'financ', 'contrat', 'agend',
+    'estoq', 'vend', 'faturament', 'relatóri', 'relatori', 'backup', 'senh', 'acess', 'produtiv')
+  || hasWord(tk, 'governança', 'governanca', 'fluxo', 'fluxos', 'rotina', 'resolver', 'rodar', 'dados', 'dado',
+    'segurança', 'seguranca', 'empresa', 'mei', 'cnpj')
+  || hasPhrase(t, 'nota fiscal')
+  || isIATerm(tk, t) || isIASigla(tk, t)
 
 /** Classificação de fallback, usada quando não há chave de API para a IA classificar. */
 export function categorizeWorkTheme(tema) {
   const t = (tema || '').toLowerCase()
+  const tk = tokenize(t)
   // Identidade primeiro: é o recorte mais específico e não pode ser engolido
   // pelos outros quando o tema também fala de negócio ou de ferramenta.
-  if (/negra|negro|racia|racismo|representativ|ancestral|diversidade|preconceito|[uú]nica pessoa|povo preto/.test(t)) return 'Identidade'
+  if (isIdentidade(tk, t)) return 'Identidade'
   // Aparelho + operação: "fluxo de IA no celular" é operação, não crítica de ferramenta.
-  if (DEVICE.test(t) && OPERATION.test(t)) return 'Celular & operação'
-  if (/\bia\b|intelig[eê]ncia artificial|automa[çc]|chatgpt|algoritmo|ferramenta|software|machine|llm|prompt|assinatura|se paga/.test(t)) return 'IA crítica'
+  if (isDevice(tk, t) && isOperation(tk, t)) return 'Celular & operação'
+  if (isIACritica(tk, t)) return 'IA crítica'
   return 'Negócio & estrutura'
 }
 
+// ─── Vida ────────────────────────────────────────────────────────────────────
+
 export function categorizePersonalTheme(tema) {
   const t = (tema || '').toLowerCase()
-  if (/naomi|cachorr|pet|buldogue|bulldog/.test(t)) return 'Naomi'
-  if (/casa|decora|cozinha|planta|apartamento|reforma|fax|limpeza|rotina/.test(t)) return 'Casa & Rotina'
-  if (/f[ée]\b|deus|ora[çc]|gratid[aã]o|terreiro|orix|vodum|jeje|candombl|b[uú]zio|ax[eé]|ancestral|obriga[çc][aã]o|povo de santo/.test(t)) return 'Fé'
-  if (/compr|achado|shopee|amazon|resenha|make|skincare|roupa|look|unboxing/.test(t)) return 'Comprinhas & Achados'
-  if (/livro|s[ée]rie|filme|viagem|restaurante|caf[ée]|m[uú]sica|treino|corrida|hobby|receita/.test(t)) return 'Hobbies & Gostos'
+  const tk = tokenize(t)
+
+  if (hasWord(tk, 'naomi', 'pet', 'pets', 'cachorro', 'cachorra', 'cadela', 'buldogue', 'bulldog', 'ração', 'racao')
+    || hasStem(tk, 'veterinári', 'veterinari')) return 'Naomi'
+
+  if (hasWord(tk, 'casa', 'cozinha', 'planta', 'plantas', 'apartamento', 'reforma', 'faxina', 'limpeza', 'rotina', 'casinha')
+    || hasStem(tk, 'decora', 'arruma')) return 'Casa & Rotina'
+
+  if (hasWord(tk, 'fé', 'fe', 'deus', 'terreiro', 'orixá', 'orixa', 'orixás', 'vodum', 'voduns', 'jeje',
+    'búzios', 'buzios', 'axé', 'axe', 'ancestralidade', 'gratidão', 'gratidao', 'espiritualidade')
+    || hasStem(tk, 'candombl', 'ora')
+    || hasPhrase(t, 'povo de santo', 'obrigação de santo')) return 'Fé'
+
+  if (hasWord(tk, 'compra', 'compras', 'comprei', 'comprinha', 'comprinhas', 'achado', 'achados',
+    'shopee', 'amazon', 'resenha', 'make', 'skincare', 'roupa', 'roupas', 'look', 'unboxing', 'casaco')
+    || hasStem(tk, 'comprar')) return 'Comprinhas & Achados'
+
+  if (hasWord(tk, 'livro', 'livros', 'série', 'serie', 'séries', 'series', 'filme', 'filmes', 'viagem', 'viagens',
+    'restaurante', 'café', 'cafe', 'música', 'musica', 'treino', 'corrida', 'hobby', 'hobbies', 'receita', 'petisco', 'petiscos'))
+    return 'Hobbies & Gostos'
+
   return 'Vida'
 }
 
