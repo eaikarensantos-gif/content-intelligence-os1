@@ -154,6 +154,93 @@ export function sweepResult(result, { format } = {}) {
   return findings
 }
 
+// ─── Varredura por caminho ───────────────────────────────────────────────────
+// O gerador do Studio Livre devolve um objeto plano; o da aba Carrossel devolve
+// versões aninhadas com slides. Trabalhar por caminho cobre os dois sem duplicar
+// a lógica de correção.
+
+export function getByPath(obj, path) {
+  return path.reduce((acc, key) => (acc == null ? acc : acc[key]), obj)
+}
+
+export function setByPath(obj, path, value) {
+  const last = path[path.length - 1]
+  const parent = path.slice(0, -1).reduce((acc, key) => (acc == null ? acc : acc[key]), obj)
+  if (parent != null) parent[last] = value
+  return obj
+}
+
+/**
+ * Varre uma lista de caminhos de texto.
+ * entries: [{ path, isClosing, short, label }]
+ */
+export function sweepPaths(obj, entries) {
+  const findings = []
+  entries.forEach((entry) => {
+    const text = getByPath(obj, entry.path)
+    if (typeof text !== 'string' || !text.trim()) return
+    const res = sweepText(text, { isClosing: entry.isClosing !== false })
+    if (!res.blocks.length && !res.warns.length) return
+    findings.push({ ...entry, text, blocks: res.blocks, warns: res.warns })
+  })
+  return findings
+}
+
+const CAROUSEL_VERSIONS = [
+  { key: 'versao_principal', label: 'Versão principal' },
+  { key: 'variacao_emocional', label: 'Variação emocional' },
+  { key: 'variacao_provocativa', label: 'Variação provocativa' },
+]
+
+/**
+ * Caminhos de texto de um carrossel do Protocolo (aba Carrossel).
+ *
+ * Cada slide é uma unidade: a regra de fechamento em pergunta vale só para o
+ * último slide de cada versão. `pergunta_final` fica de fora dessa regra de
+ * propósito — ali a pergunta direta é o formato, não o vício.
+ */
+export function carouselTextPaths(carResult) {
+  const entries = []
+  if (!carResult || typeof carResult !== 'object') return entries
+
+  CAROUSEL_VERSIONS.forEach(({ key, label }) => {
+    const slides = Array.isArray(carResult[key]?.slides) ? carResult[key].slides : []
+    slides.forEach((slide, i) => {
+      if (typeof slide?.texto !== 'string') return
+      entries.push({
+        path: [key, 'slides', i, 'texto'],
+        isClosing: i === slides.length - 1,
+        short: true,
+        label: `${label} · slide ${slide.numero ?? i + 1}`,
+      })
+    })
+    if (typeof carResult[key]?.pergunta_final === 'string') {
+      entries.push({
+        path: [key, 'pergunta_final'],
+        isClosing: false,
+        short: true,
+        label: `${label} · pergunta final`,
+      })
+    }
+  })
+
+  if (typeof carResult.legenda === 'string') {
+    entries.push({ path: ['legenda'], isClosing: true, short: false, label: 'Legenda' })
+  }
+
+  return entries
+}
+
+/** Caminhos de texto de uma lista de hooks (aba Reels / Hooks). */
+export function hookListPaths(result, key = 'hooks', field = 'texto') {
+  const list = Array.isArray(result?.[key]) ? result[key] : []
+  return list.flatMap((item, i) => {
+    if (typeof item === 'string') return [{ path: [key, i], isClosing: false, short: true, label: `Hook ${i + 1}` }]
+    if (typeof item?.[field] === 'string') return [{ path: [key, i, field], isClosing: false, short: true, label: `Hook ${i + 1}` }]
+    return []
+  })
+}
+
 /** Só o que exige reescrita (blocks). Warns ficam como sinalização. */
 export function blockingFindings(findings) {
   return findings.filter((f) => f.blocks.length > 0)

@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { detectCliches } from '../../lib/clicheDetector'
-import { sweepResult, blockingFindings, countBlocks, SHORT_FIELDS } from '../../lib/clicheSweep'
+import {
+  sweepResult, sweepPaths, setByPath, carouselTextPaths, hookListPaths,
+  blockingFindings, countBlocks, SHORT_FIELDS,
+} from '../../lib/clicheSweep'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
@@ -115,6 +118,42 @@ const FIELD_LABELS = {
   title: 'Título',
   title_options: 'Título sugerido',
   hook_alternatives: 'Gancho',
+}
+
+/* Relatório da varredura: o que a reescrita não conseguiu resolver.
+   O filtro corrige sozinho, mas nunca esconde o que sobrou. */
+function SweepReportPanel({ report }) {
+  if (!report?.remaining?.length) return null
+  const total = countBlocks(report.remaining)
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-1.5">
+      <p className="text-[11px] font-semibold text-amber-800 flex items-center gap-1.5">
+        <AlertCircle size={12} />
+        {total} clichê{total > 1 ? 's' : ''} que a reescrita não resolveu
+        {report.fixed > 0 && (
+          <span className="font-normal text-amber-600">· {report.fixed} já corrigido{report.fixed > 1 ? 's' : ''}</span>
+        )}
+      </p>
+      {report.remaining.map((f, i) => (
+        <p key={i} className="text-[11px] text-amber-700 leading-relaxed">
+          <span className="font-medium">
+            {f.label || FIELD_LABELS[f.field] || f.field}
+            {f.index != null ? ` ${f.index + 1}` : ''}
+          </span>
+          {f.blocks.map((h, j) => (
+            <span key={j}>
+              {j === 0 ? ' — ' : ' · '}
+              {h.slide ? `${h.slide}: ` : ''}“{h.match}”
+            </span>
+          ))}
+        </p>
+      ))}
+      <p className="text-[10px] text-amber-600 pt-0.5">
+        Regenere ou edite esses trechos à mão — o filtro não sobrescreve sem você ver.
+      </p>
+    </div>
+  )
 }
 
 const FORMAT_PROMPTS = {
@@ -964,6 +1003,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [carError, setCarError] = useState(null)
   const [carCopied, setCarCopied] = useState(null)
   const [carSavedHub, setCarSavedHub] = useState(false)
+  const [carSweepReport, setCarSweepReport] = useState(null) // varredura anti-clichê do carrossel
   const [engSavedHub, setEngSavedHub] = useState(false)
   const [strSavedHub, setStrSavedHub] = useState(false)
   // Stories
@@ -1167,6 +1207,39 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
     const remaining = blockingFindings(sweepResult(parsed, { format: selectedFormat }))
     return { fixed, remaining, warns: sweepResult(parsed, { format: selectedFormat }).flatMap((f) => f.warns) }
+  }
+
+  /* Mesma correção verificada, para resultados com forma aninhada — o carrossel
+     do Protocolo tem três versões de slides, e cada slide é uma unidade. */
+  const sweepAndFixPaths = async (obj, entriesFn) => {
+    const MAX_PASSES = 2
+    let fixed = 0
+
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      const findings = blockingFindings(sweepPaths(obj, entriesFn(obj)))
+      if (!findings.length) break
+
+      const longOnes = findings.filter((f) => !f.short)
+      const shortOnes = findings.filter((f) => f.short)
+
+      for (const f of longOnes) {
+        const rewritten = await rewriteWithoutCliches(f.text, f.blocks)
+        if (rewritten && rewritten !== f.text) { setByPath(obj, f.path, rewritten); fixed += f.blocks.length }
+      }
+
+      if (shortOnes.length) {
+        const rewritten = await rewriteShortLines(shortOnes)
+        shortOnes.forEach((f, i) => {
+          const value = rewritten[i]
+          if (!value || value === f.text) return
+          setByPath(obj, f.path, value)
+          fixed += f.blocks.length
+        })
+      }
+    }
+
+    const findings = sweepPaths(obj, entriesFn(obj))
+    return { fixed, remaining: blockingFindings(findings), warns: findings.flatMap((f) => f.warns) }
   }
 
   /* ── Gerar conteúdo ── */
@@ -1458,7 +1531,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: ENGAGEMENT_SYSTEM,
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
         }),
       })
@@ -1495,7 +1568,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 3000,
-          system: buildHookSystem(isPessoal),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
         }),
       })
@@ -1507,7 +1580,9 @@ ${revText.trim()}`
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setEngHooks(JSON.parse(match[0]))
+      const parsedHooks = JSON.parse(match[0])
+      try { await sweepAndFixPaths(parsedHooks, (o) => hookListPaths(o, 'hooks', 'frase')) } catch { /* mantém o original */ }
+      setEngHooks(parsedHooks)
     } catch (err) {
       setEngHookError(err.message)
     } finally {
@@ -1533,7 +1608,11 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 600,
-          system: `Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
+          system: withManualOperacional(`${ANTI_AI_FILTER}
+
+---
+
+Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 ${isPessoal
     ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.'
     : 'Nicho: Carreira, Maturidade Profissional e Tomada de Decisão. Audiência corporativa sênior.'}
@@ -1570,7 +1649,7 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`,
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`),
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
@@ -1579,6 +1658,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
         const parsed = JSON.parse(match[0])
+        // Estes hooks viram o slide 1 do carrossel — passam pela mesma varredura
+        try { await sweepAndFixPaths(parsed, (o) => hookListPaths(o, 'hooks')) } catch { /* mantém o original */ }
         setCarHooks(parsed.hooks || [])
       }
     } catch { /* silencioso */ } finally {
@@ -1593,6 +1674,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarError(null)
     setCarResult(null)
     setCarSavedHub(false)
+    setCarSweepReport(null)
     try {
       const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
@@ -1600,7 +1682,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: buildCarouselSystem(isPessoal),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
       })
@@ -1612,7 +1694,16 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setCarResult(JSON.parse(match[0]))
+      const parsed = JSON.parse(match[0])
+
+      // Varredura anti-clichê slide a slide, com verificação depois da reescrita
+      let report = null
+      try {
+        report = await sweepAndFixPaths(parsed, carouselTextPaths)
+      } catch { /* se a correção falhar, mantém o texto original */ }
+      setCarSweepReport(report)
+
+      setCarResult(parsed)
     } catch (err) {
       setCarError(err.message)
     } finally {
@@ -1749,7 +1840,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1000,
-          system: systemPrompt,
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
       })
@@ -2958,6 +3049,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
           {carResult && (
             <div className="space-y-3 animate-fade-in">
 
+              {/* Varredura anti-clichê */}
+              {carSweepReport?.fixed > 0 && !carSweepReport.remaining.length && (
+                <p className="text-[10px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                  <ShieldCheck size={10} /> {carSweepReport.fixed} clichê{carSweepReport.fixed > 1 ? 's' : ''} corrigido{carSweepReport.fixed > 1 ? 's' : ''} na varredura
+                </p>
+              )}
+              <SweepReportPanel report={carSweepReport} />
+
               {/* Abas de versão */}
               {(() => {
                 const versions = [
@@ -3474,29 +3573,7 @@ Ex: 'Dicas de IA para quem está começando na carreira'"
           </div>
 
           {/* Varredura anti-clichê: o que sobrou depois das reescritas */}
-          {sweepReport?.remaining?.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-1.5">
-              <p className="text-[11px] font-semibold text-amber-800 flex items-center gap-1.5">
-                <AlertCircle size={12} />
-                {countBlocks(sweepReport.remaining)} clichê{countBlocks(sweepReport.remaining) > 1 ? 's' : ''} que a reescrita não resolveu
-                {sweepReport.fixed > 0 && <span className="font-normal text-amber-600">· {sweepReport.fixed} já corrigido{sweepReport.fixed > 1 ? 's' : ''}</span>}
-              </p>
-              {sweepReport.remaining.map((f, i) => (
-                <p key={i} className="text-[11px] text-amber-700 leading-relaxed">
-                  <span className="font-medium">{FIELD_LABELS[f.field] || f.field}{f.index != null ? ` ${f.index + 1}` : ''}</span>
-                  {f.blocks.map((h, j) => (
-                    <span key={j}>
-                      {j === 0 ? ' — ' : ' · '}
-                      {h.slide ? `${h.slide}: ` : ''}“{h.match}”
-                    </span>
-                  ))}
-                </p>
-              ))}
-              <p className="text-[10px] text-amber-600 pt-0.5">
-                Regenere ou edite esses trechos à mão — o filtro não sobrescreve sem você ver.
-              </p>
-            </div>
-          )}
+          <SweepReportPanel report={sweepReport} />
 
           {/* Título */}
           <div className="flex items-start justify-between gap-3">

@@ -4,6 +4,11 @@ import {
   sweepSlides,
   splitSlides,
   sweepResult,
+  sweepPaths,
+  getByPath,
+  setByPath,
+  carouselTextPaths,
+  hookListPaths,
   blockingFindings,
   countBlocks,
 } from './clicheSweep'
@@ -169,6 +174,119 @@ describe('sweepResult — varre todos os campos gerados', () => {
     const hit = sweepResult({ content: 'A verdade é que ninguém ensina isso.' }, { format: 'caption' })
       .find((f) => f.field === 'content')
     expect(hit.blocks.every((b) => b.slide === undefined)).toBe(true)
+  })
+})
+
+describe('carrossel do Protocolo — forma aninhada com 3 versões', () => {
+  const carResult = () => ({
+    versao_principal: {
+      slides: [
+        { numero: 1, texto: 'O segredo de quem cobra caro' },
+        { numero: 2, texto: 'O custo fixo entra antes da margem.' },
+        { numero: 3, texto: 'Salva a conta antes da próxima proposta.' },
+      ],
+      pergunta_final: 'Quanto você cobrou na última proposta?',
+    },
+    variacao_emocional: {
+      slides: [
+        { numero: 1, texto: 'Não é falta de talento. É falta de método.' },
+        { numero: 2, texto: 'Levei 3 anos pra montar essa tabela.' },
+      ],
+      pergunta_final: 'Qual foi a sua?',
+    },
+    variacao_provocativa: {
+      slides: [{ numero: 1, texto: 'Cobrei R$ 4.000 por 12 horas.' }],
+    },
+    legenda: 'A verdade é que ninguém ensina isso.',
+    comentarios: [{ comentario: 'top', resposta: 'valeu' }],
+  })
+
+  it('mapeia slides, perguntas finais e legenda', () => {
+    const paths = carouselTextPaths(carResult())
+    expect(paths.map((p) => p.path.join('.'))).toEqual([
+      'versao_principal.slides.0.texto',
+      'versao_principal.slides.1.texto',
+      'versao_principal.slides.2.texto',
+      'versao_principal.pergunta_final',
+      'variacao_emocional.slides.0.texto',
+      'variacao_emocional.slides.1.texto',
+      'variacao_emocional.pergunta_final',
+      'variacao_provocativa.slides.0.texto',
+      'legenda',
+    ])
+  })
+
+  it('acusa clichê no slide 1 de cada versão e na legenda', () => {
+    const obj = carResult()
+    const findings = blockingFindings(sweepPaths(obj, carouselTextPaths(obj)))
+    const labels = findings.map((f) => f.label)
+    expect(labels).toContain('Versão principal · slide 1')
+    expect(labels).toContain('Variação emocional · slide 1')
+    expect(labels).toContain('Legenda')
+  })
+
+  it('não trata a pergunta final como fechamento de coach — ali a pergunta é o formato', () => {
+    const obj = carResult()
+    const findings = sweepPaths(obj, carouselTextPaths(obj))
+    const pergunta = findings.find((f) => f.path.includes('pergunta_final'))
+    expect(pergunta).toBeUndefined()
+  })
+
+  it('marca slides como linha curta e legenda como texto longo', () => {
+    const obj = carResult()
+    const paths = carouselTextPaths(obj)
+    expect(paths.find((p) => p.path.join('.') === 'versao_principal.slides.0.texto').short).toBe(true)
+    expect(paths.find((p) => p.path[0] === 'legenda').short).toBe(false)
+  })
+
+  it('só o último slide de cada versão responde pela regra de fechamento', () => {
+    const obj = carResult()
+    const paths = carouselTextPaths(obj)
+    expect(paths.find((p) => p.path.join('.') === 'versao_principal.slides.2.texto').isClosing).toBe(true)
+    expect(paths.find((p) => p.path.join('.') === 'versao_principal.slides.0.texto').isClosing).toBe(false)
+  })
+
+  it('setByPath escreve a correção de volta no lugar certo', () => {
+    const obj = carResult()
+    setByPath(obj, ['versao_principal', 'slides', 0, 'texto'], 'Cobrei R$ 4.000 por 12 horas.')
+    expect(obj.versao_principal.slides[0].texto).toBe('Cobrei R$ 4.000 por 12 horas.')
+    expect(getByPath(obj, ['versao_principal', 'slides', 0, 'texto'])).toBe('Cobrei R$ 4.000 por 12 horas.')
+  })
+
+  it('carrossel limpo não gera achado', () => {
+    const limpo = {
+      versao_principal: {
+        slides: [
+          { numero: 1, texto: 'Cobrei R$ 4.000 por 12 horas de trabalho.' },
+          { numero: 2, texto: 'O custo fixo mensal era R$ 6.200.' },
+        ],
+        pergunta_final: 'Qual foi sua última proposta?',
+      },
+      legenda: 'A conta que uso está no slide 2.',
+    }
+    expect(blockingFindings(sweepPaths(limpo, carouselTextPaths(limpo)))).toEqual([])
+  })
+
+  it('trata resultado inválido', () => {
+    expect(carouselTextPaths(null)).toEqual([])
+    expect(carouselTextPaths({})).toEqual([])
+    expect(carouselTextPaths({ versao_principal: {} })).toEqual([])
+  })
+})
+
+describe('hookListPaths', () => {
+  it('mapeia lista de strings', () => {
+    expect(hookListPaths({ hooks: ['a', 'b'] }).map((p) => p.path.join('.')))
+      .toEqual(['hooks.0', 'hooks.1'])
+  })
+
+  it('mapeia lista de objetos', () => {
+    expect(hookListPaths({ hooks: [{ texto: 'a' }] })[0].path).toEqual(['hooks', 0, 'texto'])
+  })
+
+  it('ignora entrada inválida', () => {
+    expect(hookListPaths(null)).toEqual([])
+    expect(hookListPaths({ hooks: [42] })).toEqual([])
   })
 })
 
