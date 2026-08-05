@@ -66,6 +66,35 @@ describe('classificação de tema de trabalho', () => {
     expect(categorizeWorkTheme('a assinatura de IA que não se paga')).toBe('IA crítica')
   })
 
+  it('celular como cena do dia não é celular como ferramenta de operação', () => {
+    // Estes cinco tinham caído em "Celular & operação" e falam do aparelho no
+    // cotidiano — nenhum ensina a operar um negócio com ele.
+    const cenas = [
+      'Reunião começou e celular no silencioso',
+      'Notificação do trabalho às 23h no pessoal',
+      'Dois chips: um pro trampo, um pra mim',
+      'Print de conversa enviado para o grupo errado',
+      'Bateria acabando em plena ligação com cliente',
+    ]
+    cenas.forEach((t) => {
+      expect(categorizeWorkTheme(t), t).not.toBe('Celular & operação')
+    })
+  })
+
+  it('aparelho só entra na categoria quando vem com operação do negócio', () => {
+    const operacao = [
+      'Fechar proposta inteira do celular',
+      'Cobrar e acompanhar recebimento sem abrir o notebook',
+      'Gestão do estoque pelo celular',
+      'Governança de acesso e senha do negócio no aplicativo',
+      'Rodar a produtividade da semana pelo celular',
+      'Emitir nota fiscal pelo app',
+    ]
+    operacao.forEach((t) => {
+      expect(categorizeWorkTheme(t), t).toBe('Celular & operação')
+    })
+  })
+
   it('identidade tem prioridade sobre negócio e ferramenta', () => {
     expect(categorizeWorkTheme('cobrar preço certo sendo a única mulher negra na concorrência')).toBe('Identidade')
     expect(categorizeWorkTheme('ancestralidade como método de trabalho')).toBe('Identidade')
