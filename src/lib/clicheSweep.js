@@ -10,7 +10,7 @@
 //
 // Este módulo junta as duas fontes e varre todos os campos de texto do resultado.
 
-import { detectCliches } from './clicheDetector'
+import { detectCliches, detectBannedWords } from './clicheDetector'
 import { lintText } from '../utils/brandLinter'
 
 /** Campos de texto do resultado que precisam passar pela varredura. */
@@ -32,11 +32,13 @@ const norm = (hit, source) => ({
 })
 
 /**
- * Varre um texto com as duas camadas e devolve os achados normalizados.
+ * Varre um texto com as três camadas e devolve os achados normalizados.
  * `isClosing = false` desliga a regra de fechamento em pergunta (títulos,
- * ganchos e slides que não são o último).
+ * ganchos e slides que não são o último). `bannedWords` é a lista pessoal —
+ * cresce conforme a Karen bane frase por frase; diferente de BLOCK_PHRASES,
+ * que é fixa e vem com o app.
  */
-export function sweepText(text, { isClosing = true } = {}) {
+export function sweepText(text, { isClosing = true, bannedWords = [] } = {}) {
   const blocks = []
   const warns = []
   if (!text || typeof text !== 'string') return { blocks, warns }
@@ -47,6 +49,8 @@ export function sweepText(text, { isClosing = true } = {}) {
     blocks.push(norm(h, 'estrutura'))
   })
   det.warns.forEach((h) => warns.push(norm(h, 'estrutura')))
+
+  detectBannedWords(text, bannedWords).forEach((h) => blocks.push(norm(h, 'banido')))
 
   lintText(text).forEach((v) => {
     blocks.push({
@@ -100,14 +104,14 @@ export function splitSlides(content) {
  * aplica ao último slide — perguntas no meio do carrossel são conversa, não
  * fechamento de coach.
  */
-export function sweepSlides(content) {
+export function sweepSlides(content, bannedWords = []) {
   const slides = splitSlides(content)
   const blocks = []
   const warns = []
 
   slides.forEach((slide, idx) => {
     const isLast = idx === slides.length - 1
-    const { blocks: b, warns: w } = sweepText(slide.text, { isClosing: isLast })
+    const { blocks: b, warns: w } = sweepText(slide.text, { isClosing: isLast, bannedWords })
     const tag = slide.label ? `${slide.label}` : null
     b.forEach((h) => blocks.push({ ...h, slide: tag }))
     w.forEach((h) => warns.push({ ...h, slide: tag }))
@@ -123,7 +127,7 @@ export function sweepSlides(content) {
  * Formato: [{ field, index, text, blocks, warns }]
  * `index` só existe em campos que são array (title_options, hook_alternatives).
  */
-export function sweepResult(result, { format } = {}) {
+export function sweepResult(result, { format, bannedWords = [] } = {}) {
   const findings = []
   if (!result || typeof result !== 'object') return findings
 
@@ -136,18 +140,18 @@ export function sweepResult(result, { format } = {}) {
   if (result.content) {
     const isCarrossel = (format || result.suggested_format || '').toLowerCase() === 'carrossel'
     push('content', undefined, result.content,
-      isCarrossel ? sweepSlides(result.content) : sweepText(result.content))
+      isCarrossel ? sweepSlides(result.content, bannedWords) : sweepText(result.content, { bannedWords }))
   }
 
-  if (result.caption) push('caption', undefined, result.caption, sweepText(result.caption))
+  if (result.caption) push('caption', undefined, result.caption, sweepText(result.caption, { bannedWords }))
 
   // Campos curtos: título é o slide 1 do carrossel, gancho é a primeira frase
-  if (result.title) push('title', undefined, result.title, sweepText(result.title, { isClosing: false }))
+  if (result.title) push('title', undefined, result.title, sweepText(result.title, { isClosing: false, bannedWords }))
 
   ;['title_options', 'hook_alternatives'].forEach((field) => {
     const list = Array.isArray(result[field]) ? result[field] : []
     list.forEach((line, index) => {
-      push(field, index, line, sweepText(line, { isClosing: false }))
+      push(field, index, line, sweepText(line, { isClosing: false, bannedWords }))
     })
   })
 
@@ -174,12 +178,12 @@ export function setByPath(obj, path, value) {
  * Varre uma lista de caminhos de texto.
  * entries: [{ path, isClosing, short, label }]
  */
-export function sweepPaths(obj, entries) {
+export function sweepPaths(obj, entries, bannedWords = []) {
   const findings = []
   entries.forEach((entry) => {
     const text = getByPath(obj, entry.path)
     if (typeof text !== 'string' || !text.trim()) return
-    const res = sweepText(text, { isClosing: entry.isClosing !== false })
+    const res = sweepText(text, { isClosing: entry.isClosing !== false, bannedWords })
     if (!res.blocks.length && !res.warns.length) return
     findings.push({ ...entry, text, blocks: res.blocks, warns: res.warns })
   })
@@ -226,6 +230,40 @@ export function carouselTextPaths(carResult) {
 
   if (typeof carResult.legenda === 'string') {
     entries.push({ path: ['legenda'], isClosing: true, short: false, label: 'Legenda' })
+  }
+
+  return entries
+}
+
+const ENGAGEMENT_TEXT_FIELDS = [
+  { key: 'versao_principal', label: 'Versão principal' },
+  { key: 'variacao_emocional', label: 'Variação emocional' },
+  { key: 'variacao_provocativa', label: 'Variação provocativa' },
+]
+
+/**
+ * Caminhos de texto do roteiro de engajamento (aba Reels). Ao contrário do
+ * carrossel, aqui não há slides — cada versão é um texto corrido só, então
+ * cada campo é uma unidade fechada (isClosing: true).
+ *
+ * `pergunta_final` e `exercicio_pratico` ficam fora da regra de fechamento em
+ * pergunta: a pergunta final É pra ser pergunta, isso é o formato, não o vício.
+ */
+export function engagementTextPaths(engResult) {
+  const entries = []
+  if (!engResult || typeof engResult !== 'object') return entries
+
+  ENGAGEMENT_TEXT_FIELDS.forEach(({ key, label }) => {
+    if (typeof engResult[key] === 'string') {
+      entries.push({ path: [key], isClosing: true, short: false, label })
+    }
+  })
+
+  if (typeof engResult.exercicio_pratico === 'string') {
+    entries.push({ path: ['exercicio_pratico'], isClosing: false, short: true, label: 'Exercício prático' })
+  }
+  if (typeof engResult.pergunta_final === 'string') {
+    entries.push({ path: ['pergunta_final'], isClosing: false, short: true, label: 'Pergunta final' })
   }
 
   return entries
