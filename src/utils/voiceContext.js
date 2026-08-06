@@ -3,12 +3,19 @@
  * Used by all content generators for consistent, improving output.
  */
 
+// Bloco de frases banidas — compartilhado por todos os geradores do Studio
+// (Studio Livre, Reels, Carrossel, Stories), não só pelo que já usava
+// buildVoiceContext. A lista é da Karen, cresce com o botão "Banir" em
+// qualquer aba, e essa é a única redação do bloco no app.
+export function buildBannedWordsBlock(bannedWords = []) {
+  if (!bannedWords?.length) return ''
+  return `\n\nPALAVRAS/EXPRESSÕES PROIBIDAS (NUNCA use estas palavras ou variações delas no conteúdo gerado):\n${bannedWords.map(w => `- "${w}"`).join('\n')}\nEsta é uma regra ABSOLUTA. O criador baniu essas palavras permanentemente.\n`
+}
+
 export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = []) {
   let ctx = ''
 
-  if (bannedWords?.length > 0) {
-    ctx += `\n\nPALAVRAS/EXPRESSÕES PROIBIDAS (NUNCA use estas palavras ou variações delas no conteúdo gerado):\n${bannedWords.map(w => `- "${w}"`).join('\n')}\nEsta é uma regra ABSOLUTA. O criador baniu essas palavras permanentemente.\n`
-  }
+  ctx += buildBannedWordsBlock(bannedWords)
 
   if (brandVoice?.prompt) {
     ctx += `\n\nIDENTIDADE E VOZ DO CRIADOR:\n${brandVoice.prompt}\n`

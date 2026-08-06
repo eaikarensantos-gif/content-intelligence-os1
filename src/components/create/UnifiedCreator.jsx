@@ -4,7 +4,7 @@ import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { detectCliches } from '../../lib/clicheDetector'
 import {
-  sweepResult, sweepPaths, setByPath, carouselTextPaths, hookListPaths,
+  sweepResult, sweepPaths, setByPath, carouselTextPaths, engagementTextPaths, hookListPaths,
   blockingFindings, countBlocks, SHORT_FIELDS,
 } from '../../lib/clicheSweep'
 import {
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
-import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
 import {
   WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme,
@@ -125,9 +125,13 @@ const FIELD_LABELS = {
 
 /* Relatório da varredura: o que a reescrita não conseguiu resolver.
    O filtro corrige sozinho, mas nunca esconde o que sobrou. */
-function SweepReportPanel({ report }) {
+/* Relatório da varredura anti-clichê: o que a reescrita automática não
+   resolveu. Com `onBan`, cada trecho apontado ganha um botão "Banir" — vira
+   proibição permanente em vez de sumir depois de uma geração. */
+function SweepReportPanel({ report, onBan, bannedWords = [] }) {
   if (!report?.remaining?.length) return null
   const total = countBlocks(report.remaining)
+  const isBanned = (match) => bannedWords.some((w) => w.toLowerCase() === match.toLowerCase())
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-1.5">
@@ -145,9 +149,23 @@ function SweepReportPanel({ report }) {
             {f.index != null ? ` ${f.index + 1}` : ''}
           </span>
           {f.blocks.map((h, j) => (
-            <span key={j}>
+            <span key={j} className="inline-flex items-center">
               {j === 0 ? ' — ' : ' · '}
               {h.slide ? `${h.slide}: ` : ''}“{h.match}”
+              {onBan && (
+                isBanned(h.match) ? (
+                  <span className="ml-1 text-[9px] font-semibold text-emerald-600">banido</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onBan(h.match)}
+                    title="Banir esta frase — o app vai evitá-la em todas as próximas gerações"
+                    className="ml-1 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                  >
+                    banir
+                  </button>
+                )
+              )}
             </span>
           ))}
         </p>
@@ -155,6 +173,51 @@ function SweepReportPanel({ report }) {
       <p className="text-[10px] text-amber-600 pt-0.5">
         Regenere ou edite esses trechos à mão — o filtro não sobrescreve sem você ver.
       </p>
+    </div>
+  )
+}
+
+/* O item de linguagem_robotica do Revisor chega como "trecho" ou como
+   "trecho" — Rótulo da regra (quando vem do detector determinístico, ver
+   revisorAnalyze). O botão Banir precisa só do trecho, não do rótulo. */
+const extractBannablePhrase = (t) => (t || '').split(' — ')[0].replace(/^"|"$/g, '').trim()
+
+/* Ban manual reutilizável — mesma peça em Revisor, Studio Livre, Reels,
+   Carrossel e Stories, pra que banir uma frase funcione igual em qualquer aba. */
+function BannedWordsBox({ bannedWords, onAdd, onRemove, hint }) {
+  const [value, setValue] = useState('')
+  const submit = () => { if (value.trim()) { onAdd(value.trim()); setValue('') } }
+
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+        Frases Banidas <span className="text-gray-300 font-normal">{hint || '(a IA evita estas expressões em qualquer aba)'}</span>
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
+          placeholder='Ex: "Em resumo", "Não é à toa que..."'
+          className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-300"
+        />
+        <button
+          onClick={submit}
+          className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+        >
+          Banir
+        </button>
+      </div>
+      {bannedWords.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {bannedWords.map((phrase) => (
+            <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
+              "{phrase.length > 35 ? phrase.slice(0, 35) + '...' : phrase}"
+              <button onClick={() => onRemove(phrase)} className="hover:text-red-800 shrink-0"><X size={9} /></button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -230,13 +293,16 @@ PRINCÍPIO CENTRAL:
 Escrever como alguém que observou algo específico — não como quem está ensinando.
 
 PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- Frases: "não é só X, é Y" / "não é sobre X, é sobre Y" / "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
+- Qualquer forma de "não é X, é Y" — "não é só X, é Y", "não é sobre X, é sobre Y", "isto não é X, é Y", "não é insegurança, é..." — contraste corretivo em qualquer posição do roteiro, não só na abertura
+- Frases: "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
 - Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
 - Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
 - Listas em escadinha repetitiva
 - Frases de efeito genéricas
 - Tom professoral ou frases prontas de coach
 - Estrutura previsível
+- Travessão para criar pausa dramática ("dá uma hesitada", "e ao mesmo tempo —") — se o travessão está ali só pra soar contido, corte ou reescreva em frase reta
+- Três ou mais frases curtas e simétricas seguidas ("Essa hesitada tem história. Faz sentido ela existir.") — ritmo de sermão de coach, quebre o paralelismo
 
 ESTRUTURA DO ROTEIRO:
 1. Situação específica (realista, concreta — não abstrata)
@@ -256,11 +322,9 @@ AJUSTE FINO DE TOM (proteção de risco):
 O tema pode ser sensível. O risco não é o tema — é o tom.
 - Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X", "as pessoas fazem Y")
 - Evitar culpados nomeados — explícitos ou implícitos
-- Preferir entrada observacional e acolhedora:
-  → "tem uma coisa que acontece…"
-  → "já reparou que…"
-  → "muita gente passa por isso…"
-  → "às vezes a gente…"
+- Entrada observacional e acolhedora, mas NUNCA a mesma fórmula duas vezes: comece direto na cena específica (o que a pessoa fez, viu ou disse), não numa frase-molde genérica que caberia em qualquer tema
+  ❌ Proibido como abertura: "tem uma coisa que acontece", "já reparou que", "muita gente passa por isso" — são bengalas de abertura, viram o próprio clichê de tanto repetir
+  ✅ Comece na cena: "Você fecha o preço, revisa duas vezes e deixa a proposta parada duas horas antes de mandar."
 - Descrever o fenômeno sem atribuir culpa a ninguém
 
 REGRAS DE CORTE (aplicar automaticamente):
@@ -943,6 +1007,20 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [banCandidate, setBanCandidate] = useState(null)
   const [banPosition, setBanPosition] = useState({ x: 0, y: 0 })
+
+  /* Selecionar um trecho em QUALQUER bloco de texto gerado — Studio Livre,
+     Reels, Carrossel ou Stories — abre o popup de banir. Estado compartilhado,
+     handler compartilhado, popup renderizado uma vez só no fim do componente. */
+  const handleTextSelectionForBan = () => {
+    const sel = window.getSelection()
+    const text = sel?.toString()?.trim()
+    if (text && text.length >= 2 && text.length <= 80 && !text.includes('\n')) {
+      setBanCandidate(text)
+      const range = sel.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+      setBanPosition({ x: rect.left + rect.width / 2, y: rect.top - 8 })
+    }
+  }
   const [inspiration, setInspiration] = useState(null)
   const [brandViolations, setBrandViolations] = useState([])
   const [showLinter, setShowLinter] = useState(false)
@@ -964,7 +1042,6 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [revRewriteLoading, setRevRewriteLoading] = useState(false)
   const [revShortened, setRevShortened] = useState('')
   const [revShortenLoading, setRevShortenLoading] = useState(false)
-  const [revBanInput, setRevBanInput] = useState('')
 
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
@@ -982,6 +1059,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [engHookLoading, setEngHookLoading] = useState(false)
   const [engHookError, setEngHookError] = useState(null)
   const [engHookCopied, setEngHookCopied] = useState(null)
+  const [engSweepReport, setEngSweepReport] = useState(null) // varredura anti-clichê do roteiro de Reels
   // Carrossel
 
   const [carTema, setCarTema] = useState('')
@@ -1009,6 +1087,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [strResult, setStrResult] = useState(null)
   const [strError, setStrError] = useState(null)
   const [strCopied, setStrCopied] = useState(false)
+  const [strSweepReport, setStrSweepReport] = useState(null) // varredura anti-clichê do stories
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
@@ -1170,7 +1249,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     let fixed = 0
 
     for (let pass = 0; pass < MAX_PASSES; pass++) {
-      const findings = blockingFindings(sweepResult(parsed, { format: selectedFormat }))
+      const findings = blockingFindings(sweepResult(parsed, { format: selectedFormat, bannedWords }))
       if (!findings.length) break
 
       const longFields = findings.filter((f) => !SHORT_FIELDS.includes(f.field))
@@ -1193,8 +1272,8 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       }
     }
 
-    const remaining = blockingFindings(sweepResult(parsed, { format: selectedFormat }))
-    return { fixed, remaining, warns: sweepResult(parsed, { format: selectedFormat }).flatMap((f) => f.warns) }
+    const remaining = blockingFindings(sweepResult(parsed, { format: selectedFormat, bannedWords }))
+    return { fixed, remaining, warns: sweepResult(parsed, { format: selectedFormat, bannedWords }).flatMap((f) => f.warns) }
   }
 
   /* Mesma correção verificada, para resultados com forma aninhada — o carrossel
@@ -1204,7 +1283,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     let fixed = 0
 
     for (let pass = 0; pass < MAX_PASSES; pass++) {
-      const findings = blockingFindings(sweepPaths(obj, entriesFn(obj)))
+      const findings = blockingFindings(sweepPaths(obj, entriesFn(obj), bannedWords))
       if (!findings.length) break
 
       const longOnes = findings.filter((f) => !f.short)
@@ -1226,7 +1305,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       }
     }
 
-    const findings = sweepPaths(obj, entriesFn(obj))
+    const findings = sweepPaths(obj, entriesFn(obj), bannedWords)
     return { fixed, remaining: blockingFindings(findings), warns: findings.flatMap((f) => f.warns) }
   }
 
@@ -1508,6 +1587,7 @@ ${revText.trim()}`
     setEngError(null)
     setEngResult(null)
     setEngSavedHub(false)
+    setEngSweepReport(null)
     try {
       const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
@@ -1519,7 +1599,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildBannedWordsBlock(bannedWords)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
         }),
       })
@@ -1531,7 +1611,21 @@ ${revText.trim()}`
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      setEngResult(JSON.parse(match[0]))
+      const parsed = JSON.parse(match[0])
+
+      // Varredura anti-clichê: content, caption e título já eram cobertos no
+      // Studio Livre e no Carrossel, mas o roteiro de Reels nunca passou por
+      // nenhuma varredura — saía direto da API pra tela.
+      let report = null
+      try {
+        report = await sweepAndFixPaths(parsed, (o) => [
+          ...engagementTextPaths(o),
+          ...hookListPaths(o, 'respostas_sugeridas'),
+        ])
+      } catch { /* se a correção falhar, mantém o texto original */ }
+      setEngSweepReport(report)
+
+      setEngResult(parsed)
     } catch (err) {
       setEngError(err.message)
     } finally {
@@ -1556,7 +1650,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildBannedWordsBlock(bannedWords)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
         }),
       })
@@ -1637,7 +1731,7 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}`),
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${buildBannedWordsBlock(bannedWords)}`),
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
@@ -1670,7 +1764,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildBannedWordsBlock(bannedWords)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
       })
@@ -1816,6 +1910,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setStrError(null)
     setStrResult(null)
     setStrSavedHub(false)
+    setStrSweepReport(null)
     try {
       const structuresMap = isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES
       const estrutura = structuresMap[strEstrutura] || structuresMap.observacao
@@ -1828,7 +1923,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildBannedWordsBlock(bannedWords)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
       })
@@ -1839,7 +1934,19 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const data = await res.json()
       const text = data.content?.[0]?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
-      setStrResult(text)
+
+      // Varredura anti-clichê: stories é texto corrido, sem JSON — trata como
+      // um único campo de conteúdo, igual ao Studio Livre fora do carrossel.
+      let corrected = text
+      let report = null
+      try {
+        const wrapped = { content: text }
+        report = await sweepAndFix(wrapped, 'stories')
+        corrected = wrapped.content
+      } catch { /* se a correção falhar, mantém o texto original */ }
+      setStrSweepReport(report)
+
+      setStrResult(corrected)
     } catch (err) {
       setStrError(err.message)
     } finally {
@@ -2358,37 +2465,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     <span className="text-[11px] text-gray-300">{revText.length} caracteres</span>
                     {revText && <button onClick={() => { setRevText(''); setRevResult(null); setRevRewritten(''); setRevError('') }} className="text-[11px] text-gray-400 hover:text-gray-600">Limpar</button>}
                   </div>
-                  {/* Frases/Palavras Banidas */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                      Frases Banidas <span className="text-gray-300 font-normal">(o revisor vai sinalizar e evitar ao reescrever)</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        value={revBanInput}
-                        onChange={e => setRevBanInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && revBanInput.trim()) { addBannedWord(revBanInput.trim()); setRevBanInput('') } }}
-                        placeholder='Ex: "Em resumo", "Não é à toa que..."'
-                        className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-300"
-                      />
-                      <button
-                        onClick={() => { if (revBanInput.trim()) { addBannedWord(revBanInput.trim()); setRevBanInput('') } }}
-                        className="px-3 py-1.5 text-xs font-medium bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                      >
-                        Banir
-                      </button>
-                    </div>
-                    {bannedWords.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {bannedWords.map(phrase => (
-                          <span key={phrase} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200">
-                            "{phrase.length > 35 ? phrase.slice(0, 35) + '...' : phrase}"
-                            <button onClick={() => removeBannedWord(phrase)} className="hover:text-red-800 shrink-0"><X size={9} /></button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <BannedWordsBox
+                    bannedWords={bannedWords}
+                    onAdd={addBannedWord}
+                    onRemove={removeBannedWord}
+                    hint="(o revisor vai sinalizar e evitar ao reescrever)"
+                  />
 
                   {revError && (
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
@@ -2450,11 +2532,25 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       <div className="bg-white rounded-2xl border border-red-100 p-5 shadow-sm space-y-3">
                         <p className="text-xs font-semibold text-red-500 uppercase tracking-wide">Soa artificial / clichê</p>
                         <div className="space-y-2">
-                          {revResult.linguagem_robotica.map((t, i) => (
-                            <div key={i} className="px-3 py-2 rounded-lg bg-red-50 border border-red-100">
-                              <p className="text-sm text-red-700 italic">"{t}"</p>
-                            </div>
-                          ))}
+                          {revResult.linguagem_robotica.map((t, i) => {
+                            const phrase = extractBannablePhrase(t)
+                            const alreadyBanned = bannedWords.some((w) => w.toLowerCase() === phrase.toLowerCase())
+                            return (
+                              <div key={i} className="px-3 py-2 rounded-lg bg-red-50 border border-red-100 flex items-center justify-between gap-3">
+                                <p className="text-sm text-red-700 italic flex-1">"{t}"</p>
+                                {alreadyBanned ? (
+                                  <span className="text-[10px] font-semibold text-emerald-600 shrink-0">banido</span>
+                                ) : (
+                                  <button
+                                    onClick={() => addBannedWord(phrase)}
+                                    className="text-[10px] font-semibold px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors shrink-0"
+                                  >
+                                    Banir
+                                  </button>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -2518,7 +2614,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     {revRewritten && (
                       <div className="bg-violet-50 rounded-2xl border border-violet-100 p-5 shadow-sm space-y-3 animate-fade-in">
                         <p className="text-xs font-semibold text-violet-600 uppercase tracking-wide">Roteiro Reescrito</p>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{revRewritten}</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed select-text" onMouseUp={handleTextSelectionForBan}>{revRewritten}</p>
                         <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => { navigator.clipboard.writeText(revRewritten); setRevCopied('rewrite'); setTimeout(() => setRevCopied(false), 1500) }}
@@ -2540,7 +2636,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     {revShortened && (
                       <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm space-y-3 animate-fade-in">
                         <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Texto Encurtado</p>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{revShortened}</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed select-text" onMouseUp={handleTextSelectionForBan}>{revShortened}</p>
                         <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => { navigator.clipboard.writeText(revShortened); setRevCopied('shorten'); setTimeout(() => setRevCopied(false), 1500) }}
@@ -2670,6 +2766,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
             </div>
 
+            <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
+
             {engError && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{engError}</div>
             )}
@@ -2686,6 +2784,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
           {/* ── Output de Engajamento ── */}
           {engResult && (
             <div className="space-y-4 animate-fade-in">
+
+              {/* Varredura anti-clichê */}
+              {engSweepReport?.fixed > 0 && !engSweepReport.remaining.length && (
+                <p className="text-[10px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                  <ShieldCheck size={10} /> {engSweepReport.fixed} clichê{engSweepReport.fixed > 1 ? 's' : ''} corrigido{engSweepReport.fixed > 1 ? 's' : ''} na varredura
+                </p>
+              )}
+              <SweepReportPanel report={engSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
 
               {/* Validação */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
@@ -2725,7 +2831,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     {engCopied === 'principal' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
                   </button>
                 </div>
-                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                <div
+                  className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed select-text"
+                  onMouseUp={handleTextSelectionForBan}
+                >
                   {engResult.versao_principal}
                 </div>
               </div>
@@ -2758,7 +2867,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       {engCopied === 'eng-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
                     </button>
                   </div>
-                  <p className="p-4 text-sm text-gray-800 leading-relaxed">{engResult.exercicio_pratico}</p>
+                  <p className="p-4 text-sm text-gray-800 leading-relaxed select-text" onMouseUp={handleTextSelectionForBan}>{engResult.exercicio_pratico}</p>
                 </div>
               )}
 
@@ -2783,7 +2892,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       </div>
                     </button>
                     {show && (
-                      <div className="px-4 pb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3">
+                      <div
+                        className="px-4 pb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3 select-text"
+                        onMouseUp={handleTextSelectionForBan}
+                      >
                         {engResult[key]}
                       </div>
                     )}
@@ -3120,6 +3232,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
             </div>
 
+            <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
+
             {carError && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{carError}</div>
             )}
@@ -3140,7 +3254,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   <ShieldCheck size={10} /> {carSweepReport.fixed} clichê{carSweepReport.fixed > 1 ? 's' : ''} corrigido{carSweepReport.fixed > 1 ? 's' : ''} na varredura
                 </p>
               )}
-              <SweepReportPanel report={carSweepReport} />
+              <SweepReportPanel report={carSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
 
               {/* Abas de versão */}
               {(() => {
@@ -3186,7 +3300,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                               <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0 mt-0.5 z-10">
                                 <span className="text-[10px] font-bold text-orange-500">{slide.numero}</span>
                               </div>
-                              <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5">{slide.texto}</p>
+                              <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5 select-text" onMouseUp={handleTextSelectionForBan}>{slide.texto}</p>
                               <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
                                 className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
                                 {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
@@ -3428,6 +3542,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
             </div>
 
+            <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
+
             {strError && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{strError}</div>
             )}
@@ -3441,6 +3557,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
           {/* ── Output de Stories ── */}
           {strResult && (
             <div className="space-y-4 animate-fade-in">
+
+              {/* Varredura anti-clichê */}
+              {strSweepReport?.fixed > 0 && !strSweepReport.remaining.length && (
+                <p className="text-[10px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                  <ShieldCheck size={10} /> {strSweepReport.fixed} clichê{strSweepReport.fixed > 1 ? 's' : ''} corrigido{strSweepReport.fixed > 1 ? 's' : ''} na varredura
+                </p>
+              )}
+              <SweepReportPanel report={strSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
 
               {/* Texto gerado */}
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -3456,7 +3580,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     {strCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
                   </button>
                 </div>
-                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                <div
+                  className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed select-text"
+                  onMouseUp={handleTextSelectionForBan}
+                >
                   {strResult}
                 </div>
               </div>
@@ -3524,6 +3651,8 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
             onFix={(oldText, newText) => setInput(prev => prev.replace(oldText, newText))}
           />
         )}
+
+        <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* Formato + Briefing */}
@@ -3658,7 +3787,7 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
           </div>
 
           {/* Varredura anti-clichê: o que sobrou depois das reescritas */}
-          <SweepReportPanel report={sweepReport} />
+          <SweepReportPanel report={sweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
 
           {/* Título */}
           <div className="flex items-start justify-between gap-3">
@@ -3706,49 +3835,11 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
             </div>
             <div
               className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed select-text"
-              onMouseUp={() => {
-                const sel = window.getSelection()
-                const text = sel?.toString()?.trim()
-                if (text && text.length >= 2 && text.length <= 50 && !text.includes('\n')) {
-                  setBanCandidate(text)
-                  const range = sel.getRangeAt(0)
-                  const rect = range.getBoundingClientRect()
-                  setBanPosition({ x: rect.left + rect.width / 2, y: rect.top - 8 })
-                }
-              }}
+              onMouseUp={handleTextSelectionForBan}
             >
               {result.content}
             </div>
           </div>
-
-          {/* Popup de banir palavra */}
-          {banCandidate && (
-            <div className="fixed z-50" style={{ left: banPosition.x - 80, top: banPosition.y - 36 }}>
-              <div className="bg-gray-900 text-white rounded-lg shadow-xl px-3 py-1.5 flex items-center gap-2 text-xs animate-fade-in">
-                <button onClick={() => { addBannedWord(banCandidate); setBanCandidate(null); window.getSelection()?.removeAllRanges() }}
-                  className="flex items-center gap-1 hover:text-red-400 transition-colors font-medium">
-                  <X size={10} /> Banir "{banCandidate.length > 20 ? banCandidate.slice(0, 20) + '...' : banCandidate}"
-                </button>
-                <button onClick={() => { setBanCandidate(null); window.getSelection()?.removeAllRanges() }}
-                  className="text-gray-400 hover:text-white">
-                  <X size={10} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Palavras banidas */}
-          {bannedWords.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[9px] text-gray-300 uppercase font-semibold">Palavras banidas:</span>
-              {bannedWords.map(w => (
-                <span key={w} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-red-50 text-red-600 border border-red-200">
-                  {w}
-                  <button onClick={() => removeBannedWord(w)} className="hover:text-red-800"><X size={9} /></button>
-                </span>
-              ))}
-            </div>
-          )}
 
           {/* Dica de filmmaker */}
           {result.filmmaker_tip && (
@@ -3886,6 +3977,24 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
       )}
 
       </>)} {/* fim mode === 'studio' */}
+
+      {/* Popup de banir palavra — compartilhado por todas as abas. Qualquer
+          bloco de texto gerado com o handler de seleção abre este popup,
+          independente do modo ativo (é position: fixed). */}
+      {banCandidate && (
+        <div className="fixed z-50" style={{ left: banPosition.x - 80, top: banPosition.y - 36 }}>
+          <div className="bg-gray-900 text-white rounded-lg shadow-xl px-3 py-1.5 flex items-center gap-2 text-xs animate-fade-in">
+            <button onClick={() => { addBannedWord(banCandidate); setBanCandidate(null); window.getSelection()?.removeAllRanges() }}
+              className="flex items-center gap-1 hover:text-red-400 transition-colors font-medium">
+              <X size={10} /> Banir "{banCandidate.length > 20 ? banCandidate.slice(0, 20) + '...' : banCandidate}"
+            </button>
+            <button onClick={() => { setBanCandidate(null); window.getSelection()?.removeAllRanges() }}
+              className="text-gray-400 hover:text-white">
+              <X size={10} />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   )

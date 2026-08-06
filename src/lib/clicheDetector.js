@@ -49,6 +49,11 @@ const BLOCK_PHRASES = [
   'o primeiro passo é o mais difícil',
   'vamos juntos',
   'concorda?',
+  // Abridores-molde: o ENGAGEMENT_SYSTEM chegou a sugerir "tem uma coisa que
+  // acontece" como entrada "segura" — a instrução virou o próprio clichê.
+  'tem uma coisa que acontece',
+  'já reparou que',
+  'muita gente passa por isso',
 ]
 
 const WARN_WORDS = [
@@ -67,7 +72,7 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 // A voz da Karen é oral, então o texto sai com contração: "pra" no lugar de
 // "para", "pro" no lugar de "para o". Sem isso, "já parou pra pensar" passava
 // batido enquanto "já parou para pensar" era bloqueado.
-const phraseToRegex = (phrase) =>
+export const phraseToRegex = (phrase) =>
   new RegExp(
     escapeRe(phrase)
       .replace(/\bpara o\b/gi, '(?:para o|pro)')
@@ -75,6 +80,24 @@ const phraseToRegex = (phrase) =>
       .replace(/\bpara\b/gi, '(?:para|pra)'),
     'gi'
   )
+
+/**
+ * Frases banidas manualmente pela Karen (lista pessoal, crescente — diferente
+ * da BLOCK_PHRASES estática que vem com o app). Mesma tolerância a contração
+ * oral do phraseToRegex, porque uma frase banida em "para" precisa continuar
+ * pega quando o texto sai em "pra".
+ */
+export function detectBannedWords(text, bannedWords = []) {
+  const blocks = []
+  if (!text || typeof text !== 'string' || !bannedWords?.length) return blocks
+  for (const phrase of bannedWords) {
+    if (!phrase || typeof phrase !== 'string') continue
+    for (const m of text.matchAll(phraseToRegex(phrase))) {
+      blocks.push({ id: 'palavra-banida-manual', label: 'Frase banida por você', match: m[0] })
+    }
+  }
+  return blocks
+}
 
 export function detectCliches(text) {
   const blocks = []

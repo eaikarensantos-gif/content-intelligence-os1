@@ -8,6 +8,7 @@ import {
   getByPath,
   setByPath,
   carouselTextPaths,
+  engagementTextPaths,
   hookListPaths,
   blockingFindings,
   countBlocks,
@@ -287,6 +288,90 @@ describe('hookListPaths', () => {
   it('ignora entrada inválida', () => {
     expect(hookListPaths(null)).toEqual([])
     expect(hookListPaths({ hooks: [42] })).toEqual([])
+  })
+})
+
+describe('bannedWords — a lista pessoal entra na varredura, não só no prompt', () => {
+  it('sweepText acusa uma frase banida manualmente', () => {
+    const { blocks } = sweepText('Em resumo, o preço subiu.', { bannedWords: ['em resumo'] })
+    expect(blocks.some((b) => b.id === 'palavra-banida-manual')).toBe(true)
+  })
+
+  it('sem a lista, a mesma frase passa limpa', () => {
+    const { blocks } = sweepText('Em resumo, o preço subiu.')
+    expect(blocks.some((b) => b.id === 'palavra-banida-manual')).toBe(false)
+  })
+
+  it('sweepSlides propaga bannedWords pra cada slide', () => {
+    const carrossel = 'Slide 1: Em resumo, cobrei R$ 4.000.\nSlide 2: O custo fixo era R$ 6.200.'
+    const { blocks } = sweepSlides(carrossel, ['em resumo'])
+    const hit = blocks.find((b) => b.id === 'palavra-banida-manual')
+    expect(hit?.slide).toBe('Slide 1')
+  })
+
+  it('sweepResult propaga bannedWords pros campos curtos e pro conteúdo', () => {
+    const findings = sweepResult({
+      title: 'Em resumo, isso muda tudo',
+      content: 'Em resumo, o preço subiu.',
+    }, { bannedWords: ['em resumo'] })
+    expect(findings.find((f) => f.field === 'title').blocks.some((b) => b.id === 'palavra-banida-manual')).toBe(true)
+    expect(findings.find((f) => f.field === 'content').blocks.some((b) => b.id === 'palavra-banida-manual')).toBe(true)
+  })
+
+  it('sweepPaths propaga bannedWords pra qualquer caminho', () => {
+    const obj = { versao_principal: 'Em resumo, o argumento fecha.' }
+    const findings = sweepPaths(obj, [{ path: ['versao_principal'], isClosing: true, short: false, label: 'Versão principal' }], ['em resumo'])
+    expect(findings[0].blocks.some((b) => b.id === 'palavra-banida-manual')).toBe(true)
+  })
+})
+
+describe('engagementTextPaths — roteiro de Reels (forma plana, sem slides)', () => {
+  const engResult = () => ({
+    versao_principal: 'Cobrei R$ 4.000 por 12 horas de trabalho.',
+    variacao_emocional: 'Levei 3 anos pra montar essa tabela.',
+    variacao_provocativa: 'Você ainda cobra por hora?',
+    exercicio_pratico: 'Pensa na última proposta que você mandou.',
+    pergunta_final: 'Qual foi a sua última proposta?',
+  })
+
+  it('mapeia as três versões e os dois campos curtos', () => {
+    const paths = engagementTextPaths(engResult())
+    expect(paths.map((p) => p.path[0])).toEqual([
+      'versao_principal', 'variacao_emocional', 'variacao_provocativa', 'exercicio_pratico', 'pergunta_final',
+    ])
+  })
+
+  it('as três versões são fechamento; exercício e pergunta final não são', () => {
+    const paths = engagementTextPaths(engResult())
+    expect(paths.find((p) => p.path[0] === 'versao_principal').isClosing).toBe(true)
+    expect(paths.find((p) => p.path[0] === 'exercicio_pratico').isClosing).toBe(false)
+    expect(paths.find((p) => p.path[0] === 'pergunta_final').isClosing).toBe(false)
+  })
+
+  it('as três versões são texto longo; exercício e pergunta final são curtos', () => {
+    const paths = engagementTextPaths(engResult())
+    expect(paths.find((p) => p.path[0] === 'versao_principal').short).toBe(false)
+    expect(paths.find((p) => p.path[0] === 'exercicio_pratico').short).toBe(true)
+  })
+
+  it('acusa o clichê exato do bug relatado, no campo certo', () => {
+    const obj = {
+      versao_principal: 'Isto não é insegurança com o trabalho. É saber, por experiência, que o número pesa diferente.',
+    }
+    const findings = blockingFindings(sweepPaths(obj, engagementTextPaths(obj)))
+    expect(findings).toHaveLength(1)
+    expect(findings[0].label).toBe('Versão principal')
+    expect(findings[0].blocks.some((b) => b.id === 'contraste-corretivo')).toBe(true)
+  })
+
+  it('campo ausente não entra nos caminhos', () => {
+    const paths = engagementTextPaths({ versao_principal: 'texto' })
+    expect(paths).toHaveLength(1)
+  })
+
+  it('trata entrada inválida', () => {
+    expect(engagementTextPaths(null)).toEqual([])
+    expect(engagementTextPaths({})).toEqual([])
   })
 })
 
