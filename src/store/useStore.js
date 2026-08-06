@@ -5,6 +5,38 @@ import { enrichMetric, generateInsights } from '../utils/analytics'
 import { dbLoadAll, dbSaveAll } from '../lib/db'
 import { isSupabaseConfigured } from '../lib/supabase'
 
+/**
+ * v1: bannedWords + bannedPhrases (duas listas soltas) viram uma só,
+ * posicionamento.lista_negra. Exportada separada do persist() pra dar pra
+ * testar sem precisar simular localStorage — a garantia que importa aqui é
+ * "nenhum dado existente foi perdido".
+ */
+export function migratePosicionamento(persistedState) {
+  const s = persistedState || {}
+  if (!s.posicionamento) {
+    const bw = Array.isArray(s.bannedWords) ? s.bannedWords : []
+    const bp = Array.isArray(s.bannedPhrases) ? s.bannedPhrases : []
+    const lista_negra = [...bw, ...bp].reduce((acc, w) => {
+      if (w && !acc.some((x) => x.toLowerCase() === w.toLowerCase())) acc.push(w)
+      return acc
+    }, [])
+    s.posicionamento = {
+      ancora: '',
+      publicos: [],
+      concorrencia_espaco_vago: '',
+      ativos: [],
+      pilares: [],
+      lista_negra,
+      teste_coerencia: '',
+      trade_off: '',
+      diretriz_marca: s.brandVoice?.prompt ? s.brandVoice.prompt.slice(0, 400) : '',
+    }
+  }
+  delete s.bannedWords
+  delete s.bannedPhrases
+  return s
+}
+
 const useStore = create(
   persist(
     (set, get) => ({
@@ -27,8 +59,6 @@ const useStore = create(
       favoritesOpen: false,
       unseenFavorites: 0,
       hiddenReportTags: [],
-      bannedWords: [],
-      bannedPhrases: [],
       theme: 'light',
       desafioHistory: [],
       brainItems: [],
@@ -83,6 +113,110 @@ const useStore = create(
       brandVoice: null,
       setBrandVoice: (voice) => set({ brandVoice: voice }),
 
+      // ── Posicionamento (Direcional) ──────────────────────────
+      // Fonte única da identidade de marca: âncora, públicos, pilares, ativos,
+      // lista negra (unifica as antigas bannedWords + bannedPhrases) e o teste
+      // de coerência. Editável em /posicionamento; lido por toda geração de IA
+      // via buildVoiceContext().
+      posicionamento: {
+        ancora: '',
+        publicos: [],
+        concorrencia_espaco_vago: '',
+        ativos: [],
+        pilares: [],
+        lista_negra: [],
+        teste_coerencia: '',
+        trade_off: '',
+        diretriz_marca: '',
+      },
+
+      setPosicionamento: (updates) =>
+        set((s) => ({ posicionamento: { ...s.posicionamento, ...updates } })),
+
+      addPublico: (publico) =>
+        set((s) => ({
+          posicionamento: {
+            ...s.posicionamento,
+            publicos: [...s.posicionamento.publicos, { id: uuidv4(), nome: '', papel: 'nucleo', descricao: '', ...publico }],
+          },
+        })),
+      updatePublico: (id, updates) =>
+        set((s) => ({
+          posicionamento: {
+            ...s.posicionamento,
+            publicos: s.posicionamento.publicos.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+          },
+        })),
+      removePublico: (id) =>
+        set((s) => ({
+          posicionamento: { ...s.posicionamento, publicos: s.posicionamento.publicos.filter((p) => p.id !== id) },
+        })),
+
+      addAtivo: (ativo) =>
+        set((s) => ({
+          posicionamento: {
+            ...s.posicionamento,
+            ativos: [...s.posicionamento.ativos, { id: uuidv4(), rotulo: '', prova: '', ...ativo }],
+          },
+        })),
+      updateAtivo: (id, updates) =>
+        set((s) => ({
+          posicionamento: {
+            ...s.posicionamento,
+            ativos: s.posicionamento.ativos.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+          },
+        })),
+      removeAtivo: (id) =>
+        set((s) => ({
+          posicionamento: { ...s.posicionamento, ativos: s.posicionamento.ativos.filter((a) => a.id !== id) },
+        })),
+
+      addPilar: (pilar) =>
+        set((s) => ({
+          posicionamento: {
+            ...s.posicionamento,
+            pilares: [...s.posicionamento.pilares, {
+              id: uuidv4(), nome: '', objetivo: '', formato_preferido: '', gancho_tipico: '', exemplo: '', ...pilar,
+            }],
+          },
+        })),
+      updatePilar: (id, updates) =>
+        set((s) => ({
+          posicionamento: {
+            ...s.posicionamento,
+            pilares: s.posicionamento.pilares.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+          },
+        })),
+      removePilar: (id) =>
+        set((s) => ({
+          posicionamento: { ...s.posicionamento, pilares: s.posicionamento.pilares.filter((p) => p.id !== id) },
+        })),
+
+      // Lista negra — cresce pelo botão "Banir" em qualquer aba do Studio de
+      // Criação e pela caixa de Frases Banidas do widget flutuante. Dedupe é
+      // case-insensitive (evita "Em resumo" e "em resumo" como itens distintos),
+      // mas guarda a grafia original pra exibição.
+      addListaNegra: (phrase) =>
+        set((s) => {
+          const p = (phrase || '').trim()
+          if (!p) return s
+          const exists = s.posicionamento.lista_negra.some((w) => w.toLowerCase() === p.toLowerCase())
+          if (exists) return s
+          return { posicionamento: { ...s.posicionamento, lista_negra: [...s.posicionamento.lista_negra, p] } }
+        }),
+      removeListaNegra: (phrase) =>
+        set((s) => ({
+          posicionamento: { ...s.posicionamento, lista_negra: s.posicionamento.lista_negra.filter((w) => w !== phrase) },
+        })),
+
+      // Aliases legados — bannedWords/bannedPhrases eram duas listas separadas
+      // antes da unificação em posicionamento.lista_negra. Os nomes continuam
+      // pra não obrigar troca em cada tela que já chama essas ações.
+      addBannedWord: (word) => get().addListaNegra(word),
+      removeBannedWord: (word) => get().removeListaNegra(word),
+      addBannedPhrase: (phrase) => get().addListaNegra(phrase),
+      removeBannedPhrase: (phrase) => get().removeListaNegra(phrase),
+
       // ── Dislike Feedback (melhoria contínua) ────────────────
       dislikedContent: [],
       addDislike: (item) =>
@@ -121,24 +255,6 @@ const useStore = create(
         set((s) => ({ hiddenReportTags: s.hiddenReportTags.filter((t) => t !== tag) })),
 
       clearHiddenReportTags: () => set({ hiddenReportTags: [] }),
-
-      // ── Frases Banidas ────────────────────────────────────
-      addBannedPhrase: (phrase) =>
-        set((s) => ({
-          bannedPhrases: s.bannedPhrases.includes(phrase) ? s.bannedPhrases : [...s.bannedPhrases, phrase],
-        })),
-      removeBannedPhrase: (phrase) =>
-        set((s) => ({ bannedPhrases: s.bannedPhrases.filter((p) => p !== phrase) })),
-
-      // ── Palavras Proibidas ─────────────────────────────────
-      addBannedWord: (word) =>
-        set((s) => {
-          const w = word.trim().toLowerCase()
-          return s.bannedWords.includes(w) ? s : { bannedWords: [...s.bannedWords, w] }
-        }),
-
-      removeBannedWord: (word) =>
-        set((s) => ({ bannedWords: s.bannedWords.filter((w) => w !== word) })),
 
       // ── Web Clips (Segundo Cérebro) ────────────────────────
       addClip: (clip) =>
@@ -470,8 +586,7 @@ const useStore = create(
             ...(data.videoAnalyses?.length    ? { videoAnalyses: data.videoAnalyses }       : {}),
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
             ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
-            ...(data.bannedWords?.length      ? { bannedWords: data.bannedWords }           : {}),
-            ...(data.bannedPhrases?.length    ? { bannedPhrases: data.bannedPhrases }       : {}),
+            ...(data.posicionamento ? { posicionamento: data.posicionamento }               : {}),
             ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
             ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
             ...(data.brandVoice ? { brandVoice: data.brandVoice } : {}),
@@ -507,6 +622,8 @@ const useStore = create(
     }),
     {
       name: 'content-intelligence-os-v3',
+      version: 1,
+      migrate: migratePosicionamento,
       storage: {
         getItem: (name) => {
           try {
@@ -542,12 +659,14 @@ const useStore = create(
         pricingProducts: s.pricingProducts,
         proposals: s.proposals,
         hiddenReportTags: s.hiddenReportTags,
-        bannedWords: s.bannedWords,
-        bannedPhrases: s.bannedPhrases,
+        posicionamento: s.posicionamento,
         theme: s.theme,
         creatorProfile: s.creatorProfile,
         desafioHistory: s.desafioHistory,
         brainItems: s.brainItems,
+        // brandVoice ficava de fora do partialize — sem Supabase configurado,
+        // o questionário de voz da marca se perdia a cada reload. Corrigido aqui.
+        brandVoice: s.brandVoice,
       }),
     }
   )

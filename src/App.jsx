@@ -34,6 +34,7 @@ const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettin
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
 const ReportsPage = lazy(() => import('./components/reports/ReportsPage'))
 const BrandVoiceSetup = lazy(() => import('./components/brand/BrandVoiceSetup'))
+const PositioningStudio = lazy(() => import('./components/positioning/PositioningStudio'))
 const DesafioSorteador = lazy(() => import('./components/desafio/DesafioSorteador'))
 const WebClipper = lazy(() => import('./components/clipper/WebClipper'))
 const NewsGenerator = lazy(() => import('./components/news/NewsGenerator'))
@@ -139,6 +140,7 @@ export default function App() {
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/brand-voice" element={<BrandVoiceSetup />} />
+            <Route path="/posicionamento" element={<PositioningStudio />} />
             <Route path="/ads" element={<AdManager />} />
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />

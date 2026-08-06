@@ -96,7 +96,8 @@ Para cada roteiro, inclua:
 export default function BriefingStudio() {
   const brandVoice = useStore(s => s.brandVoice)
   const dislikedContent = useStore(s => s.dislikedContent)
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
+  const posicionamento = useStore(s => s.posicionamento)
   const apiKey = useState(() => localStorage.getItem('cio-anthropic-key') || '')[0]
 
   const [briefingText, setBriefingText] = useState('')
@@ -146,7 +147,7 @@ export default function BriefingStudio() {
     setAnalysis(null)
     setScripts(null)
 
-    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords)
+    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords, posicionamento)
 
     const prompt = `${KAREN_SYSTEM_PROMPT}
 ${voiceCtx}

@@ -12,10 +12,55 @@ export function buildBannedWordsBlock(bannedWords = []) {
   return `\n\nPALAVRAS/EXPRESSÕES PROIBIDAS (NUNCA use estas palavras ou variações delas no conteúdo gerado):\n${bannedWords.map(w => `- "${w}"`).join('\n')}\nEsta é uma regra ABSOLUTA. O criador baniu essas palavras permanentemente.\n`
 }
 
-export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = []) {
+/**
+ * Bloco do Posicionamento (âncora, públicos, concorrência, pilares, teste de
+ * coerência, trade-off) — a fonte única editada em /posicionamento. A lista
+ * negra fica de fora daqui porque já entra via buildBannedWordsBlock, com sua
+ * própria seção — os dois blocos ficam concatenados por buildVoiceContext.
+ */
+export function buildPositioningBlock(posicionamento) {
+  if (!posicionamento) return ''
+  let ctx = ''
+
+  if (posicionamento.ancora?.trim()) {
+    ctx += `\n\nPOSICIONAMENTO — ÂNCORA (a ideia central que todo conteúdo deve reforçar):\n${posicionamento.ancora.trim()}\n`
+  }
+
+  if (posicionamento.publicos?.length) {
+    ctx += `\nPÚBLICOS:\n${posicionamento.publicos.map(p =>
+      `- ${p.nome || 'Sem nome'} (${p.papel === 'nucleo' ? 'núcleo' : 'topo de funil'})${p.descricao ? `: ${p.descricao}` : ''}`
+    ).join('\n')}\n`
+  }
+
+  if (posicionamento.concorrencia_espaco_vago?.trim()) {
+    ctx += `\nCONCORRÊNCIA / ESPAÇO VAGO (o que os outros fazem, e o espaço que sobra):\n${posicionamento.concorrencia_espaco_vago.trim()}\n`
+  }
+
+  if (posicionamento.pilares?.length) {
+    ctx += `\nPILARES DE CONTEÚDO:\n${posicionamento.pilares.map(p => {
+      const parts = [p.nome || 'Pilar sem nome']
+      if (p.objetivo) parts.push(`objetivo: ${p.objetivo}`)
+      if (p.gancho_tipico) parts.push(`gancho típico: ${p.gancho_tipico}`)
+      return `- ${parts.join(' — ')}`
+    }).join('\n')}\n`
+  }
+
+  if (posicionamento.trade_off?.trim()) {
+    ctx += `\nTRADE-OFF ACEITO (não se desvie por atalho que contradiga isso):\n${posicionamento.trade_off.trim()}\n`
+  }
+
+  if (posicionamento.teste_coerencia?.trim()) {
+    ctx += `\nTESTE DE COERÊNCIA — todo conteúdo gerado deve responder SIM a esta pergunta:\n"${posicionamento.teste_coerencia.trim()}"\n`
+  }
+
+  return ctx
+}
+
+export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = [], posicionamento = null) {
   let ctx = ''
 
   ctx += buildBannedWordsBlock(bannedWords)
+  ctx += buildPositioningBlock(posicionamento)
 
   if (brandVoice?.prompt) {
     ctx += `\n\nIDENTIDADE E VOZ DO CRIADOR:\n${brandVoice.prompt}\n`

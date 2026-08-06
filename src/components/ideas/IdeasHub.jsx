@@ -1559,6 +1559,7 @@ export default function IdeasHub() {
   const deleteIdeasByStatus  = useStore((s) => s.deleteIdeasByStatus)
   const convertIdeaToPost    = useStore((s) => s.convertIdeaToPost)
   const importIdeas          = useStore((s) => s.importIdeas)
+  const pilares              = useStore((s) => s.posicionamento.pilares)
   const hasGaveta = ideas.some((i) => (i.tags || []).includes('gaveta-21dias'))
   const handleImportGaveta = () => importIdeas(GAVETA_IDEAS)
 
@@ -1571,6 +1572,7 @@ export default function IdeasHub() {
   const [filterStatus, setFilterStatus]     = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
   const [filterFormat, setFilterFormat]     = useState('all')
+  const [filterPilar, setFilterPilar]       = useState('all')
   const [filterTag, setFilterTag]           = useState(null)  // tag selecionável
   const [showFilters, setShowFilters]       = useState(false)
 
@@ -1589,6 +1591,7 @@ export default function IdeasHub() {
       if (filterStatus !== 'all' && i.status !== filterStatus) return false
       if (filterPriority !== 'all' && i.priority !== filterPriority) return false
       if (filterFormat !== 'all' && (i.format || '').toLowerCase() !== filterFormat) return false
+      if (filterPilar !== 'all' && (i.pilar_id || '') !== filterPilar) return false
       if (filterTag && !(i.tags || []).includes(filterTag)) return false
       if (search && !i.title?.toLowerCase().includes(search.toLowerCase()) &&
           !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
@@ -1674,7 +1677,7 @@ export default function IdeasHub() {
 
       {/* Filtros */}
       {(tab === 'kanban' || tab === 'calendar' || tab === 'order') && (() => {
-        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterFormat !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
+        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterFormat !== 'all' ? 1 : 0) + (filterPilar !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
         return (
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
@@ -1737,6 +1740,12 @@ export default function IdeasHub() {
                   <option value="thread">Thread</option>
                   <option value="post">Post</option>
                 </select>
+                {pilares.length > 0 && (
+                  <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPilar} onChange={(e) => setFilterPilar(e.target.value)}>
+                    <option value="all">Pilar</option>
+                    {pilares.map((p) => <option key={p.id} value={p.id}>{p.nome || 'Pilar sem nome'}</option>)}
+                  </select>
+                )}
               </div>
 
               {/* Tags selecionáveis */}
