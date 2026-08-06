@@ -42,7 +42,7 @@ function RevisorPanel() {
   const [rewrittenText, setRewrittenText] = useState('')
   const [rewriteLoading, setRewriteLoading] = useState(false)
   const [applied, setApplied] = useState(null)
-  const bannedPhrases = useStore((s) => s.bannedPhrases)
+  const bannedPhrases = useStore((s) => s.posicionamento.lista_negra) || []
 
   const DIMS = [
     { key: 'clareza', label: 'Clareza', icon: AlignLeft, color: 'text-blue-500' },
@@ -378,7 +378,7 @@ function IdeiaPanel() {
 }
 
 function BanidasPanel() {
-  const bannedPhrases = useStore((s) => s.bannedPhrases)
+  const bannedPhrases = useStore((s) => s.posicionamento.lista_negra) || []
   const addBannedPhrase = useStore((s) => s.addBannedPhrase)
   const removeBannedPhrase = useStore((s) => s.removeBannedPhrase)
   const [input, setInput] = useState('')

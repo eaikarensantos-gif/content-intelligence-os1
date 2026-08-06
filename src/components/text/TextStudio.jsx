@@ -403,7 +403,7 @@ function buildCopyText(platform, data) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function TextStudio() {
   const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const navigate = useNavigate()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
 

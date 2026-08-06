@@ -96,7 +96,7 @@ Para cada roteiro, inclua:
 export default function BriefingStudio() {
   const brandVoice = useStore(s => s.brandVoice)
   const dislikedContent = useStore(s => s.dislikedContent)
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const apiKey = useState(() => localStorage.getItem('cio-anthropic-key') || '')[0]
 
   const [briefingText, setBriefingText] = useState('')

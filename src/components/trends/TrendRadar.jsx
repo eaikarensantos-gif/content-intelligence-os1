@@ -592,8 +592,7 @@ export default function TrendRadar() {
   const trendResults    = useStore((s) => s.trendResults)
   const insights        = useStore((s) => s.insights)
   const addIdea         = useStore((s) => s.addIdea)
-  const bannedPhrases   = useStore((s) => s.bannedPhrases) || []
-  const bannedWords     = useStore((s) => s.bannedWords) || []
+  const listaNegra      = useStore((s) => s.posicionamento.lista_negra) || []
 
   const [topic, setTopic]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -647,7 +646,7 @@ export default function TrendRadar() {
       const apiKey = localStorage.getItem('cio-anthropic-key')
       if (!apiKey) throw new Error('Chave Anthropic não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
-      const results = await callClaudeForTrends(apiKey, topic.trim(), insights, [...bannedPhrases, ...bannedWords])
+      const results = await callClaudeForTrends(apiKey, topic.trim(), insights, listaNegra)
       setTrendResults(results)
       setSavedIds(new Set())
     } catch (e) {

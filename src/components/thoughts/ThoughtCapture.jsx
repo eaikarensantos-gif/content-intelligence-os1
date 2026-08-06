@@ -981,7 +981,7 @@ const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', '
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
   const { thoughtCaptures, addThoughtCapture, deleteThoughtCapture, addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const navigate = useNavigate()
 
   const [thought, setThought] = useState('')

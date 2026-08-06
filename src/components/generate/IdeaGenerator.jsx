@@ -361,7 +361,7 @@ function IdeaCard({ idea, index, onSave, saved, onCopy, copied, onOpenHub, isFav
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function IdeaGenerator() {
   const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')

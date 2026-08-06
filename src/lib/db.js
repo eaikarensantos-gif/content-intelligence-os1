@@ -14,7 +14,7 @@ const COLLECTIONS = [
   'ideas', 'posts', 'metrics', 'clients', 'videoAnalyses',
   'thoughtCaptures', 'tasks', 'ads', 'leads', 'archetypes',
   'hybridArchetypes', 'favorites', 'pricingProducts', 'proposals',
-  'creatorProfile', 'brandVoice', 'bannedWords', 'hiddenReportTags',
+  'creatorProfile', 'brandVoice', 'posicionamento', 'hiddenReportTags',
 ]
 
 // ─── Carrega todos os dados do Supabase ───────────────────────────────────────

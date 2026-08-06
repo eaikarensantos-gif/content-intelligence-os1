@@ -987,7 +987,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const addDislike = useStore(s => s.addDislike)
   const addFavorite = useStore(s => s.addFavorite)
   const addIdea = useStore(s => s.addIdea)
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const addBannedWord = useStore(s => s.addBannedWord)
   const removeBannedWord = useStore(s => s.removeBannedWord)
 

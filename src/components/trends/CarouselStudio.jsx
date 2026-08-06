@@ -561,7 +561,7 @@ export default function CarouselStudio() {
   const brandVoice = useStore((s) => s.brandVoice)
   const dislikedContent = useStore((s) => s.dislikedContent)
   const addDislike = useStore((s) => s.addDislike)
-  const bannedWords = useStore(s => s.bannedWords) || []
+  const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
 
   const [step, setStep] = useState('config') // config | generating | editor
   const [carouselType, setCarouselType] = useState('')
