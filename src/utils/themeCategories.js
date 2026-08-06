@@ -1,10 +1,13 @@
 // Categorias do Banco de Temas.
 //
-// O banco de trabalho seguia o posicionamento antigo — Carreira, Maturidade
-// Profissional, Tomada de Decisão, Dinâmicas Corporativas, IA e Futuro do
-// Trabalho. Isso descrevia o território de onde o teste de posicionamento está
-// saindo: 14 das 18 peças da grade não tinham categoria onde morar. As
-// categorias agora são os quatro pilares do teste.
+// O banco de trabalho já passou por duas rodadas de posicionamento antes desta:
+// a original (Carreira, Maturidade Profissional, Tomada de Decisão, Dinâmicas
+// Corporativas, IA e Futuro do Trabalho) e a do teste de 6 semanas (Negócio &
+// estrutura, IA crítica, Celular & operação, Identidade — pensada pra dono de
+// negócio pequeno, PJ e autônomo). Nenhuma das duas é o posicionamento atual
+// (módulo /posicionamento): founder no núcleo, profissional em topo de funil,
+// pilares Critério de decisão / Desmonte de hype / Bastidor de estrategista /
+// Camada humana. As categorias agora são esses quatro pilares.
 //
 // A classificação trabalha por PALAVRA INTEIRA, não por pedaço de palavra.
 // Procurar "racia" em qualquer posição mandava "burocracia" e "meritocracia"
@@ -13,17 +16,23 @@
 // em português: \b do JS não enxerga letra acentuada, então /f[ée]\b/ não pega
 // "fé". Por isso o texto é quebrado em tokens e comparado termo a termo.
 
-export const WORK_CATEGORIES = ['Negócio & estrutura', 'IA crítica', 'Celular & operação', 'Identidade']
+export const WORK_CATEGORIES = ['Critério de decisão', 'Desmonte de hype', 'Bastidor de estrategista', 'Camada humana']
 
 export const PERSONAL_CATEGORIES = ['Naomi', 'Casa & Rotina', 'Fé', 'Comprinhas & Achados', 'Hobbies & Gostos', 'Vida']
 
-/** Temas já salvos com as categorias antigas mudam de gaveta, não somem. */
+/** Temas já salvos com categorias de qualquer posicionamento anterior mudam de gaveta, não somem. */
 export const WORK_CATEGORY_MIGRATION = {
-  'Carreira': 'Negócio & estrutura',
-  'Maturidade Profissional': 'Negócio & estrutura',
-  'Tomada de Decisão': 'Negócio & estrutura',
-  'Dinâmicas Corporativas': 'Negócio & estrutura',
-  'IA e Futuro do Trabalho': 'IA crítica',
+  // posicionamento original (pré-teste de 6 semanas)
+  'Carreira': 'Critério de decisão',
+  'Maturidade Profissional': 'Critério de decisão',
+  'Tomada de Decisão': 'Critério de decisão',
+  'Dinâmicas Corporativas': 'Critério de decisão',
+  'IA e Futuro do Trabalho': 'Desmonte de hype',
+  // posicionamento do teste de 6 semanas
+  'Negócio & estrutura': 'Critério de decisão',
+  'IA crítica': 'Desmonte de hype',
+  'Celular & operação': 'Critério de decisão',
+  'Identidade': 'Camada humana',
 }
 
 export const migrateWorkCategory = (categoria) =>
@@ -53,11 +62,15 @@ const hasPhrase = (texto, ...frases) => {
 
 // ─── Trabalho ────────────────────────────────────────────────────────────────
 
-const isIdentidade = (tk, t) =>
+// "Camada humana" herda o recorte forte de identidade/ancestralidade (o que já
+// funcionava) e soma autoridade/peso de decidir — a camada humana de decidir,
+// não só a técnica.
+const isCamadaHumana = (tk, t) =>
   hasWord(tk, 'negra', 'negras', 'negro', 'negros', 'preta', 'pretas', 'preto', 'pretos',
     'racial', 'raciais', 'racismo', 'racista', 'racistas', 'diversidade', 'preconceito',
     'representatividade', 'ancestralidade', 'ancestral', 'ancestrais')
-  || hasPhrase(t, 'única pessoa', 'unica pessoa', 'povo preto', 'lugar de fala')
+  || hasPhrase(t, 'única pessoa', 'unica pessoa', 'povo preto', 'lugar de fala',
+    'sem performar', 'peso de decidir')
 
 // Termos que identificam IA sem depender do token solto "ia" — que em português
 // é também o verbo ("o cliente que ia fechar", "eu ia mandar a proposta").
@@ -72,45 +85,35 @@ const isIASigla = (tk, t) =>
   && (hasStem(tk, 'ferrament', 'us', 'ger', 'model', 'agent', 'trein', 'substitu')
     || hasPhrase(t, 'com ia', 'de ia', 'da ia', 'na ia', 'por ia'))
 
-const isIACritica = (tk, t) => {
+// "Desmonte de hype": ferramenta/assinatura questionada + exagero de tendência.
+const isDesmonteDeHype = (tk, t) => {
+  if (hasWord(tk, 'hype', 'tendência', 'tendencia', 'moda', 'modinha', 'milagre', 'milagrosa')
+    || hasPhrase(t, 'todo mundo está usando', 'todo mundo esta usando', 'case de sucesso', 'não se paga', 'nao se paga')) return true
   if (isIATerm(tk, t) || isIASigla(tk, t)) return true
   // "ferramenta" e "assinatura" sozinhas são genéricas demais: "assinatura de
-  // contrato" e "ferramenta pra emitir nota" não são crítica de IA.
+  // contrato" e "ferramenta pra emitir nota" não são desmonte de hype.
   const ferramentaOuAssinatura = hasStem(tk, 'ferrament') || hasWord(tk, 'assinatura', 'assinaturas', 'software')
-  const contextoDeFerramenta = hasWord(tk, 'contratar', 'custo', 'caro', 'cancelar', 'mensal', 'plano', 'digital')
+  const contextoDeFerramenta = hasWord(tk, 'contratar', 'custo', 'caro', 'cancelar', 'mensal', 'plano')
     || hasPhrase(t, 'se paga', 'vale a pena', 'não usa', 'nao usa')
   return ferramentaOuAssinatura && contextoDeFerramenta
 }
 
-// "Celular & operação" é o celular como ferramenta de operação do negócio —
-// IA, produtividade, gestão, governança rodando do aparelho. Não é o celular
-// como objeto de cena: "reunião começou e celular no silencioso" fala do
-// aparelho no cotidiano. Por isso o aparelho sozinho não basta.
-const isDevice = (tk, t) =>
-  hasWord(tk, 'celular', 'celulares', 'smartphone', 'mobile', 'telefone', 'whatsapp', 'app', 'apps', 'aplicativo', 'aplicativos')
-  || hasPhrase(t, 'na palma da mão', 'sem computador', 'sem o computador', 'sem notebook',
-    'sem o notebook', 'sem abrir o note', 'do bolso')
-
-const isOperation = (tk, t) =>
-  hasStem(tk, 'negóci', 'negoci', 'opera', 'gest', 'gerenc', 'administr', 'process', 'client',
-    'propost', 'orçament', 'orcament', 'cobran', 'cobr', 'receb', 'financ', 'contrat', 'agend',
-    'estoq', 'vend', 'faturament', 'relatóri', 'relatori', 'backup', 'senh', 'acess', 'produtiv')
-  || hasWord(tk, 'governança', 'governanca', 'fluxo', 'fluxos', 'rotina', 'resolver', 'rodar', 'dados', 'dado',
-    'segurança', 'seguranca', 'empresa', 'mei', 'cnpj')
-  || hasPhrase(t, 'nota fiscal')
-  || isIATerm(tk, t) || isIASigla(tk, t)
+// "Bastidor de estrategista": o processo por trás da decisão, não o resultado.
+const isBastidorDeEstrategista = (tk, t) =>
+  hasWord(tk, 'bastidor', 'bastidores', 'rascunho', 'reunião', 'reuniao', 'reuniões', 'reunioes')
+  || hasPhrase(t, 'como eu penso', 'como eu decido', 'por trás', 'por tras', 'o que ninguém vê', 'o que ninguem ve',
+    'antes de qualquer proposta', 'antes de recomendar')
 
 /** Classificação de fallback, usada quando não há chave de API para a IA classificar. */
 export function categorizeWorkTheme(tema) {
   const t = (tema || '').toLowerCase()
   const tk = tokenize(t)
-  // Identidade primeiro: é o recorte mais específico e não pode ser engolido
+  // Camada humana primeiro: é o recorte mais específico e não pode ser engolido
   // pelos outros quando o tema também fala de negócio ou de ferramenta.
-  if (isIdentidade(tk, t)) return 'Identidade'
-  // Aparelho + operação: "fluxo de IA no celular" é operação, não crítica de ferramenta.
-  if (isDevice(tk, t) && isOperation(tk, t)) return 'Celular & operação'
-  if (isIACritica(tk, t)) return 'IA crítica'
-  return 'Negócio & estrutura'
+  if (isCamadaHumana(tk, t)) return 'Camada humana'
+  if (isBastidorDeEstrategista(tk, t)) return 'Bastidor de estrategista'
+  if (isDesmonteDeHype(tk, t)) return 'Desmonte de hype'
+  return 'Critério de decisão'
 }
 
 // ─── Vida ────────────────────────────────────────────────────────────────────
@@ -146,23 +149,24 @@ export const categorizeTheme = (tema, isPessoal) =>
 
 // ─── O que cada pilar quer dizer ─────────────────────────────────────────────
 // Usado tanto para classificar quanto para gerar temas novos. Sem isso, o
-// modelo lia "Negócio & estrutura" como assunto corporativo genérico e devolvia
-// rotina de CLT: promoção, chefe, feedback, entrevista.
+// modelo lia "Critério de decisão" como assunto corporativo genérico e
+// devolvia rotina de CLT: promoção, chefe, feedback, entrevista.
 
 export const WORK_CATEGORY_BRIEF = {
-  'Negócio & estrutura':
-    'Como quem trabalha por conta sustenta o próprio negócio: preço, escopo, contrato, proposta, cliente, cobrança, inadimplência, CNPJ, imposto, sócio, rotina e limites de quem não tem chefe. Sempre do lugar de quem é o dono, nunca de quem é empregado.',
-  'IA crítica':
-    'Leitura crítica de ferramenta de IA para negócio pequeno: se paga ou não, onde erra, custo de assinatura, o que dá pra fazer na mão mais barato, como decidir antes de contratar.',
-  'Celular & operação':
-    'O celular como ferramenta de operação do negócio: rodar IA, produtividade, gestão, governança, financeiro e atendimento a partir do aparelho. Não é o celular como objeto de cena do dia.',
-  'Identidade':
-    'Raça, ancestralidade e representatividade dentro do trabalho e do negócio: ser a única pessoa negra na sala, cobrar sendo quem é, autoridade sem performar o que não é seu.',
+  'Critério de decisão':
+    'A lógica por trás de uma decisão de negócio envolvendo IA: o que pesa, o que descarta, o que muda de ideia depois que os números chegam. Sempre do lugar de quem decide — founder ou profissional sênior — nunca de quem lista ferramenta ou espera aprovação de cima.',
+  'Desmonte de hype':
+    'Leitura crítica do exagero em cima de IA: a promessa que não se sustenta na primeira pergunta de negócio, o case de sucesso que esconde o que não deu certo, a ferramenta com hype alto e adoção baixa. Desmonta com argumento, não com ceticismo genérico.',
+  'Bastidor de estrategista':
+    'O processo real de quem aplica IA no negócio — a pergunta antes da proposta, o rascunho antes do slide pronto, a reunião onde a decisão foi tomada. Mostra como se pensa, não só o resultado polido.',
+  'Camada humana':
+    'O lado humano de decidir: autoridade construída sem performar o que não é seu, o peso de decidir por outras pessoas, raça e ancestralidade quando fazem parte de como se decide e como se é visto na sala.',
 }
 
-/* Termos de vida de empregado. O público do teste é dono de negócio pequeno,
-   PJ e autônomo — tema de promoção, chefe, RH ou entrevista é do posicionamento
-   antigo e entrou no banco pela migração das categorias de carreira. */
+/* Termos de vida de empregado. O público do posicionamento é founder (núcleo)
+   e profissional de tech em topo de funil — tema de promoção, chefe, RH ou
+   entrevista é herança de um posicionamento anterior e entrou no banco pela
+   migração das categorias antigas. */
 const CLT_WORDS = [
   'promoção', 'promocao', 'promovido', 'promovida', 'aumento', 'salário', 'salario', 'holerite',
   'chefe', 'gestor', 'gestora', 'liderança', 'lideranca', 'rh', 'currículo', 'curriculo',
@@ -179,9 +183,9 @@ const CLT_PHRASES = [
 ]
 
 /**
- * Tema escrito do lugar de empregado, não de dono de negócio.
- * Não classifica sozinho — serve para sinalizar na interface o que sobrou do
- * posicionamento antigo, para a Karen decidir se reescreve ou remove.
+ * Tema escrito do lugar de empregado, não de quem decide.
+ * Não classifica sozinho — serve para sinalizar na interface o que sobrou de
+ * um posicionamento anterior, para a Karen decidir se reescreve ou remove.
  */
 export function isCltFramed(tema) {
   const t = (tema || '').toLowerCase()
@@ -191,6 +195,6 @@ export function isCltFramed(tema) {
 
 /** Nicho declarado para o modelo em toda geração de conteúdo de trabalho. */
 export const WORK_NICHE =
-  'Nicho: IA aplicada a negócio pequeno, estrutura para quem trabalha como PJ ou autônomo, ' +
-  'e o celular como ferramenta de operação. Audiência: dono de negócio pequeno, PJ e autônomo — ' +
-  'não é audiência corporativa em busca de promoção.'
+  'Nicho: IA aplicada ao negócio, explicada por quem entende a lógica de decisão — não por quem lista ferramenta. ' +
+  'Audiência: founder (público núcleo, ticket alto) e profissional de tecnologia em topo de funil — ' +
+  'não é criador de hype de IA, não é lista de ferramenta do dia, não é conteúdo de vida de empregado em busca de promoção.'
