@@ -897,50 +897,48 @@ const CAROUSEL_TEMPLATES = {
 /* ── Temas Sugeridos para Carrossel ── */
 const TEMAS_CARROSSEL = [
   {
-    categoria: 'Negócio & estrutura',
+    categoria: 'Critério de decisão',
     temas: [
-      'O cliente que pede "só um ajustinho" na sexta 18h',
-      'Parar de vender hora e passar a vender escopo fixo',
-      'O projeto que deu errado, quanto custou e o que você cobra hoje por causa disso',
-      'Segunda de manhã sem ninguém pra te dizer o que fazer',
-      'Separar quem decide de quem executa dentro de uma pessoa só',
-      'Reajustar preço com cliente antigo',
-      'O contrato que você fecharia diferente hoje',
+      'O que pesa mais numa decisão: dado, instinto ou precedente',
+      'A decisão que parece técnica mas é estratégica',
+      'Como decidir se um processo vira IA ou continua manual',
+      'Quando dizer não pra IA é a decisão mais cara certa',
+      'O critério que uso antes de qualquer ferramenta nova entrar',
+      'A decisão que mudou de ideia depois que os números chegaram',
+      'O que separa uma boa pergunta de negócio de uma pergunta de ferramenta',
     ],
   },
   {
-    categoria: 'IA crítica',
+    categoria: 'Desmonte de hype',
     temas: [
-      'Qual promessa de ferramenta de IA não se paga em negócio pequeno',
-      'Checklist de decisão antes de contratar qualquer ferramenta de IA',
-      'Traduzir uma capacidade de IA em custo e decisão, em palavras curtas',
-      'A assinatura de IA que você paga e não usa',
-      'Onde a IA ainda erra no seu tipo de entrega',
-      'Quando fazer na mão sai mais barato que automatizar',
+      'A promessa de IA que não sobrevive à primeira pergunta de negócio',
+      'Por que "todo mundo está usando" não é argumento de decisão',
+      'O case de sucesso que esconde o que não deu certo',
+      'Onde a IA realmente resolve — e onde só parece resolver',
+      'Ferramenta com hype alto, adoção baixa: o que isso ensina',
+      'A diferença entre inovar e comprar ansiedade de mercado',
     ],
   },
   {
-    categoria: 'Celular & operação',
+    categoria: 'Bastidor de estrategista',
     temas: [
-      'O que dá pra resolver do negócio pelo celular antes das 9h',
-      'Um fluxo de IA no celular do início ao fim, com print de cada passo',
-      'O que resolver no celular e o que ainda exige computador',
-      'O kit que roda o negócio: o que uso, o que troquei, o que não valeu o dinheiro',
-      'Fechar proposta inteira do celular',
-      'Cobrar e acompanhar recebimento sem abrir o notebook',
-      'Rodar a gestão da semana inteira do celular',
-      'Governança no celular: quem acessa o quê no seu negócio',
-      'Produtividade real no aparelho — o que economiza tempo e o que só parece',
+      'A reunião onde a decisão foi tomada — o que ninguém vê depois',
+      'Como eu leio um caso antes de recomendar qualquer coisa',
+      'O rascunho antes do slide bonito',
+      'A pergunta que faço antes de qualquer proposta de IA',
+      'Um erro que corrigi numa estratégia — e o que aprendi com isso',
+      'O que muda entre a primeira e a última versão de uma recomendação',
     ],
   },
   {
-    categoria: 'Identidade',
+    categoria: 'Camada humana',
     temas: [
-      'Ser a única pessoa negra na sala e ter a ideia repetida cinco minutos depois',
+      'Ser a única pessoa que questiona o hype na sala',
+      'Autoridade construída sem performar o que não é seu',
+      'O peso de decidir por outras pessoas, não só por processos',
       'Cobrar o preço certo sendo a única mulher negra na concorrência',
-      'Ancestralidade como método de trabalho, não como enfeite',
+      'Ancestralidade como método de decisão, não como enfeite',
       'O que muda quando o cliente descobre quem está do outro lado',
-      'Construir autoridade sem performar o que não é seu',
     ],
   },
 ]
@@ -1176,14 +1174,14 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     try {
       let raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
       if (raw.length > 0 && typeof raw[0] === 'string') {
-        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Negócio & estrutura', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
+        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Critério de decisão', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       } else {
         // migrar itens sem categoria e reclassificar as categorias antigas de trabalho
         raw = raw.map(item => ({
           ...item,
           categoria: isPessoal
             ? (item.categoria || 'Vida')
-            : migrateWorkCategory(item.categoria || 'Negócio & estrutura'),
+            : migrateWorkCategory(item.categoria || 'Critério de decisão'),
         }))
       }
       // Sanitização: uma versão anterior vazava temas entre os estúdios (componente
@@ -2105,17 +2103,13 @@ ${isPessoal
 - Compras, achados, resenhas de produto, unboxing → "Comprinhas & Achados"
 - Livros, séries, viagens, comida, música, treino, hobbies → "Hobbies & Gostos"
 - Sentimentos, manias, memórias, família, cenas banais do dia → "Vida"`
-    : `O público é dono de negócio pequeno, PJ e autônomo — não é profissional em busca de promoção.
-- Raça, ancestralidade, representatividade, ser a única pessoa negra na sala → "Identidade"
-- O celular como FERRAMENTA DE OPERAÇÃO do negócio: rodar IA, produtividade, gestão, governança, financeiro, atendimento e processo a partir do aparelho → "Celular & operação"
-- Se uma ferramenta de IA se paga, onde ela erra, custo de assinatura, decisão de contratar → "IA crítica"
-- Preço, escopo, contrato, cliente, cobrança, rotina e limites de quem trabalha por conta → "Negócio & estrutura"
+    : `O público é founder (núcleo, ticket alto) e profissional de tecnologia em topo de funil — não é dono de negócio pequeno cuidando do próprio backoffice, e não é profissional em busca de promoção.
+- Raça, ancestralidade, representatividade, autoridade sem performar o que não é seu, o peso de decidir por outras pessoas → "Camada humana"
+- O processo por trás de uma decisão: a pergunta antes da proposta, o rascunho antes do slide, a reunião onde a decisão foi tomada → "Bastidor de estrategista"
+- Exagero, promessa de ferramenta que não se sustenta, case de sucesso que esconde o que não deu certo, hype de tendência → "Desmonte de hype"
+- A lógica por trás de uma decisão de negócio com IA: o que pesa, o que descarta, critério antes de contratar ou adotar algo → "Critério de decisão"
 
-ATENÇÃO em "Celular & operação": a categoria é sobre USAR o celular para operar o negócio, não sobre o celular como objeto de cena do dia a dia.
-NÃO entram aqui (vão para "Negócio & estrutura"): "reunião começou e celular no silencioso", "notificação do trabalho às 23h", "dois chips, um pro trampo e um pra mim", "print enviado pro grupo errado", "bateria acabando em ligação com cliente". Todos falam do aparelho no cotidiano, nenhum ensina a operar um negócio com ele.
-ENTRAM aqui: "fechar proposta inteira do celular", "um fluxo de IA no celular com print de cada passo", "cobrar e acompanhar recebimento sem abrir o notebook", "o que resolver no celular e o que ainda exige computador".
-
-Se o tema fala de IA dentro do celular, é "Celular & operação". Se fala do custo ou do limite da ferramenta, é "IA crítica".`}`,
+ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular nem sobre PJ/autônomo cuidando do próprio caixa — o eixo agora é a lógica de decisão de quem já decide (founder) ou está perto de decidir (profissional sênior).`}`,
           messages: [{ role: 'user', content: `Temas:\n${temas.map((t, i) => `${i + 1}. ${t}`).join('\n')}` }],
         }),
       })
@@ -2212,9 +2206,9 @@ Se o tema fala de IA dentro do celular, é "Celular & operação". Se fala do cu
             ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`
             : `Você é estrategista de conteúdo para Karen Santos. ${WORK_NICHE}
 
-O leitor é dono do próprio negócio. Ele não tem chefe, não busca promoção e não passa por RH.
+O leitor é founder ou profissional sênior que já decide ou está perto de decidir — não é alguém aguardando aprovação de cima.
 PROIBIDO sugerir tema de rotina de empregado: promoção, aumento, chefe, gestor, feedback, avaliação de desempenho, entrevista, currículo, vaga, demissão, política de escritório, síndrome do impostor em cargo.
-O equivalente do lado de cá: no lugar de "pedir aumento", reajustar preço com cliente antigo; no lugar de "chefe que microgerencia", cliente que pede ajuste fora do escopo; no lugar de "medo de ser demitido", cliente âncora que representa metade do faturamento.${categoria && WORK_CATEGORY_BRIEF[categoria] ? `
+O equivalente do lado de cá: no lugar de "pedir aumento", o critério antes de fechar uma decisão; no lugar de "chefe que microgerencia", a decisão que não dá pra terceirizar; no lugar de "medo de ser demitido", o peso de uma decisão errada custar caro pro negócio.${categoria && WORK_CATEGORY_BRIEF[categoria] ? `
 
 O que a categoria "${categoria}" quer dizer: ${WORK_CATEGORY_BRIEF[categoria]}` : ''}`}
 
