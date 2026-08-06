@@ -1,6 +1,9 @@
 import { AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Sparkles, RefreshCw, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import { fetchToneAlternatives } from '../../utils/toneAlternatives.js'
+import useStore from '../../store/useStore'
+
+const DEFAULT_DIRECTIVE = 'Tom Sênior & Observacional — sem estruturas de massa, coaching vazio ou clickbait.'
 
 const CATEGORY_COLORS = {
   'Estrutura de Massa':     'text-red-600 bg-red-50 border-red-200',
@@ -149,14 +152,18 @@ export default function BrandLinterPanel({ violations = [], compact = false }) {
 }
 
 /**
- * Banner fixo de diretriz de marca — exibir no topo de editores.
+ * Banner de diretriz de marca — exibir no topo de editores. Lê
+ * posicionamento.diretriz_marca (editável em /posicionamento); antes disso
+ * existir, o texto era fixo — cai pro mesmo texto como default pra quem
+ * ainda não preencheu.
  */
 export function BrandDirectiveBanner() {
+  const diretriz = useStore((s) => s.posicionamento.diretriz_marca)
   return (
     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200">
       <ShieldCheck size={12} className="text-violet-500 shrink-0" />
       <p className="text-[11px] text-violet-700">
-        <span className="font-semibold">Diretriz de Marca Ativa:</span> Tom Sênior & Observacional — sem estruturas de massa, coaching vazio ou clickbait.
+        <span className="font-semibold">Diretriz de Marca Ativa:</span> {diretriz?.trim() || DEFAULT_DIRECTIVE}
       </p>
     </div>
   )
