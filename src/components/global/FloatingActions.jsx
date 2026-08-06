@@ -4,6 +4,7 @@ import {
   AlertCircle, Plus, Zap, AlignLeft, Mic, TrendingUp, Wand2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { buildPositioningBlock } from '../../utils/voiceContext'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -43,6 +44,7 @@ function RevisorPanel() {
   const [rewriteLoading, setRewriteLoading] = useState(false)
   const [applied, setApplied] = useState(null)
   const bannedPhrases = useStore((s) => s.posicionamento.lista_negra) || []
+  const posicionamento = useStore((s) => s.posicionamento)
 
   const DIMS = [
     { key: 'clareza', label: 'Clareza', icon: AlignLeft, color: 'text-blue-500' },
@@ -73,7 +75,8 @@ function RevisorPanel() {
       .map((s, i) => `${i + 1}. Substituir: "${s.problema}" → Por: "${s.melhoria}"`)
       .join('\n')
     const bannedList = bannedPhrases.length ? `\nEvite estas frases banidas: ${bannedPhrases.join(', ')}` : ''
-    const prompt = `Reescreva o texto abaixo incorporando as melhorias listadas. Preserve o estilo, voz e estrutura do texto original. Retorne APENAS o texto reescrito, sem introduções, títulos ou explicações.${bannedList}
+    const positioningBlock = buildPositioningBlock(posicionamento)
+    const prompt = `Reescreva o texto abaixo incorporando as melhorias listadas. Preserve o estilo, voz e estrutura do texto original. Retorne APENAS o texto reescrito, sem introduções, títulos ou explicações.${bannedList}${positioningBlock}
 
 TEXTO ORIGINAL:
 ${text.trim()}
@@ -113,6 +116,7 @@ ${suggestionsList}`
     setError('')
 
     const bannedList = bannedPhrases.length ? `\nFrases banidas para evitar: ${bannedPhrases.join(', ')}` : ''
+    const positioningBlock = buildPositioningBlock(posicionamento)
     const prompt = `Você é um revisor especialista em conteúdo para criadores digitais brasileiros. Analise o texto abaixo e retorne APENAS um JSON válido com esta estrutura:
 
 {
@@ -130,7 +134,7 @@ ${suggestionsList}`
   ],
   "pontos_fortes": ["<ponto 1>", "<ponto 2>"]
 }
-${bannedList}
+${bannedList}${positioningBlock}
 
 TEXTO PARA REVISAR:
 ${text.trim()}`

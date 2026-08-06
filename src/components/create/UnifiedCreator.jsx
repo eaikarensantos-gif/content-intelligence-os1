@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
-import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock } from '../../utils/voiceContext'
+import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
 import { lintText } from '../../utils/brandLinter'
 import {
   WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme,
@@ -988,6 +988,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const addFavorite = useStore(s => s.addFavorite)
   const addIdea = useStore(s => s.addIdea)
   const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
+  const posicionamento = useStore(s => s.posicionamento)
   const addBannedWord = useStore(s => s.addBannedWord)
   const removeBannedWord = useStore(s => s.removeBannedWord)
 
@@ -1321,7 +1322,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     if (overrides.adjustment) setAdjusting(overrides.adjustment)
 
     // No modo pessoal a voz de marca profissional fica de fora; frases proibidas e dislikes continuam
-    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords)
+    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)
     const regenInstr = overrides.regen ? buildRegenerateInstruction(history.length) : ''
     const selectedFormat = overrides.format || format
 
@@ -1599,7 +1600,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildBannedWordsBlock(bannedWords)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildBannedWordsBlock(bannedWords)}${buildPositioningBlock(posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
         }),
       })
@@ -1650,7 +1651,7 @@ ${revText.trim()}`
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildBannedWordsBlock(bannedWords)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildBannedWordsBlock(bannedWords)}${buildPositioningBlock(posicionamento)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
         }),
       })
@@ -1731,7 +1732,7 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${buildBannedWordsBlock(bannedWords)}`),
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${buildBannedWordsBlock(bannedWords)}${buildPositioningBlock(posicionamento)}`),
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
@@ -1764,7 +1765,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 5000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildBannedWordsBlock(bannedWords)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildBannedWordsBlock(bannedWords)}${buildPositioningBlock(posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
       })
@@ -1923,7 +1924,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildBannedWordsBlock(bannedWords)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildBannedWordsBlock(bannedWords)}${buildPositioningBlock(posicionamento)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
       })

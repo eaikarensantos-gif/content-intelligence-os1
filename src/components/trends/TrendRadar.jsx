@@ -54,6 +54,7 @@ async function searchYouTubeChannels(query, apiKey) {
   })
 }
 import useStore from '../../store/useStore'
+import { buildPositioningBlock } from '../../utils/voiceContext'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 // CarouselStudio moved to /carousel route (Studio de Criação)
 
@@ -106,7 +107,7 @@ const LOADING_PHASES = [
 ]
 
 // ─── Claude API call ───────────────────────────────────────────────────────────
-async function callClaudeForTrends(apiKey, topic, insights = [], banned = []) {
+async function callClaudeForTrends(apiKey, topic, insights = [], banned = [], posicionamento = null) {
   const insightsContext = insights?.length
     ? `\nCREATOR PERSONAL ANALYTICS (use to personalize recommendations):\n${insights.slice(0, 8).map((ins) => `- ${ins.title}: ${ins.description || ''}`).join('\n')}`
     : ''
@@ -115,9 +116,12 @@ async function callClaudeForTrends(apiKey, topic, insights = [], banned = []) {
     ? `\nFRASES E PALAVRAS ABSOLUTAMENTE PROIBIDAS — nunca use nos outputs gerados:\n${banned.map(p => `- "${p}"`).join('\n')}\n`
     : ''
 
+  const positioningBlock = buildPositioningBlock(posicionamento)
+
   const prompt = `You are a social media trend intelligence analyst specializing in Brazilian content creators. Analyze the topic "${topic}" and generate a comprehensive, SPECIFIC trend intelligence report.
 
 ${insightsContext}
+${positioningBlock}
 
 CREATOR PROFILE — this report is for a specific creator. Ideas and opportunities MUST fit their brand:
 - She talks about TECH CAREER in general — not UX, not product management, not a specific role. Content must be relevant to any tech professional.
@@ -593,6 +597,7 @@ export default function TrendRadar() {
   const insights        = useStore((s) => s.insights)
   const addIdea         = useStore((s) => s.addIdea)
   const listaNegra      = useStore((s) => s.posicionamento.lista_negra) || []
+  const posicionamento  = useStore((s) => s.posicionamento)
 
   const [topic, setTopic]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -646,7 +651,7 @@ export default function TrendRadar() {
       const apiKey = localStorage.getItem('cio-anthropic-key')
       if (!apiKey) throw new Error('Chave Anthropic não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
-      const results = await callClaudeForTrends(apiKey, topic.trim(), insights, listaNegra)
+      const results = await callClaudeForTrends(apiKey, topic.trim(), insights, listaNegra, posicionamento)
       setTrendResults(results)
       setSavedIds(new Set())
     } catch (e) {
