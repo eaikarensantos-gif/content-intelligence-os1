@@ -18,6 +18,7 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
+import { checkCoherence } from '../../lib/coherenceCheck'
 import { lintText } from '../../utils/brandLinter'
 import {
   WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme,
@@ -216,6 +217,79 @@ function BannedWordsBox({ bannedWords, onAdd, onRemove, hint }) {
               <button onClick={() => onRemove(phrase)} className="hover:text-red-800 shrink-0"><X size={9} /></button>
             </span>
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const VEREDITO_STYLES = {
+  aumenta: { label: 'Aumenta a associação', cls: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+  dilui: { label: 'Dilui a associação', cls: 'bg-red-50 border-red-200 text-red-700' },
+  neutro: { label: 'Neutro', cls: 'bg-gray-50 border-gray-200 text-gray-600' },
+}
+
+/**
+ * Verificador de coerência do Posicionamento — não-bloqueante: manda o
+ * rascunho pra IA e mostra o veredito, mas quem decide se ajusta é o
+ * criador. Complementa a varredura determinística do SweepReportPanel.
+ */
+function CoherenceChecker({ text, posicionamento }) {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
+
+  const hasTesteCoerencia = !!posicionamento?.teste_coerencia?.trim()
+
+  const run = async () => {
+    const apiKey = localStorage.getItem(LS_KEY) || ''
+    setLoading(true)
+    setError('')
+    setResult(null)
+    try {
+      const r = await checkCoherence(apiKey, text, posicionamento)
+      setResult(r)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!text?.trim()) return null
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={run}
+        disabled={loading}
+        className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 disabled:opacity-50 transition-colors"
+      >
+        {loading ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
+        Checar coerência com o Posicionamento
+      </button>
+      {!hasTesteCoerencia && (
+        <p className="text-[10px] text-gray-300">Sem teste de coerência definido em /posicionamento — a checagem usa bom senso.</p>
+      )}
+      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {result && (
+        <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-3 space-y-2">
+          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${VEREDITO_STYLES[result.veredito].cls}`}>
+            {VEREDITO_STYLES[result.veredito].label}
+          </span>
+          {result.justificativa && <p className="text-[11px] text-gray-600 leading-relaxed">{result.justificativa}</p>}
+          {result.frases_lista_negra_encontradas.length > 0 && (
+            <p className="text-[11px] text-red-600">
+              <span className="font-medium">Frases da lista negra encontradas: </span>
+              {result.frases_lista_negra_encontradas.map((f) => `"${f}"`).join(', ')}
+            </p>
+          )}
+          {result.ajustes.length > 0 && (
+            <ul className="text-[11px] text-gray-600 space-y-1 list-disc pl-4">
+              {result.ajustes.map((a, i) => <li key={i}>{a}</li>)}
+            </ul>
+          )}
         </div>
       )}
     </div>
@@ -2793,6 +2867,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </p>
               )}
               <SweepReportPanel report={engSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
+              <CoherenceChecker text={engResult.versao_principal} posicionamento={posicionamento} />
 
               {/* Validação */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4">
@@ -3256,6 +3331,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </p>
               )}
               <SweepReportPanel report={carSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
+              <CoherenceChecker
+                text={(carResult.versao_principal?.slides || []).map((s) => s.texto).filter(Boolean).join('\n\n')}
+                posicionamento={posicionamento}
+              />
 
               {/* Abas de versão */}
               {(() => {
@@ -3566,6 +3645,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </p>
               )}
               <SweepReportPanel report={strSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
+              <CoherenceChecker text={strResult} posicionamento={posicionamento} />
 
               {/* Texto gerado */}
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -3789,6 +3869,7 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
 
           {/* Varredura anti-clichê: o que sobrou depois das reescritas */}
           <SweepReportPanel report={sweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
+          <CoherenceChecker text={result.content} posicionamento={posicionamento} />
 
           {/* Título */}
           <div className="flex items-start justify-between gap-3">
