@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Compass, Plus, Trash2, X } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
 
 function Section({ title, hint, children }) {
   return (
@@ -160,8 +161,14 @@ function PilaresSection() {
           </div>
           <input value={p.objetivo} onChange={(e) => updatePilar(p.id, { objetivo: e.target.value })} placeholder="Objetivo" className={INPUT_CLS} />
           <div className="grid grid-cols-2 gap-2">
-            <input value={p.formato_preferido} onChange={(e) => updatePilar(p.id, { formato_preferido: e.target.value })} placeholder="Formato preferido" className={INPUT_CLS} />
-            <input value={p.gancho_tipico} onChange={(e) => updatePilar(p.id, { gancho_tipico: e.target.value })} placeholder="Gancho típico" className={INPUT_CLS} />
+            <select value={p.formato_preferido} onChange={(e) => updatePilar(p.id, { formato_preferido: e.target.value })} className={INPUT_CLS}>
+              <option value="">Formato preferido</option>
+              {FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
+            </select>
+            <select value={p.gancho_tipico} onChange={(e) => updatePilar(p.id, { gancho_tipico: e.target.value })} className={INPUT_CLS}>
+              <option value="">Gancho típico</option>
+              {HOOK_TYPES.map((h) => <option key={h} value={h}>{HOOK_LABELS[h]}</option>)}
+            </select>
           </div>
           <input value={p.exemplo} onChange={(e) => updatePilar(p.id, { exemplo: e.target.value })} placeholder="Exemplo" className={INPUT_CLS} />
         </div>

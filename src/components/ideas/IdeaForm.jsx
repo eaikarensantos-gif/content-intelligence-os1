@@ -6,6 +6,7 @@ import useAIStore from '../../store/useAIStore'
 import { youtubeSearch } from '../../lib/aiService'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
+import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -19,11 +20,6 @@ const PLATFORM_COLORS = {
   tiktok:    'bg-purple-100 text-purple-700 border-purple-300',
 }
 
-const FORMATS = ['carrossel', 'thread', 'video', 'reel', 'artigo', 'story', 'podcast']
-const FORMAT_LABELS = { carrossel: 'Carrossel', thread: 'Thread', video: 'Vídeo', reel: 'Reel', artigo: 'Artigo', story: 'Story', podcast: 'Podcast' }
-
-const HOOK_TYPES = ['lista', 'contrario', 'historia', 'dados', 'problema', 'pergunta', 'como-fazer', 'novidade']
-const HOOK_LABELS = { lista: 'Lista', contrario: 'Contrário', historia: 'História', dados: 'Dados', problema: 'Problema', pergunta: 'Pergunta', 'como-fazer': 'Como Fazer', novidade: 'Novidade' }
 
 const PRIORITIES = ['high', 'medium', 'low']
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Média', low: 'Baixa' }
@@ -49,7 +45,7 @@ const EMPTY = {
   title: '', description: '', topic: '', format: 'carrossel', hook_type: 'lista',
   platforms: ['instagram'], priority: 'medium', status: 'idea', tags: [],
   scheduled_date: '', content_type: 'organic', client: '', script: '',
-  caption: '', cta: '', creation_order: null, reference_links: [],
+  caption: '', cta: '', creation_order: null, reference_links: [], pilar_id: '',
 }
 
 async function generateWithAI(apiKey, type, context) {
@@ -246,6 +242,14 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
+  const pilares = useStore((s) => s.posicionamento.pilares)
+  const handlePilarChange = (pilarId) => {
+    set('pilar_id', pilarId)
+    const pilar = pilares.find((p) => p.id === pilarId)
+    if (pilar?.formato_preferido) set('format', pilar.formato_preferido)
+    if (pilar?.gancho_tipico) set('hook_type', pilar.gancho_tipico)
+  }
+
   const togglePlatform = (p) => {
     const current = form.platforms || []
     set('platforms', current.includes(p) ? current.filter((x) => x !== p) : [...current, p])
@@ -405,6 +409,17 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               <p className="text-[11px] text-amber-500 mt-1">Selecione ao menos uma plataforma</p>
             )}
           </div>
+
+          {/* Pilar — lê de posicionamento.pilares; ao escolher, pré-preenche Formato e Gancho */}
+          {pilares.length > 0 && (
+            <div>
+              <label className="label">Pilar</label>
+              <select className="select" value={form.pilar_id} onChange={(e) => handlePilarChange(e.target.value)}>
+                <option value="">Sem pilar</option>
+                {pilares.map((p) => <option key={p.id} value={p.id}>{p.nome || 'Pilar sem nome'}</option>)}
+              </select>
+            </div>
+          )}
 
           {/* Formato + Gancho + Prioridade + Status — 2x2 grid */}
           <div className="grid grid-cols-2 gap-2.5">
