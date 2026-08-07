@@ -6,6 +6,7 @@ const TITLES = {
   '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
   '/social': { title: 'Analytics', sub: 'Visão geral do desempenho das suas redes sociais' },
   '/audience': { title: 'Audiência', sub: 'Quem é o público que consome seu conteúdo' },
+  '/radar-audiencia': { title: 'Radar de Audiência', sub: 'Classifique e pontue seguidores de Instagram e LinkedIn' },
   '/ideas': { title: 'Hub de Ideias', sub: 'Capture e organize suas ideias de conteúdo' },
   '/trends': { title: 'Creator Insights', sub: 'Criadores, padrões e oportunidades do seu nicho analisados com IA' },
   '/analytics': { title: 'Analytics', sub: 'Acompanhe o desempenho dos seus posts' },

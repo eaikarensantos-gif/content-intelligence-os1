@@ -18,6 +18,7 @@ const TrendRadar = lazy(() => import('./components/trends/TrendRadar'))
 const Analytics = lazy(() => import('./components/analytics/Analytics'))
 const SocialDashboard = lazy(() => import('./components/analytics/SocialDashboard'))
 const AudienceAnalytics = lazy(() => import('./components/analytics/AudienceAnalytics'))
+const AudienceRadar = lazy(() => import('./components/audienceradar/AudienceRadar'))
 const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
 const ThoughtCapture = lazy(() => import('./components/thoughts/ThoughtCapture'))
 const TextStudio = lazy(() => import('./components/text/TextStudio'))
@@ -128,6 +129,7 @@ export default function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<SocialDashboard />} />
             <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
+            <Route path="/radar-audiencia" element={<AudienceRadar />} />
             <Route path="/video" element={<VideoAnalyzer />} />
             {/* key força remount ao trocar de rota — sem ele o React reaproveita a
                 instância e o estado de um estúdio vaza pro outro */}
