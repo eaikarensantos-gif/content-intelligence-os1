@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar de Audiência</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#FAFAF8; --surface:#FFFFFF; --ink:#14140F; --ink-2:#55554C; --ink-3:#8A8A80;
+  --line:#E4E4DE; --accent:#1F3D2B; --accent-soft:#EDF2EE;
+  --a:#1F3D2B; --b:#4E6E3F; --c:#8A8A80; --d:#C2C2B8; --radius:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:28px 24px 70px;background:var(--bg);color:var(--ink);
+ font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+ font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0 0 4px}
+.sub{color:var(--ink-3);font-size:13px;margin:0 0 24px;max-width:660px}
+h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);margin:0 0 12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+textarea{width:100%;min-height:170px;resize:vertical;padding:12px;border:1px solid var(--line);
+ border-radius:8px;background:#FCFCFA;color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+ font-size:12.5px;line-height:1.65}
+textarea:focus{outline:none;border-color:var(--accent)}
+.hint{font-size:11.5px;color:var(--ink-3);margin:8px 0 0;line-height:1.55}
+.hint code{background:#F1F1EC;padding:1px 5px;border-radius:4px;font-size:11px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+button{font:inherit;font-size:13px;font-weight:500;padding:8px 15px;border-radius:7px;
+ border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--ink-3)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{opacity:.9}
+button:disabled{opacity:.45;cursor:default}
+button.ghost{border:none;background:none;color:var(--ink-3);padding:6px 8px;font-size:12px}
+button.ghost:hover{color:var(--ink)}
+.modes{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.mode{padding:8px 13px;font-size:12.5px;cursor:pointer;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.mode.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:500}
+.pane{display:none}.pane.on{display:block}
+.drop{border:1.5px dashed var(--line);border-radius:9px;padding:30px 18px;text-align:center;
+ color:var(--ink-3);font-size:13px;background:#FCFCFA;cursor:pointer;transition:.12s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.sl{margin-bottom:15px}
+.sl-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+.sl-top b{font-weight:500}
+.sl-top span{color:var(--ink-3);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent);height:16px}
+.sl-note{font-size:11px;color:var(--ink-3);margin-top:3px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
+.stat .n{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+.stat.A{border-left:3px solid var(--a)}.stat.B{border-left:3px solid var(--b)}
+.stat.C{border-left:3px solid var(--c)}.stat.D{border-left:3px solid var(--d)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+select,input[type=search]{font:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);
+ border-radius:7px;background:var(--surface);color:var(--ink)}
+input[type=search]{min-width:190px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+ color:var(--ink-3);padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--ink)}
+td{padding:11px 10px;border-bottom:1px solid #F0F0EB;vertical-align:top}
+tr:hover td{background:#FCFCFA}
+.nm{font-weight:600}
+.nm a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)}
+.nm a:hover{border-color:var(--accent)}
+.hd{color:var(--ink-3);font-size:11.5px}
+.why{color:var(--ink-2);font-size:11.5px;line-height:1.5;max-width:300px;display:block;margin-top:3px}
+.ev{color:var(--ink-3);font-size:11px;font-style:italic;display:block;margin-top:3px;max-width:300px}
+.score{font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+.tier{display:inline-block;min-width:20px;text-align:center;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;color:#fff}
+.tier.A{background:var(--a)}.tier.B{background:var(--b)}.tier.C{background:var(--c)}.tier.D{background:var(--d);color:#4A4A42}
+.pill{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:5px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill.src{background:#F1F1EC;color:var(--ink-2)}
+.pill.warn{background:#FBF0DC;color:#7A5A20}
+.axes{font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:11.5px;white-space:nowrap}
+.axes b{color:var(--ink);font-weight:600}
+td select{font-size:11.5px;padding:3px 5px}
+.empty{padding:44px 20px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.7}
+.status{font-size:12.5px;color:var(--ink-2);margin-top:10px;min-height:18px}
+.status.err{color:#9A2B2B}
+.note{background:#FDF9F0;border:1px solid #EDE2CC;border-radius:8px;padding:11px 13px;
+ font-size:12px;color:#5C4A2A;line-height:1.55;margin-top:14px}
+.tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tab{padding:8px 13px;font-size:12.5px;cursor:pointer;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Radar de Audiência</h1>
+  <p class="sub">Classifica e pontua seguidores de Instagram e LinkedIn. A coleta dos perfis roda no Claude Code pelo Chrome; esta tela lê o resultado, aplica os seus pesos e ordena quem merece contato.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="modes" id="modes">
+        <div class="mode on" data-m="json">Carregar perfis.json</div>
+        <div class="mode" data-m="links">Fila de links</div>
+        <div class="mode" data-m="texto">Colar texto</div>
+      </div>
+
+      <div class="pane on" data-p="json">
+        <div class="drop" id="drop">
+          Arraste <b>perfis.json</b> aqui, ou clique para escolher o arquivo
+          <input type="file" id="file" accept=".json,application/json" hidden>
+        </div>
+        <p class="hint">Gerado pelo Claude Code em <code>data/perfis.json</code>. Ao recarregar, perfis com a mesma URL são atualizados no lugar e o seu ajuste manual de engajamento é preservado.</p>
+      </div>
+
+      <div class="pane" data-p="links">
+        <textarea id="links" placeholder="Um link por linha.
+
+https://www.linkedin.com/in/ana-ribeiro/
+https://www.instagram.com/juprado.oficial/
+linkedin.com/in/marcos-tavares
+@designdadeb"></textarea>
+        <p class="hint">Esta tela não abre navegador. Ela normaliza os links, tira duplicados e monta a fila que o Claude Code vai processar.</p>
+        <div class="row">
+          <button class="primary" id="genFila">Gerar fila</button>
+          <button id="copyCmd">Copiar comando pro Code</button>
+        </div>
+      </div>
+
+      <div class="pane" data-p="texto">
+        <textarea id="raw" placeholder="Uma pessoa por linha, quando você já tem a bio na mão e não quer abrir o perfil.
+
+Ana Ribeiro | @anaribeiro | Head de Operações, varejo alimentar, 4k seg | IG | eng:3
+Marcos Tavares | CTO na Fintech Norte | LI | eng:1"></textarea>
+        <p class="hint">Leitura local por palavra-chave, sem IA. Serve pra base pequena e curada. Marque engajamento com <code>eng:0</code> a <code>eng:3</code>.</p>
+        <div class="row">
+          <button class="primary" id="runTexto">Classificar local</button>
+          <button id="demo">Carregar exemplo</button>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+      <div class="note">
+        Engajamento é o único eixo que nem a coleta nem a IA conseguem preencher: esse dado está na sua cabeça e no seu direct. Ajuste na coluna <b>Eng</b> da tabela e o score recalcula na hora. Perfil privado ou sem bio entra como <b>D</b> por falta de informação, não por falta de potencial.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Seus critérios</h2>
+      <div id="sliders"></div>
+      <div class="row"><button class="ghost" id="reset">Voltar ao padrão</button></div>
+      <h2 style="margin-top:22px">Corte dos tiers</h2>
+      <div class="sl"><div class="sl-top"><b>A — contatar agora</b><span id="cutAlab"></span></div><input type="range" id="cutA" min="50" max="95" value="75"></div>
+      <div class="sl"><div class="sl-top"><b>B — aquecer antes</b><span id="cutBlab"></span></div><input type="range" id="cutB" min="30" max="80" value="55"></div>
+      <div class="sl"><div class="sl-top"><b>C — observar</b><span id="cutClab"></span></div><input type="range" id="cutC" min="10" max="60" value="35"></div>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="card">
+    <div class="tabs" id="tabs">
+      <div class="tab on" data-t="todos">Todos</div>
+      <div class="tab" data-t="A">A — contatar</div>
+      <div class="tab" data-t="B">B — aquecer</div>
+      <div class="tab" data-t="C">C — observar</div>
+      <div class="tab" data-t="D">D — arquivo</div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Buscar nome, cargo, setor...">
+      <select id="fOrigem"><option value="">Origem: todas</option><option>IG</option><option>LI</option></select>
+      <select id="fTipo"><option value="">Tipo: todos</option></select>
+      <select id="fStatus"><option value="">Coleta: toda</option><option value="ok">só coletados</option><option value="problema">com problema</option></select>
+      <span style="flex:1"></span>
+      <button id="csv">Exportar CSV</button>
+      <button id="json">Salvar perfis.json</button>
+      <button class="ghost" id="clear">Limpar base</button>
+    </div>
+    <div id="tableWrap"><div class="empty">Base vazia.<br>Carregue o <b>perfis.json</b> gerado pelo Code, ou monte uma fila de links pra ele processar.</div></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var DEFAULT_W = {decisor:35, fit:30, eng:20, alcance:15};
+var LABELS = {
+  decisor:{n:"Poder de decisão", d:"Cargo e senioridade. Decide compra de consultoria/mentoria?"},
+  fit:{n:"Fit de nicho", d:"O setor e o tipo de negócio batem com o que você resolve."},
+  eng:{n:"Engajamento com você", d:"Curte, comenta, responde story, já mandou DM. Preenchido por você."},
+  alcance:{n:"Alcance da pessoa", d:"Audiência e potencial de indicação, mesmo sem comprar."}
+};
+var ENG_MAP = {0:0, 1:3, 2:6.5, 3:10};
+var ENG_TXT = {0:"0 · nunca", 1:"1 · passivo", 2:"2 · curte", 3:"3 · comenta/DM"};
+var KEY = "radar_audiencia_v2";
+
+var state = {rows:[], w:Object.assign({},DEFAULT_W), cuts:{A:75,B:55,C:35}, sort:{k:"score",dir:-1}, tab:"todos"};
+
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify({rows:state.rows,w:state.w,cuts:state.cuts})); }catch(e){} }
+function load(){
+  try{
+    var s = JSON.parse(localStorage.getItem(KEY)||"null");
+    if(s){ state.rows = s.rows||[]; state.w = Object.assign({},DEFAULT_W,s.w||{}); state.cuts = Object.assign({A:75,B:55,C:35},s.cuts||{}); }
+  }catch(e){}
+}
+
+// ---------- score ----------
+function scoreOf(r){
+  var w = state.w, tot = w.decisor+w.fit+w.eng+w.alcance;
+  if(!tot) return 0;
+  var e = ENG_MAP[r.eng] != null ? ENG_MAP[r.eng] : 3;
+  return Math.round((r.decisor*w.decisor + r.fit*w.fit + e*w.eng + r.alcance*w.alcance) / tot * 10);
+}
+function tierOf(s){ var c = state.cuts; return s>=c.A?"A":s>=c.B?"B":s>=c.C?"C":"D"; }
+
+// ---------- normalização de link ----------
+function normUrl(s){
+  s = String(s||"").trim().replace(/[<>"']/g,"");
+  if(!s) return null;
+  // slug em minúsculo pra bater com scripts/merge_perfis.py — chave de merge tem que ser idêntica nos dois lados
+  if(/^@[\w.]+$/.test(s)) return {url:"https://www.instagram.com/"+s.slice(1).toLowerCase()+"/", origem:"IG"};
+  if(!/^https?:\/\//i.test(s)) s = "https://" + s;
+  var m;
+  if((m = s.match(/linkedin\.com\/(in|company)\/([^\/?#]+)/i)))
+    return {url:"https://www.linkedin.com/"+m[1].toLowerCase()+"/"+m[2].toLowerCase()+"/", origem:"LI"};
+  if((m = s.match(/instagram\.com\/([^\/?#]+)/i))){
+    if(/^(p|reel|reels|explore|stories)$/i.test(m[1])) return null;
+    return {url:"https://www.instagram.com/"+m[1].toLowerCase()+"/", origem:"IG"};
+  }
+  return null;
+}
+
+// ---------- ingestão de perfis.json ----------
+function num(v, dflt){
+  var n = typeof v === "number" ? v : parseFloat(v);
+  if(isNaN(n)) n = dflt;
+  return Math.max(0, Math.min(10, n));
+}
+function keyOf(r){ return (r.url || ("txt::"+(r.raw||r.nome||""))).toLowerCase().replace(/\/+$/,""); }
+
+function normRow(o){
+  var u = o.url ? normUrl(o.url) : null;
+  return {
+    url: u ? u.url : (o.url||""),
+    raw: o.raw||"",
+    nome: String(o.nome||"(sem nome)").slice(0,80),
+    handle: String(o.handle||"").slice(0,50),
+    cargo: String(o.cargo||"").slice(0,80),
+    empresa: String(o.empresa||"").slice(0,80),
+    setor: String(o.setor||"").slice(0,50),
+    seguidores: (typeof o.seguidores === "number" && !isNaN(o.seguidores)) ? o.seguidores : null,
+    origem: o.origem || (u?u.origem:"") || "—",
+    decisor: num(o.decisor, 3),
+    fit: num(o.fit, 3),
+    alcance: num(o.alcance, 3),
+    eng: (o.eng >= 0 && o.eng <= 3) ? Math.round(o.eng) : 1,
+    tipo: String(o.tipo||"Audiência"),
+    porque: String(o.porque||""),
+    evidencia: String(o.evidencia||""),
+    abordagem: String(o.abordagem||""),
+    coletado_em: String(o.coletado_em||""),
+    status_coleta: String(o.status_coleta||"ok")
+  };
+}
+
+function ingest(list){
+  var idx = {}, novos = 0, atualizados = 0;
+  state.rows.forEach(function(r,i){ idx[keyOf(r)] = i; });
+  list.forEach(function(o){
+    var r = normRow(o), k = keyOf(r);
+    if(idx[k] != null){
+      var old = state.rows[idx[k]];
+      // engajamento é do lado da Karen: só sobrescreve se o arquivo trouxer valor explícito
+      if(!(o.eng >= 0 && o.eng <= 3)) r.eng = old.eng;
+      state.rows[idx[k]] = r; atualizados++;
+    } else {
+      state.rows.push(r); idx[k] = state.rows.length-1; novos++;
+    }
+  });
+  save(); renderTipoFilter(); render();
+  return {novos:novos, atualizados:atualizados};
+}
+
+// ---------- classificador local (modo texto) ----------
+var SENIOR = [
+  [/\b(founder|fundador[ae]?s?|ceo|s[óo]ci[oa]s?|don[oa]s?|propriet[áa]ri[oa]s?)\b/i, 10],
+  [/\b(cto|cfo|coo|cmo|cpo|cio|chief|diretor[ae]?s?|vp|head)\b/i, 9],
+  [/\b(gerente|manager|coordenador[ae]?s?|l[íi]der|tech lead|team lead)\b/i, 6.5],
+  [/\b(consultor[ae]?s?|especialista|mentor[ae]?s?)\b/i, 6],
+  [/\b(analista|assistente|est[áa]gi\w*|j[úu]nior|junior|freelanc\w*)\b/i, 3]
+];
+var FIT = [
+  [/\b(ia|a\.?i\.?|intelig[êe]ncia artificial|automa[çc]\w*|dados|produto|opera[çc][õo]es|processos?|tecnologia|saas|fintech|startups?|ag[êe]ncia|consultoria|neg[óo]cios?|ind[úu]stria|log[íi]stica|b2b)\b/i, 8],
+  [/\b(marketing|design|ux|social media|conte[úu]do|e-?commerce|varejo|educa[çc][ãa]o|cx|vendas|rh)\b/i, 6],
+  [/\b(estudante|curios[oa]|apaixonad\w*|aspirante)\b/i, 2]
+];
+function sniff(line){
+  var m = line.match(/\beng\s*:\s*([0-3])\b/i);
+  var o = "";
+  if(/(^|[\s|—-])LI([\s|—-]|$)/i.test(line) || /linkedin/i.test(line)) o = "LI";
+  if(/(^|[\s|—-])IG([\s|—-]|$)/i.test(line) || /instagram/i.test(line) || /@[a-z0-9._]+/i.test(line)) o = o || "IG";
+  return {eng: m ? parseInt(m[1],10) : 1, origem: o || "—"};
+}
+function localClassify(line){
+  var d = 4, f = 4, a = 3, i, seg = null;
+  for(i=0;i<SENIOR.length;i++){ if(SENIOR[i][0].test(line)){ d = SENIOR[i][1]; break; } }
+  for(i=0;i<FIT.length;i++){ if(FIT[i][0].test(line)){ f = FIT[i][1]; break; } }
+  var n = line.match(/([\d.,]+)\s*(k|mil|m)\b/i);
+  if(n){ var v = parseFloat(n[1].replace(",",".")); seg = n[2].toLowerCase()==="m" ? v*1e6 : v*1e3; }
+  else { var p = line.match(/([\d.]+)\s*(seguidores|seg\b|conex)/i); if(p) seg = parseFloat(p[1].replace(/\./g,"")); }
+  if(seg != null && !isNaN(seg)) a = seg>=50000?10:seg>=10000?8:seg>=3000?6:seg>=800?4:2;
+  var sn = sniff(line);
+  return {
+    raw: line,
+    nome: (line.split(/[|—\t]/)[0].trim().replace(/^@/,"")) || "(sem nome)",
+    handle: (line.match(/@[a-zA-Z0-9._]+/)||[""])[0],
+    origem: sn.origem, eng: sn.eng,
+    decisor: d, fit: f, alcance: a, seguidores: seg,
+    tipo: d>=9 ? "Cliente potencial" : a>=8 ? "Amplificador" : d>=6 ? "Par sênior" : "Audiência",
+    porque: "Leitura local por palavra-chave, sem IA. Confira antes de agir.",
+    status_coleta: "manual"
+  };
+}
+
+// ---------- sliders ----------
+function buildSliders(){
+  var host = document.getElementById("sliders"); host.innerHTML = "";
+  Object.keys(DEFAULT_W).forEach(function(k){
+    var d = document.createElement("div"); d.className = "sl";
+    d.innerHTML = '<div class="sl-top"><b>'+LABELS[k].n+'</b><span id="lab_'+k+'"></span></div>'+
+      '<input type="range" id="w_'+k+'" min="0" max="60" value="'+state.w[k]+'">'+
+      '<div class="sl-note">'+LABELS[k].d+'</div>';
+    host.appendChild(d);
+    d.querySelector("input").addEventListener("input", function(e){
+      state.w[k] = parseInt(e.target.value,10); save(); syncLabels(); render();
+    });
+  });
+  ["A","B","C"].forEach(function(t){
+    var el = document.getElementById("cut"+t); el.value = state.cuts[t];
+    el.addEventListener("input", function(e){ state.cuts[t] = parseInt(e.target.value,10); save(); syncLabels(); render(); });
+  });
+  syncLabels();
+}
+function syncLabels(){
+  var tot = state.w.decisor+state.w.fit+state.w.eng+state.w.alcance;
+  Object.keys(DEFAULT_W).forEach(function(k){
+    var el = document.getElementById("w_"+k); if(el) el.value = state.w[k];
+    var lab = document.getElementById("lab_"+k); if(lab) lab.textContent = (tot?Math.round(state.w[k]/tot*100):0)+"%";
+  });
+  ["A","B","C"].forEach(function(t){
+    document.getElementById("cut"+t+"lab").textContent = "≥ "+state.cuts[t];
+    document.getElementById("cut"+t).value = state.cuts[t];
+  });
+}
+
+// ---------- render ----------
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m];}); }
+function fmtSeg(n){ if(n==null) return ""; if(n>=1e6) return (n/1e6).toFixed(1).replace(".0","")+"M"; if(n>=1000) return (n/1000).toFixed(1).replace(".0","")+"k"; return String(n); }
+
+function visible(){
+  var q = (document.getElementById("q").value||"").toLowerCase().trim();
+  var fo = document.getElementById("fOrigem").value;
+  var ft = document.getElementById("fTipo").value;
+  var fs = document.getElementById("fStatus").value;
+  return state.rows.map(function(r){
+    var c = Object.assign({},r); c.score = scoreOf(r); c.tier = tierOf(c.score); return c;
+  }).filter(function(r){
+    if(state.tab !== "todos" && r.tier !== state.tab) return false;
+    if(fo && r.origem !== fo) return false;
+    if(ft && r.tipo !== ft) return false;
+    if(fs === "ok" && r.status_coleta !== "ok") return false;
+    if(fs === "problema" && (r.status_coleta === "ok" || r.status_coleta === "manual")) return false;
+    if(q){
+      var hay = (r.nome+" "+r.handle+" "+r.cargo+" "+r.empresa+" "+r.setor+" "+r.tipo+" "+r.porque).toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }).sort(function(a,b){
+    var k = state.sort.k, va = a[k], vb = b[k];
+    if(typeof va === "string") return state.sort.dir * va.localeCompare(String(vb),"pt-BR");
+    return state.sort.dir * ((va||0) - (vb||0));
+  });
+}
+
+function renderStats(){
+  var c = {A:0,B:0,C:0,D:0};
+  state.rows.forEach(function(r){ c[tierOf(scoreOf(r))]++; });
+  var defs = [["A","Contatar agora"],["B","Aquecer antes"],["C","Observar"],["D","Arquivo"]];
+  document.getElementById("stats").innerHTML = defs.map(function(d){
+    return '<div class="stat '+d[0]+'"><div class="n">'+c[d[0]]+'</div><div class="l">'+d[0]+' · '+d[1]+'</div></div>';
+  }).join("");
+}
+function renderTipoFilter(){
+  var sel = document.getElementById("fTipo"), cur = sel.value, t = {};
+  state.rows.forEach(function(r){ t[r.tipo] = 1; });
+  sel.innerHTML = '<option value="">Tipo: todos</option>' + Object.keys(t).sort().map(function(x){
+    return '<option'+(x===cur?' selected':'')+'>'+esc(x)+'</option>';
+  }).join("");
+}
+
+var COLS = [["nome","Pessoa"],["tipo","Tipo"],["origem","Origem"],["decisor","Eixos D/F/E/A"],["eng","Eng"],["score","Score"],["tier","Tier"],["abordagem","Abordagem"]];
+
+function render(){
+  renderStats();
+  var rows = visible(), host = document.getElementById("tableWrap");
+  if(!state.rows.length){
+    host.innerHTML = '<div class="empty">Base vazia.<br>Carregue o <b>perfis.json</b> gerado pelo Code, ou monte uma fila de links pra ele processar.</div>'; return;
+  }
+  if(!rows.length){ host.innerHTML = '<div class="empty">Nenhum resultado com esses filtros.</div>'; return; }
+
+  var head = "<tr>" + COLS.map(function(c){
+    var ar = state.sort.k === c[0] ? (state.sort.dir === -1 ? " ↓" : " ↑") : "";
+    return '<th data-k="'+c[0]+'">'+c[1]+ar+'</th>';
+  }).join("") + "</tr>";
+
+  var body = rows.map(function(r){
+    var sub = [r.cargo, r.empresa, r.setor].filter(Boolean).join(" · ");
+    var seg = r.seguidores != null ? fmtSeg(r.seguidores)+" seg" : "";
+    var nome = r.url ? '<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.nome)+'</a>' : esc(r.nome);
+    var badge = (r.status_coleta && r.status_coleta !== "ok" && r.status_coleta !== "manual")
+      ? ' <span class="pill warn">'+esc(r.status_coleta)+'</span>' : '';
+    return "<tr>"+
+      '<td><span class="nm">'+nome+'</span>'+badge+
+        (r.handle?' <span class="hd">'+esc(r.handle)+'</span>':'')+
+        (sub||seg?'<div class="hd">'+esc(sub)+(sub&&seg?' · ':'')+seg+'</div>':'')+
+        (r.porque?'<span class="why">'+esc(r.porque)+'</span>':'')+
+        (r.evidencia?'<span class="ev">“'+esc(r.evidencia)+'”</span>':'')+'</td>'+
+      '<td><span class="pill">'+esc(r.tipo)+'</span></td>'+
+      '<td><span class="pill src">'+esc(r.origem)+'</span></td>'+
+      '<td class="axes"><b>'+r.decisor.toFixed(0)+'</b>/'+r.fit.toFixed(0)+'/'+(ENG_MAP[r.eng]||0)+'/'+r.alcance.toFixed(0)+'</td>'+
+      '<td><select data-eng="'+esc(keyOf(r))+'">'+[0,1,2,3].map(function(v){
+          return '<option value="'+v+'"'+(v===r.eng?' selected':'')+'>'+ENG_TXT[v]+'</option>'; }).join("")+'</select></td>'+
+      '<td class="score">'+r.score+'</td>'+
+      '<td><span class="tier '+r.tier+'">'+r.tier+'</span></td>'+
+      '<td class="hd" style="max-width:200px">'+esc(r.abordagem)+'</td>'+
+    "</tr>";
+  }).join("");
+
+  host.innerHTML = '<div style="overflow-x:auto"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+
+  host.querySelectorAll("th").forEach(function(th){
+    th.addEventListener("click", function(){
+      var k = th.getAttribute("data-k");
+      if(state.sort.k === k) state.sort.dir *= -1; else { state.sort.k = k; state.sort.dir = -1; }
+      render();
+    });
+  });
+  host.querySelectorAll("select[data-eng]").forEach(function(sel){
+    sel.addEventListener("change", function(){
+      var k = sel.getAttribute("data-eng");
+      for(var i=0;i<state.rows.length;i++){
+        if(keyOf(state.rows[i]) === k){ state.rows[i].eng = parseInt(sel.value,10); break; }
+      }
+      save(); render();
+    });
+  });
+}
+
+function setStatus(t, err){
+  var el = document.getElementById("status");
+  el.textContent = t||""; el.className = "status" + (err?" err":"");
+}
+function download(name, content, type){
+  var blob = new Blob([content], {type:type||"text/plain;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+// ---------- eventos ----------
+document.getElementById("modes").addEventListener("click", function(e){
+  var m = e.target.closest(".mode"); if(!m) return;
+  document.querySelectorAll(".mode").forEach(function(x){ x.classList.remove("on"); });
+  document.querySelectorAll(".pane").forEach(function(x){ x.classList.remove("on"); });
+  m.classList.add("on");
+  document.querySelector('.pane[data-p="'+m.getAttribute("data-m")+'"]').classList.add("on");
+  setStatus("");
+});
+
+function readFile(f){
+  if(!f) return;
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{
+      var d = JSON.parse(fr.result);
+      var list = Array.isArray(d) ? d : (d.perfis || d.rows || []);
+      if(!Array.isArray(list) || !list.length) { setStatus("O arquivo não tem um array 'perfis'.", true); return; }
+      var res = ingest(list);
+      setStatus(res.novos+" novo(s), "+res.atualizados+" atualizado(s). Ajustes manuais de engajamento preservados.");
+    }catch(err){ setStatus("JSON inválido: "+err.message, true); }
+  };
+  fr.readAsText(f);
+}
+var drop = document.getElementById("drop"), fileEl = document.getElementById("file");
+drop.addEventListener("click", function(){ fileEl.click(); });
+fileEl.addEventListener("change", function(){ readFile(fileEl.files[0]); fileEl.value=""; });
+["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); }); });
+["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); }); });
+drop.addEventListener("drop", function(e){ readFile(e.dataTransfer.files[0]); });
+
+function filaAtual(){
+  var lines = document.getElementById("links").value.split(/\r?\n/);
+  var seen = {}, out = [];
+  lines.forEach(function(l){
+    var n = normUrl(l);
+    if(n && !seen[n.url]){ seen[n.url] = 1; out.push(n); }
+  });
+  return out;
+}
+document.getElementById("genFila").addEventListener("click", function(){
+  var f = filaAtual();
+  if(!f.length){ setStatus("Nenhum link de Instagram ou LinkedIn reconhecido.", true); return; }
+  download("perfis-fila.txt", f.map(function(x){ return x.url; }).join("\n"));
+  var li = f.filter(function(x){return x.origem==="LI";}).length;
+  setStatus(f.length+" link(s) na fila ("+li+" LI, "+(f.length-li)+" IG). Salvo como perfis-fila.txt — jogue na pasta do projeto.");
+});
+document.getElementById("copyCmd").addEventListener("click", function(){
+  var f = filaAtual();
+  var cmd = "Roda o radar-de-audiencia nesses perfis usando o Chrome:\n\n" +
+    (f.length ? f.map(function(x){return x.url;}).join("\n") : "(cole os links aqui)") +
+    "\n\nColeta em lotes de 5 com pausa, salva em data/perfis.json e me diz quantos ficaram em A.";
+  navigator.clipboard.writeText(cmd).then(function(){
+    setStatus("Comando copiado. Cola no Claude Code.");
+  }, function(){ setStatus("Não consegui acessar a área de transferência.", true); });
+});
+
+document.getElementById("runTexto").addEventListener("click", function(){
+  var lines = document.getElementById("raw").value.split(/\r?\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>1;});
+  if(!lines.length){ setStatus("Cola pelo menos uma linha.", true); return; }
+  var res = ingest(lines.map(localClassify));
+  setStatus(res.novos+" classificado(s) localmente"+(res.atualizados?", "+res.atualizados+" atualizado(s)":"")+". Sem IA: revise as notas.");
+});
+document.getElementById("demo").addEventListener("click", function(){
+  document.getElementById("raw").value = [
+    "Ana Ribeiro | @anaribeiro | Head de Operações em rede de varejo alimentar, 4k seg | IG | eng:3",
+    "Marcos Tavares | CTO na Fintech Norte, 240 conexões | LI | eng:1",
+    "Paula Menezes | fundadora de agência de performance, 12k | LI | eng:2",
+    "@designdadeb — freelancer de social media, 900 seg | IG | eng:0",
+    "Rafael Lima | analista de marketing júnior, estudando IA | LI | eng:2",
+    "Juliana Prado | @juprado.oficial | criadora de conteúdo de produtividade, 78k seg | IG | eng:3",
+    "Carlos Aguiar | sócio de consultoria de processos industriais | LI | eng:1",
+    "Beatriz Nunes | coordenadora de CX em SaaS B2B, 1.2k | LI | eng:2"
+  ].join("\n");
+  setStatus("Exemplo carregado.");
+});
+
+document.getElementById("csv").addEventListener("click", function(){
+  var rows = visible(); if(!rows.length) return;
+  var head = ["Nome","Handle","URL","Cargo","Empresa","Setor","Seguidores","Origem","Tipo","Decisor","Fit","Engajamento","Alcance","Score","Tier","Porque","Evidencia","Abordagem","Coletado","Status"];
+  var lines = [head.join(",")].concat(rows.map(function(r){
+    return [r.nome,r.handle,r.url,r.cargo,r.empresa,r.setor,r.seguidores,r.origem,r.tipo,r.decisor,r.fit,ENG_MAP[r.eng],r.alcance,r.score,r.tier,r.porque,r.evidencia,r.abordagem,r.coletado_em,r.status_coleta]
+      .map(function(v){ return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'; }).join(",");
+  }));
+  download("radar-audiencia.csv", "﻿"+lines.join("\n"), "text/csv;charset=utf-8");
+});
+document.getElementById("json").addEventListener("click", function(){
+  if(!state.rows.length) return;
+  download("perfis.json", JSON.stringify({versao:2, gerado_em:new Date().toISOString().slice(0,10), perfis:state.rows}, null, 2), "application/json");
+});
+document.getElementById("reset").addEventListener("click", function(){
+  state.w = Object.assign({},DEFAULT_W); state.cuts = {A:75,B:55,C:35};
+  save(); buildSliders(); render();
+});
+document.getElementById("clear").addEventListener("click", function(){
+  if(!state.rows.length) return;
+  if(!confirm("Apagar as "+state.rows.length+" pessoas da base?")) return;
+  state.rows = []; save(); renderTipoFilter(); render(); setStatus("Base zerada.");
+});
+["q","fOrigem","fTipo","fStatus"].forEach(function(id){
+  document.getElementById(id).addEventListener("input", render);
+  document.getElementById(id).addEventListener("change", render);
+});
+document.getElementById("tabs").addEventListener("click", function(e){
+  var t = e.target.closest(".tab"); if(!t) return;
+  document.querySelectorAll(".tab").forEach(function(x){ x.classList.remove("on"); });
+  t.classList.add("on"); state.tab = t.getAttribute("data-t"); render();
+});
+
+// carga automática de data/perfis.json quando servido por http
+(function(){
+  if(location.protocol === "file:") return;
+  fetch("../data/perfis.json").then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if(!d) return;
+    var list = Array.isArray(d) ? d : (d.perfis||[]);
+    if(list.length && !state.rows.length){ ingest(list); setStatus(list.length+" perfil(is) carregado(s) de data/perfis.json."); }
+  }).catch(function(){});
+})();
+
+load(); buildSliders(); renderTipoFilter(); render();
+})();
+</script>
+</body>
+</html>
