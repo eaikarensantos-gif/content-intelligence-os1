@@ -4,7 +4,7 @@ import { fetchFile } from '@ffmpeg/util'
 import {
   Video, Link2, ChevronRight, BookOpen,
   Lightbulb, Layers, Clock, Eye, Copy, Check,
-  Sparkles, Trash2, RotateCcw, ExternalLink,
+  Sparkles, Trash2, RotateCcw, ExternalLink, MessageSquare,
   Mic, Film, Zap, Target, TrendingUp, Star,
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
@@ -509,7 +509,9 @@ Return ONLY this JSON:
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function VideoAnalyzer() {
+// initialMode/lockedMode permitem montar o analisador travado num modo
+// específico (ex.: rota de roteiro dentro do Studio de Criação usa 'script').
+export default function VideoAnalyzer({ initialMode = 'reference', lockedMode = false }) {
   const addVideoAnalysis = useStore((s) => s.addVideoAnalysis)
   const deleteVideoAnalysis = useStore((s) => s.deleteVideoAnalysis)
   const videoAnalyses = useStore((s) => s.videoAnalyses)
@@ -549,7 +551,7 @@ export default function VideoAnalyzer() {
   const [showHistory, setShowHistory] = useState(false)
   const [savedAnalysis, setSavedAnalysis] = useState(false)
   const [error, setError] = useState('')
-  const [analysisMode, setAnalysisMode] = useState('reference') // 'reference' | 'mine' | 'script'
+  const [analysisMode, setAnalysisMode] = useState(initialMode) // 'reference' | 'transcribe' | 'comments' | 'script'
   const [scriptText, setScriptText] = useState('')
 
   // Script
@@ -774,7 +776,7 @@ export default function VideoAnalyzer() {
       setLoadingStep(2)
       const hasFinalTranscript = finalTranscript.trim().length > 30
       const source = hasFinalTranscript ? 'transcript' : hasFramesData ? 'frames' : 'inference'
-      const prompt = (analysisMode === 'mine' || analysisMode === 'script')
+      const prompt = analysisMode === 'script'
         ? buildFeedbackPrompt({
             title: metaTitle,
             transcript: hasFinalTranscript ? finalTranscript : '',
@@ -803,7 +805,7 @@ export default function VideoAnalyzer() {
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
     } finally {
-      setActiveTab((analysisMode === 'mine' || analysisMode === 'script') ? 'melhorar' : 'resumo')
+      setActiveTab(analysisMode === 'script' ? 'melhorar' : 'resumo')
       setLoading(false)
     }
   }
@@ -1033,12 +1035,13 @@ Responda APENAS com este JSON:
         </div>
       </div>
 
-      {/* Mode selector — cards descritivos (a descrição vive no card, sem banner extra) */}
+      {/* Mode selector — cards descritivos (oculto quando montado travado num modo) */}
+      {!lockedMode && (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {[
           { id: 'reference', icon: Sparkles, label: 'Analisar Referência', desc: 'Aprenda com vídeos de outros criadores', on: 'border-violet-300 bg-violet-50/70 ring-1 ring-violet-200', iconOn: 'bg-violet-600 text-white shadow-sm' },
-          { id: 'mine', icon: Target, label: 'Meu Vídeo', desc: 'Feedback crítico do seu próprio vídeo', on: 'border-orange-300 bg-orange-50/70 ring-1 ring-orange-200', iconOn: 'bg-orange-500 text-white shadow-sm' },
-          { id: 'script', icon: FileText, label: 'Meu Roteiro', desc: 'Avalie o roteiro antes de gravar', on: 'border-indigo-300 bg-indigo-50/70 ring-1 ring-indigo-200', iconOn: 'bg-indigo-600 text-white shadow-sm' },
+          { id: 'transcribe', icon: Mic, label: 'Transcrever Vídeo', desc: 'Transforme vídeo ou áudio em texto', on: 'border-emerald-300 bg-emerald-50/70 ring-1 ring-emerald-200', iconOn: 'bg-emerald-600 text-white shadow-sm' },
+          { id: 'comments', icon: MessageSquare, label: 'Analisar Comentários', desc: 'Prints de comentários viram ideias', on: 'border-rose-300 bg-rose-50/70 ring-1 ring-rose-200', iconOn: 'bg-rose-500 text-white shadow-sm' },
         ].map(({ id, icon: Icon, label, desc, on, iconOn }) => (
           <button
             key={id}
@@ -1057,9 +1060,11 @@ Responda APENAS com este JSON:
           </button>
         ))}
       </div>
+      )}
 
-      {/* No API key banner */}
-      {!apiKey && !analysis && (
+      {/* No API key banner — só onde a IA da Anthropic é usada (referência e roteiro).
+          Transcrição usa Groq; comentários têm fluxo próprio. */}
+      {!apiKey && !analysis && (analysisMode === 'reference' || analysisMode === 'script') && (
         <div className="p-4 rounded-xl bg-violet-50 border border-violet-200 flex items-start gap-3">
           <Key size={15} className="text-violet-500 mt-0.5 shrink-0" />
           <div className="flex-1">
@@ -1153,11 +1158,30 @@ Responda APENAS com este JSON:
         </div>
       )}
 
+      {/* ── ANALISAR COMENTÁRIOS — aba exclusiva ─────────────────────────── */}
+      {analysisMode === 'comments' && !loading && (
+        <div className="animate-fade-in">
+          <CommentAnalyzer />
+        </div>
+      )}
+
+      {/* ── TRANSCREVER — banner explicativo ─────────────────────────────── */}
+      {analysisMode === 'transcribe' && !analysis && !loading && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+          <Mic size={15} className="text-emerald-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Transcrição de Vídeo</p>
+            <p className="text-xs text-gray-600">Envie um vídeo ou áudio em <strong>Fonte do Vídeo</strong> e transcreva automaticamente com o Whisper. A transcrição fica pronta para copiar, salvar ou traduzir — sem gerar nenhuma análise.</p>
+          </div>
+        </div>
+      )}
+
       {/* ── LANDING / INPUT VIEW ─────────────────────────────────────────── */}
-      {!analysis && !loading && (
+      {!analysis && !loading && analysisMode !== 'comments' && (
         <div className="space-y-4">
 
-          {/* What this tool analyzes — visual overview */}
+          {/* What this tool analyzes — visual overview (só no modo referência) */}
+          {analysisMode === 'reference' && (
           <div className="card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-violet-50 to-transparent border-b border-gray-100">
               <div className="p-1 rounded-md bg-violet-100">
@@ -1189,6 +1213,7 @@ Responda APENAS com este JSON:
               ))}
             </div>
           </div>
+          )}
 
           {/* ── Video Reducer Banner — shown when large file is loaded ─── */}
           {videoFile && videoFile.size > 24 * 1024 * 1024 && (
@@ -1505,7 +1530,9 @@ Responda APENAS com este JSON:
                   <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 text-[11px] font-bold flex items-center justify-center shrink-0">2</span>
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Transcrição do Vídeo</p>
-                    <p className="text-[10px] text-emerald-600 font-medium">Análise mais precisa — IA lê o conteúdo real</p>
+                    <p className="text-[10px] text-emerald-600 font-medium">
+                      {analysisMode === 'transcribe' ? 'Fala vira texto com o Whisper' : 'Análise mais precisa — IA lê o conteúdo real'}
+                    </p>
                   </div>
                 </div>
                 {transcript.trim().length > 30 && (
@@ -1591,11 +1618,9 @@ Responda APENAS com este JSON:
               <div className="flex-1 flex flex-col">
                 <textarea
                   className="input flex-1 min-h-[240px] resize-none text-xs leading-relaxed"
-                  placeholder={`Cole aqui a transcrição real do vídeo...
-
-A IA irá citar trechos EXATOS da transcrição no gancho, promessa, CTA e padrões detectados. Nenhuma frase será inventada.
-
-Quanto mais completa a transcrição, mais precisa será a análise.`}
+                  placeholder={analysisMode === 'transcribe'
+                    ? `A transcrição aparece aqui...\n\nEnvie um arquivo em Fonte do Vídeo e clique em "Transcrever Arquivo", ou cole/edite o texto manualmente.\n\nDepois é só copiar, salvar nos favoritos ou traduzir para PT.`
+                    : `Cole aqui a transcrição real do vídeo...\n\nA IA irá citar trechos EXATOS da transcrição no gancho, promessa, CTA e padrões detectados. Nenhuma frase será inventada.\n\nQuanto mais completa a transcrição, mais precisa será a análise.`}
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                 />
@@ -1632,7 +1657,8 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                 </div>
               </div>
 
-              {/* Data availability indicator */}
+              {/* Data availability indicator (só no modo referência) */}
+              {analysisMode === 'reference' && (
               <div className="pt-3 border-t border-gray-100 space-y-1.5">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Dados disponíveis para análise</p>
                 {[
@@ -1670,6 +1696,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                   </p>
                 )}
               </div>
+              )}
             </div>
           </div>
 
@@ -1684,7 +1711,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
           )}
 
           {/* Upgrade-path hint — shown only when no real data (inference mode) */}
-          {analysisMode !== 'script' && !hasRealData && !extractingFrames && (
+          {analysisMode === 'reference' && !hasRealData && !extractingFrames && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
               <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
                 <Info size={12} /> Análise por inferência — para análise mais precisa:
@@ -1707,7 +1734,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {analysisMode !== 'script' && !apiKey && (
+          {analysisMode === 'reference' && !apiKey && (
             <button
               onClick={() => setShowKeyModal(true)}
               className="btn-primary w-full py-2 text-xs mb-2"
@@ -1716,7 +1743,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
               <Key size={13} /> Adicionar API Key para Analisar
             </button>
           )}
-          {analysisMode !== 'script' && (
+          {analysisMode === 'reference' && (
           <div className="space-y-2">
             <button
               onClick={handleAnalyze}
@@ -1828,7 +1855,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
-            {(analysisMode === 'mine' || analysisMode === 'script' ? MY_VIDEO_TABS : TABS).map((t) => (
+            {(analysisMode === 'script' ? MY_VIDEO_TABS : TABS).map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === t.id
@@ -2768,17 +2795,6 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
         </div>
       )}
 
-      {/* ── ANALISADOR DE COMENTÁRIOS (sempre acessível) ────────────────── */}
-      {!loading && !analysis && (
-        <div className="mt-6">
-          <CommentAnalyzer />
-        </div>
-      )}
-      {analysis && !loading && activeTab === 'comentarios' && (
-        <div className="mt-4">
-          <CommentAnalyzer />
-        </div>
-      )}
     </div>
   )
 }
