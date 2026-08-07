@@ -193,51 +193,6 @@ export async function aiGenerateInsights(aiSettings, { posts, metrics }) {
   }))
 }
 
-// ─── Radar de Audiência — classificação de perfis colados como texto ─────────
-// Espelha reference/prompt-classificacao.md da skill radar-de-audiencia:
-// mesma rubrica, mesma regra dura de não inventar dado que não está na linha.
-
-export async function aiClassifyProfiles(aiSettings, lines) {
-  const messages = [
-    {
-      role: 'system',
-      content:
-        'Você classifica seguidores de Instagram e LinkedIn de uma consultora de IA aplicada a negócios. Responda SOMENTE com um array JSON válido, sem markdown, sem texto antes ou depois.',
-    },
-    {
-      role: 'user',
-      content: `Ela vende consultoria, mentoria e projetos para empresas — não vende curso de massa.
-
-Para CADA linha abaixo, devolva um objeto com:
-- nome (string)
-- handle (string) — @ se houver, senão vazio
-- cargo (string) — vazio se não estiver escrito
-- empresa (string) — vazio se não estiver escrito
-- setor (string) — 1 a 3 palavras, vazio se não der pra saber
-- origem ("IG" ou "LI")
-- decisor (0-10) — poder de decisão de compra: fundador/sócio/dono/CEO=10, C-level/diretor/VP/head=9, gerente com orçamento=7, coordenador/consultor autônomo=5-6, especialista sem gestão=3-4, analista/júnior/estudante=1-2, sem informação=3
-- fit (0-10) — fit de nicho: operação repetitiva/dados/processo documentado (indústria, logística, saúde, jurídico, SaaS B2B, financeiro)=9-10, agência/consultoria/e-commerce/educação/serviço com equipe=7-8, serviço pequeno/criador com produto e time=5-6, criador solo/liberal sem equipe=3-4, estudante/hobbyista=1-2, sem informação=3
-- alcance (0-10) — 50k+=10, 10-50k=8, 3-10k=6, 800-3k=4, abaixo de 800=2, sem informação=3
-- tipo — exatamente um de: "Cliente potencial", "Parceiro", "Amplificador", "Par sênior", "Audiência", "Fora do perfil"
-- porque (string, máx 18 palavras) — sinal concreto, sem adjetivo de venda
-- abordagem (string, máx 14 palavras) — gancho de primeira mensagem, vazio se tipo for "Fora do perfil"
-
-Regra dura: não invente cargo, empresa ou número que não esteja na linha. Falta de informação vira campo vazio e nota 3 no eixo afetado, nunca uma suposição otimista.
-
-Linhas:
-${lines.map((l, i) => `${i + 1}. ${l}`).join('\n')}
-
-Devolva um array JSON com exatamente ${lines.length} objeto(s), na mesma ordem das linhas.`,
-    },
-  ]
-
-  const text = await callAI(aiSettings, messages, { temperature: 0.3, maxTokens: 4000 })
-  const parsed = parseJSON(text)
-  if (!Array.isArray(parsed)) throw new Error('Resposta da IA não veio como array.')
-
-  return lines.map((line, i) => ({ raw: line, ...(parsed[i] || {}) }))
-}
-
 export async function testConnection(aiSettings) {
   const messages = [{ role: 'user', content: 'Reply with exactly: {"ok":true}' }]
   const text = await callAI(aiSettings, messages, { maxTokens: 20 })
