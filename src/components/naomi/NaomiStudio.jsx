@@ -127,7 +127,7 @@ export default function NaomiStudio() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 400,
           system: withManualOperacional(NAOMI_SYSTEM),
           messages: [{ role: 'user', content: buildSuggestionsPrompt() }],
@@ -168,7 +168,7 @@ export default function NaomiStudio() {
       const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
+        body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
       })
 
       if (!res.ok) {
@@ -195,7 +195,7 @@ export default function NaomiStudio() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1000,
           messages: [{ role: 'user', content: `Translate this video generation prompt from Portuguese to English. Keep all technical terms, character descriptions, camera instructions, and formatting intact. Return ONLY the translated prompt, no preamble:\n\n${result.video_prompt}` }],
         }),

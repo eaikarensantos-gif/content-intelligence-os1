@@ -185,7 +185,7 @@ export default function CommunityStudio() {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 800,
           messages: [{ role: 'user', content: `${instruction}\n\n${currentPost}` }],
         }),
@@ -216,7 +216,7 @@ export default function CommunityStudio() {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 1500,
           system: COMMUNITY_SYSTEM,
           messages: [{ role: 'user', content: buildPrompt({ slotId, weekTheme, fissura: fissuras[slotId] }) }],
@@ -257,7 +257,7 @@ export default function CommunityStudio() {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 1000,
           system: COMMUNITY_SYSTEM,
           messages: [{ role: 'user', content: buildPrompt({ slotId: 'enquete', weekTheme: enqueteTema, fissura: enqueteFissura }) }],

@@ -163,7 +163,7 @@ Regras:
 - Ordene por relevance (alto primeiro)
 - Retorne APENAS o JSON, sem texto antes ou depois`
       const res = await mkClient(apiKey).messages.create({
-        model: 'claude-haiku-4-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       })
@@ -298,7 +298,7 @@ Resumo: ${desc}
 
 Retorne JSON: {"titulo": "...", "resumo": "..."}`
       const res = await mkClient(apiKey).messages.create({
-        model: 'claude-haiku-4-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       })
@@ -324,7 +324,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
     try {
       const prompt = buildPrompt(selected, format)
       const res = await mkClient(apiKey).messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5',
         max_tokens: 1200,
         system: withManualOperacional(withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.')),
         messages: [{ role: 'user', content: prompt }],

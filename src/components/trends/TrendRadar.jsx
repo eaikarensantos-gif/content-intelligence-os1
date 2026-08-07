@@ -234,7 +234,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 8192,
       system: withAntiAIFilter('You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.'),
       messages: [{ role: 'user', content: prompt }],
