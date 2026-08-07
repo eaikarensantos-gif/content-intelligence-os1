@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { enrichMetric, generateInsights } from '../utils/analytics'
 import { dbLoadAll, dbSaveAll } from '../lib/db'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { DEFAULT_WEIGHTS, DEFAULT_CUTS, mergeAudienceProfiles, audienceProfileKey } from '../utils/audienceRadar'
 
 /**
  * v1: bannedWords + bannedPhrases (duas listas soltas) viram uma só,
@@ -537,33 +536,6 @@ const useStore = create(
       deleteLead: (id) =>
         set((s) => ({ leads: s.leads.filter((l) => l.id !== id) })),
 
-      // ── Radar de Audiência ───────────────────────────────────
-      // Espelha o contrato de dados da skill .claude/skills/radar-de-audiencia/:
-      // um perfis.json coletado pelo Claude Code carrega direto aqui.
-      audienceProfiles: [],
-      audienceWeights: { ...DEFAULT_WEIGHTS },
-      audienceCuts: { ...DEFAULT_CUTS },
-
-      setAudienceWeights: (weights) => set({ audienceWeights: weights }),
-      setAudienceCuts: (cuts) => set({ audienceCuts: cuts }),
-      resetAudienceWeights: () => set({ audienceWeights: { ...DEFAULT_WEIGHTS }, audienceCuts: { ...DEFAULT_CUTS } }),
-
-      // rows: objetos crus (de perfis.json, IA ou classificador local).
-      // Merge por URL normalizada — o `eng` já editado pela Karen sempre
-      // vence, a menos que o registro novo traga um eng explícito e válido.
-      importAudienceProfiles: (rows) => {
-        const { rows: merged, novos, atualizados, engMantido } = mergeAudienceProfiles(get().audienceProfiles, rows)
-        set({ audienceProfiles: merged })
-        return { novos, atualizados, engMantido }
-      },
-
-      updateAudienceProfileEng: (key, eng) =>
-        set((s) => ({
-          audienceProfiles: s.audienceProfiles.map((r) => (audienceProfileKey(r) === key ? { ...r, eng } : r)),
-        })),
-
-      clearAudienceProfiles: () => set({ audienceProfiles: [] }),
-
       // ── Archetypes ───────────────────────────────────────────
       archetypes: [],
       hybridArchetypes: [],
@@ -692,9 +664,6 @@ const useStore = create(
         creatorProfile: s.creatorProfile,
         desafioHistory: s.desafioHistory,
         brainItems: s.brainItems,
-        audienceProfiles: s.audienceProfiles,
-        audienceWeights: s.audienceWeights,
-        audienceCuts: s.audienceCuts,
         // brandVoice ficava de fora do partialize — sem Supabase configurado,
         // o questionário de voz da marca se perdia a cada reload. Corrigido aqui.
         brandVoice: s.brandVoice,
