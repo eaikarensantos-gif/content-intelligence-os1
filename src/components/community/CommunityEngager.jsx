@@ -130,7 +130,7 @@ export default function CommunityEngager() {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 400,
           messages: [{
             role: 'user',
@@ -164,7 +164,7 @@ export default function CommunityEngager() {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 1200,
           system: COMMENT_SYSTEM,
           messages: [{ role: 'user', content: buildPrompt({ post, author, relationship, tone, length, context }) }],

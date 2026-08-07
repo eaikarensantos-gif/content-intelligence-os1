@@ -1268,7 +1268,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5',
         max_tokens: 4000,
         system: withManualOperacional(ANTI_AI_FILTER),
         messages: [{
@@ -1294,7 +1294,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5',
         max_tokens: 1500,
         system: withManualOperacional(ANTI_AI_FILTER),
         messages: [{
@@ -1446,7 +1446,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 4000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1507,7 +1507,7 @@ TEXTO:\n${revText.trim()}`
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 1500,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1571,7 +1571,7 @@ ${revText.trim()}`
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 2000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1603,7 +1603,7 @@ ${revText.trim()}`
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 2000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1670,7 +1670,7 @@ ${revText.trim()}`
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 5000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
@@ -1721,7 +1721,7 @@ ${revText.trim()}`
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 3000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
@@ -1761,7 +1761,7 @@ ${revText.trim()}`
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 600,
           system: withManualOperacional(`${ANTI_AI_FILTER}
 
@@ -1835,7 +1835,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 5000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
@@ -1994,7 +1994,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 1000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
@@ -2044,7 +2044,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 800,
           messages: [{ role: 'user', content: `Analise a temperatura de engajamento dos temas abaixo para uma criadora brasileira que fala de IA aplicada a negócio pequeno, estrutura para PJ e autônomo, e o celular como ferramenta de operação. Audiência majoritariamente de donos de negócio pequeno e profissionais por conta.
 
@@ -2091,7 +2091,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1500,
           system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
@@ -2200,7 +2200,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 800,
           messages: [{ role: 'user', content: `${isPessoal
             ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`

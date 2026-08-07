@@ -263,7 +263,7 @@ function VoiceCalibrator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-5',
           max_tokens: 2000,
           messages: [{ role: 'user', content: `Analise estes posts reais de um criador de conteúdo e extraia padrões de voz:
 

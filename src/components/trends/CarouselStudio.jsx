@@ -123,7 +123,7 @@ Responda APENAS com JSON válido:
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 6000,
       system: withManualOperacional(withAntiAIFilter(`Você é um expert em carrosseis virais para Instagram e LinkedIn. Responda APENAS com JSON válido, sem markdown, sem code blocks.
 
