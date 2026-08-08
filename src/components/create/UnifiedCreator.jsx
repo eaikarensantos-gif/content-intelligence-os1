@@ -553,6 +553,8 @@ Execute o protocolo:
 5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
 6. Entregue apenas versões aprovadas
 
+IMPORTANTE: os passos acima são um processo mental, não texto de saída. Não escreva raciocínio, rascunho, autocrítica ou notas de validação na resposta — faça isso em silêncio e entregue direto o resultado final. A resposta inteira deve ser o objeto JSON abaixo, sem nenhum texto antes ou depois, começando direto com "{".
+
 Responda EXCLUSIVAMENTE com JSON válido:
 {
   "versao_principal": "roteiro completo (use \\n para quebras)",
@@ -693,6 +695,8 @@ Execute o protocolo completo:
    - Se o exercício for genérico ou futuro → reescreva
 4. Gere o exercício prático e o CTA fechado.
 5. Entregue apenas versões aprovadas.
+
+IMPORTANTE: os passos acima (incluindo os 5 testes) são um processo mental, não texto de saída. Não escreva raciocínio, rascunho, autocrítica ou notas de validação na resposta — faça isso em silêncio e entregue direto o resultado final. A resposta inteira deve ser o objeto JSON abaixo, sem nenhum texto antes ou depois, começando direto com "{".
 
 ESTRUTURA DE CADA VERSÃO (slides do carrossel):
 - slide 1: abertura — estado interno (1 frase, a pessoa se reconhece)
@@ -1672,7 +1676,7 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 6000,
+          max_tokens: 8000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
         }),
@@ -1841,7 +1845,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 7000,
+          max_tokens: 8000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
