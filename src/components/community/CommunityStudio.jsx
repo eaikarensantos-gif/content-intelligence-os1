@@ -176,13 +176,12 @@ export default function CommunityStudio() {
         : `Reescreva o texto abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o texto, sem explicações.`
       : `Reescreva o texto abaixo em no máximo 15 linhas, mantendo o tom, voz, hook e conclusão originais. Corte explicações redundantes, não corte ideias. Retorne apenas o texto reescrito, sem explicações.`
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
@@ -207,13 +206,12 @@ export default function CommunityStudio() {
     setDrafts(d => ({ ...d, [slotId]: null }))
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
@@ -248,13 +246,12 @@ export default function CommunityStudio() {
     setEnqueteError(null)
     setEnqueteDraft(null)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
