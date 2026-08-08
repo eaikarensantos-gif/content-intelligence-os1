@@ -3814,23 +3814,6 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
           </div>
         )}
 
-        {/* Links para ferramentas avançadas */}
-        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-          <span className="text-[10px] text-gray-300 uppercase font-semibold">Avançado:</span>
-          <button onClick={() => navigate('/thoughts')} className="text-[10px] text-gray-400 hover:text-purple-500 flex items-center gap-1 transition-colors">
-            <Brain size={10} /> Captura de Pensamento
-          </button>
-          <button onClick={() => navigate('/generate')} className="text-[10px] text-gray-400 hover:text-orange-500 flex items-center gap-1 transition-colors">
-            <Wand2 size={10} /> Explorador de Ideias
-          </button>
-          <button onClick={() => navigate('/text')} className="text-[10px] text-gray-400 hover:text-emerald-500 flex items-center gap-1 transition-colors">
-            <Layers size={10} /> Adaptador Multi-plataforma
-          </button>
-          <button onClick={() => navigate('/briefing')} className="text-[10px] text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors">
-            <Film size={10} /> Briefing Studio
-          </button>
-        </div>
-
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{error}</div>
         )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import LoginGate from './components/auth/LoginGate'
 import Sidebar from './components/layout/Sidebar'
@@ -19,10 +19,7 @@ const Analytics = lazy(() => import('./components/analytics/Analytics'))
 const SocialDashboard = lazy(() => import('./components/analytics/SocialDashboard'))
 const AudienceAnalytics = lazy(() => import('./components/analytics/AudienceAnalytics'))
 const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
-const ThoughtCapture = lazy(() => import('./components/thoughts/ThoughtCapture'))
-const TextStudio = lazy(() => import('./components/text/TextStudio'))
-const IdeaGenerator = lazy(() => import('./components/generate/IdeaGenerator'))
-const UnifiedCreator = lazy(() => import('./components/create/UnifiedCreator'))
+const CreateHub = lazy(() => import('./components/create/CreateHub'))
 const PresentationMode = lazy(() => import('./components/presentation/PresentationMode'))
 const ContentDNA = lazy(() => import('./components/dna/ContentDNA'))
 const AccessLog = lazy(() => import('./components/auth/AccessLog'))
@@ -40,6 +37,17 @@ const WebClipper = lazy(() => import('./components/clipper/WebClipper'))
 const NewsGenerator = lazy(() => import('./components/news/NewsGenerator'))
 const PDFContentGenerator = lazy(() => import('./components/pdf/PDFContentGenerator'))
 const CommunityStudio = lazy(() => import('./components/community/CommunityStudio'))
+
+// As antigas rotas soltas (/thoughts, /generate, /text, /briefing) agora vivem
+// como abas dentro do Studio de Criação — isso preserva links e favoritos
+// existentes (inclusive com querystring, ex. /generate?context=...) em vez de
+// quebrá-los.
+function ToolRedirect({ tool }) {
+  const location = useLocation()
+  const params = new URLSearchParams(location.search)
+  params.set('tool', tool)
+  return <Navigate to={`/create?${params.toString()}`} replace />
+}
 
 function PageLoader() {
   return (
@@ -131,11 +139,12 @@ export default function App() {
             <Route path="/video" element={<VideoAnalyzer />} />
             {/* key força remount ao trocar de rota — sem ele o React reaproveita a
                 instância e o estado de um estúdio vaza pro outro */}
-            <Route path="/create" element={<UnifiedCreator key="trabalho" />} />
-            <Route path="/create-pessoal" element={<UnifiedCreator key="pessoal" persona="pessoal" />} />
-            <Route path="/thoughts" element={<ThoughtCapture />} />
-            <Route path="/text" element={<TextStudio />} />
-            <Route path="/generate" element={<IdeaGenerator />} />
+            <Route path="/create" element={<CreateHub key="trabalho" />} />
+            <Route path="/create-pessoal" element={<CreateHub key="pessoal" persona="pessoal" />} />
+            <Route path="/thoughts" element={<ToolRedirect tool="thoughts" />} />
+            <Route path="/text" element={<ToolRedirect tool="text" />} />
+            <Route path="/generate" element={<ToolRedirect tool="generate" />} />
+            <Route path="/briefing" element={<ToolRedirect tool="briefing" />} />
             <Route path="/presentation" element={<PresentationMode />} />
             <Route path="/dna" element={<ContentDNA />} />
             <Route path="/reports" element={<ReportsPage />} />
