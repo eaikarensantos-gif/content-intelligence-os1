@@ -4,6 +4,10 @@ import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { youtubeSearch } from '../../lib/aiService'
+import { withAntiAIFilter } from '../../lib/antiAIFilter'
+import { withManualOperacional } from '../../lib/manualOperacional'
+import { buildVoiceContext } from '../../utils/voiceContext'
+import { assertNotTruncated } from '../../utils/aiJson'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
@@ -48,7 +52,7 @@ const EMPTY = {
   caption: '', cta: '', creation_order: null, reference_links: [], pilar_id: '',
 }
 
-async function generateWithAI(apiKey, type, context) {
+async function generateWithAI(apiKey, type, context, voiceCtx = '') {
   const prompts = {
     title: `Você é especialista em títulos de conteúdo para criadores brasileiros. Crie 4 opções de título para o seguinte conteúdo.
 
@@ -161,12 +165,30 @@ NÃO coloque aspas nas queries.
 Responda APENAS com JSON válido (array de 4 strings), sem markdown:
 ["query 1", "query 2", "query 3", "query 4"]`,
   }
+  // refQueries são utilitárias (queries de busca) — Haiku basta e a voz de marca
+  // não se aplica. Todo o resto é texto criativo: passa pelo mesmo sistema dos
+  // outros geradores (anti-AI filter + manual operacional + voz/lista negra).
+  const isCreative = type !== 'refQueries'
   const res = await fetch('/api/ai?action=anthropic', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{ role: 'user', content: prompts[type] }] }),
+    body: JSON.stringify({
+      model: isCreative ? 'claude-sonnet-5' : 'claude-haiku-4-5-20251001',
+      max_tokens: type === 'script' ? 3000 : type === 'caption' ? 2000 : 1024,
+      ...(isCreative && {
+        system: withManualOperacional(withAntiAIFilter(
+          `Você escreve conteúdo para Karen Santos, criadora brasileira. Siga as regras de voz abaixo em tudo que gerar.${voiceCtx}`
+        )),
+      }),
+      messages: [{ role: 'user', content: prompts[type] }],
+    }),
   })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error?.message || `Erro ${res.status}`)
+  }
   const data = await res.json()
+  assertNotTruncated(data)
   return data.content?.[0]?.text || ''
 }
 
@@ -197,6 +219,13 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const linkRef = useRef(null)
 
   const allIdeas = useStore((s) => s.ideas)
+  const brandVoice = useStore((s) => s.brandVoice)
+  const dislikedContent = useStore((s) => s.dislikedContent)
+  const posicionamento = useStore((s) => s.posicionamento)
+  const voiceCtx = useMemo(
+    () => buildVoiceContext(brandVoice, dislikedContent, posicionamento?.lista_negra || [], posicionamento),
+    [brandVoice, dislikedContent, posicionamento],
+  )
   const tagHistory = useMemo(() => {
     const counts = {}
     ;(allIdeas || []).forEach((idea) => {
@@ -283,7 +312,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
     setGeneratingTitle(true); setTitleSuggestions([])
     try {
-      const raw = await generateWithAI(apiKey, 'title', form)
+      const raw = await generateWithAI(apiKey, 'title', form, voiceCtx)
       const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
       const match = clean.match(/\[[\s\S]*\]/)
       const parsed = JSON.parse(match ? match[0] : clean)
@@ -299,7 +328,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     if (!form.title.trim()) { alert('Preencha o título antes de gerar o gancho.'); return }
     setGeneratingHook(true)
     try {
-      const hook = await generateWithAI(apiKey, 'hook', form)
+      const hook = await generateWithAI(apiKey, 'hook', form, voiceCtx)
       if (hook.trim()) {
         set('description', hook.trim() + (form.description.trim() ? '\n\n' + form.description.trim() : ''))
         setTimeout(() => autoResizeDesc(descRef.current), 50)
@@ -314,7 +343,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     if (!form.title.trim()) { alert('Preencha o título antes de gerar o roteiro.'); return }
     setGeneratingScript(true)
     try {
-      const script = await generateWithAI(apiKey, 'script', form)
+      const script = await generateWithAI(apiKey, 'script', form, voiceCtx)
       if (script.trim()) set('script', script.trim())
     } catch { /* silent */ }
     setGeneratingScript(false)
@@ -327,7 +356,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     const setter = type === 'caption' ? setGeneratingCaption : setGeneratingCta
     setter(true)
     try {
-      const result = await generateWithAI(apiKey, type, form)
+      const result = await generateWithAI(apiKey, type, form, voiceCtx)
       if (type === 'cta') {
         const clean = result.replace(/```[a-z]*\n?/gi, '').trim()
         const match = clean.match(/\[[\s\S]*\]/)
@@ -361,7 +390,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       } else {
         const apiKey = localStorage.getItem(LS_KEY)
         if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key Anthropic para buscar referências.'); setSearchingRefs(false); return }
-        const raw = await generateWithAI(apiKey, 'refQueries', form)
+        const raw = await generateWithAI(apiKey, 'refQueries', form, voiceCtx)
         const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
         const match = clean.match(/\[[\s\S]*\]/)
         const parsed = JSON.parse(match ? match[0] : clean)
