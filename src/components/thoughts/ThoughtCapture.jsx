@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { extractJsonObject } from '../../utils/aiJson.js'
+import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson.js'
 import { useNavigate } from 'react-router-dom'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
@@ -128,6 +128,7 @@ TikTok performa quando os primeiros 2 segundos são absurdamente específicos, h
 
 ─────────────────────────────────────────────────────
 ${voiceContext || ''}${regenInstruction || ''}
+IMPORTANTE: não escreva nenhum texto de raciocínio, rascunho ou explicação fora do JSON. A resposta inteira deve ser o objeto JSON abaixo, sem nada antes ou depois, começando direto com "{".
 Responda APENAS com JSON válido, sem texto antes ou depois:
 {
   "core_insight": "a essência do pensamento em 1 frase poderosa",
@@ -245,8 +246,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
-      max_tokens: 8000,
-      system: withManualOperacional(withAntiAIFilter('You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks.')),
+      max_tokens: 12000,
+      system: withManualOperacional(withAntiAIFilter('You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks. Your entire response must start with "{" — no reasoning, drafts, or commentary outside the JSON.')),
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -257,8 +258,9 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   }
 
   const data = await res.json()
+  assertNotTruncated(data)
   const raw = data.content?.[0]?.text || ''
-  return extractJsonObject(raw, 'Resposta inválida da API')
+  return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
 // ─── Loading phases ───────────────────────────────────────────────────────────

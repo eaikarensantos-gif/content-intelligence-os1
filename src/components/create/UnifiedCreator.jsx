@@ -18,6 +18,7 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
+import { assertNotTruncated } from '../../utils/aiJson'
 import { checkCoherence } from '../../lib/coherenceCheck'
 import { lintText } from '../../utils/brandLinter'
 import {
@@ -552,6 +553,8 @@ Execute o protocolo:
 5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
 6. Entregue apenas versões aprovadas
 
+IMPORTANTE: os passos acima são um processo mental, não texto de saída. Não escreva raciocínio, rascunho, autocrítica ou notas de validação na resposta — faça isso em silêncio e entregue direto o resultado final. A resposta inteira deve ser o objeto JSON abaixo, sem nenhum texto antes ou depois, começando direto com "{".
+
 Responda EXCLUSIVAMENTE com JSON válido:
 {
   "versao_principal": "roteiro completo (use \\n para quebras)",
@@ -692,6 +695,8 @@ Execute o protocolo completo:
    - Se o exercício for genérico ou futuro → reescreva
 4. Gere o exercício prático e o CTA fechado.
 5. Entregue apenas versões aprovadas.
+
+IMPORTANTE: os passos acima (incluindo os 5 testes) são um processo mental, não texto de saída. Não escreva raciocínio, rascunho, autocrítica ou notas de validação na resposta — faça isso em silêncio e entregue direto o resultado final. A resposta inteira deve ser o objeto JSON abaixo, sem nenhum texto antes ou depois, começando direto com "{".
 
 ESTRUTURA DE CADA VERSÃO (slides do carrossel):
 - slide 1: abertura — estado interno (1 frase, a pessoa se reconhece)
@@ -1671,7 +1676,7 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 5000,
+          max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
         }),
@@ -1681,6 +1686,7 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
@@ -1732,6 +1738,7 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
@@ -1808,7 +1815,9 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
+      if (!res.ok) return
       const data = await res.json()
+      assertNotTruncated(data)
       const text = data.content?.[0]?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
@@ -1836,7 +1845,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 5000,
+          max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
@@ -1846,6 +1855,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
@@ -2005,6 +2015,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const text = data.content?.[0]?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
 
@@ -3806,23 +3817,6 @@ Ex: 'Qual promessa de ferramenta de IA não se paga em negócio pequeno'"
             })}
           </div>
         )}
-
-        {/* Links para ferramentas avançadas */}
-        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-          <span className="text-[10px] text-gray-300 uppercase font-semibold">Avançado:</span>
-          <button onClick={() => navigate('/thoughts')} className="text-[10px] text-gray-400 hover:text-purple-500 flex items-center gap-1 transition-colors">
-            <Brain size={10} /> Captura de Pensamento
-          </button>
-          <button onClick={() => navigate('/generate')} className="text-[10px] text-gray-400 hover:text-orange-500 flex items-center gap-1 transition-colors">
-            <Wand2 size={10} /> Explorador de Ideias
-          </button>
-          <button onClick={() => navigate('/text')} className="text-[10px] text-gray-400 hover:text-emerald-500 flex items-center gap-1 transition-colors">
-            <Layers size={10} /> Adaptador Multi-plataforma
-          </button>
-          <button onClick={() => navigate('/briefing')} className="text-[10px] text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors">
-            <Film size={10} /> Briefing Studio
-          </button>
-        </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{error}</div>
