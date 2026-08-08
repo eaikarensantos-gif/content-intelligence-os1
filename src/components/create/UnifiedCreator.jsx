@@ -18,6 +18,7 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
+import { assertNotTruncated } from '../../utils/aiJson'
 import { checkCoherence } from '../../lib/coherenceCheck'
 import { lintText } from '../../utils/brandLinter'
 import {
@@ -1671,7 +1672,7 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 5000,
+          max_tokens: 6000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
         }),
@@ -1681,6 +1682,7 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
@@ -1732,6 +1734,7 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
@@ -1808,7 +1811,9 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
+      if (!res.ok) return
       const data = await res.json()
+      assertNotTruncated(data)
       const text = data.content?.[0]?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
@@ -1836,7 +1841,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 5000,
+          max_tokens: 7000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
@@ -1846,6 +1851,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
@@ -2005,6 +2011,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const text = data.content?.[0]?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
 
