@@ -175,6 +175,7 @@ async function generateIdeas(apiKey, params) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
+      thinking: { type: 'disabled' },
       max_tokens: 6000,
       system: withAntiAIFilter('You are a sharp, curious Brazilian content strategist. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER default to sad, heavy, or dramatic tone. Respond ONLY with valid JSON. No markdown, no code blocks, no text before or after the JSON.'),
       messages: [{ role: 'user', content: prompt }],

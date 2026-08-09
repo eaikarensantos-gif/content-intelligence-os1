@@ -122,6 +122,7 @@ async function runAnalysis(apiKey, draft, benchmarkText, creatorContext) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
+      thinking: { type: 'disabled' },
       max_tokens: 2000,
       system: 'You are an authenticity analyzer. Respond ONLY with valid JSON. No markdown, no code blocks.',
       messages: [{ role: 'user', content: prompt }],

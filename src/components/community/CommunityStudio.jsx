@@ -185,6 +185,7 @@ export default function CommunityStudio() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 800,
           messages: [{ role: 'user', content: `${instruction}\n\n${currentPost}` }],
         }),
@@ -215,6 +216,7 @@ export default function CommunityStudio() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 1500,
           system: COMMUNITY_SYSTEM,
           messages: [{ role: 'user', content: buildPrompt({ slotId, weekTheme, fissura: fissuras[slotId] }) }],
@@ -255,6 +257,7 @@ export default function CommunityStudio() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 1000,
           system: COMMUNITY_SYSTEM,
           messages: [{ role: 'user', content: buildPrompt({ slotId: 'enquete', weekTheme: enqueteTema, fissura: enqueteFissura }) }],

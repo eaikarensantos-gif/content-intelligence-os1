@@ -1274,6 +1274,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
+        thinking: { type: 'disabled' },
         max_tokens: 4000,
         system: withManualOperacional(ANTI_AI_FILTER),
         messages: [{
@@ -1300,6 +1301,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
+        thinking: { type: 'disabled' },
         max_tokens: 1500,
         system: withManualOperacional(ANTI_AI_FILTER),
         messages: [{
@@ -1452,6 +1454,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 4000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1513,6 +1516,7 @@ TEXTO:\n${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 1500,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1577,6 +1581,7 @@ ${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 2000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1609,6 +1614,7 @@ ${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 2000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1676,6 +1682,7 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
@@ -1728,6 +1735,7 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 3000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
@@ -1769,6 +1777,7 @@ ${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 600,
           system: withManualOperacional(`${ANTI_AI_FILTER}
 
@@ -1845,6 +1854,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
@@ -2005,6 +2015,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 1000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
@@ -2212,6 +2223,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 800,
           messages: [{ role: 'user', content: `${isPessoal
             ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`

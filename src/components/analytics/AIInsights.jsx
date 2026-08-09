@@ -213,6 +213,7 @@ export default function AIInsights() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 4000,
           messages: [{ role: 'user', content: buildPrompt(enriched) }],
         }),

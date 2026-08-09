@@ -93,6 +93,7 @@ ${suggestionsList}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 2000,
           messages: [{ role: 'user', content: prompt }],
         }),
@@ -148,6 +149,7 @@ ${text.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 1500,
           messages: [{ role: 'user', content: prompt }],
         }),

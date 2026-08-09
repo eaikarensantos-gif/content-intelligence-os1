@@ -259,6 +259,7 @@ export default function CommunityResources() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
           max_tokens: 4096,
           messages: [{ role: 'user', content: PROMPT(t, depth) }],
         }),
