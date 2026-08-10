@@ -49,7 +49,8 @@ async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
-      thinking: { type: 'disabled' },
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
@@ -699,7 +700,8 @@ export default function ContentArchetypes() {
       // Build the full Anthropic API body so Make just forwards it
       const apiBody = {
         model: 'claude-sonnet-5',
-        thinking: { type: 'disabled' },
+        thinking: { type: 'adaptive' },
+        output_config: { effort: 'medium' },
         max_tokens: 8000,
         system: 'Voce e um analista de Instagram de elite com conhecimento profundo sobre criadores brasileiros e internacionais. USE SEU CONHECIMENTO DE TREINAMENTO sobre o criador mencionado. Voce CONHECE esses criadores. NAO peca mais informacoes. Analise com o que voce ja sabe. Retorne JSON valido sem markdown sem crases. Estrutura: perfil (nome, nicho, seguidores_estimados, bio_resumida), pilares_conteudo (lista), formatos_principais (lista), estrategia_gancho (descricao + exemplos reais), tom_de_voz, estrategia_engajamento, pontos_fortes (lista), padroes_virais (lista com exemplos de conteudos que engajam — incluindo conteudos leves, divertidos e inspiradores, nao apenas polemicas), frequencia_postagem, recomendacoes (lista do que aprender com esse criador — incluindo como equilibra conteudo reflexivo com leve).',
         messages: [

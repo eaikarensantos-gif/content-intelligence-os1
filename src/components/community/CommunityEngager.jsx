@@ -130,7 +130,8 @@ export default function CommunityEngager() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 400,
           messages: [{
             role: 'user',
@@ -164,7 +165,8 @@ export default function CommunityEngager() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 1200,
           system: COMMENT_SYSTEM,
           messages: [{ role: 'user', content: buildPrompt({ post, author, relationship, tone, length, context }) }],

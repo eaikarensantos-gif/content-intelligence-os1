@@ -41,7 +41,8 @@ Regras: "aumenta" só se o rascunho reforça claramente a âncora/pilares. "dilu
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
-      thinking: { type: 'disabled' },
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }],
     }),

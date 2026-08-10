@@ -1274,7 +1274,8 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        thinking: { type: 'disabled' },
+        thinking: { type: 'adaptive' },
+        output_config: { effort: 'medium' },
         max_tokens: 4000,
         system: withManualOperacional(ANTI_AI_FILTER),
         messages: [{
@@ -1301,7 +1302,8 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        thinking: { type: 'disabled' },
+        thinking: { type: 'adaptive' },
+        output_config: { effort: 'medium' },
         max_tokens: 1500,
         system: withManualOperacional(ANTI_AI_FILTER),
         messages: [{
@@ -1315,7 +1317,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     const raw = data.content?.[0]?.text || ''
     const match = raw.match(/\[[\s\S]*\]/)
     if (!match) throw new Error('Resposta inválida')
-    const parsed = JSON.parse(match[0])
+    const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
     if (!Array.isArray(parsed) || parsed.length !== entries.length) throw new Error('Tamanho inesperado')
     return parsed.map((s, i) => (typeof s === 'string' && s.trim() ? s.trim() : entries[i].text))
   }
@@ -1454,7 +1456,8 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 4000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1516,7 +1519,8 @@ TEXTO:\n${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 1500,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1530,7 +1534,7 @@ TEXTO:\n${revText.trim()}`
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('inválido')
-      const parsed = JSON.parse(match[0])
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
       // Detector determinístico: garante que estrutura proibida aparece na análise
       // mesmo quando o modelo deixa passar
       const det = detectCliches(revText)
@@ -1581,7 +1585,8 @@ ${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 2000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1614,7 +1619,8 @@ ${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 2000,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
@@ -1682,7 +1688,8 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
@@ -1697,7 +1704,7 @@ ${revText.trim()}`
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      const parsed = JSON.parse(match[0])
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
 
       // Varredura anti-clichê: content, caption e título já eram cobertos no
       // Studio Livre e no Carrossel, mas o roteiro de Reels nunca passou por
@@ -1735,7 +1742,8 @@ ${revText.trim()}`
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 3000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
@@ -1750,7 +1758,7 @@ ${revText.trim()}`
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      const parsedHooks = JSON.parse(match[0])
+      const parsedHooks = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
       try { await sweepAndFixPaths(parsedHooks, (o) => hookListPaths(o, 'hooks', 'frase')) } catch { /* mantém o original */ }
       setEngHooks(parsedHooks)
     } catch (err) {
@@ -1777,7 +1785,8 @@ ${revText.trim()}`
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 600,
           system: withManualOperacional(`${ANTI_AI_FILTER}
 
@@ -1830,7 +1839,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const text = data.content?.[0]?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
-        const parsed = JSON.parse(match[0])
+        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
         // Estes hooks viram o slide 1 do carrossel — passam pela mesma varredura
         try { await sweepAndFixPaths(parsed, (o) => hookListPaths(o, 'hooks')) } catch { /* mantém o original */ }
         setCarHooks(parsed.hooks || [])
@@ -1854,7 +1863,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
@@ -1869,7 +1879,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const raw = data.content?.[0]?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
-      const parsed = JSON.parse(match[0])
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
 
       // Varredura anti-clichê slide a slide, com verificação depois da reescrita
       let report = null
@@ -2015,7 +2025,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 1000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
@@ -2087,7 +2098,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const data = await res.json()
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
-        const results = JSON.parse(match[0]).resultados || []
+        const results = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')).resultados || []
         setSavedThemes(prev => prev.map(t => {
           if (!targets.some(tg => tg.id === t.id)) return t
           const r = results.find(r => r.tema === t.tema)
@@ -2138,7 +2149,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
       const data = await res.json()
       const match = (data.content?.[0]?.text || '').match(/\[[\s\S]*\]/)
       if (!match) return fallback()
-      const parsed = JSON.parse(match[0])
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
       // Só aceita categoria que existe na lista da persona — modelo às vezes inventa
       return temas.map((t) => {
         const sugerida = parsed.find(p => p.tema === t)?.categoria
@@ -2223,7 +2234,8 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 800,
           messages: [{ role: 'user', content: `${isPessoal
             ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`
@@ -2252,7 +2264,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const existing = new Set(savedThemes.map(t => t.tema))
-        const novos = (JSON.parse(match[0]).temas || [])
+        const novos = (JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')).temas || [])
           .filter(t => !existing.has(t.tema))
           .map(t => ({
             id: Date.now() + Math.random(),

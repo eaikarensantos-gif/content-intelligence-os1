@@ -128,7 +128,8 @@ export default function NaomiStudio() {
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'disabled' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: 400,
           system: withManualOperacional(NAOMI_SYSTEM),
           messages: [{ role: 'user', content: buildSuggestionsPrompt() }],
@@ -169,7 +170,7 @@ export default function NaomiStudio() {
       const res = await fetch('/api/ai?action=anthropic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'disabled' }, max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
+        body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
       })
 
       if (!res.ok) {
