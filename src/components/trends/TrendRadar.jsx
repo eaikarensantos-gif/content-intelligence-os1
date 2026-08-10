@@ -247,7 +247,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   }
 
   const data = await response.json()
-  const raw = data.content?.[0]?.text || ''
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
   const match = raw.match(/\{[\s\S]*/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
   return repairAndParseJSON(match[0])

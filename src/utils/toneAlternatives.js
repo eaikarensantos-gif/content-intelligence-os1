@@ -47,6 +47,6 @@ Responda APENAS com JSON:
 
   if (!res.ok) throw new Error('API error')
   const data = await res.json()
-  const text = data.content?.[0]?.text || ''
+  const text = data.content?.find(b => b.type === 'text')?.text || ''
   return extractJsonArray(text, 'No JSON')
 }

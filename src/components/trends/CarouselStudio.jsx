@@ -140,7 +140,7 @@ REGRA INVIOLÁVEL: O conteúdo do carrossel deve ser 100% fiel ao tema solicitad
   }
 
   const data = await response.json()
-  const raw = data.content?.[0]?.text || ''
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
   return extractJsonObject(raw, 'Resposta da IA não contém JSON válido')
 }
 

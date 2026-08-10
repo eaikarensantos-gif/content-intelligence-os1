@@ -56,7 +56,7 @@ async function callAnthropic(prompt, system, maxTokens = 2000) {
   }
 
   const data = await res.json()
-  const text = data.content?.[0]?.text || ''
+  const text = data.content?.find(b => b.type === 'text')?.text || ''
   return text.replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/im, '').trim()
 }
 

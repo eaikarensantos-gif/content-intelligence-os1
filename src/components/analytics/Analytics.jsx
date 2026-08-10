@@ -1478,7 +1478,7 @@ Retorne EXCLUSIVAMENTE JSON válido:
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
             const data = await res.json()
-            const text = data.content?.[0]?.text || ''
+            const text = data.content?.find(b => b.type === 'text')?.text || ''
             const jsonMatch = text.match(/\{[\s\S]*\}/)
             if (!jsonMatch) throw new Error('Resposta inválida da IA')
             setPubliReport(JSON.parse(jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')))
@@ -1586,7 +1586,7 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
             const data = await res.json()
-            const text = data.content?.[0]?.text || ''
+            const text = data.content?.find(b => b.type === 'text')?.text || ''
             const jsonMatch = text.match(/\{[\s\S]*\}/)
             if (!jsonMatch) throw new Error('Resposta inválida da IA')
             const parsed = JSON.parse(jsonMatch[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))

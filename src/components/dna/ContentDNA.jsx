@@ -284,7 +284,7 @@ REGRAS PARA creator_references:
   }
 
   const data = await res.json()
-  const raw = data.content?.[0]?.text || ''
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
   return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 

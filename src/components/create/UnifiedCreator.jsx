@@ -1286,7 +1286,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     })
     if (!res.ok) throw new Error(`Erro ${res.status}`)
     const data = await res.json()
-    return data.content?.[0]?.text?.trim() || text
+    return data.content?.find(b => b.type === 'text')?.text?.trim() || text
   }
 
   /* Reescrita em lote das linhas curtas — título, opções de título e ganchos.
@@ -1314,7 +1314,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     })
     if (!res.ok) throw new Error(`Erro ${res.status}`)
     const data = await res.json()
-    const raw = data.content?.[0]?.text || ''
+    const raw = data.content?.find(b => b.type === 'text')?.text || ''
     const match = raw.match(/\[[\s\S]*\]/)
     if (!match) throw new Error('Resposta inválida')
     const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -1470,7 +1470,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
       }
 
       const data = await res.json()
-      const jsonText = data.content?.[0]?.text || ''
+      const jsonText = data.content?.find(b => b.type === 'text')?.text || ''
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 
@@ -1531,7 +1531,7 @@ TEXTO:\n${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('inválido')
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -1597,7 +1597,7 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
-      setRevShortened(data.content?.[0]?.text?.trim() || '')
+      setRevShortened(data.content?.find(b => b.type === 'text')?.text?.trim() || '')
     } catch {
       /* silent */
     } finally {
@@ -1631,7 +1631,7 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
-      setRevRewritten(data.content?.[0]?.text?.trim() || '')
+      setRevRewritten(data.content?.find(b => b.type === 'text')?.text?.trim() || '')
     } catch {
       /* silent */
     } finally {
@@ -1701,7 +1701,7 @@ ${revText.trim()}`
       }
       const data = await res.json()
       assertNotTruncated(data)
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -1755,7 +1755,7 @@ ${revText.trim()}`
       }
       const data = await res.json()
       assertNotTruncated(data)
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       const parsedHooks = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -1836,7 +1836,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       if (!res.ok) return
       const data = await res.json()
       assertNotTruncated(data)
-      const text = data.content?.[0]?.text || ''
+      const text = data.content?.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
         const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -1876,7 +1876,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       }
       const data = await res.json()
       assertNotTruncated(data)
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -2038,7 +2038,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       }
       const data = await res.json()
       assertNotTruncated(data)
-      const text = data.content?.[0]?.text?.trim() || ''
+      const text = data.content?.find(b => b.type === 'text')?.text?.trim() || ''
       if (!text) throw new Error('Resposta inválida da IA')
 
       // Varredura anti-clichê: stories é texto corrido, sem JSON — trata como
@@ -2096,7 +2096,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         }),
       })
       const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const results = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')).resultados || []
         setSavedThemes(prev => prev.map(t => {
@@ -2147,7 +2147,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
         }),
       })
       const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\[[\s\S]*\]/)
+      const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\[[\s\S]*\]/)
       if (!match) return fallback()
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
       // Só aceita categoria que existe na lista da persona — modelo às vezes inventa
@@ -2261,7 +2261,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         }),
       })
       const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) {
         const existing = new Set(savedThemes.map(t => t.tema))
         const novos = (JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')).temas || [])

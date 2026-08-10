@@ -141,7 +141,7 @@ export default function CommunityEngager() {
       })
       if (!res.ok) throw new Error('Erro na API')
       const data = await res.json()
-      const reduced = data.content?.[0]?.text?.trim()
+      const reduced = data.content?.find(b => b.type === 'text')?.text?.trim()
       if (reduced) setResults(prev => prev.map((r, i) => i === idx ? { ...r, comment: reduced } : r))
     } catch { /* mantém original */ }
     finally { setReducing(r => ({ ...r, [idx]: false })) }
@@ -179,7 +179,7 @@ export default function CommunityEngager() {
       }
 
       const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da API')
       const parsed = JSON.parse(match[0]).comentarios || []

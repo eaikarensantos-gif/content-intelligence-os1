@@ -4,7 +4,7 @@ import { checkCoherence } from './coherenceCheck'
 function mockFetchOnce(responseText) {
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ content: [{ text: responseText }] }),
+    json: async () => ({ content: [{ type: 'text', text: responseText }] }),
   })
 }
 

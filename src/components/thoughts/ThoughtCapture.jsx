@@ -261,7 +261,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 
   const data = await res.json()
   assertNotTruncated(data)
-  const raw = data.content?.[0]?.text || ''
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
   return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 
