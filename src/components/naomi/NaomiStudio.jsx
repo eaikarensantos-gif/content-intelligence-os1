@@ -136,7 +136,7 @@ export default function NaomiStudio() {
         }),
       })
       const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (match) setSuggestions(JSON.parse(match[0]).situations || [])
     } catch { /* silent */ }
     finally { setSuggestLoading(false) }
@@ -179,7 +179,7 @@ export default function NaomiStudio() {
       }
 
       const data = await res.json()
-      const match = (data.content?.[0]?.text || '').match(/\{[\s\S]*\}/)
+      const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       setResult(JSON.parse(match[0]))
     } catch (err) {
@@ -203,7 +203,7 @@ export default function NaomiStudio() {
         }),
       })
       const data = await res.json()
-      const text = data.content?.[0]?.text?.trim() || ''
+      const text = data.content?.find(b => b.type === 'text')?.text?.trim() || ''
       if (text) { setTranslatedPrompt(text); setShowEnglish(true) }
     } catch { /* silent */ }
     finally { setTranslating(false) }

@@ -54,7 +54,7 @@ Regras: "aumenta" só se o rascunho reforça claramente a âncora/pilares. "dilu
   }
 
   const data = await res.json()
-  const jsonText = data.content?.[0]?.text || ''
+  const jsonText = data.content?.find(b => b.type === 'text')?.text || ''
   const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Resposta inválida da IA')
 

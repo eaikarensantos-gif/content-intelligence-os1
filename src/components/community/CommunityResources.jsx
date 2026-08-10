@@ -270,7 +270,7 @@ export default function CommunityResources() {
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const parsed = parseJSON(raw)
 
       const [livros, videos] = await Promise.all([

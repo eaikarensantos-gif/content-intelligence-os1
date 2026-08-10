@@ -193,7 +193,7 @@ export default function CommunityStudio() {
       })
       if (!res.ok) throw new Error('Erro na API')
       const data = await res.json()
-      setter(data.content?.[0]?.text?.trim() || currentPost)
+      setter(data.content?.find(b => b.type === 'text')?.text?.trim() || currentPost)
     } catch { /* mantém texto original se falhar */ }
     finally { setReducing(r => ({ ...r, [slotId]: false })) }
   }
@@ -231,7 +231,7 @@ export default function CommunityStudio() {
       }
 
       const data = await res.json()
-      const raw  = data.content?.[0]?.text || ''
+      const raw  = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da API')
       setDrafts(d => ({ ...d, [slotId]: JSON.parse(match[0]) }))
@@ -271,7 +271,7 @@ export default function CommunityStudio() {
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
-      const raw  = data.content?.[0]?.text || ''
+      const raw  = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da API')
       setEnqueteDraft(JSON.parse(match[0]))

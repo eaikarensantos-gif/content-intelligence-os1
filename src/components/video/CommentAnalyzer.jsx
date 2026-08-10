@@ -58,7 +58,7 @@ export default function CommentAnalyzer() {
           })
         })
         const data = await resp.json()
-        const text = data.content?.[0]?.text || '[]'
+        const text = data.content?.find(b => b.type === 'text')?.text || '[]'
         try {
           const clean = text.replace(/```json\n?|\n?```/g, '').trim()
           const extracted = JSON.parse(clean)
@@ -131,7 +131,7 @@ Responda APENAS com JSON válido, sem markdown:
         })
       })
       const data = await resp.json()
-      const text = data.content?.[0]?.text || '{}'
+      const text = data.content?.find(b => b.type === 'text')?.text || '{}'
       const clean = text.replace(/```json\n?|\n?```/g, '').trim()
       setSuggestions(JSON.parse(clean))
     } catch (e) { setError(e.message) }

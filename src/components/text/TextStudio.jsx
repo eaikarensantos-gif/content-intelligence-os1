@@ -164,7 +164,7 @@ Responda SOMENTE com um JSON válido neste formato:
     await handleApiError(res)
   }
   const data = await res.json()
-  const raw = data.content[0].text
+  const raw = data.content.find(b => b.type === 'text')?.text
   return extractJsonObject(raw, 'Resposta inválida da IA')
 }
 

@@ -100,7 +100,7 @@ ${suggestionsList}`
         }),
       })
       const data = await res.json()
-      setRewrittenText(data.content?.[0]?.text?.trim() || '')
+      setRewrittenText(data.content?.find(b => b.type === 'text')?.text?.trim() || '')
     } catch {
       // silent fail
     } finally {
@@ -158,7 +158,7 @@ ${text.trim()}`
       })
       if (!res.ok) throw new Error('Erro na API')
       const data = await res.json()
-      const raw = data.content?.[0]?.text || ''
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
       if (match) setResult(JSON.parse(match[0]))
       else throw new Error('Resposta inválida')

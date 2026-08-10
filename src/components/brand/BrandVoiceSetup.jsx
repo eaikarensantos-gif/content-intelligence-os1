@@ -294,7 +294,7 @@ Analise e retorne EXCLUSIVAMENTE JSON:
       if (!res.ok) throw new Error(`Erro ${res.status}`)
 
       const data = await res.json()
-      const text = data.content?.[0]?.text || ''
+      const text = data.content?.find(b => b.type === 'text')?.text || ''
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) throw new Error('Resposta inválida')
 

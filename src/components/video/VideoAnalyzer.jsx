@@ -222,7 +222,7 @@ async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000) {
   // o JSON.parse mais adiante falha com um erro de sintaxe que não diz nada
   // pra quem está usando o app — melhor detectar aqui e avisar direto.
   assertNotTruncated(data, 'A análise ficou grande demais para este vídeo e foi cortada pela IA antes de terminar. Tente novamente — se persistir, use uma transcrição mais curta.')
-  return data.content[0].text
+  return data.content.find(b => b.type === 'text')?.text
 }
 
 // ── Analysis prompt builder ───────────────────────────────────────────────────
@@ -509,7 +509,7 @@ Return ONLY this JSON:
   }
   const data = await res.json()
   assertNotTruncated(data, 'O roteiro ficou grande demais e foi cortado pela IA antes de terminar. Tente novamente.')
-  return extractJsonObject(data.content[0].text)
+  return extractJsonObject(data.content.find(b => b.type === 'text')?.text)
 }
 
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
@@ -586,7 +586,7 @@ export default function VideoAnalyzer() {
       })
       if (!res.ok) throw new Error('API error')
       const data = await res.json()
-      const translated = data.content?.[0]?.text || ''
+      const translated = data.content?.find(b => b.type === 'text')?.text || ''
       if (translated.trim()) setText(translated.trim())
     } catch (e) {
       console.error('Translation failed:', e)

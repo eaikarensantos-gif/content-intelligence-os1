@@ -142,7 +142,7 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
   }
 
   const data = await response.json()
-  const raw = data.content?.[0]?.text || ''
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
 
@@ -236,7 +236,7 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
   }
 
   const data = await response.json()
-  const raw = data.content?.[0]?.text || ''
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
   const match = raw.match(/\[[\s\S]*\]/)
   if (!match) throw new Error('Resposta da IA não contém JSON válido')
 

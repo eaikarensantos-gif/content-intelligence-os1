@@ -189,7 +189,7 @@ Responda APENAS com JSON válido (array de 4 strings), sem markdown:
   }
   const data = await res.json()
   assertNotTruncated(data)
-  return data.content?.[0]?.text || ''
+  return data.content?.find(b => b.type === 'text')?.text || ''
 }
 
 function SectionLabel({ children }) {

@@ -92,7 +92,7 @@ Retorne SOMENTE JSON válido, sem markdown, sem explicações:
   }
 
   const data = await res.json()
-  const text = data.content?.[0]?.text || ''
+  const text = data.content?.find(b => b.type === 'text')?.text || ''
   const clean = text.replace(/```json|```/gi, '').trim()
 
   let parsed
