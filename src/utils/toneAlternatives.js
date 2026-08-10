@@ -38,7 +38,8 @@ Responda APENAS com JSON:
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
-      thinking: { type: 'disabled' },
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
       max_tokens: 300,
       messages: [{ role: 'user', content: prompt }],
     }),

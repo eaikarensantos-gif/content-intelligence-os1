@@ -325,7 +325,8 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
       const prompt = buildPrompt(selected, format)
       const res = await mkClient(apiKey).messages.create({
         model: 'claude-sonnet-5',
-        thinking: { type: 'disabled' },
+        thinking: { type: 'adaptive' },
+        output_config: { effort: 'medium' },
         max_tokens: 1200,
         system: withManualOperacional(withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.')),
         messages: [{ role: 'user', content: prompt }],
