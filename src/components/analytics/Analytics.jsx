@@ -1474,7 +1474,7 @@ Retorne EXCLUSIVAMENTE JSON válido:
             const res = await fetch('/api/ai?action=anthropic', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-              body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
+              body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'disabled' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
             const data = await res.json()
@@ -1582,7 +1582,7 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
             const res = await fetch('/api/ai?action=anthropic', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-              body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
+              body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'disabled' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
             const data = await res.json()
