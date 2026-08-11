@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
@@ -8,6 +8,7 @@ import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { buildVoiceContext } from '../../utils/voiceContext'
 import { assertNotTruncated } from '../../utils/aiJson'
+import { TEMAS_CARROSSEL } from '../../data/temasCarrossel'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
@@ -224,6 +225,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [generatingScript, setGeneratingScript] = useState(false)
   const [linkInput, setLinkInput] = useState('')
   const [showProducao, setShowProducao] = useState(false)
+  const [showThemeBank, setShowThemeBank] = useState(false)
+  const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
   const tagRef = useRef(null)
   const linkRef = useRef(null)
 
@@ -276,6 +279,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setCtaSuggestions([])
     setRefResults([])
     setRefQueries([])
+    setShowThemeBank(false)
+    setThemeBankOpenCategory(null)
   }, [open, initial])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -598,6 +603,55 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               placeholder="Qual é a ideia central? Que valor ela entrega? Você pode escrever um briefing completo aqui..."
               value={form.description}
               onChange={(e) => { set('description', e.target.value); autoResizeDesc(e.target) }} />
+          </div>
+
+          {/* Banco de temas — mesmo banco do Studio e do Thought Capture */}
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setShowThemeBank((v) => !v)}
+              className="w-full flex items-center justify-between text-[10px] font-semibold text-gray-500 uppercase tracking-wide hover:text-violet-600 transition-colors py-0.5"
+            >
+              <span className="flex items-center gap-1"><Lightbulb size={11} /> Banco de temas</span>
+              {showThemeBank ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            {showThemeBank && (
+              <div className="border border-gray-200 rounded-xl max-h-56 overflow-y-auto divide-y divide-gray-100">
+                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+                  const isCatOpen = themeBankOpenCategory === categoria
+                  return (
+                    <div key={categoria}>
+                      <button
+                        type="button"
+                        onClick={() => setThemeBankOpenCategory(isCatOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-violet-50 transition-colors text-left"
+                      >
+                        <span className="text-[10px] font-semibold text-gray-600">{categoria}</span>
+                        {isCatOpen ? <ChevronUp size={11} className="text-violet-500" /> : <ChevronDown size={11} className="text-gray-400" />}
+                      </button>
+                      {isCatOpen && (
+                        <div className="px-2 py-1.5 space-y-0.5 bg-white">
+                          {temas.map((tema) => (
+                            <button
+                              key={tema}
+                              type="button"
+                              onClick={() => {
+                                set('description', tema)
+                                setShowThemeBank(false)
+                                setTimeout(() => autoResizeDesc(descRef.current), 0)
+                              }}
+                              className="w-full text-left text-[11px] text-gray-700 hover:text-violet-600 px-2 py-1 rounded-lg hover:bg-violet-50 transition-colors leading-snug"
+                            >
+                              {tema}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Roteiro */}
