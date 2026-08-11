@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb } from 'lucide-react'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
@@ -8,6 +8,7 @@ import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { buildVoiceContext } from '../../utils/voiceContext'
 import { assertNotTruncated } from '../../utils/aiJson'
+import { TEMAS_CARROSSEL } from '../../data/temasCarrossel'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
@@ -107,7 +108,7 @@ Regras:
 
 Responda APENAS com a legenda, sem explicações.`,
 
-    script: `Você é especialista em roteiros de conteúdo para criadores brasileiros. Crie um roteiro completo e detalhado para o seguinte conteúdo.
+    script: `Você é o mesmo gerador de roteiros usado no Studio de Criação da Karen Santos — a profundidade e a voz têm que ser IDÊNTICAS às do Studio, nunca uma versão mais formal, mais genérica ou mais analítica.
 
 Título: ${context.title}
 ${context.description ? `Briefing: ${context.description}` : ''}
@@ -116,13 +117,22 @@ Formato: ${context.format || 'video'}
 Plataforma: ${context.platforms?.join(', ') || 'Instagram'}
 Tipo de gancho: ${context.hook_type || 'problema'}
 
-REGRAS:
-- Comece com o gancho forte que prende nos primeiros 3 segundos
-- Estruture em blocos claros: Abertura → Desenvolvimento → Conclusão/CTA
-- Linguagem direta, conversacional — como Karen fala, não como IA escreve
-- PROIBIDO: frases genéricas, enrolação, superlativo vazio
-- Use marcadores visuais para cenas/cortes quando for Reels ou Vídeo
-- Tom: especialista sênior que fala com pares, não que explica para iniciantes
+REGRA DE ENTRADA — antes de escrever, responda internamente:
+"Qual é a tensão interna que a pessoa carrega sobre esse tema — não a situação externa, o que ela SENTE sobre o que faz ou deixa de fazer?"
+Comece por essa tensão, nunca pela cena, pelo contexto ou por uma afirmação geral sobre o mercado/setor.
+
+REGRAS OBRIGATÓRIAS:
+- PROIBIDO tom de tese acadêmica ou terceira pessoa analítica (ex.: "Negócios físicos operam com restrições que explicam a adoção de X"). Fale em primeira ou segunda pessoa, como quem viveu, decidiu ou hesitou sobre isso — não como quem observa e explica de fora.
+- Cada parte do roteiro avança por causa e consequência, nunca é uma lista de fatos ou características enfileiradas. Pergunta de controle: "isso avança o raciocínio ou só descreve mais do mesmo?" Se só descreve, reescreva.
+- Traga julgamento pessoal — o que você decidiu, testou, rejeitou ou ainda desconfia — nunca só a explicação neutra de como algo funciona. Uma sequência tipo "isso exige X, aquilo depende de Y" sem opinião nenhuma é manual técnico, não é roteiro de Karen.
+- Termine em tensão real ou pergunta que exige posicionamento — nunca uma conclusão fechada tipo "portanto, é necessário equilibrar X e Y" ou um resumo institucional que soa neutro.
+- Linguagem direta, conversacional — como Karen fala, não como IA escreve.
+- PROIBIDO: frases genéricas, enrolação, superlativo vazio.
+${context.format === 'carrossel'
+    ? '- Estruture em exatamente 5 blocos numerados [1] a [5]: [1] abertura — estado interno (a pessoa se reconhece, não a cena); [2] a [4] desenvolvimento causal (cada slide avança o anterior, nunca descreve mais do mesmo); [5] virada sem resolução — tensão máxima, sem CTA embutido no texto, sem fechar a questão.'
+    : '- Estruture em blocos claros: Abertura → Desenvolvimento → Conclusão/CTA. Use marcadores visuais para cenas/cortes quando for Reels ou Vídeo.'}
+
+TESTE DE SANIDADE FINAL: se o texto ficou "bem explicado" mas ninguém precisaria se posicionar pra comentar, reescreva.
 
 Responda APENAS com o roteiro, sem introdução nem explicações.`,
 
@@ -215,6 +225,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [generatingScript, setGeneratingScript] = useState(false)
   const [linkInput, setLinkInput] = useState('')
   const [showProducao, setShowProducao] = useState(false)
+  const [showThemeBank, setShowThemeBank] = useState(false)
+  const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
   const tagRef = useRef(null)
   const linkRef = useRef(null)
 
@@ -267,6 +279,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setCtaSuggestions([])
     setRefResults([])
     setRefQueries([])
+    setShowThemeBank(false)
+    setThemeBankOpenCategory(null)
   }, [open, initial])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -589,6 +603,55 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
               placeholder="Qual é a ideia central? Que valor ela entrega? Você pode escrever um briefing completo aqui..."
               value={form.description}
               onChange={(e) => { set('description', e.target.value); autoResizeDesc(e.target) }} />
+          </div>
+
+          {/* Banco de temas — mesmo banco do Studio e do Thought Capture */}
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setShowThemeBank((v) => !v)}
+              className="w-full flex items-center justify-between text-[10px] font-semibold text-gray-500 uppercase tracking-wide hover:text-violet-600 transition-colors py-0.5"
+            >
+              <span className="flex items-center gap-1"><Lightbulb size={11} /> Banco de temas</span>
+              {showThemeBank ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            {showThemeBank && (
+              <div className="border border-gray-200 rounded-xl max-h-56 overflow-y-auto divide-y divide-gray-100">
+                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+                  const isCatOpen = themeBankOpenCategory === categoria
+                  return (
+                    <div key={categoria}>
+                      <button
+                        type="button"
+                        onClick={() => setThemeBankOpenCategory(isCatOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-violet-50 transition-colors text-left"
+                      >
+                        <span className="text-[10px] font-semibold text-gray-600">{categoria}</span>
+                        {isCatOpen ? <ChevronUp size={11} className="text-violet-500" /> : <ChevronDown size={11} className="text-gray-400" />}
+                      </button>
+                      {isCatOpen && (
+                        <div className="px-2 py-1.5 space-y-0.5 bg-white">
+                          {temas.map((tema) => (
+                            <button
+                              key={tema}
+                              type="button"
+                              onClick={() => {
+                                set('description', tema)
+                                setShowThemeBank(false)
+                                setTimeout(() => autoResizeDesc(descRef.current), 0)
+                              }}
+                              className="w-full text-left text-[11px] text-gray-700 hover:text-violet-600 px-2 py-1 rounded-lg hover:bg-violet-50 transition-colors leading-snug"
+                            >
+                              {tema}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Roteiro */}
