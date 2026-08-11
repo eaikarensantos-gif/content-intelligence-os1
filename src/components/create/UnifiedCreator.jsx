@@ -683,7 +683,7 @@ ${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
 ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
-${template ? `TEMPLATE DE SLIDES: ${template.label} (alavanca: ${template.alavanca})\n${template.estrutura}\nAplique essa estrutura nas 3 versões, mantendo o número de slides.` : ''}
+${template ? `LENTE DE CONTEÚDO: ${template.label} (alavanca: ${template.alavanca})\n${template.estrutura}\nEssa lente define o CONTEÚDO de cada um dos 5 slides — a estrutura de abertura/desenvolvimento causal/virada sem resolução das 3 versões continua sendo exatamente a mesma. Não crie capa, lista resolvida, resumo ou CTA de "salva" fora dos campos legenda/exercicio_pratico/cta_fechado já definidos abaixo — isso duplicaria e achataria o carrossel.` : ''}
 ${targetER ? `META DE E/R: ${targetER}%. O último slide precisa puxar diretamente pra essa alavanca (${template?.alavanca || 'salvamento ou comentário'}).` : ''}
 
 Execute o protocolo completo:
@@ -859,43 +859,46 @@ const PERSONAL_STORIES_STRUCTURES = {
   },
 }
 
-/* ── Templates de Slides — Carrossel Tech/IA (engenharia de salvamento e comentário) ── */
+/* ── Templates de Slides — Carrossel Tech/IA (lente de conteúdo aplicada aos MESMOS 5 slides
+   do Protocolo de Carrossel: abertura/estado interno → 3 slides de desenvolvimento causal →
+   virada sem resolução. Cada template define O QUE cada slide fala, nunca uma estrutura
+   própria de capa/lista/resumo/CTA — isso contradiria o protocolo e achata o resultado. ── */
 const CAROUSEL_TEMPLATES = {
   ferramentas: {
     label: 'Ferramentas de IA',
     alavanca: 'salvamento',
-    desc: 'Lista de ferramentas que você usa pra uma tarefa real',
-    estrutura: 'Slide 1 (capa): promessa concreta — "ferramentas de IA que eu uso pra [tarefa]". Slides 2 ao penúltimo: uma ferramenta por slide, com o que ela resolve na prática. Penúltimo: a lista resumida ou o ranking. Último: "salva pra usar no seu próximo projeto".',
+    desc: 'Ferramentas de IA reveladas como resposta a limites reais, não como lista',
+    estrutura: 'Slide 1 (abertura — estado interno): a frustração real que te fez procurar ferramenta pra essa tarefa — não a lista, o motivo. Slides 2 a 4 (desenvolvimento causal): cada slide revela uma ferramenta como resposta ao limite da anterior — a ferramenta do slide 3 resolve o que a do slide 2 deixava manual, não é um item novo numa lista. Slide 5 (virada sem resolução): a parte da tarefa que nenhuma dessas ferramentas resolve ainda — nomeie o limite, não feche a questão.',
   },
   passo_a_passo: {
     label: 'Passo a passo',
     alavanca: 'salvamento',
-    desc: 'Processo de IA aplicado a um problema de negócio',
-    estrutura: 'Slide 1 (capa): o problema de negócio e a promessa do processo. Slides 2 ao penúltimo: um passo do processo por slide, em sequência. Penúltimo: o insight que fecha o raciocínio. Último: instrução de uso — "salva pra aplicar no seu processo".',
+    desc: 'Processo de IA onde cada passo só existe porque o anterior não bastou',
+    estrutura: 'Slide 1 (abertura — estado interno): o problema de negócio como ele trava antes de aplicar o processo. Slides 2 a 4 (desenvolvimento causal): um passo do processo por slide, e cada passo só existe porque o anterior, sozinho, não resolvia. Slide 5 (virada sem resolução): o ponto do processo que ainda depende de julgamento humano e a IA não substitui — nomeie sem resolver.',
   },
   antes_depois: {
     label: 'Antes e depois',
     alavanca: 'salvamento e identificação',
-    desc: 'Um fluxo de trabalho sem IA e com IA, lado a lado',
-    estrutura: 'Slide 1 (capa): o fluxo que vai ser comparado. Slides 2 ao penúltimo: alternando antes/depois de cada etapa do fluxo. Penúltimo: o ganho real, em tempo ou qualidade. Último: pergunta de opinião — "qual ferramenta você usaria aqui?".',
+    desc: 'Comparação onde cada mudança de etapa é causa da próxima',
+    estrutura: 'Slide 1 (abertura — estado interno): o fluxo de trabalho como era antes, do jeito que cansava de verdade. Slides 2 a 4 (desenvolvimento causal): cada slide compara uma etapa antes/depois, e a mudança de uma etapa é a razão pela qual a etapa seguinte também mudou. Slide 5 (virada sem resolução): a etapa que a IA ainda não resolve tão bem quanto o "antes" — o ganho tem um custo que ninguém fala.',
   },
   opiniao_tecnica: {
     label: 'Opinião técnica',
     alavanca: 'comentário e compartilhamento',
-    desc: 'Uma leitura sobre IA que vai contra o senso comum',
-    estrutura: 'Slide 1 (capa): a opinião declarada sem suavizar. Slides 2 ao penúltimo: a causa e o dado que sustentam a opinião, um argumento por slide. Penúltimo: a consequência prática dessa visão. Último: pergunta de opinião que puxa discordância ou concordância no comentário.',
+    desc: 'Opinião sustentada por uma cadeia de argumentos, não uma lista de motivos',
+    estrutura: 'Slide 1 (abertura — estado interno): a opinião declarada sem suavizar, como reação a algo que você viu de verdade. Slides 2 a 4 (desenvolvimento causal): cada slide é um argumento que decorre do anterior — uma cadeia de raciocínio, não motivos soltos. Slide 5 (virada sem resolução): a consequência prática dessa opinião que ainda incomoda, sem fechar em conclusão confortável.',
   },
   limites_ia: {
     label: 'O que a IA ainda erra',
     alavanca: 'comentário',
-    desc: 'Leitura honesta dos limites da IA no seu trabalho',
-    estrutura: 'Slide 1 (capa): o erro ou limite mais comum que você vê. Slides 2 ao penúltimo: um caso concreto de falha por slide, sem genérico. Penúltimo: como você contorna esse limite na prática. Último: pergunta de opinião — "que erro de IA mais te incomoda?".',
+    desc: 'Falhas concretas em cadeia, cada uma mais profunda que a anterior',
+    estrutura: 'Slide 1 (abertura — estado interno): o momento em que você percebeu, na prática, que a IA errou nessa tarefa. Slides 2 a 4 (desenvolvimento causal): um caso concreto de falha por slide, e cada caso revela uma camada mais profunda do limite anterior — não uma lista de erros soltos. Slide 5 (virada sem resolução): o jeito que você contorna esse limite hoje, que ainda não é solução de verdade — só uma gambiarra que funciona.',
   },
   bastidor: {
     label: 'Bastidor home office',
     alavanca: 'identificação aspiracional',
-    desc: 'Setup e rotina real de trabalho com IA em casa',
-    estrutura: 'Slide 1 (capa): o momento ou cena do setup. Slides 2 ao penúltimo: um elemento da rotina ou do setup por slide, com estética. Penúltimo: o que essa rotina resolveu pra você. Último: "salva pra montar o seu" ou pergunta de identificação.',
+    desc: 'Rotina onde cada elemento existe porque o anterior não bastava',
+    estrutura: 'Slide 1 (abertura — estado interno): a cena real do setup ou da rotina, no momento exato, sem embelezar. Slides 2 a 4 (desenvolvimento causal): um elemento da rotina por slide, e cada elemento existe porque o anterior, sozinho, não bastava. Slide 5 (virada sem resolução): a parte da rotina que ainda não funciona direito, que você não resolveu — sem fingir que está tudo redondo.',
   },
 }
 
