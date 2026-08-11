@@ -226,7 +226,7 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   ]
 }`
 
-  const response = await fetch('/api/ai?action=anthropic', {
+  const response = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -649,7 +649,7 @@ export default function TrendRadar() {
 
     try {
       const apiKey = localStorage.getItem('cio-anthropic-key')
-      if (!apiKey) throw new Error('Chave Anthropic não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
+      if (!apiKey) throw new Error('Chave Gemini não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
       const results = await callClaudeForTrends(apiKey, topic.trim(), insights, listaNegra, posicionamento)
       setTrendResults(results)
@@ -764,7 +764,7 @@ export default function TrendRadar() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-700">
-              <span className="font-semibold">Configure sua chave Anthropic</span> para ativar o Creator Insights completo — análise real de tendências, criadores, padrões e oportunidades com IA.
+              <span className="font-semibold">Configure sua chave Gemini</span> para ativar o Creator Insights completo — análise real de tendências, criadores, padrões e oportunidades com IA.
             </p>
           </div>
         )}

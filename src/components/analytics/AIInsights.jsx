@@ -204,7 +204,7 @@ export default function AIInsights() {
     try {
       if (!apiKey) throw new Error('Configure sua API key clicando no ícone de chave abaixo.')
 
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

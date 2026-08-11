@@ -82,14 +82,14 @@ export function ApiKeyModal({ onClose, onSave }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Key size={16} className="text-violet-500" />
-            <h2 className="text-sm font-bold text-gray-900">API Key da Anthropic</h2>
+            <h2 className="text-sm font-bold text-gray-900">API Key do Gemini</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
         </div>
         <div className="p-3 rounded-xl bg-violet-50 border border-violet-100 flex items-start gap-2">
           <ShieldCheck size={14} className="text-violet-500 mt-0.5 shrink-0" />
           <p className="text-xs text-gray-600">
-            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage). Nunca é enviada para outros servidores além da API da Anthropic.
+            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage). Nunca é enviada para outros servidores além da API do Gemini.
           </p>
         </div>
         <div>

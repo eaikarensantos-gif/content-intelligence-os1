@@ -192,7 +192,7 @@ alter table user_data disable row level security;`}</pre>
         </h2>
         <div className="space-y-3">
           {[
-            { label: 'Anthropic (Claude)', placeholder: 'sk-ant-...', value: anthropicKey, set: setAnthropicKey, show: showAnthropicKey, setShow: setShowAnthropicKey },
+            { label: 'Gemini (Google AI Studio)', placeholder: 'AIza... ou AQ...', value: anthropicKey, set: setAnthropicKey, show: showAnthropicKey, setShow: setShowAnthropicKey },
             { label: 'Groq (gratuito — transcrição)', placeholder: 'gsk_...', value: groqKey, set: setGroqKey, show: showGroqKey, setShow: setShowGroqKey },
           ].map(({ label, placeholder, value, set, show, setShow }) => (
             <div key={label}>
@@ -256,7 +256,7 @@ alter table user_data disable row level security;`}</pre>
         </button>
 
         <div className="flex gap-3 flex-wrap">
-          <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-violet-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Anthropic</a>
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-violet-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Google AI Studio</a>
           <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Groq (gratuito)</a>
           <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer" className="text-xs text-red-500 hover:underline flex items-center gap-1"><ExternalLink size={11} /> YouTube API</a>
           <a href="https://developer.vimeo.com/apps" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Vimeo Dev</a>

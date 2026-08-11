@@ -121,7 +121,7 @@ export default function CommunityEngager() {
         : `Reescreva o comentário abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o comentário, sem explicações.`
       : `Reduza o comentário abaixo em até 40%, mantendo o tom e a voz originais. Retorne apenas o comentário reduzido, sem explicações.`
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,13 +150,13 @@ export default function CommunityEngager() {
   const generate = async () => {
     if (!post.trim()) return
     if (!apiKey) {
-      setError('Configure sua API key da Anthropic em Configurações')
+      setError('Configure sua API key do Gemini em Configurações')
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,12 +1,25 @@
 // Vercel Serverless Function — AI proxy + multi-platform video search + Whisper
 // Routing (action via body.action):
 //   'anthropic'        → Anthropic Messages API
+//   'gemini'           → Gemini generateContent, translated to/from Anthropic Messages shape
 //   'youtube-search'   → YouTube Data API v3 (supports duration + sort filters)
 //   'dailymotion-search' → Dailymotion public API (no key, supports sort)
 //   'vimeo-search'     → Vimeo API (token required, supports sort)
 //   'tiktok-search'    → TikTok via RapidAPI provider
 //   'transcribe'       → OpenAI Whisper
 //   (default)          → AI chat completion
+
+// The ~30 call sites across the app build requests in Anthropic Messages
+// shape (model/system/messages/thinking/max_tokens) and parse responses as
+// `content: [{type, text}]` + `stop_reason`. Rather than touch every call
+// site, this map keeps the same Claude model names in the request body and
+// translates them to their Gemini-generation equivalent here, then reshapes
+// the Gemini response back into the same Anthropic shape the frontend
+// already parses (see `src/utils/aiJson.js`).
+const GEMINI_MODEL_MAP = {
+  'claude-sonnet-5': 'gemini-3.5-flash',
+  'claude-haiku-4-5-20251001': 'gemini-3.5-flash-lite',
+}
 
 const PROVIDER_URLS = {
   openai:     'https://api.openai.com/v1/chat/completions',
@@ -52,6 +65,72 @@ async function callGemini(apiKey, model, messages, options = {}) {
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message || `Gemini error ${res.status}`)
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+}
+
+// ─── Gemini (Anthropic-shape in, Anthropic-shape out) ─────────────────────────
+
+function toGeminiRole(role) {
+  return role === 'assistant' ? 'model' : 'user'
+}
+
+// Anthropic content blocks (`{type:'text'}` / `{type:'image', source:{type:'base64', media_type, data}}`)
+// need translating to Gemini parts — otherwise a multi-block message (e.g. video
+// frame analysis) gets JSON.stringified whole, sending raw base64 as text instead
+// of an actual image the model can see.
+function toGeminiParts(content) {
+  if (typeof content === 'string') return [{ text: content }]
+  if (!Array.isArray(content)) return [{ text: JSON.stringify(content) }]
+  return content.map((block) => {
+    if (block.type === 'text') return { text: block.text }
+    if (block.type === 'image' && block.source?.type === 'base64') {
+      return { inlineData: { mimeType: block.source.media_type, data: block.source.data } }
+    }
+    return { text: JSON.stringify(block) }
+  })
+}
+
+async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking, messages }) {
+  const geminiModel = GEMINI_MODEL_MAP[model] || 'gemini-3.5-flash'
+  const contents = (messages || []).map((m) => ({
+    role: toGeminiRole(m.role),
+    parts: toGeminiParts(m.content),
+  }))
+
+  const generationConfig = { maxOutputTokens: max_tokens || 2048 }
+  if (thinking && thinking.type !== 'disabled') {
+    generationConfig.thinkingConfig = { thinkingBudget: -1, includeThoughts: true }
+  }
+
+  const body = { contents, generationConfig }
+  if (system) body.systemInstruction = { parts: [{ text: system }] }
+
+  const upstream = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+    }
+  )
+  const data = await upstream.json().catch(() => ({}))
+  if (!upstream.ok) {
+    const message = data.error?.message || `Gemini error ${upstream.status}`
+    return { status: upstream.status, body: { error: { message } } }
+  }
+
+  const candidate = data.candidates?.[0]
+  if (!candidate) {
+    const reason = data.promptFeedback?.blockReason || 'sem candidatos na resposta'
+    return { status: 502, body: { error: { message: `Gemini não retornou conteúdo (${reason})` } } }
+  }
+
+  const parts = candidate.content?.parts || []
+  const text = parts.filter((p) => !p.thought && typeof p.text === 'string').map((p) => p.text).join('')
+  const finishReason = candidate.finishReason
+  const stop_reason =
+    finishReason === 'MAX_TOKENS' ? 'max_tokens' : finishReason === 'STOP' ? 'end_turn' : finishReason || null
+
+  return { status: 200, body: { content: [{ type: 'text', text }], stop_reason } }
 }
 
 // ─── YouTube Data API v3 ──────────────────────────────────────────────────────
@@ -284,6 +363,15 @@ export default async function handler(req, res) {
       })
       const data = await upstream.json().catch(() => ({ error: { message: `Anthropic error ${upstream.status}` } }))
       return res.status(upstream.status).json(data)
+    }
+
+    // ── Gemini (Anthropic-shape compatibility) ───────────────────────────────
+    if (action === 'gemini') {
+      const apiKey = req.headers['x-api-key']
+      if (!apiKey) return res.status(400).json({ error: 'API key is required' })
+      const { action: _drop, ...geminiBody } = req.body || {}
+      const result = await callGeminiMessages(apiKey, geminiBody)
+      return res.status(result.status).json(result.body)
     }
 
     // ── YouTube search ────────────────────────────────────────────────────────

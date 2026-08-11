@@ -84,7 +84,7 @@ ${text.trim()}
 MELHORIAS A INCORPORAR:
 ${suggestionsList}`
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ ${suggestionsList}`
   const analyze = async () => {
     if (!text.trim()) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
     setLoading(true)
     setResult(null)
     setError('')
@@ -141,7 +141,7 @@ TEXTO PARA REVISAR:
 ${text.trim()}`
 
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

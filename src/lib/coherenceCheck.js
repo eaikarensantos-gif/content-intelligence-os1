@@ -36,7 +36,7 @@ Responda neste formato exato:
 
 Regras: "aumenta" só se o rascunho reforça claramente a âncora/pilares. "dilui" se genérico, foge do posicionamento ou usa frase da lista negra. "neutro" se não ajuda nem atrapalha. ajustes: no máximo 3, concretos e acionáveis — nada de "seja mais autêntico".`
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({

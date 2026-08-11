@@ -1471,7 +1471,7 @@ Retorne EXCLUSIVAMENTE JSON válido:
 }`
 
           try {
-            const res = await fetch('/api/ai?action=anthropic', {
+            const res = await fetch('/api/ai?action=gemini', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
               body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
@@ -1579,7 +1579,7 @@ Gere EXCLUSIVAMENTE JSON:
 REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.234). Se dado falta, use '— dado não disponível'. Foco no essencial.`
 
           try {
-            const res = await fetch('/api/ai?action=anthropic', {
+            const res = await fetch('/api/ai?action=gemini', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
               body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),

@@ -781,7 +781,7 @@ function GenerateView() {
       const apiKey = localStorage.getItem('cio-anthropic-key')
 
       if (mode === 'signals') {
-        if (!apiKey) throw new Error('Sinais Culturais requer a chave Anthropic. Configure em Configurações.')
+        if (!apiKey) throw new Error('Sinais Culturais requer a chave Gemini. Configure em Configurações.')
         const result = await generateSignalBasedIdeas(apiKey, {
           niche: niche.trim() || 'criação de conteúdo digital',
           audience: audience.trim() || undefined,
@@ -966,7 +966,7 @@ function GenerateView() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-700">
-              <span className="font-semibold">Sinais Culturais requer a chave Anthropic.</span> Configure em Configurações para ativar o gerador de próxima geração.
+              <span className="font-semibold">Sinais Culturais requer a chave Gemini.</span> Configure em Configurações para ativar o gerador de próxima geração.
             </p>
           </div>
         )}
@@ -992,7 +992,7 @@ function GenerateView() {
               ))}
             </div>
             <p className="text-xs text-gray-400">
-              {mode === 'signals' ? `Analisando o espaço de "${niche}" para sinais culturais reais` : 'Claude está criando ideias baseadas no seu contexto'}
+              {mode === 'signals' ? `Analisando o espaço de "${niche}" para sinais culturais reais` : 'A IA está criando ideias baseadas no seu contexto'}
             </p>
           </div>
         </div>

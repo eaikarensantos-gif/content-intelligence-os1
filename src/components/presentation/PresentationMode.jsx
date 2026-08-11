@@ -117,7 +117,7 @@ GERE a apresentação completa com esta estrutura JSON:
 
 Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.`
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -361,7 +361,7 @@ export default function PresentationMode() {
 
     try {
       const apiKey = localStorage.getItem(LS_KEY)
-      if (!apiKey) throw new Error('Configure sua chave Anthropic no Analisador de Vídeo primeiro.')
+      if (!apiKey) throw new Error('Configure sua chave Gemini no Analisador de Vídeo primeiro.')
       const data = await generatePresentation(apiKey, { topic, audience, goal, duration, context })
       setResult(data)
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200)
@@ -576,7 +576,7 @@ export default function PresentationMode() {
             )}
 
             <p className="text-[10px] text-gray-400 text-center">
-              Configure sua chave Anthropic nas configurações do Analisador de Vídeo.
+              Configure sua chave Gemini nas configurações do Analisador de Vídeo.
             </p>
           </div>
         </div>

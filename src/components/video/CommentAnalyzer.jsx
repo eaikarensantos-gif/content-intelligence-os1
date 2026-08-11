@@ -23,7 +23,7 @@ export default function CommentAnalyzer() {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
 
     setAnalyzing(true)
     setError('')
@@ -36,7 +36,7 @@ export default function CommentAnalyzer() {
         })
         const mediaType = file.type || 'image/png'
 
-        const resp = await fetch('/api/ai?action=anthropic', {
+        const resp = await fetch('/api/ai?action=gemini', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -75,14 +75,14 @@ export default function CommentAnalyzer() {
   const analyzeComments = async () => {
     if (!comments.length) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key da Anthropic primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
 
     setAnalyzing(true)
     setError('')
     setSuggestions(null)
     try {
       const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
-      const resp = await fetch('/api/ai?action=anthropic', {
+      const resp = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

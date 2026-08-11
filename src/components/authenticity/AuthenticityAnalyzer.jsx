@@ -113,7 +113,7 @@ Exemplos de gancho: ${(p.hook_examples || []).slice(0, 3).join(' | ') || 'N/A'}
 async function runAnalysis(apiKey, draft, benchmarkText, creatorContext) {
   const prompt = buildAnalysisPrompt(draft, benchmarkText, creatorContext)
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -217,7 +217,7 @@ export default function AuthenticityAnalyzer() {
 
   const handleAnalyze = async () => {
     if (!draft.trim()) return setError('Cole o rascunho para analisar')
-    if (!apiKey) return setError('Configure sua chave Anthropic em Configurações')
+    if (!apiKey) return setError('Configure sua chave Gemini em Configurações')
     setError('')
     setResult(null)
     setLoading(true)

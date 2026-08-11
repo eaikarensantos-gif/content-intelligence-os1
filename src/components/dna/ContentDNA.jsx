@@ -261,7 +261,7 @@ REGRAS PARA creator_references:
 - Pode ser internacional se não houver nacional adequado — prefira qualidade ao localismo.
 - A justificativa "what_to_learn" deve ser SEMPRE sobre método de entrega (estrutura do post, técnica narrativa, formato visual) — nunca sobre tema.`
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -390,7 +390,7 @@ export default function ContentDNA() {
       return
     }
     if (!apiKey) {
-      setError('Configure sua chave Anthropic API nas configurações.')
+      setError('Configure sua chave Gemini API nas configurações.')
       return
     }
 
@@ -551,7 +551,7 @@ export default function ContentDNA() {
 
           {!apiKey && (
             <p className="text-center text-[11px] text-amber-600">
-              Configure sua chave Anthropic API nas configurações para usar este recurso.
+              Configure sua chave Gemini API nas configurações para usar este recurso.
             </p>
           )}
         </div>

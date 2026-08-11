@@ -1269,7 +1269,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
      esta chamada reescreve só os trechos apontados antes de mostrar na tela. */
   const rewriteWithoutCliches = async (text, hits) => {
     const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
-    const res = await fetch('/api/ai?action=anthropic', {
+    const res = await fetch('/api/ai?action=gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
@@ -1297,7 +1297,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}`
     ).join('\n')
 
-    const res = await fetch('/api/ai?action=anthropic', {
+    const res = await fetch('/api/ai?action=gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
@@ -1451,7 +1451,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavras), virais e persuasivos. Devem gerar curiosidade sem ser clickbait extremista ou apelativo. Pense em títulos que fariam alguém parar o scroll. Nada genérico.`
 
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -1514,7 +1514,7 @@ REGRA PARA TÍTULOS: Gere 5 opções de título que sejam CURTOS (máx 8 palavra
 ${bannedList}
 TEXTO:\n${revText.trim()}`
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -1580,7 +1580,7 @@ Retorne APENAS o texto encurtado, sem introdução nem comentários.
 TEXTO:
 ${revText.trim()}`
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -1614,7 +1614,7 @@ ${revText.trim()}`
       : ''
     const prompt = `Reescreva o texto incorporando as melhorias. Preserve estilo e voz. Retorne APENAS o texto reescrito.${bannedList}\n\nTEXTO:\n${revText.trim()}\n\nMELHORIAS:\n${list}`
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -1679,7 +1679,7 @@ ${revText.trim()}`
     setEngSavedHub(false)
     setEngSweepReport(null)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1733,7 +1733,7 @@ ${revText.trim()}`
     setEngHookError(null)
     setEngHooks(null)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1780,7 +1780,7 @@ ${revText.trim()}`
     setCarHooks([])
     try {
       const tema = carTema.trim() || (isPessoal ? 'vida e cotidiano' : 'carreira e maturidade profissional')
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -1858,7 +1858,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarSavedHub(false)
     setCarSweepReport(null)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -2020,7 +2020,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       const systemPrompt = buildStoriesSystem(isPessoal)
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -2073,7 +2073,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       targets.some(tg => tg.id === t.id) ? { ...t, temperatura: 'analyzing' } : t
     ))
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -2120,7 +2120,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
     if (!apiKey || temas.length === 0) return fallback()
 
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -2229,7 +2229,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
           ? `Estes estão no banco mas são do posicionamento antigo, de vida de empregado. NÃO use como referência e NÃO gere nada parecido:\n${foraDoPosicionamento.map(t => `- ${t.tema}`).join('\n')}`
           : null,
       ].filter(Boolean).join('\n\n')
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
