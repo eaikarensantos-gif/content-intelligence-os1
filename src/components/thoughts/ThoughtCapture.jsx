@@ -6,9 +6,9 @@ import { withManualOperacional } from '../../lib/manualOperacional'
 import {
   Brain, Sparkles, Copy, Check, Plus, Trash2,
   Clock, Layers, Video, AlignLeft, BookOpen, Zap,
-  RefreshCw, LayoutGrid, Mic, Instagram, Music2,
-  Play, Repeat2, MessageCircle, Heart, ChevronRight,
-  Film, Smartphone, ExternalLink, Quote, Target,
+  RefreshCw, LayoutGrid, Mic, Music2,
+  Heart,
+  Film, Smartphone, ExternalLink,
   Wand2, ArrowLeft, ThumbsDown, ChevronDown, ChevronUp, Lightbulb,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
@@ -33,7 +33,7 @@ O criador teve este pensamento bruto:
 ${niche ? `Contexto / nicho: ${niche}` : ''}
 ${toneInstruction}
 
-Transforme este pensamento em 7 formatos distintos de conteúdo, cada um adaptado para performar melhor na sua plataforma/contexto.
+Transforme este pensamento num post reflexivo completo e bem desenvolvido.
 
 REGRAS DE ESTILO (CRÍTICO — SIGA EXATAMENTE):
 PROIBIDO (nunca use estas frases ou variações delas):
@@ -60,72 +60,10 @@ PRINCÍPIOS ABSOLUTOS:
 - Tom observacional — como alguém que está compartilhando uma reflexão genuína
 
 ─────────────────────────────────────────────────────
-FORMATO 1 — POST REFLEXIVO (LinkedIn / Instagram feed)
+POST REFLEXIVO (LinkedIn / Instagram feed)
 - 200-400 palavras em parágrafos corridos (zero bullets)
 - Uma ideia que se desenvolve naturalmente
 - A última frase ecoa na mente do leitor
-
-FORMATO 2 — ROTEIRO DE VÍDEO LONGO (YouTube / Podcast)
-- Hook: 1 frase que prende nos primeiros 3 segundos
-- 3 pontos de desenvolvimento em linguagem falada natural
-- Encerramento que convida à reflexão, não à compra
-- Estimativa: 3-6 min
-
-FORMATO 3 — CARROSSEL (Instagram / LinkedIn)
-- Slide 1: Afirmação ou pergunta que causa pausa (NUNCA "X dicas...")
-- 4 slides de desenvolvimento: headline provocativo + 1-2 frases cada
-- Slide final: O insight que o leitor vai salvar
-
-FORMATO 4 — ARCO NARRATIVO (Storytelling universal)
-- Situação → Tensão → Virada → Resolução
-
-─────────────────────────────────────────────────────
-FRASES VIRAIS (NOVO — CRÍTICO):
-A partir do insight central do pensamento, gere 5-8 frases curtas e impactantes.
-Essas frases devem funcionar como ganchos, legendas ou frases-chave em vídeos.
-
-TIPOS DE FRASE (inclua uma mistura):
-1. Observacional — "Tem uma coisa estranha acontecendo com..."
-2. Contradição — "Nunca foi tão fácil X. E nunca foi tão difícil Y."
-3. Insight direto — "O problema não é falta de X. É excesso de Y."
-4. Reflexiva — "Talvez a gente esteja fazendo X... quando deveria estar fazendo Y."
-
-Cada frase deve: soar natural e humana, ser concisa e memorável, evitar clichês de IA, evitar tom dramático ou agressivo, parecer algo que um criador real diria.
-
-Depois, selecione as 2-3 frases mais fortes e adapte como hooks para: vídeo, post escrito e conteúdo curto (reels/stories).
-
-─────────────────────────────────────────────────────
-FORMATO 5 — ROTEIRO PARA REELS (Instagram Reels, 15-60 seg)
-Otimize para: loop, saves e compartilhamentos.
-O Reels performa quando tem loop natural, texto na tela complementando a fala, ritmo rápido e a ideia completa em <30 segundos.
-- Hook visual: o que o usuário VÊ nos primeiros 2 segundos (texto na tela, ação, expressão)
-- Hook falado: a frase exata que abre o vídeo (para o scroll em 2s)
-- Batidas de conteúdo: 3 beats rápidos (o que falar/mostrar + duração em seg cada)
-- Elemento de loop: como o final puxa de volta ao início para causar replay
-- Texto na tela: a frase principal que aparece em sobreposição durante o vídeo
-- Estratégia de áudio: voz original, som trending + voz, ou só voz
-- CTA final: o que pedir (salvar, compartilhar, comentar "X")
-- Duração sugerida: X-Y segundos
-
-FORMATO 6 — SEQUÊNCIA DE STORIES (Instagram Stories, 5-7 slides)
-Otimize para: tap-through rate, respostas e conversas.
-Stories performam com sequência de curiosidade (cada slide deixa uma pergunta), elemento interativo no meio e CTA claro no último.
-- Slide de abertura: o que faz a pessoa NÃO pular (afirmação provocativa ou pergunta)
-- Sequência de slides: 5-7 slides, cada um com: conteúdo + elemento interativo (enquete/pergunta/nenhum) + propósito
-- Elemento interativo recomendado: qual usar, onde colocar e por que
-- Slide de fechamento: CTA direto (responder, salvar, DM)
-
-FORMATO 7 — ROTEIRO TIKTOK (TikTok, 15-60 seg)
-Otimize para: replays, comentários e duet/stitch.
-TikTok performa quando os primeiros 2 segundos são absurdamente específicos, há um elemento surpresa no meio, e o final provoca comentários ou replay.
-- Hook (linha exata): as primeiras palavras — específica e inesperada, não genérica
-- Hook visual: o que o usuário VÊ na tela nos primeiros 2 segundos
-- Interrupção de padrão: o elemento surpresa/inesperado que faz continuar assistindo (aparece em ~5s)
-- Beats de conteúdo: 3-4 beats com a técnica de retenção que cada um usa
-- Momento de loop: a cena ou frase que incentiva assistir de novo
-- Estratégia de som: som trending + voz, voz original, texto sem fala
-- Isca de comentário: pergunta ou afirmação que PROVOCA comentários (não genérica)
-- Duração sugerida: X-Y segundos
 
 ─────────────────────────────────────────────────────
 ${voiceContext || ''}${regenInstruction || ''}
@@ -139,95 +77,6 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     "opening_line": "primeira frase exata",
     "closing_line": "última frase/pergunta exata",
     "suggested_platform": "LinkedIn ou Instagram"
-  },
-  "video_talking_point": {
-    "hook": "frase exata de abertura",
-    "talking_points": [
-      "primeiro ponto em linguagem falada natural",
-      "segundo ponto em linguagem falada natural",
-      "terceiro ponto em linguagem falada natural"
-    ],
-    "closing": "encerramento natural",
-    "estimated_duration": "4-5 min",
-    "suggested_platform": "YouTube ou Podcast"
-  },
-  "carousel": {
-    "slide_1": "afirmação ou pergunta do primeiro slide",
-    "slides": [
-      { "headline": "headline provocativo", "body": "1-2 frases" },
-      { "headline": "headline provocativo", "body": "1-2 frases" },
-      { "headline": "headline provocativo", "body": "1-2 frases" },
-      { "headline": "headline provocativo", "body": "1-2 frases" }
-    ],
-    "final_slide": "insight central que o leitor vai salvar"
-  },
-  "storytelling": {
-    "situation": "o cenário que todo mundo reconhece",
-    "tension": "o conflito que raramente é nomeado",
-    "turning_point": "o momento de insight ou mudança de perspectiva",
-    "resolution": "o que fica — a conclusão que ressoa"
-  },
-  "reel_script": {
-    "hook_visual": "o que o usuário vê na tela nos primeiros 2 segundos",
-    "hook_spoken": "a frase exata que abre o vídeo",
-    "beats": [
-      { "content": "o que falar/mostrar", "duration_sec": 8 },
-      { "content": "o que falar/mostrar", "duration_sec": 8 },
-      { "content": "o que falar/mostrar", "duration_sec": 7 }
-    ],
-    "loop_element": "como o final volta ao início para causar replay",
-    "text_overlay": "a frase principal em sobreposição visual durante o vídeo",
-    "audio_strategy": "voz original / som trending + voz / narração com música",
-    "cta": "salvar / comentar 'X' / compartilhar — texto exato do CTA",
-    "suggested_duration_sec": 30
-  },
-  "stories_sequence": {
-    "opening_slide": "o primeiro slide que faz a pessoa não pular",
-    "slides": [
-      { "number": 1, "content": "conteúdo do slide", "interactive": "nenhum/enquete/pergunta/quiz", "purpose": "gancho" },
-      { "number": 2, "content": "conteúdo do slide", "interactive": "nenhum/enquete/pergunta/quiz", "purpose": "desenvolvimento" },
-      { "number": 3, "content": "conteúdo do slide", "interactive": "enquete", "purpose": "engajamento" },
-      { "number": 4, "content": "conteúdo do slide", "interactive": "nenhum", "purpose": "desenvolvimento" },
-      { "number": 5, "content": "conteúdo do slide", "interactive": "pergunta", "purpose": "revelação" },
-      { "number": 6, "content": "conteúdo do slide", "interactive": "nenhum", "purpose": "cta" }
-    ],
-    "interactive_tip": "qual elemento interativo usar, onde colocar e por que aumenta respostas",
-    "closing_cta": "o que pedir no último slide (responder, DM, salvar)"
-  },
-  "tiktok_script": {
-    "hook_line": "as primeiras palavras exatas — específica e inesperada",
-    "hook_visual": "o que o usuário vê nos primeiros 2 segundos",
-    "pattern_interrupt": "o elemento surpresa em ~5s que faz continuar assistindo",
-    "beats": [
-      { "content": "o que falar/mostrar", "retention_technique": "técnica de retenção usada" },
-      { "content": "o que falar/mostrar", "retention_technique": "técnica de retenção usada" },
-      { "content": "o que falar/mostrar", "retention_technique": "técnica de retenção usada" }
-    ],
-    "loop_moment": "a cena ou frase que incentiva assistir de novo",
-    "sound_strategy": "som trending + voz / voz original / narração sem rosto",
-    "comment_bait": "pergunta ou afirmação que provoca comentários (específica, não genérica)",
-    "suggested_duration_sec": 30
-  },
-  "viral_phrases": {
-    "analysis": {
-      "main_observation": "a observação principal do pensamento",
-      "underlying_tension": "a tensão implícita que torna interessante",
-      "implicit_insight": "o insight que a maioria não percebe"
-    },
-    "phrases": [
-      { "text": "frase viral 1", "type": "observacional|contradição|insight|reflexiva" },
-      { "text": "frase viral 2", "type": "observacional|contradição|insight|reflexiva" },
-      { "text": "frase viral 3", "type": "observacional|contradição|insight|reflexiva" },
-      { "text": "frase viral 4", "type": "observacional|contradição|insight|reflexiva" },
-      { "text": "frase viral 5", "type": "observacional|contradição|insight|reflexiva" },
-      { "text": "frase viral 6", "type": "observacional|contradição|insight|reflexiva" }
-    ],
-    "top_hooks": [
-      { "phrase": "a frase mais forte adaptada para vídeo", "format": "video", "context": "como usar: abertura de vídeo, primeiros 3 segundos" },
-      { "phrase": "a frase mais forte adaptada para post escrito", "format": "post", "context": "como usar: primeira linha do post, antes do ver mais" },
-      { "phrase": "a frase mais forte adaptada para conteúdo curto", "format": "short", "context": "como usar: texto na tela do reels/stories/tiktok" }
-    ],
-    "suggested_formats": ["carrossel de frases", "reels com texto na tela", "post reflexivo"]
   },
   "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "save_as_idea": {
@@ -249,7 +98,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
       model: 'claude-sonnet-5',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
-      max_tokens: 16000,
+      max_tokens: 4000,
       system: withManualOperacional(withAntiAIFilter('You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks. Your entire response must start with "{" — no reasoning, drafts, or commentary outside the JSON.')),
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -269,9 +118,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
 // ─── Loading phases ───────────────────────────────────────────────────────────
 const PHASES = [
   { label: 'Capturando a essência...', icon: Brain, color: 'text-indigo-500' },
-  { label: 'Gerando frases virais...', icon: Quote, color: 'text-orange-500' },
-  { label: 'Estruturando os formatos...', icon: Layers, color: 'text-violet-500' },
-  { label: 'Adaptando para cada plataforma...', icon: Smartphone, color: 'text-pink-500' },
+  { label: 'Estruturando o post...', icon: Layers, color: 'text-violet-500' },
+  { label: 'Desenvolvendo a ideia...', icon: Smartphone, color: 'text-pink-500' },
   { label: 'Refinando o tom...', icon: Sparkles, color: 'text-purple-500' },
 ]
 
@@ -371,550 +219,6 @@ function ReflectionCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, on
   )
 }
 
-// ─── Format 2: Video Talking Point ───────────────────────────────────────────
-function VideoCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const c = COLOR_MAP.violet
-  const script = [`HOOK: ${data.hook}`, '', ...(data.talking_points || []).map((p, i) => `${i + 1}. ${p}`), '', `ENCERRAMENTO: ${data.closing}`].join('\n')
-  return (
-    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
-        <div className="flex items-center gap-2.5">
-          <Video size={14} className={c.icon} />
-          <span className="text-sm font-semibold text-gray-800">Roteiro de Vídeo</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{data.suggested_platform}</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{data.estimated_duration}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FavBtn isFav={isFav} onToggle={onToggleFav} />
-          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
-          <button onClick={() => copy(script, 'video')} className="btn-secondary text-xs py-1 px-2.5">
-            {copiedKey === 'video' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-          </button>
-        </div>
-      </div>
-      <div className="px-5 py-4 space-y-3">
-        <div className="rounded-xl p-3.5 bg-violet-50 border border-violet-200">
-          <p className="text-[10px] text-violet-500 font-bold uppercase tracking-wide mb-1.5">🎙 Hook de abertura</p>
-          <p className="text-sm font-semibold text-gray-800">"{data.hook}"</p>
-        </div>
-        <div className="space-y-2">
-          {(data.talking_points || []).map((p, i) => (
-            <div key={i} className="flex gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-              <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-600 shrink-0 mt-0.5">{i + 1}</div>
-              <p className="text-xs text-gray-700 leading-relaxed">{p}</p>
-            </div>
-          ))}
-        </div>
-        <div className="rounded-xl p-3 bg-gray-50 border border-gray-100">
-          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Encerramento</p>
-          <p className="text-xs text-gray-600 italic">{data.closing}</p>
-        </div>
-        <SaveBtn saved={saved} onClick={onSave} color="violet" onOpenHub={onOpenHub} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Format 3: Carousel ───────────────────────────────────────────────────────
-function CarouselCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const c = COLOR_MAP.purple
-  const allSlides = [`SLIDE 1 (CAPA): ${data.slide_1}`, ...(data.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`), `\nSLIDE FINAL:\n${data.final_slide}`].join('\n')
-  return (
-    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
-        <div className="flex items-center gap-2.5">
-          <LayoutGrid size={14} className={c.icon} />
-          <span className="text-sm font-semibold text-gray-800">Carrossel</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>{(data.slides?.length || 0) + 2} slides</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FavBtn isFav={isFav} onToggle={onToggleFav} />
-          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
-          <button onClick={() => copy(allSlides, 'carousel')} className="btn-secondary text-xs py-1 px-2.5">
-            {copiedKey === 'carousel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-          </button>
-        </div>
-      </div>
-      <div className="px-5 py-4 space-y-2">
-        <div className="rounded-xl p-3.5 bg-purple-50 border border-purple-200">
-          <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wide mb-1">Slide 1 — Capa</p>
-          <p className="text-sm font-bold text-gray-800">"{data.slide_1}"</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {(data.slides || []).map((s, i) => (
-            <div key={i} className="rounded-xl p-3 border border-gray-100 bg-gray-50/80 space-y-1">
-              <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-purple-100 flex items-center justify-center text-[9px] font-bold text-purple-600 shrink-0">{i + 2}</div>
-                <p className="text-[11px] font-semibold text-gray-800 leading-tight">{s.headline}</p>
-              </div>
-              <p className="text-[10px] text-gray-500 leading-relaxed">{s.body}</p>
-            </div>
-          ))}
-        </div>
-        <div className="rounded-xl p-3.5 bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-200">
-          <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wide mb-1">Slide Final — Insight Central</p>
-          <p className="text-xs font-semibold text-gray-800">"{data.final_slide}"</p>
-        </div>
-        <SaveBtn saved={saved} onClick={onSave} color="purple" onOpenHub={onOpenHub} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Format 4: Storytelling ───────────────────────────────────────────────────
-function StorytellingCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const c = COLOR_MAP.fuchsia
-  const STEPS = [
-    { key: 'situation',     label: 'Situação',  color: 'bg-blue-50 border-blue-200',     labelColor: 'text-blue-500',    num: '01' },
-    { key: 'tension',       label: 'Tensão',    color: 'bg-orange-50 border-orange-200', labelColor: 'text-orange-500',  num: '02' },
-    { key: 'turning_point', label: 'Virada',    color: 'bg-fuchsia-50 border-fuchsia-200', labelColor: 'text-fuchsia-500', num: '03' },
-    { key: 'resolution',    label: 'Resolução', color: 'bg-emerald-50 border-emerald-200', labelColor: 'text-emerald-600', num: '04' },
-  ]
-  const fullStory = STEPS.map(s => `${s.label.toUpperCase()}:\n${data[s.key]}`).join('\n\n')
-  return (
-    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
-        <div className="flex items-center gap-2.5">
-          <BookOpen size={14} className={c.icon} />
-          <span className="text-sm font-semibold text-gray-800">Arco Narrativo</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>4 partes</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FavBtn isFav={isFav} onToggle={onToggleFav} />
-          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
-          <button onClick={() => copy(fullStory, 'story')} className="btn-secondary text-xs py-1 px-2.5">
-            {copiedKey === 'story' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-          </button>
-        </div>
-      </div>
-      <div className="px-5 py-4 space-y-2.5">
-        {STEPS.map((step) => (
-          <div key={step.key} className={`rounded-xl p-3.5 border ${step.color} space-y-1`}>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black text-gray-300">{step.num}</span>
-              <p className={`text-[10px] font-bold uppercase tracking-wide ${step.labelColor}`}>{step.label}</p>
-            </div>
-            <p className="text-xs text-gray-700 leading-relaxed">{data[step.key]}</p>
-          </div>
-        ))}
-        <SaveBtn saved={saved} onClick={onSave} color="fuchsia" onOpenHub={onOpenHub} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Format 5: Reels Script ───────────────────────────────────────────────────
-function ReelCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const c = COLOR_MAP.rose
-  const script = [
-    `HOOK VISUAL: ${data.hook_visual}`,
-    `HOOK FALADO: "${data.hook_spoken}"`,
-    '',
-    ...(data.beats || []).map((b, i) => `BEAT ${i + 1} (~${b.duration_sec}s): ${b.content}`),
-    '',
-    `LOOP: ${data.loop_element}`,
-    `TEXTO NA TELA: "${data.text_overlay}"`,
-    `ÁUDIO: ${data.audio_strategy}`,
-    `CTA: ${data.cta}`,
-    `DURAÇÃO: ${data.suggested_duration_sec}s`,
-  ].join('\n')
-  return (
-    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
-        <div className="flex items-center gap-2.5">
-          <Film size={14} className={c.icon} />
-          <span className="text-sm font-semibold text-gray-800">Reels</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>Instagram</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">~{data.suggested_duration_sec}s</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FavBtn isFav={isFav} onToggle={onToggleFav} />
-          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
-          <button onClick={() => copy(script, 'reel')} className="btn-secondary text-xs py-1 px-2.5">
-            {copiedKey === 'reel' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-          </button>
-        </div>
-      </div>
-      <div className="px-5 py-4 space-y-3">
-        {/* Hook */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-3 bg-rose-50 border border-rose-200 space-y-1">
-            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wide">👁 Hook Visual</p>
-            <p className="text-xs text-gray-700">{data.hook_visual}</p>
-          </div>
-          <div className="rounded-xl p-3 bg-rose-50 border border-rose-200 space-y-1">
-            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wide">🎙 Hook Falado</p>
-            <p className="text-xs font-semibold text-gray-800 italic">"{data.hook_spoken}"</p>
-          </div>
-        </div>
-        {/* Beats */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Beats de conteúdo</p>
-          {(data.beats || []).map((b, i) => (
-            <div key={i} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-gray-50 border border-gray-100">
-              <span className="text-[9px] font-black text-rose-300 shrink-0 mt-0.5">0{i + 1}</span>
-              <div className="flex-1">
-                <p className="text-xs text-gray-700">{b.content}</p>
-              </div>
-              <span className="text-[10px] font-semibold text-gray-400 shrink-0 bg-white border border-gray-200 px-1.5 py-0.5 rounded-lg">{b.duration_sec}s</span>
-            </div>
-          ))}
-        </div>
-        {/* Loop + overlay */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
-            <div className="flex items-center gap-1"><Repeat2 size={10} className="text-rose-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Loop</p></div>
-            <p className="text-[11px] text-gray-600">{data.loop_element}</p>
-          </div>
-          <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
-            <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Texto na Tela</p>
-            <p className="text-[11px] text-gray-700 font-medium italic">"{data.text_overlay}"</p>
-          </div>
-        </div>
-        {/* Audio + CTA */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-2.5 bg-gray-50 border border-gray-100 space-y-1">
-            <div className="flex items-center gap-1"><Music2 size={10} className="text-rose-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Áudio</p></div>
-            <p className="text-[11px] text-gray-600">{data.audio_strategy}</p>
-          </div>
-          <div className="rounded-xl p-2.5 bg-rose-50 border border-rose-200 space-y-1">
-            <p className="text-[9px] text-rose-500 font-bold uppercase tracking-wide">CTA</p>
-            <p className="text-[11px] text-gray-700 font-semibold">{data.cta}</p>
-          </div>
-        </div>
-        <SaveBtn saved={saved} onClick={onSave} color="rose" onOpenHub={onOpenHub} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Format 6: Stories Sequence ──────────────────────────────────────────────
-const PURPOSE_COLORS = {
-  gancho:        'bg-orange-100 text-orange-600 border-orange-200',
-  desenvolvimento: 'bg-blue-100 text-blue-600 border-blue-200',
-  engajamento:   'bg-violet-100 text-violet-600 border-violet-200',
-  revelação:     'bg-emerald-100 text-emerald-600 border-emerald-200',
-  cta:           'bg-pink-100 text-pink-600 border-pink-200',
-}
-const INTERACTIVE_ICONS = {
-  enquete:   '📊',
-  pergunta:  '💬',
-  quiz:      '🎯',
-  nenhum:    '',
-}
-
-function StoriesCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const c = COLOR_MAP.pink
-  const script = [`ABERTURA: ${data.opening_slide}`, '', ...(data.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`), '', `INTERATIVIDADE: ${data.interactive_tip}`, `CTA FINAL: ${data.closing_cta}`].join('\n')
-  return (
-    <div className={`rounded-2xl border ${c.border} bg-white overflow-hidden shadow-sm`}>
-      <div className={`px-5 py-3.5 flex items-center justify-between ${c.header} border-b ${c.border}`}>
-        <div className="flex items-center gap-2.5">
-          <Smartphone size={14} className={c.icon} />
-          <span className="text-sm font-semibold text-gray-800">Stories</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${c.badge}`}>Instagram</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{data.slides?.length || 0} slides</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FavBtn isFav={isFav} onToggle={onToggleFav} />
-          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
-          <button onClick={() => copy(script, 'stories')} className="btn-secondary text-xs py-1 px-2.5">
-            {copiedKey === 'stories' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-          </button>
-        </div>
-      </div>
-      <div className="px-5 py-4 space-y-3">
-        {/* Opening slide */}
-        <div className="rounded-xl p-3.5 bg-pink-50 border border-pink-200">
-          <p className="text-[9px] text-pink-500 font-bold uppercase tracking-wide mb-1">📲 Slide de Abertura (faz não pular)</p>
-          <p className="text-sm font-semibold text-gray-800">"{data.opening_slide}"</p>
-        </div>
-        {/* Slides */}
-        <div className="space-y-1.5">
-          {(data.slides || []).map((s) => (
-            <div key={s.number} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-gray-50 border border-gray-100">
-              <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[9px] font-bold text-pink-600 shrink-0">{s.number}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-700 leading-snug">{s.content}</p>
-                {s.interactive && s.interactive !== 'nenhum' && (
-                  <span className="text-[9px] text-pink-500 font-semibold mt-0.5 inline-block">{INTERACTIVE_ICONS[s.interactive] || '🔸'} Adicionar: {s.interactive}</span>
-                )}
-              </div>
-              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border shrink-0 capitalize ${PURPOSE_COLORS[s.purpose] || 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                {s.purpose}
-              </span>
-            </div>
-          ))}
-        </div>
-        {/* Tip + CTA */}
-        <div className="rounded-xl p-3 bg-violet-50 border border-violet-200 space-y-1">
-          <p className="text-[9px] text-violet-500 font-bold uppercase tracking-wide">💡 Dica de interatividade</p>
-          <p className="text-[11px] text-gray-600">{data.interactive_tip}</p>
-        </div>
-        <div className="rounded-xl p-3 bg-pink-50 border border-pink-200">
-          <p className="text-[9px] text-pink-500 font-bold uppercase tracking-wide mb-1">CTA Final</p>
-          <p className="text-xs text-gray-700 font-medium">{data.closing_cta}</p>
-        </div>
-        <SaveBtn saved={saved} onClick={onSave} color="pink" onOpenHub={onOpenHub} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Format 7: TikTok Script ──────────────────────────────────────────────────
-function TikTokCard({ data, onSave, saved, onOpenHub, isFav, onToggleFav, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const c = COLOR_MAP.zinc
-  const script = [
-    `HOOK (fala): "${data.hook_line}"`,
-    `HOOK (visual): ${data.hook_visual}`,
-    `INTERRUPÇÃO DE PADRÃO: ${data.pattern_interrupt}`,
-    '',
-    ...(data.beats || []).map((b, i) => `BEAT ${i + 1} [${b.retention_technique}]: ${b.content}`),
-    '',
-    `LOOP: ${data.loop_moment}`,
-    `ÁUDIO: ${data.sound_strategy}`,
-    `ISCA DE COMENTÁRIO: "${data.comment_bait}"`,
-    `DURAÇÃO: ${data.suggested_duration_sec}s`,
-  ].join('\n')
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
-      <div className="px-5 py-3.5 flex items-center justify-between bg-zinc-50 border-b border-zinc-200">
-        <div className="flex items-center gap-2.5">
-          <Music2 size={14} className="text-zinc-700" />
-          <span className="text-sm font-semibold text-gray-800">TikTok</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-zinc-100 text-zinc-700 border-zinc-300">TikTok</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">~{data.suggested_duration_sec}s</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FavBtn isFav={isFav} onToggle={onToggleFav} />
-          <button onClick={onDislike} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Não gostei"><ThumbsDown size={13} /></button>
-          <button onClick={() => copy(script, 'tiktok')} className="btn-secondary text-xs py-1 px-2.5">
-            {copiedKey === 'tiktok' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
-          </button>
-        </div>
-      </div>
-      <div className="px-5 py-4 space-y-3">
-        {/* Hooks */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-3 bg-zinc-900 space-y-1">
-            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wide">🔥 Hook (fala)</p>
-            <p className="text-xs font-bold text-white">"{data.hook_line}"</p>
-          </div>
-          <div className="rounded-xl p-3 bg-zinc-100 border border-zinc-200 space-y-1">
-            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wide">👁 Hook (visual)</p>
-            <p className="text-xs text-gray-700">{data.hook_visual}</p>
-          </div>
-        </div>
-        {/* Pattern interrupt */}
-        <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
-          <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide mb-1">⚡ Interrupção de padrão (~5s)</p>
-          <p className="text-xs text-gray-700">{data.pattern_interrupt}</p>
-        </div>
-        {/* Beats */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Beats + técnica de retenção</p>
-          {(data.beats || []).map((b, i) => (
-            <div key={i} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-gray-50 border border-gray-100">
-              <span className="text-[9px] font-black text-zinc-400 shrink-0 mt-0.5">0{i + 1}</span>
-              <div className="flex-1">
-                <p className="text-xs text-gray-700">{b.content}</p>
-                <span className="text-[9px] text-zinc-500 italic">{b.retention_technique}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Loop + audio + comment bait */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl p-2.5 bg-gray-50 border border-gray-100 space-y-1">
-            <div className="flex items-center gap-1"><Repeat2 size={10} className="text-zinc-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Loop</p></div>
-            <p className="text-[11px] text-gray-600">{data.loop_moment}</p>
-          </div>
-          <div className="rounded-xl p-2.5 bg-gray-50 border border-gray-100 space-y-1">
-            <div className="flex items-center gap-1"><Music2 size={10} className="text-zinc-400" /><p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Som</p></div>
-            <p className="text-[11px] text-gray-600">{data.sound_strategy}</p>
-          </div>
-        </div>
-        <div className="rounded-xl p-3 bg-zinc-900">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <MessageCircle size={11} className="text-zinc-400" />
-            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wide">Isca de comentário</p>
-          </div>
-          <p className="text-xs font-semibold text-white">"{data.comment_bait}"</p>
-        </div>
-        <SaveBtn saved={saved} onClick={onSave} color="zinc" onOpenHub={onOpenHub} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Viral Phrases Card ──────────────────────────────────────────────────────
-const PHRASE_TYPE_STYLES = {
-  observacional: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', label: '👁 Observacional' },
-  'contradição':  { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', label: '⚡ Contradição' },
-  insight:       { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', label: '💡 Insight' },
-  reflexiva:     { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-600', label: '🌿 Reflexiva' },
-}
-const HOOK_FORMAT_STYLES = {
-  video: { icon: Video, label: 'Vídeo', color: 'text-violet-500', bg: 'bg-violet-50', border: 'border-violet-200' },
-  post:  { icon: AlignLeft, label: 'Post', color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-  short: { icon: Film, label: 'Curto (Reels/Stories)', color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200' },
-}
-
-function ViralPhrasesCard({ data, onDislike }) {
-  const { copiedKey, copy } = useCopy()
-  const [dismissedPhrases, setDismissedPhrases] = useState(new Set())
-  const [dismissedHooks, setDismissedHooks] = useState(new Set())
-  const visiblePhrases = (data.phrases || []).filter((_, i) => !dismissedPhrases.has(i))
-  const visibleHooks = (data.top_hooks || []).filter((_, i) => !dismissedHooks.has(i))
-  const allPhrases = visiblePhrases.map(p => `"${p.text}"`).join('\n\n')
-
-  return (
-    <div className="rounded-2xl border border-orange-200 bg-white overflow-hidden shadow-sm">
-      {/* Header */}
-      <div className="px-5 py-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-sm">
-            <Quote size={14} className="text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-gray-800">Frases Virais</p>
-            <p className="text-[10px] text-gray-400">{data.phrases?.length || 0} frases geradas a partir do seu pensamento</p>
-          </div>
-        </div>
-        <button onClick={() => copy(allPhrases, 'all-phrases')} className="btn-secondary text-xs py-1.5 px-3">
-          {copiedKey === 'all-phrases' ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar todas</>}
-        </button>
-      </div>
-
-      <div className="p-5 space-y-5">
-        {/* Analysis */}
-        {data.analysis && (
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Observação principal</p>
-              <p className="text-[11px] text-gray-700 leading-relaxed">{data.analysis.main_observation}</p>
-            </div>
-            <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Tensão subjacente</p>
-              <p className="text-[11px] text-gray-700 leading-relaxed">{data.analysis.underlying_tension}</p>
-            </div>
-            <div className="rounded-xl p-3 bg-gray-50 border border-gray-100 space-y-1">
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Insight implícito</p>
-              <p className="text-[11px] text-gray-700 leading-relaxed">{data.analysis.implicit_insight}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Phrases */}
-        {visiblePhrases.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Frases de impacto</p>
-          <div className="space-y-2">
-            {(data.phrases || []).map((p, i) => {
-              if (dismissedPhrases.has(i)) return null
-              const style = PHRASE_TYPE_STYLES[p.type] || PHRASE_TYPE_STYLES.observacional
-              return (
-                <div key={i} className={`rounded-xl p-3.5 ${style.bg} border ${style.border} flex items-start gap-3 group`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-gray-800 leading-snug">"{p.text}"</p>
-                    <span className={`text-[9px] font-semibold mt-1.5 inline-block ${style.text}`}>{style.label}</span>
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <button
-                      onClick={() => copy(p.text, `phrase-${i}`)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all"
-                    >
-                      {copiedKey === `phrase-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                    </button>
-                    {onDislike && (
-                      <button
-                        onClick={() => {
-                          onDislike({ title: p.text, hook: p.text, reason: 'frase desalinhada com meu tom' })
-                          setDismissedPhrases(prev => new Set([...prev, i]))
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
-                        title="Não gostei desta frase"
-                      >
-                        <ThumbsDown size={12} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-        )}
-
-        {/* Top Hooks */}
-        {visibleHooks.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Target size={12} className="text-orange-500" />
-              <p className="text-[10px] text-orange-600 font-bold uppercase tracking-wide">Melhores hooks para conteúdo</p>
-            </div>
-            <div className="space-y-2">
-              {(data.top_hooks || []).map((hook, i) => {
-                if (dismissedHooks.has(i)) return null
-                const fmt = HOOK_FORMAT_STYLES[hook.format] || HOOK_FORMAT_STYLES.post
-                const HookIcon = fmt.icon
-                return (
-                  <div key={i} className={`rounded-xl p-4 ${fmt.bg} border ${fmt.border} space-y-2 group`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <HookIcon size={13} className={fmt.color} />
-                        <span className={`text-[10px] font-bold uppercase tracking-wide ${fmt.color}`}>{fmt.label}</span>
-                      </div>
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          onClick={() => copy(hook.phrase, `hook-${i}`)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 text-gray-400 hover:text-gray-600 transition-all"
-                        >
-                          {copiedKey === `hook-${i}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                        </button>
-                        {onDislike && (
-                          <button
-                            onClick={() => {
-                              onDislike({ title: hook.phrase, hook: hook.phrase, reason: 'hook desalinhado com meu tom' })
-                              setDismissedHooks(prev => new Set([...prev, i]))
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-orange-100 text-gray-400 hover:text-orange-600 transition-all"
-                            title="Não gostei deste hook"
-                          >
-                            <ThumbsDown size={12} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-sm font-bold text-gray-900 leading-snug">"{hook.phrase}"</p>
-                    <p className="text-[10px] text-gray-500 italic">{hook.context}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Suggested Formats */}
-        {data.suggested_formats?.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-[10px] text-gray-400 font-semibold">Formatos sugeridos:</span>
-            {data.suggested_formats.map((f, i) => (
-              <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 border border-orange-200 font-medium">{f}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── History item ─────────────────────────────────────────────────────────────
 function HistoryItem({ capture, onLoad, onDelete }) {
   return (
@@ -981,7 +285,7 @@ const TONE_OPTIONS = [
   { value: 'humor', label: 'Humor', emoji: '😄' },
 ]
 
-const ALL_FORMAT_KEYS = ['reflection_post', 'video_talking_point', 'carousel', 'storytelling', 'reel_script', 'stories_sequence', 'tiktok_script']
+const ALL_FORMAT_KEYS = ['reflection_post']
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ThoughtCapture() {
@@ -1054,21 +358,9 @@ export default function ThoughtCapture() {
     setResult(capture.result); setCurrentThought(capture.thought); setSavedFormats(new Set())
   }
 
-  const FORMAT_LABELS = {
-    reflection_post: 'post reflexivo', video_talking_point: 'roteiro de vídeo',
-    carousel: 'carrossel', storytelling: 'arco narrativo',
-    reel_script: 'reels', stories_sequence: 'stories', tiktok_script: 'tiktok',
-  }
-  const FORMAT_PLATFORMS = {
-    reflection_post: 'Instagram', video_talking_point: 'YouTube',
-    carousel: 'Instagram', storytelling: 'Instagram',
-    reel_script: 'Instagram', stories_sequence: 'Instagram', tiktok_script: 'TikTok',
-  }
-  const FORMAT_FORMATS = {
-    reflection_post: 'post', video_talking_point: 'video',
-    carousel: 'carrossel', storytelling: 'post',
-    reel_script: 'reel', stories_sequence: 'stories', tiktok_script: 'video',
-  }
+  const FORMAT_LABELS = { reflection_post: 'post reflexivo' }
+  const FORMAT_PLATFORMS = { reflection_post: 'Instagram' }
+  const FORMAT_FORMATS = { reflection_post: 'post' }
 
   const buildFullDescription = (key) => {
     const d = result?.[key]
@@ -1082,70 +374,6 @@ export default function ThoughtCapture() {
           d.text,
           '',
           `ENCERRAMENTO: "${d.closing_line}"`,
-        ].join('\n')
-
-      case 'video_talking_point':
-        return [
-          `HOOK: ${d.hook}`,
-          '',
-          ...(d.talking_points || []).map((p, i) => `${i + 1}. ${p}`),
-          '',
-          `ENCERRAMENTO: ${d.closing}`,
-        ].join('\n')
-
-      case 'carousel':
-        return [
-          `SLIDE 1 (CAPA): ${d.slide_1}`,
-          ...(d.slides || []).map((s, i) => `\nSLIDE ${i + 2}:\n${s.headline}\n${s.body}`),
-          `\nSLIDE FINAL:\n${d.final_slide}`,
-        ].join('\n')
-
-      case 'storytelling': {
-        const steps = [
-          { key: 'situation', label: 'Situação' },
-          { key: 'tension', label: 'Tensão' },
-          { key: 'turning_point', label: 'Virada' },
-          { key: 'resolution', label: 'Resolução' },
-        ]
-        return steps.map(s => `${s.label.toUpperCase()}:\n${d[s.key]}`).join('\n\n')
-      }
-
-      case 'reel_script':
-        return [
-          `HOOK VISUAL: ${d.hook_visual}`,
-          `HOOK FALADO: "${d.hook_spoken}"`,
-          '',
-          ...(d.beats || []).map((b, i) => `BEAT ${i + 1} (~${b.duration_sec}s): ${b.content}`),
-          '',
-          `LOOP: ${d.loop_element}`,
-          `TEXTO NA TELA: "${d.text_overlay}"`,
-          `ÁUDIO: ${d.audio_strategy}`,
-          `CTA: ${d.cta}`,
-          `DURAÇÃO: ${d.suggested_duration_sec}s`,
-        ].join('\n')
-
-      case 'stories_sequence':
-        return [
-          `ABERTURA: ${d.opening_slide}`,
-          '',
-          ...(d.slides || []).map(s => `SLIDE ${s.number} [${s.purpose}]${s.interactive !== 'nenhum' ? ` + ${s.interactive}` : ''}:\n${s.content}`),
-          '',
-          `INTERATIVIDADE: ${d.interactive_tip}`,
-          `CTA FINAL: ${d.closing_cta}`,
-        ].join('\n')
-
-      case 'tiktok_script':
-        return [
-          `HOOK (fala): "${d.hook_line}"`,
-          `HOOK (visual): ${d.hook_visual}`,
-          `INTERRUPÇÃO DE PADRÃO: ${d.pattern_interrupt}`,
-          '',
-          ...(d.beats || []).map((b, i) => `BEAT ${i + 1} [${b.retention_technique}]: ${b.content}`),
-          '',
-          `LOOP: ${d.loop_moment}`,
-          `ÁUDIO: ${d.sound_strategy}`,
-          `ISCA DE COMENTÁRIO: "${d.comment_bait}"`,
-          `DURAÇÃO: ${d.suggested_duration_sec}s`,
         ].join('\n')
 
       default:
@@ -1349,59 +577,16 @@ export default function ThoughtCapture() {
               )}
             </div>
 
-            {/* ── Viral Phrases ── */}
-            {result.viral_phrases && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-orange-100" />
-                  <span className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide px-3 flex items-center gap-1.5">
-                    <Quote size={10} /> Frases Virais & Hooks
-                  </span>
-                  <div className="h-px flex-1 bg-orange-100" />
-                </div>
-                <ViralPhrasesCard data={result.viral_phrases} onDislike={(item) => addDislike(item)} />
-              </div>
-            )}
-
-            {/* ── Section 1: Long-form formats ── */}
+            {/* ── Post reflexivo ── */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="h-px flex-1 bg-gray-100" />
-                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3">Conteúdo de Texto & Vídeo Longo</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3">Post Reflexivo</span>
                 <div className="h-px flex-1 bg-gray-100" />
               </div>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-5">
                 {result.reflection_post && (
                   <ReflectionCard data={result.reflection_post} onSave={() => handleSaveFormat('reflection_post')} saved={savedFormats.has('reflection_post')} onOpenHub={goToHub} isFav={isFavorited('Post Reflexivo')} onToggleFav={() => toggleFav('Post Reflexivo', result.reflection_post.text)} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.core_insight, reason: 'post reflexivo desalinhado' }); setResult(r => ({ ...r, reflection_post: null })) }} />
-                )}
-                {result.video_talking_point && (
-                  <VideoCard data={result.video_talking_point} onSave={() => handleSaveFormat('video_talking_point')} saved={savedFormats.has('video_talking_point')} onOpenHub={goToHub} isFav={isFavorited('Roteiro de Video')} onToggleFav={() => toggleFav('Roteiro de Video', [`HOOK: ${result.video_talking_point.hook}`, ...(result.video_talking_point.talking_points || []).map((p, i) => `${i + 1}. ${p}`), `ENCERRAMENTO: ${result.video_talking_point.closing}`].join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.video_talking_point.hook, reason: 'roteiro vídeo desalinhado' }); setResult(r => ({ ...r, video_talking_point: null })) }} />
-                )}
-                {result.carousel && (
-                  <CarouselCard data={result.carousel} onSave={() => handleSaveFormat('carousel')} saved={savedFormats.has('carousel')} onOpenHub={goToHub} isFav={isFavorited('Carrossel')} onToggleFav={() => toggleFav('Carrossel', [`SLIDE 1: ${result.carousel.slide_1}`, ...(result.carousel.slides || []).map((s, i) => `SLIDE ${i + 2}: ${s.headline} - ${s.body}`), `FINAL: ${result.carousel.final_slide}`].join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.carousel.slide_1, reason: 'carrossel desalinhado' }); setResult(r => ({ ...r, carousel: null })) }} />
-                )}
-                {result.storytelling && (
-                  <StorytellingCard data={result.storytelling} onSave={() => handleSaveFormat('storytelling')} saved={savedFormats.has('storytelling')} onOpenHub={goToHub} isFav={isFavorited('Arco Narrativo')} onToggleFav={() => toggleFav('Arco Narrativo', [result.storytelling.situation, result.storytelling.tension, result.storytelling.turning_point, result.storytelling.resolution].filter(Boolean).join('\n\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.storytelling.situation, reason: 'storytelling desalinhado' }); setResult(r => ({ ...r, storytelling: null })) }} />
-                )}
-              </div>
-            </div>
-
-            {/* ── Section 2: Short-form platforms ── */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-gray-100" />
-                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3">Roteiros para Redes Sociais</span>
-                <div className="h-px flex-1 bg-gray-100" />
-              </div>
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-                {result.reel_script && (
-                  <ReelCard data={result.reel_script} onSave={() => handleSaveFormat('reel_script')} saved={savedFormats.has('reel_script')} onOpenHub={goToHub} isFav={isFavorited('Reels Script')} onToggleFav={() => toggleFav('Reels Script', [`HOOK: ${result.reel_script.hook_spoken}`, ...(result.reel_script.beats || []).map(b => b.content), `CTA: ${result.reel_script.cta}`].filter(Boolean).join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.reel_script.hook_spoken, reason: 'reels desalinhado' }); setResult(r => ({ ...r, reel_script: null })) }} />
-                )}
-                {result.stories_sequence && (
-                  <StoriesCard data={result.stories_sequence} onSave={() => handleSaveFormat('stories_sequence')} saved={savedFormats.has('stories_sequence')} onOpenHub={goToHub} isFav={isFavorited('Stories Sequence')} onToggleFav={() => toggleFav('Stories Sequence', [`ABERTURA: ${result.stories_sequence.opening_slide}`, ...(result.stories_sequence.slides || []).map(s => `Slide ${s.number}: ${s.content}`), `CTA: ${result.stories_sequence.closing_cta}`].filter(Boolean).join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.stories_sequence.opening_slide, reason: 'stories desalinhado' }); setResult(r => ({ ...r, stories_sequence: null })) }} />
-                )}
-                {result.tiktok_script && (
-                  <TikTokCard data={result.tiktok_script} onSave={() => handleSaveFormat('tiktok_script')} saved={savedFormats.has('tiktok_script')} onOpenHub={goToHub} isFav={isFavorited('TikTok Script')} onToggleFav={() => toggleFav('TikTok Script', [`HOOK: ${result.tiktok_script.hook_line}`, ...(result.tiktok_script.beats || []).map(b => b.content), `LOOP: ${result.tiktok_script.loop_moment}`, `CTA: ${result.tiktok_script.comment_bait}`].filter(Boolean).join('\n'))} onDislike={() => { addDislike({ title: result.save_as_idea?.title || 'Thought Capture', hook: result.tiktok_script.hook_line, reason: 'tiktok desalinhado' }); setResult(r => ({ ...r, tiktok_script: null })) }} />
                 )}
               </div>
             </div>
@@ -1413,8 +598,8 @@ export default function ThoughtCapture() {
                   <Plus size={15} className="text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-700">Salvar todos os 7 formatos no Hub</p>
-                  <p className="text-[10px] text-gray-400">Cada formato vira uma ideia separada pronta para produzir</p>
+                  <p className="text-xs font-semibold text-gray-700">Salvar no Hub</p>
+                  <p className="text-[10px] text-gray-400">O post reflexivo vira uma ideia pronta pra produzir</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1423,7 +608,7 @@ export default function ThoughtCapture() {
                   disabled={savedFormats.size === ALL_FORMAT_KEYS.length}
                   className={`text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${savedFormats.size === ALL_FORMAT_KEYS.length ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-100'}`}
                 >
-                  {savedFormats.size === ALL_FORMAT_KEYS.length ? <><Check size={12} /> Todos salvos</> : <><Sparkles size={12} /> Salvar todos</>}
+                  {savedFormats.size === ALL_FORMAT_KEYS.length ? <><Check size={12} /> Salvo</> : <><Sparkles size={12} /> Salvar</>}
                 </button>
                 {savedFormats.size > 0 && (
                   <button onClick={goToHub} className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1 px-3 py-2 rounded-xl hover:bg-orange-50 border border-orange-200 transition-all">
