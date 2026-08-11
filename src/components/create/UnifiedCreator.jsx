@@ -949,6 +949,50 @@ const TEMAS_CARROSSEL = [
       'O que muda quando o cliente descobre quem está do outro lado',
     ],
   },
+  {
+    categoria: 'IA aplicada para pequenos negócios',
+    temas: [
+      'O dono de pequeno negócio que testou IA sozinho e voltou pro Excel',
+      'A tarefa que a IA resolve num pequeno negócio sem precisar de time de TI',
+      'Por que "ferramenta grátis de IA" não é estratégia pra quem fatura pouco',
+      'O critério pra saber se vale pagar por IA quando o orçamento é apertado',
+      'A planilha que virou processo de IA sem ninguém perceber a mudança',
+      'O pequeno negócio que economizou tempo com IA e não soube reinvestir isso',
+    ],
+  },
+  {
+    categoria: 'IA para negócios digitais',
+    temas: [
+      'O funil que a IA otimizou e o motivo que ninguém comemorou junto',
+      'A métrica que só piorou depois que automatizaram o atendimento',
+      'Por que IA no digital não substitui entender o próprio cliente',
+      'O e-commerce que testou IA na descrição de produto — e o que os números mostraram',
+      'A diferença entre automatizar tráfego e automatizar decisão',
+      'O negócio 100% digital que ainda decide tudo no feeling',
+    ],
+  },
+  {
+    categoria: 'IA para negócios físicos',
+    temas: [
+      'A loja física que usou IA pra prever estoque e errou no primeiro mês',
+      'O que muda quando o cliente físico interage com atendimento automatizado',
+      'Por que negócio físico demora mais pra adotar IA — e não é atraso, é critério',
+      'A fila que a IA não resolveu porque o problema nunca foi tecnológico',
+      'O dado que só existe no caderno, não no sistema — e o que isso custa',
+      'O comércio de bairro que testou IA sem saber nomear o que queria resolver',
+    ],
+  },
+  {
+    categoria: 'IA para criativos',
+    temas: [
+      'O criativo que usou IA e perdeu a própria voz no processo',
+      'Onde a IA acelera o rascunho e onde ela destrói a ideia original',
+      'A diferença entre gerar referência e terceirizar a criação',
+      'O portfólio que ficou parecido com todos os outros depois da IA entrar',
+      'Por que o criativo que edita a IA vale mais que o que só aceita o resultado',
+      'O briefing que a IA nunca vai entender sozinho',
+    ],
+  },
 ]
 
 // Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
