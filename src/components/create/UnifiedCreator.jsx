@@ -1099,6 +1099,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [newThemeInput, setNewThemeInput] = useState('')
   const [showThemesPanel, setShowThemesPanel] = useState(true)
   const [expandingThemes, setExpandingThemes] = useState(false)
+  const [expandThemesError, setExpandThemesError] = useState(null)
   const [categorizingThemes, setCategorizingThemes] = useState(false)
   const [reclassifying, setReclassifying] = useState(false)
   const [reclassifyResult, setReclassifyResult] = useState(null)
@@ -2101,11 +2102,12 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
   }
 
   const expandThemes = async () => {
-    if (!apiKey) return
+    if (!apiKey) { setExpandThemesError('Configure sua API key em Configurações'); return }
     const categoria = bankOpenCategory
     const temasNaCategoria = categoria ? savedThemes.filter(t => t.categoria === categoria) : savedThemes
     if (!categoria && savedThemes.length === 0) return
     setExpandingThemes(true)
+    setExpandThemesError(null)
     try {
       // Os temas existentes entram como referência do que já foi coberto. Mas os
       // que sobraram do posicionamento antigo não podem servir de exemplo: se o
@@ -2129,7 +2131,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 800,
+          max_tokens: 1500,
           messages: [{ role: 'user', content: `${isPessoal
             ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`
             : `Você é estrategista de conteúdo para Karen Santos. ${WORK_NICHE}
@@ -2153,22 +2155,30 @@ Responda EXCLUSIVAMENTE com JSON válido:
 {"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
         }),
       })
-      const data = await res.json()
-      const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\{[\s\S]*\}/)
-      if (match) {
-        const existing = new Set(savedThemes.map(t => t.tema))
-        const novos = (JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}')).temas || [])
-          .filter(t => !existing.has(t.tema))
-          .map(t => ({
-            id: Date.now() + Math.random(),
-            tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
-            categoria: categoria || categorizeTheme(t.tema),
-            fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
-          }))
-        setSavedThemes(prev => [...prev, ...novos])
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
       }
-    } catch { /* silent */ }
-    finally { setExpandingThemes(false) }
+      const data = await res.json()
+      assertNotTruncated(data)
+      const text = data.content?.find(b => b.type === 'text')?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+      const existing = new Set(savedThemes.map(t => t.tema))
+      const novos = (parsed.temas || [])
+        .filter(t => !existing.has(t.tema))
+        .map(t => ({
+          id: Date.now() + Math.random(),
+          tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
+          categoria: categoria || categorizeTheme(t.tema),
+          fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
+        }))
+      if (novos.length === 0) throw new Error('A IA não retornou temas novos. Tente de novo.')
+      setSavedThemes(prev => [...prev, ...novos])
+    } catch (err) {
+      setExpandThemesError(err.message || 'Erro ao expandir temas.')
+    } finally { setExpandingThemes(false) }
   }
 
   const CONTEXT_COLORS = {
@@ -2275,6 +2285,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 </button>
               )}
             </div>
+
+            {expandThemesError && (
+              <div className="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-[11px] text-red-600">
+                {expandThemesError}
+              </div>
+            )}
 
             {!isPessoal && (() => {
               const clt = savedThemes.filter(t => isCltFramed(t.tema))
