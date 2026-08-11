@@ -56,11 +56,32 @@ export function buildPositioningBlock(posicionamento) {
   return ctx
 }
 
+// Assinatura de tom de fala — extraída de gravações reais da autora lendo
+// dois textos diferentes (comparado com a versão escrita de cada um). Os
+// traços de fala genuína (autocorreção em tempo real, "né" como muleta,
+// fluxo contínuo sem cortes de efeito) só valem pra formatos que são LIDOS
+// EM VOZ ALTA — aplicados a texto escrito, ficam com cara de rascunho não
+// revisado, então o bloco instrui o modelo a diferenciar pelos dois casos.
+export const VOICE_SIGNATURE = `\n\nASSINATURA DE TOM DE VOZ (extraída de gravações reais da autora — aplique conforme o formato pedido):
+
+Vale pra QUALQUER formato:
+- "a gente" no lugar de "nós", sempre.
+- Frases conectadas em fluxo — ela pensa em voz alta e a ideia se desenvolve numa linha só, não em frases curtas de efeito enfileiradas.
+- Não fecha ideias com frase de impacto pré-fabricada — a conclusão chega como quem está terminando de pensar, não como quem guardou a tirada pronta.
+
+Vale SÓ pra formatos que são lidos em voz alta (roteiro de Reels, TikTok, vídeo longo, fala de Stories) — aqui o texto é falado, então:
+- Pode ter UMA reformulação em tempo real no meio de uma frase, tipo quem se corrige enquanto fala (ex.: "transfere, delega, a escrita do texto pro algoritmo") — no máximo uma vez no roteiro inteiro, não em toda frase.
+- Pode usar "né" como pausa de verificação, no máximo 1-2 vezes no roteiro inteiro — nunca como tique repetido.
+- "aí" pode aparecer como conector solto entre ideias.
+
+NÃO vale pra formatos escritos (post, carrossel, thread, legenda) — aqui "né", autocorreção e repetição ficam com cara de texto não revisado. Nesses formatos a oralidade aparece só pelo "a gente" e pelo fluxo de frase, sem tiques de fala.\n`
+
 export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = [], posicionamento = null) {
   let ctx = ''
 
   ctx += buildBannedWordsBlock(bannedWords)
   ctx += buildPositioningBlock(posicionamento)
+  ctx += VOICE_SIGNATURE
 
   if (brandVoice?.prompt) {
     ctx += `\n\nIDENTIDADE E VOZ DO CRIADOR:\n${brandVoice.prompt}\n`
