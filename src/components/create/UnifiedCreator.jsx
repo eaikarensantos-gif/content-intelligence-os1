@@ -598,6 +598,9 @@ ESTRUTURA DOS SLIDES:
 Slide 1 — Estado, não cena. A pessoa precisa se reconhecer antes de ver a história.
   ❌ "Tem uma reunião que todo mundo sai balançando a cabeça que sim"
   ✅ "Tem uma postura que você adota no trabalho que você nunca vai admitir em voz alta"
+  Em temas de ferramenta/processo, o mesmo erro aparece disfarçado de "problema real":
+  ❌ "A gente perde horas do dia digitando a mesma resposta pra clientes" (descreve a situação de fora, não o que você sente sobre isso)
+  ✅ "Tem uma parte do meu trabalho que eu terceirizo e finjo que não me incomoda" (o estado interno por trás da situação, não a situação em si)
   O slide 1 é sobre o estado interno. Curto. Sem explicação.
 
 Slides 2 a 5 — Sequência causal, não descrição. Cada slide puxa o próximo por causa e consequência.
@@ -667,12 +670,15 @@ Todo carrossel deve ter um CTA de escolha binária — não uma pergunta aberta.
   ❌ Reformular a pergunta final com outras palavras (ex.: pergunta final "você calculou antes ou depois de assinar?" → CTA "você calculou antes ou depois que o pagamento caiu?" — é a MESMA pergunta, proibido)
 O CTA fechado é diferente da pergunta final, sobre um ASSUNTO diferente dentro do mesmo tema — não uma reformulação. A pergunta final pede relato de uma situação específica. O CTA fechado pede posição sobre um comportamento ou preferência geral.
 
-CRITÉRIOS DE VALIDAÇÃO — rode os cinco testes antes de entregar:
+CRITÉRIOS DE VALIDAÇÃO — rode os seis testes antes de entregar:
 Teste 1 — Espaço: "Essa sequência deixa espaço pra pessoa completar com a experiência dela, ou fecha tudo?" Se fecha → reprova.
 Teste 2 — Tipo de comentário: "O comentário mais provável começa com 'eu' e tem mais de uma linha?" Se não → reprova.
 Teste 3 — Saturação: "Esse conteúdo poderia estar naquele print de posts saturados de IA ou de coach?" Se sim → reprova. Reescreva do zero.
 Teste 4 — Posicionamento: "Tem algo aqui que só Karen Santos diria, ou qualquer conta de carreira poderia ter postado?" Se qualquer conta postaria → reprova.
 Teste 5 — Exercício: "O exercício na legenda acessa memória específica ou é genérico/futuro?" Se genérico → reprova.
+Teste 6 — Tutorial: "Esse slide mostra o que a ferramenta FAZ (manual de recursos), ou mostra o que Karen DECIDIU, testou, rejeitou ou desconfia nela?" Se é só a função da ferramenta, sem julgamento nenhum, reprova — reescreva incluindo o risco, o limite ou a razão da escolha. Uma sequência tipo "ferramenta A faz X, ferramenta B faz Y, ferramenta C faz Z" é tutorial de stack técnico, não é o gerador de Karen — mesmo que a estrutura causal (cada slide resolve o limite do anterior) esteja tecnicamente certa.
+  ❌ "O n8n conecta esse agente inteligente ao banco de dados interno para consultar o estoque físico em tempo real." (só descreve a função — qualquer conta de automação postaria isso)
+  ✅ "O n8n resolve a consulta de estoque, mas eu não deixo ele decidir sozinho quando avisar o cliente — isso ainda passa pela minha mão." (mostra o julgamento, o limite que Karen impõe, não só a integração)
 
 TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
@@ -869,19 +875,19 @@ const CAROUSEL_TEMPLATES = {
     label: 'Ferramentas de IA',
     alavanca: 'salvamento',
     desc: 'Ferramentas de IA reveladas como resposta a limites reais, não como lista',
-    estrutura: 'Slide 1 (abertura — estado interno): a frustração real que te fez procurar ferramenta pra essa tarefa — não a lista, o motivo. Slides 2 a 4 (desenvolvimento causal): cada slide revela uma ferramenta como resposta ao limite da anterior — a ferramenta do slide 3 resolve o que a do slide 2 deixava manual, não é um item novo numa lista. Slide 5 (virada sem resolução): a parte da tarefa que nenhuma dessas ferramentas resolve ainda — nomeie o limite, não feche a questão.',
+    estrutura: 'Slide 1 (abertura — estado interno): a frustração real que te fez procurar ferramenta pra essa tarefa — não a lista, o motivo. Slides 2 a 4 (desenvolvimento causal): cada slide revela uma ferramenta como resposta ao limite da anterior — a ferramenta do slide 3 resolve o que a do slide 2 deixava manual, não é um item novo numa lista. CADA SLIDE PRECISA TER SEU JULGAMENTO: o que você decidiu, testou, rejeitou ou ainda desconfia daquela ferramenta — nunca só o que ela faz, como um manual de recursos. Slide 5 (virada sem resolução): a parte da tarefa que nenhuma dessas ferramentas resolve ainda — nomeie o limite, não feche a questão.',
   },
   passo_a_passo: {
     label: 'Passo a passo',
     alavanca: 'salvamento',
     desc: 'Processo de IA onde cada passo só existe porque o anterior não bastou',
-    estrutura: 'Slide 1 (abertura — estado interno): o problema de negócio como ele trava antes de aplicar o processo. Slides 2 a 4 (desenvolvimento causal): um passo do processo por slide, e cada passo só existe porque o anterior, sozinho, não resolvia. Slide 5 (virada sem resolução): o ponto do processo que ainda depende de julgamento humano e a IA não substitui — nomeie sem resolver.',
+    estrutura: 'Slide 1 (abertura — estado interno): o problema de negócio como ele trava antes de aplicar o processo. Slides 2 a 4 (desenvolvimento causal): um passo do processo por slide, e cada passo só existe porque o anterior, sozinho, não resolvia. CADA SLIDE PRECISA TER SEU JULGAMENTO: por que você escolheu fazer esse passo assim, o risco que ele evita ou o erro que ele corrige — nunca só a descrição do passo, como um manual. Slide 5 (virada sem resolução): o ponto do processo que ainda depende de julgamento humano e a IA não substitui — nomeie sem resolver.',
   },
   antes_depois: {
     label: 'Antes e depois',
     alavanca: 'salvamento e identificação',
     desc: 'Comparação onde cada mudança de etapa é causa da próxima',
-    estrutura: 'Slide 1 (abertura — estado interno): o fluxo de trabalho como era antes, do jeito que cansava de verdade. Slides 2 a 4 (desenvolvimento causal): cada slide compara uma etapa antes/depois, e a mudança de uma etapa é a razão pela qual a etapa seguinte também mudou. Slide 5 (virada sem resolução): a etapa que a IA ainda não resolve tão bem quanto o "antes" — o ganho tem um custo que ninguém fala.',
+    estrutura: 'Slide 1 (abertura — estado interno): o fluxo de trabalho como era antes, do jeito que cansava de verdade. Slides 2 a 4 (desenvolvimento causal): cada slide compara uma etapa antes/depois, e a mudança de uma etapa é a razão pela qual a etapa seguinte também mudou. CADA SLIDE PRECISA TER SEU JULGAMENTO: o que você ganhou e o que perdeu de controle em cada mudança — nunca só a comparação de recursos, como um manual. Slide 5 (virada sem resolução): a etapa que a IA ainda não resolve tão bem quanto o "antes" — o ganho tem um custo que ninguém fala.',
   },
   opiniao_tecnica: {
     label: 'Opinião técnica',
