@@ -8,6 +8,7 @@ import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { assertNotTruncated } from '../../utils/aiJson.js'
 import { VOICE_SIGNATURE } from '../../utils/voiceContext'
+import useStore from '../../store/useStore'
 
 async function callAI(apiKey, body) {
   const res = await fetch('/api/ai?action=gemini', {
