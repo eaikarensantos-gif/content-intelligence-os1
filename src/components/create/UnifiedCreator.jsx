@@ -1834,7 +1834,7 @@ ${revText.trim()}`
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 600,
+          max_tokens: 1500,
           system: withManualOperacional(`${ANTI_AI_FILTER}
 
 ---
@@ -2074,7 +2074,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 1000,
+          max_tokens: 3000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
