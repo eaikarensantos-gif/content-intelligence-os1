@@ -9,10 +9,11 @@ import {
   RefreshCw, LayoutGrid, Mic, Instagram, Music2,
   Play, Repeat2, MessageCircle, Heart, ChevronRight,
   Film, Smartphone, ExternalLink, Quote, Target,
-  Wand2, ArrowLeft, ThumbsDown,
+  Wand2, ArrowLeft, ThumbsDown, ChevronDown, ChevronUp, Lightbulb,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import { TEMAS_CARROSSEL } from '../../data/temasCarrossel'
 
 // ─── Claude call ─────────────────────────────────────────────────────────────
 async function captureThought(apiKey, { thought, niche, tone, voiceContext, regenInstruction }) {
@@ -992,6 +993,8 @@ export default function ThoughtCapture() {
   const [thought, setThought] = useState('')
   const [niche, setNiche] = useState('')
   const [tone, setTone] = useState('reflexivo')
+  const [showThemeBank, setShowThemeBank] = useState(false)
+  const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadPhase, setLoadPhase] = useState(0)
   const [error, setError] = useState('')
@@ -1211,6 +1214,50 @@ export default function ThoughtCapture() {
               />
               <span className={`absolute bottom-2 right-2.5 text-[10px] font-medium ${charCount === 0 ? 'text-gray-300' : isReady ? 'text-indigo-400' : 'text-amber-400'}`}>{charCount}</span>
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setShowThemeBank(v => !v)}
+              className="w-full flex items-center justify-between text-[10px] font-semibold text-gray-500 uppercase tracking-wide hover:text-indigo-600 transition-colors py-0.5"
+            >
+              <span className="flex items-center gap-1"><Lightbulb size={11} /> Banco de temas</span>
+              {showThemeBank ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            {showThemeBank && (
+              <div className="border border-gray-200 rounded-xl max-h-56 overflow-y-auto divide-y divide-gray-100">
+                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+                  const isCatOpen = themeBankOpenCategory === categoria
+                  return (
+                    <div key={categoria}>
+                      <button
+                        type="button"
+                        onClick={() => setThemeBankOpenCategory(isCatOpen ? null : categoria)}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-indigo-50 transition-colors text-left"
+                      >
+                        <span className="text-[10px] font-semibold text-gray-600">{categoria}</span>
+                        {isCatOpen ? <ChevronUp size={11} className="text-indigo-500" /> : <ChevronDown size={11} className="text-gray-400" />}
+                      </button>
+                      {isCatOpen && (
+                        <div className="px-2 py-1.5 space-y-0.5 bg-white">
+                          {temas.map(tema => (
+                            <button
+                              key={tema}
+                              type="button"
+                              onClick={() => { setThought(tema); setShowThemeBank(false) }}
+                              className="w-full text-left text-[11px] text-gray-700 hover:text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors leading-snug"
+                            >
+                              {tema}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <div className="space-y-1">
