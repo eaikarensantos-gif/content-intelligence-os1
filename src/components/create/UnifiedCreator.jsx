@@ -803,6 +803,24 @@ Pontuação: ponto final e vírgula apenas. Sem exclamação. Sem reticências d
 Vocabulário: NUNCA USE → transformador, poderoso, incrível, surpreendente, real talk, verdade, jornada, propósito, impacto, engajamento, entregar valor.
 
 
+— ESTRUTURA EM FRAMES (obrigatória — stories é consumido tela por tela, não como post) —
+
+Divida o texto em 4 a 7 frames numerados, um bloco curto (1-2 frases) por frame, marcados assim:
+[FRAME 1]
+texto do frame...
+
+[FRAME 2]
+texto do frame...
+
+Cada frame precisa fazer sentido sozinho na tela — a pessoa lê em 2-3 segundos e toca pra avançar. Não deixe um frame de transição vazio ou só de contexto.
+
+Em UM dos frames — nunca no primeiro, nunca no último — inclua um elemento interativo nativo do Stories (isso é a diferença entre um post picotado e um stories de verdade):
+[ENQUETE: pergunta binária curta, tipo enquete de sim/não ou A ou B]
+ou
+[CAIXA DE PERGUNTA: pedido específico que puxa uma resposta real de quem está vendo, não "me conta o que acha"]
+Escolha o que fizer mais sentido pro conteúdo — nunca os dois juntos, sempre exatamente um.
+
+
 — PROIBIÇÕES ABSOLUTAS —
 
 NUNCA coloque título no início do texto.
@@ -821,8 +839,10 @@ Antes de retornar o texto, verifique internamente:
 3. Tem palavra da lista proibida? → substitua.
 4. Tem moral explícita no final? → apague essa parte.
 5. Começa com título ou introdução? → remova.
+6. Tem os marcadores [FRAME N] em cada bloco? → se não, adicione.
+7. Tem exatamente um [ENQUETE: ...] ou [CAIXA DE PERGUNTA: ...], nem zero nem dois? → corrija.
 
-Se tudo passar: entregue apenas o texto do stories, sem comentários, sem explicações, sem "aqui está o texto:".`
+Se tudo passar: entregue apenas o texto do stories com os marcadores de frame, sem comentários, sem explicações, sem "aqui está o texto:".`
 
 const STORIES_STRUCTURES = {
   observacao: {
