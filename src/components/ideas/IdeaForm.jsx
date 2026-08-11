@@ -107,7 +107,7 @@ Regras:
 
 Responda APENAS com a legenda, sem explicações.`,
 
-    script: `Você é especialista em roteiros de conteúdo para criadores brasileiros. Crie um roteiro completo e detalhado para o seguinte conteúdo.
+    script: `Você é o mesmo gerador de roteiros usado no Studio de Criação da Karen Santos — a profundidade e a voz têm que ser IDÊNTICAS às do Studio, nunca uma versão mais formal, mais genérica ou mais analítica.
 
 Título: ${context.title}
 ${context.description ? `Briefing: ${context.description}` : ''}
@@ -116,13 +116,22 @@ Formato: ${context.format || 'video'}
 Plataforma: ${context.platforms?.join(', ') || 'Instagram'}
 Tipo de gancho: ${context.hook_type || 'problema'}
 
-REGRAS:
-- Comece com o gancho forte que prende nos primeiros 3 segundos
-- Estruture em blocos claros: Abertura → Desenvolvimento → Conclusão/CTA
-- Linguagem direta, conversacional — como Karen fala, não como IA escreve
-- PROIBIDO: frases genéricas, enrolação, superlativo vazio
-- Use marcadores visuais para cenas/cortes quando for Reels ou Vídeo
-- Tom: especialista sênior que fala com pares, não que explica para iniciantes
+REGRA DE ENTRADA — antes de escrever, responda internamente:
+"Qual é a tensão interna que a pessoa carrega sobre esse tema — não a situação externa, o que ela SENTE sobre o que faz ou deixa de fazer?"
+Comece por essa tensão, nunca pela cena, pelo contexto ou por uma afirmação geral sobre o mercado/setor.
+
+REGRAS OBRIGATÓRIAS:
+- PROIBIDO tom de tese acadêmica ou terceira pessoa analítica (ex.: "Negócios físicos operam com restrições que explicam a adoção de X"). Fale em primeira ou segunda pessoa, como quem viveu, decidiu ou hesitou sobre isso — não como quem observa e explica de fora.
+- Cada parte do roteiro avança por causa e consequência, nunca é uma lista de fatos ou características enfileiradas. Pergunta de controle: "isso avança o raciocínio ou só descreve mais do mesmo?" Se só descreve, reescreva.
+- Traga julgamento pessoal — o que você decidiu, testou, rejeitou ou ainda desconfia — nunca só a explicação neutra de como algo funciona. Uma sequência tipo "isso exige X, aquilo depende de Y" sem opinião nenhuma é manual técnico, não é roteiro de Karen.
+- Termine em tensão real ou pergunta que exige posicionamento — nunca uma conclusão fechada tipo "portanto, é necessário equilibrar X e Y" ou um resumo institucional que soa neutro.
+- Linguagem direta, conversacional — como Karen fala, não como IA escreve.
+- PROIBIDO: frases genéricas, enrolação, superlativo vazio.
+${context.format === 'carrossel'
+    ? '- Estruture em exatamente 5 blocos numerados [1] a [5]: [1] abertura — estado interno (a pessoa se reconhece, não a cena); [2] a [4] desenvolvimento causal (cada slide avança o anterior, nunca descreve mais do mesmo); [5] virada sem resolução — tensão máxima, sem CTA embutido no texto, sem fechar a questão.'
+    : '- Estruture em blocos claros: Abertura → Desenvolvimento → Conclusão/CTA. Use marcadores visuais para cenas/cortes quando for Reels ou Vídeo.'}
+
+TESTE DE SANIDADE FINAL: se o texto ficou "bem explicado" mas ninguém precisaria se posicionar pra comentar, reescreva.
 
 Responda APENAS com o roteiro, sem introdução nem explicações.`,
 
