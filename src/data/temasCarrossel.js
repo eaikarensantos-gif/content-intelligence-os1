@@ -1,0 +1,159 @@
+// Banco de Temas compartilhado — usado pelo Protocolo de Carrossel (Studio de
+// Criação) e pelo Captura de Pensamento, pra ambos sugerirem os mesmos temas
+// em vez de listas que divergem com o tempo.
+
+export const TEMAS_CARROSSEL = [
+  {
+    categoria: 'Critério de decisão',
+    temas: [
+      'O que pesa mais numa decisão: dado, instinto ou precedente',
+      'A decisão que parece técnica mas é estratégica',
+      'Como decidir se um processo vira IA ou continua manual',
+      'Quando dizer não pra IA é a decisão mais cara certa',
+      'O critério que uso antes de qualquer ferramenta nova entrar',
+      'A decisão que mudou de ideia depois que os números chegaram',
+      'O que separa uma boa pergunta de negócio de uma pergunta de ferramenta',
+    ],
+  },
+  {
+    categoria: 'Desmonte de hype',
+    temas: [
+      'A promessa de IA que não sobrevive à primeira pergunta de negócio',
+      'Por que "todo mundo está usando" não é argumento de decisão',
+      'O case de sucesso que esconde o que não deu certo',
+      'Onde a IA realmente resolve — e onde só parece resolver',
+      'Ferramenta com hype alto, adoção baixa: o que isso ensina',
+      'A diferença entre inovar e comprar ansiedade de mercado',
+    ],
+  },
+  {
+    categoria: 'Bastidor de estrategista',
+    temas: [
+      'A reunião onde a decisão foi tomada — o que ninguém vê depois',
+      'Como eu leio um caso antes de recomendar qualquer coisa',
+      'O rascunho antes do slide bonito',
+      'A pergunta que faço antes de qualquer proposta de IA',
+      'Um erro que corrigi numa estratégia — e o que aprendi com isso',
+      'O que muda entre a primeira e a última versão de uma recomendação',
+    ],
+  },
+  {
+    categoria: 'Camada humana',
+    temas: [
+      'Ser a única pessoa que questiona o hype na sala',
+      'Autoridade construída sem performar o que não é seu',
+      'O peso de decidir por outras pessoas, não só por processos',
+      'Cobrar o preço certo sendo a única mulher negra na concorrência',
+      'Ancestralidade como método de decisão, não como enfeite',
+      'O que muda quando o cliente descobre quem está do outro lado',
+    ],
+  },
+  {
+    categoria: 'IA aplicada para pequenos negócios',
+    temas: [
+      'O dono de pequeno negócio que testou IA sozinho e voltou pro Excel',
+      'A tarefa que a IA resolve num pequeno negócio sem precisar de time de TI',
+      'Por que "ferramenta grátis de IA" não é estratégia pra quem fatura pouco',
+      'O critério pra saber se vale pagar por IA quando o orçamento é apertado',
+      'A planilha que virou processo de IA sem ninguém perceber a mudança',
+      'O pequeno negócio que economizou tempo com IA e não soube reinvestir isso',
+    ],
+  },
+  {
+    categoria: 'IA para negócios digitais',
+    temas: [
+      'O funil que a IA otimizou e o motivo que ninguém comemorou junto',
+      'A métrica que só piorou depois que automatizaram o atendimento',
+      'Por que IA no digital não substitui entender o próprio cliente',
+      'O e-commerce que testou IA na descrição de produto — e o que os números mostraram',
+      'A diferença entre automatizar tráfego e automatizar decisão',
+      'O negócio 100% digital que ainda decide tudo no feeling',
+    ],
+  },
+  {
+    categoria: 'IA para negócios físicos',
+    temas: [
+      'A loja física que usou IA pra prever estoque e errou no primeiro mês',
+      'O que muda quando o cliente físico interage com atendimento automatizado',
+      'Por que negócio físico demora mais pra adotar IA — e não é atraso, é critério',
+      'A fila que a IA não resolveu porque o problema nunca foi tecnológico',
+      'O dado que só existe no caderno, não no sistema — e o que isso custa',
+      'O comércio de bairro que testou IA sem saber nomear o que queria resolver',
+    ],
+  },
+  {
+    categoria: 'IA para criativos',
+    temas: [
+      'O criativo que usou IA e perdeu a própria voz no processo',
+      'Onde a IA acelera o rascunho e onde ela destrói a ideia original',
+      'A diferença entre gerar referência e terceirizar a criação',
+      'O portfólio que ficou parecido com todos os outros depois da IA entrar',
+      'Por que o criativo que edita a IA vale mais que o que só aceita o resultado',
+      'O briefing que a IA nunca vai entender sozinho',
+    ],
+  },
+]
+
+// Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
+export const PERSONAL_TEMAS_SUGESTOES = [
+  {
+    categoria: 'Naomi',
+    temas: [
+      'A Naomi rosnando pro entregador que ela já conhece',
+      'Tentando tirar foto profissional e ela só quer brincar',
+      'O ronco dela enquanto eu tento trabalhar',
+      'Ela escondendo o brinquedo debaixo do sofá',
+      'A cara de decepção quando eu saio sem ela',
+    ],
+  },
+  {
+    categoria: 'Casa & Rotina',
+    temas: [
+      'O dia que eu decidi organizar um armário e desisti na metade',
+      'A lista de compras que eu nunca sigo no mercado',
+      'Café da manhã em pé porque atrasei',
+      'A parede que eu quero pintar há um ano',
+      'Domingo de faxina que vira documentário no fundo',
+    ],
+  },
+  {
+    categoria: 'Fé',
+    temas: [
+      'O que o búzio disse que eu não queria ouvir',
+      'Separar a roupa branca de sexta com pressa',
+      'A dúvida que eu não conto nem pro povo de santo',
+      'Gratidão ao meu vodum num dia que não teve nada de especial',
+      'A obrigação que eu adiei até não dar mais',
+    ],
+  },
+  {
+    categoria: 'Comprinhas & Achados',
+    temas: [
+      'O item que ficou 3 meses no carrinho até eu comprar',
+      'A resenha que me convenceu contra minha vontade',
+      'O produto que todo mundo recomendou e eu não gostei',
+      'A promoção que eu jurei que não ia cair',
+      'O achado de R$15 que virou queridinho',
+    ],
+  },
+  {
+    categoria: 'Hobbies & Gostos',
+    temas: [
+      'O podcast que eu escuto lavando louça',
+      'A receita que eu erro sempre do mesmo jeito',
+      'O documentário que eu assisto sozinha porque ninguém quer',
+      'A playlist que muda meu humor em 2 minutos',
+      'O hobby que eu larguei e quero retomar',
+    ],
+  },
+  {
+    categoria: 'Vida',
+    temas: [
+      'A ligação que eu adio há semanas',
+      'O silêncio que eu preciso depois de um dia cheio',
+      'A frase da minha avó que eu repito sem perceber',
+      'O jeito que eu percebo que preciso descansar',
+      'A saudade de uma fase que eu não queria voltar, só visitar',
+    ],
+  },
+]
