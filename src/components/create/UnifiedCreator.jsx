@@ -684,7 +684,7 @@ ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
 ${template ? `LENTE DE CONTEÚDO: ${template.label} (alavanca: ${template.alavanca})\n${template.estrutura}\nEssa lente define o CONTEÚDO de cada um dos 5 slides — a estrutura de abertura/desenvolvimento causal/virada sem resolução das 3 versões continua sendo exatamente a mesma. Não crie capa, lista resolvida, resumo ou CTA de "salva" fora dos campos legenda/exercicio_pratico/cta_fechado já definidos abaixo — isso duplicaria e achataria o carrossel.` : ''}
-${targetER ? `META DE E/R: ${targetER}%. O último slide precisa puxar diretamente pra essa alavanca (${template?.alavanca || 'salvamento ou comentário'}).` : ''}
+${targetER ? `META DE E/R: ${targetER}%. Essa meta é resultado indireto da qualidade da tensão e da alavanca (${template?.alavanca || 'salvamento ou comentário'}) já embutida no cta_fechado e no exercicio_pratico — NÃO adicione frase de ação ("salva", "guarda isso", "comenta aí") dentro do texto de nenhum slide, principalmente o slide 5. O slide 5 continua sendo virada sem resolução, sem CTA embutido no texto.` : ''}
 
 Execute o protocolo completo:
 1. Identifique a tensão interna central do tema.
