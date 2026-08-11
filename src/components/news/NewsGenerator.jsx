@@ -4,11 +4,21 @@ import {
   ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare, Languages,
 } from 'lucide-react'
 import clsx from 'clsx'
-import Anthropic from '@anthropic-ai/sdk'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 
-const mkClient = (apiKey) => new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+async function callAI(apiKey, body) {
+  const res = await fetch('/api/ai?action=gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Erro na API: ${res.status}`)
+  }
+  return res.json()
+}
 
 const LS_KEY = 'cio-anthropic-key'
 const LS_FEEDS_KEY = 'cio-news-feeds'
@@ -162,15 +172,15 @@ Regras:
 - relevance: "alto", "médio" ou "baixo" (baseado em volume e impacto pro público)
 - Ordene por relevance (alto primeiro)
 - Retorne APENAS o JSON, sem texto antes ou depois`
-      const res = await mkClient(apiKey).messages.create({
+      const res = await callAI(apiKey, {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       })
-      const text = res.content.find(b => b.type === 'text')?.text || ''
+      const text = res.content?.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
-        const parsed = JSON.parse(match[0])
+        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
         const mapped = parsed.themes.map(t => ({
           label: t.label,
           relevance: t.relevance,
@@ -297,15 +307,15 @@ Título: ${title}
 Resumo: ${desc}
 
 Retorne JSON: {"titulo": "...", "resumo": "..."}`
-      const res = await mkClient(apiKey).messages.create({
+      const res = await callAI(apiKey, {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       })
-      const text = res.content.find(b => b.type === 'text')?.text || ''
+      const text = res.content?.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
       if (match) {
-        const parsed = JSON.parse(match[0])
+        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
         setTranslated({ title: parsed.titulo, description: parsed.resumo })
         setShowTranslated(true)
       }
@@ -323,7 +333,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
     setGenError('')
     try {
       const prompt = buildPrompt(selected, format)
-      const res = await mkClient(apiKey).messages.create({
+      const res = await callAI(apiKey, {
         model: 'claude-sonnet-5',
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
@@ -331,11 +341,11 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
         system: withManualOperacional(withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.')),
         messages: [{ role: 'user', content: prompt }],
       })
-      const text = res.content.find(b => b.type === 'text')?.text || ''
+      const text = res.content?.find(b => b.type === 'text')?.text || ''
       if (format === 'carousel') {
         const match = text.match(/\{[\s\S]*\}/)
         if (match) {
-          const parsed = JSON.parse(match[0])
+          const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
           setResult(parsed.slides?.map(s => `**Slide ${s.numero}**\n${s.titulo}\n${s.corpo}`).join('\n\n') || text)
         } else setResult(text)
       } else {

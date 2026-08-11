@@ -123,7 +123,7 @@ export default function NaomiStudio() {
     setSuggestLoading(true)
     setSuggestions([])
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
@@ -167,7 +167,7 @@ export default function NaomiStudio() {
         messages.push({ role: 'user', content: buildPrompt({ situation, videoTool, hasPhoto: false }) })
       }
 
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
@@ -193,7 +193,7 @@ export default function NaomiStudio() {
     if (!apiKey || !result?.video_prompt) return
     setTranslating(true)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({

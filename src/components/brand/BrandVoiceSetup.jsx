@@ -259,7 +259,7 @@ function VoiceCalibrator() {
     setError(null)
 
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({

@@ -244,13 +244,13 @@ export default function CommunityResources() {
   async function buscar() {
     const t = topic.trim()
     if (!t || loading) return
-    if (!apiKey) { setError('Configure sua API key da Anthropic em Configurações'); return }
+    if (!apiKey) { setError('Configure sua API key do Gemini em Configurações'); return }
     setLoading(true)
     setError(null)
     setResults(null)
 
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

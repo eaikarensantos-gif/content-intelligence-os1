@@ -166,7 +166,7 @@ ${voiceContext || ''}${regenInstruction || ''}`
 async function generateIdeas(apiKey, params) {
   const prompt = buildPrompt(params)
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ export default function IdeaGenerator() {
 
   const handleGenerate = async () => {
     if (!topic.trim()) { setError('Defina o tópico.'); return }
-    if (!apiKey) { setError('Configure sua chave Anthropic nas configurações do Analisador de Vídeo.'); return }
+    if (!apiKey) { setError('Configure sua chave Gemini nas configurações do Analisador de Vídeo.'); return }
 
     setLoading(true)
     setError('')
@@ -706,7 +706,7 @@ export default function IdeaGenerator() {
 
               {!apiKey && (
                 <p className="text-center text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                  Configure sua chave Anthropic nas configurações do Analisador de Vídeo.
+                  Configure sua chave Gemini nas configurações do Analisador de Vídeo.
                 </p>
               )}
             </div>

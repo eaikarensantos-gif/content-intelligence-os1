@@ -29,7 +29,7 @@ Gere 3 alternativas concretas para reescrever APENAS a parte sinalizada, mantend
 Responda APENAS com JSON:
 ["alternativa 1", "alternativa 2", "alternativa 3"]`
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

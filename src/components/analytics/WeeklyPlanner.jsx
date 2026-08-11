@@ -136,7 +136,7 @@ export default function WeeklyPlanner() {
 
       const prompt = buildPrompt(topPosts, postsInPeriod, period)
 
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

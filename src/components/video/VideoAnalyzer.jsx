@@ -196,7 +196,7 @@ async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000) {
       ]
     : prompt
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -487,7 +487,7 @@ Return ONLY this JSON:
   "b_roll_suggestions": ["B-roll idea 1", "B-roll idea 2", "B-roll idea 3"],
   "thumbnail_ideas": ["Thumbnail concept 1", "Thumbnail concept 2"]
 }`
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -571,7 +571,7 @@ export default function VideoAnalyzer() {
     if (!text || text.trim().length < 10 || !apiKey) return
     setTranslating(true)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -715,7 +715,7 @@ export default function VideoAnalyzer() {
         return
       }
       if (!apiKey) {
-        setError('Uma API Key da Anthropic é necessária. Clique em "Adicionar API Key" acima.')
+        setError('Uma API Key do Gemini é necessária. Clique em "Adicionar API Key" acima.')
         return
       }
     }
@@ -732,7 +732,7 @@ export default function VideoAnalyzer() {
     }
 
     if (analysisMode !== 'script' && !apiKey) {
-      setError('Uma API Key da Anthropic é necessária. Clique em "Adicionar API Key" acima.')
+      setError('Uma API Key do Gemini é necessária. Clique em "Adicionar API Key" acima.')
       return
     }
 
@@ -1086,7 +1086,7 @@ Responda APENAS com este JSON:
             <p className="text-xs text-gray-500">
               Este analisador nunca gera conteúdo fictício. Ele lê sua transcrição real ou frames do vídeo e extrai insights diretos do conteúdo.{' '}
               <button onClick={() => setShowKeyModal(true)} className="text-violet-600 hover:underline font-medium">
-                Adicione sua API Key da Anthropic
+                Adicione sua API Key do Gemini
               </button>{' '}
               para começar.
             </p>

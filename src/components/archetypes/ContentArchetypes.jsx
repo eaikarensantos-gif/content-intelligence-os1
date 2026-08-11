@@ -40,7 +40,7 @@ const GEN_PHASES = [
 // ── API helpers ────────────────────────────────────────────────────────────────
 
 async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -522,7 +522,7 @@ export default function ContentArchetypes() {
 
   const handleExtract = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setExtractError('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { setExtractError('Configure sua API key do Gemini primeiro.'); return }
     if (!input.trim()) { setExtractError('Insira referências de criadores ou conteúdos.'); return }
 
     setExtracting(true)
@@ -573,7 +573,7 @@ export default function ContentArchetypes() {
 
   const handleGenerate = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setGenError('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { setGenError('Configure sua API key do Gemini primeiro.'); return }
     if (!selectedArch) { setGenError('Selecione um arquétipo.'); return }
 
     setGenerating(true)
@@ -638,7 +638,7 @@ export default function ContentArchetypes() {
 
   const handleHybridize = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setHybridError('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { setHybridError('Configure sua API key do Gemini primeiro.'); return }
     if (selectedForHybrid.length < 2) { setHybridError('Selecione pelo menos 2 arquétipos.'); return }
 
     setHybridizing(true)

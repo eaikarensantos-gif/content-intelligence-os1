@@ -169,7 +169,7 @@ Responda APENAS com JSON válido (array de 4 strings), sem markdown:
   // não se aplica. Todo o resto é texto criativo: passa pelo mesmo sistema dos
   // outros geradores (anti-AI filter + manual operacional + voz/lista negra).
   const isCreative = type !== 'refQueries'
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
@@ -308,7 +308,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateTitle = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
     if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
     setGeneratingTitle(true); setTitleSuggestions([])
     try {
@@ -324,7 +324,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateHook = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
     if (!form.title.trim()) { alert('Preencha o título antes de gerar o gancho.'); return }
     setGeneratingHook(true)
     try {
@@ -339,7 +339,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateScript = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
     if (!form.title.trim()) { alert('Preencha o título antes de gerar o roteiro.'); return }
     setGeneratingScript(true)
     try {
@@ -351,7 +351,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateAI = async (type) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key da Anthropic primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
     if (!form.title.trim()) { alert('Preencha o título antes de gerar.'); return }
     const setter = type === 'caption' ? setGeneratingCaption : setGeneratingCta
     setter(true)
@@ -389,7 +389,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         setRefResults(results.slice(0, 5))
       } else {
         const apiKey = localStorage.getItem(LS_KEY)
-        if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key Anthropic para buscar referências.'); setSearchingRefs(false); return }
+        if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key Gemini para buscar referências.'); setSearchingRefs(false); return }
         const raw = await generateWithAI(apiKey, 'refQueries', form, voiceCtx)
         const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
         const match = clean.match(/\[[\s\S]*\]/)

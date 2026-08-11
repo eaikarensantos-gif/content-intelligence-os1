@@ -176,7 +176,7 @@ export default function CommunityStudio() {
         : `Reescreva o texto abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o texto, sem explicações.`
       : `Reescreva o texto abaixo em no máximo 15 linhas, mantendo o tom, voz, hook e conclusão originais. Corte explicações redundantes, não corte ideias. Retorne apenas o texto reescrito, sem explicações.`
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ export default function CommunityStudio() {
     setDrafts(d => ({ ...d, [slotId]: null }))
 
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export default function CommunityStudio() {
     setEnqueteError(null)
     setEnqueteDraft(null)
     try {
-      const res = await fetch('/api/ai?action=anthropic', {
+      const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

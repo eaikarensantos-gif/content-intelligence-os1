@@ -115,7 +115,7 @@ Responda APENAS com JSON válido:
   "alternative_hooks": ["hook alternativo 1", "hook alternativo 2", "hook alternativo 3"]
 }`
 
-  const response = await fetch('/api/ai?action=anthropic', {
+  const response = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -643,7 +643,7 @@ export default function CarouselStudio() {
   const handleGenerate = async () => {
     if (!topic.trim() || !carouselType) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua chave Anthropic primeiro.'); return }
+    if (!apiKey) { setError('Configure sua chave Gemini primeiro.'); return }
 
     setLoading(true)
     setError(null)

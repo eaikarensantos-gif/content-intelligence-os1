@@ -237,7 +237,7 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   }
 }`
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -1017,7 +1017,7 @@ export default function ThoughtCapture() {
 
   const handleCapture = async () => {
     if (!thought.trim() || thought.trim().length < 10) { setError('Escreva ao menos 10 caracteres para capturar.'); return }
-    if (!apiKey) { setError('Chave da API Anthropic não configurada. Vá em Configurações.'); return }
+    if (!apiKey) { setError('Chave da API Gemini não configurada. Vá em Configurações.'); return }
     setError(''); setLoading(true); setResult(null); setSavedFormats(new Set()); setCurrentThought(thought)
     startPhases()
     try {

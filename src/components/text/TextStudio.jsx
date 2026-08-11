@@ -143,7 +143,7 @@ Responda SOMENTE com um JSON válido neste formato:
   }
 }`
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -476,7 +476,7 @@ export default function TextStudio() {
       return
     }
     if (!apiKey) {
-      setError('Adicione sua chave da API Anthropic nas configurações.')
+      setError('Adicione sua chave da API Gemini nas configurações.')
       return
     }
     if (selectedPlatforms.length === 0) {
@@ -702,7 +702,7 @@ export default function TextStudio() {
 
           {!apiKey && (
             <p className="text-center text-[11px] text-amber-600">
-              Configure sua chave Anthropic API nas configurações do Analisador de Vídeo para usar este recurso.
+              Configure sua chave Gemini API nas configurações do Analisador de Vídeo para usar este recurso.
             </p>
           )}
         </div>

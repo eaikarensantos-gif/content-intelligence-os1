@@ -33,9 +33,9 @@ function chunkText(text, maxChars = 12000) {
 
 async function callAnthropic(prompt, system, maxTokens = 2000) {
   const apiKey = localStorage.getItem(LS_KEY) || ''
-  if (!apiKey) throw new Error('Chave de API Anthropic não configurada. Vá em Configurações para adicionar.')
+  if (!apiKey) throw new Error('Chave de API Gemini não configurada. Vá em Configurações para adicionar.')
 
-  const res = await fetch('/api/ai?action=anthropic', {
+  const res = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

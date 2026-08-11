@@ -119,7 +119,7 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
   ]
 }`
 
-  const response = await fetch('/api/ai?action=anthropic', {
+  const response = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
   }
 ]`
 
-  const response = await fetch('/api/ai?action=anthropic', {
+  const response = await fetch('/api/ai?action=gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
