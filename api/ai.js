@@ -98,7 +98,13 @@ async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking,
 
   const generationConfig = { maxOutputTokens: max_tokens || 2048 }
   if (thinking && thinking.type !== 'disabled') {
-    generationConfig.thinkingConfig = { thinkingBudget: -1, includeThoughts: true }
+    // Gemini's dynamic thinking budget (-1, uncapped) can consume most of
+    // max_tokens on a complex prompt, starving the actual response and
+    // causing silent truncation — the same failure mode as the Anthropic
+    // adaptive-thinking bug from earlier in this app's history. Capping it
+    // at half the total budget guarantees at least half stays for the text.
+    const thinkingBudget = Math.max(1024, Math.floor((max_tokens || 2048) * 0.5))
+    generationConfig.thinkingConfig = { thinkingBudget, includeThoughts: true }
   }
 
   const body = { contents, generationConfig }
