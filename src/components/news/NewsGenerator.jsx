@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { assertNotTruncated } from '../../utils/aiJson.js'
-import useStore from '../../store/useStore'
+import { VOICE_SIGNATURE } from '../../utils/voiceContext'
 
 async function callAI(apiKey, body) {
   const res = await fetch('/api/ai?action=gemini', {
@@ -399,7 +399,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
         max_tokens: MAX_TOKENS_BY_FORMAT[format] || 2000,
-        system: withManualOperacional(withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.')),
+        system: withManualOperacional(withAntiAIFilter(`Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.${VOICE_SIGNATURE}`)),
         messages: [{ role: 'user', content: prompt }],
       })
       assertNotTruncated(res, 'A resposta ficou grande demais e foi cortada antes de terminar. Tente novamente.')
