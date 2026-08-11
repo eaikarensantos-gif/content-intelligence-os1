@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Heart, X, Copy, Check, ChevronDown, ChevronUp, ExternalLink, BookOpen, Lightbulb, Search, FileText, Bookmark } from 'lucide-react'
+import { Heart, X, Copy, Check, ChevronDown, ChevronUp, ExternalLink, BookOpen, Lightbulb, Search, FileText, Bookmark, Newspaper } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TYPE_STYLES = {
@@ -11,6 +11,7 @@ const TYPE_STYLES = {
   script:       { label: 'Roteiro',      bg: 'bg-blue-100',    text: 'text-blue-700',    border: 'border-blue-200',    icon: FileText },
   insight:      { label: 'Insight',      bg: 'bg-teal-100',    text: 'text-teal-700',    border: 'border-teal-200',    icon: Lightbulb },
   search:       { label: 'Busca',        bg: 'bg-purple-100',  text: 'text-purple-700',  border: 'border-purple-200',  icon: Search },
+  news:         { label: 'Notícia',      bg: 'bg-amber-100',   text: 'text-amber-700',   border: 'border-amber-200',   icon: Newspaper },
 }
 
 const FILTERS = [
@@ -21,6 +22,7 @@ const FILTERS = [
   { id: 'search',       label: 'Buscas' },
   { id: 'thought',      label: 'Pensamentos' },
   { id: 'text',         label: 'Textos' },
+  { id: 'news',         label: 'Notícias' },
 ]
 
 export default function FavoritesDrawer() {
@@ -125,6 +127,7 @@ export default function FavoritesDrawer() {
                 const style = TYPE_STYLES[fav.type] || TYPE_STYLES.thought
                 const isExpanded = expandedId === fav.id
                 const isSearch = fav.type === 'search'
+                const isNews = fav.type === 'news'
 
                 return (
                   <div
@@ -189,6 +192,11 @@ export default function FavoritesDrawer() {
                         <a href={fav.url} target="_blank" rel="noopener noreferrer"
                           className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors font-medium">
                           <ExternalLink size={11} /> Abrir busca
+                        </a>
+                      ) : isNews && fav.url ? (
+                        <a href={fav.url} target="_blank" rel="noopener noreferrer"
+                          className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg text-amber-600 hover:text-amber-800 hover:bg-amber-50 transition-colors font-medium">
+                          <ExternalLink size={11} /> Abrir notícia
                         </a>
                       ) : (
                         <button onClick={() => handleCopy(fav)}

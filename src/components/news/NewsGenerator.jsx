@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Newspaper, RefreshCw, Loader2, Sparkles, Copy, Check,
-  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare, Languages,
+  ExternalLink, ChevronRight, X, LayoutGrid, FileText, Video, MessageSquare, Languages, Heart,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
+import { assertNotTruncated } from '../../utils/aiJson.js'
+import useStore from '../../store/useStore'
 
 async function callAI(apiKey, body) {
   const res = await fetch('/api/ai?action=gemini', {
@@ -72,8 +74,41 @@ function timeAgo(dateStr) {
   return `${Math.floor(h / 24)}d atrás`
 }
 
+function articleKey(article) {
+  return article.guid || article.link
+}
+
 export default function NewsGenerator() {
   const apiKey = localStorage.getItem(LS_KEY) || ''
+
+  const favorites = useStore((s) => s.favorites)
+  const addFavorite = useStore((s) => s.addFavorite)
+  const removeFavorite = useStore((s) => s.removeFavorite)
+  const newsFavorites = favorites.filter((f) => f.type === 'news')
+
+  const isFavorited = (article) => newsFavorites.some((f) => f.newsKey === articleKey(article))
+
+  const toggleFavorite = (article, e) => {
+    e?.stopPropagation()
+    const key = articleKey(article)
+    const existing = newsFavorites.find((f) => f.newsKey === key)
+    if (existing) {
+      removeFavorite(existing.id)
+    } else {
+      addFavorite({
+        type: 'news',
+        title: article.title,
+        content: stripHtml(article.description || ''),
+        source: article.source,
+        url: article.link,
+        newsKey: key,
+        pubDate: article.pubDate,
+        categories: article.categories,
+        sourceColor: article.sourceColor,
+        guid: article.guid,
+      })
+    }
+  }
 
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(false)
@@ -96,6 +131,7 @@ export default function NewsGenerator() {
   const [translating, setTranslating] = useState(false)
   const [translated, setTranslated] = useState(null)
   const [showTranslated, setShowTranslated] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
   const fetchNews = useCallback(async () => {
     setLoading(true)
@@ -129,9 +165,27 @@ export default function NewsGenerator() {
           }))
         })
       )
-      const allArticles = results
+      const fetchedArticles = results
         .filter(r => r.status === 'fulfilled')
         .flatMap(r => r.value)
+
+      // Favoritos ficam sempre visíveis na lista, mesmo depois que o feed
+      // ao vivo os rotaciona pra fora da janela de itens recentes.
+      const fetchedKeys = new Set(fetchedArticles.map(articleKey))
+      const pinnedFavorites = favorites
+        .filter((f) => f.type === 'news' && !fetchedKeys.has(f.newsKey))
+        .map((f) => ({
+          title: f.title,
+          description: f.content,
+          link: f.url,
+          guid: f.guid,
+          pubDate: f.pubDate,
+          categories: f.categories || [],
+          source: f.source,
+          sourceColor: f.sourceColor,
+        }))
+
+      const allArticles = [...fetchedArticles, ...pinnedFavorites]
         .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
       const errors = results
         .filter(r => r.status === 'rejected')
@@ -145,7 +199,7 @@ export default function NewsGenerator() {
     } finally {
       setLoading(false)
     }
-  }, [feeds, activeFeeds])
+  }, [feeds, activeFeeds, favorites])
 
   useEffect(() => { fetchNews() }, [fetchNews])
 
@@ -227,6 +281,9 @@ Regras:
       const indexes = themes[activeTheme].articleIndexes
       base = indexes.map(i => articles[i]).filter(Boolean)
     }
+    if (showFavoritesOnly) {
+      base = base.filter(a => isFavorited(a))
+    }
     if (filter.trim()) {
       base = base.filter(a =>
         a.title?.toLowerCase().includes(filter.toLowerCase()) ||
@@ -250,46 +307,48 @@ ${CREATOR_PROFILE}
 
 Ângulo: filtre o que é relevante para profissionais brasileiros de tech, produto e design. Traga a perspectiva de quem trabalha no mercado, não de quem só lê notícias. Dados concretos quando disponível. Sem reproduzir a manchete — adicione análise, contexto ou implicação real.`
 
+    const noNarration = `\n\nIMPORTANTE: qualquer verificação, checklist ou rascunho interno é um processo mental — não escreva isso na resposta. Nada de comentários entre parênteses, notas de validação ou texto fora do conteúdo pedido. A resposta é só o conteúdo final, começando direto no gancho.`
+
     if (fmt === 'post') {
       return `${base}
 
-Gere um post para LinkedIn com base nessa notícia. Estrutura:
+Gere um post COMPLETO para LinkedIn com base nessa notícia. Estrutura:
 - Primeira linha: gancho direto (declaração, dado ou observação — nunca pergunta retórica)
 - Desenvolvimento: 2-3 parágrafos curtos com análise concreta
 - Encerramento: implicação direta para o público (sem CTA genérico)
-Máx 200 palavras. Linguagem de conversa profissional, não de artigo.`
+150-200 palavras (o post inteiro, não um resumo). Linguagem de conversa profissional, não de artigo.${noNarration}`
     }
 
     if (fmt === 'carousel') {
       return `${base}
 
-Gere um carrossel de 5 slides com base nessa notícia. Retorne JSON:
-{"slides": [{"numero": 1, "titulo": "...", "corpo": "..."}, ...]}
+Gere um carrossel COMPLETO de exatamente 5 slides com base nessa notícia. Cada slide precisa de título E corpo preenchidos — nunca deixe um campo vazio ou genérico.
 Slide 1: gancho direto (1 frase, declaração ou dado)
 Slides 2-4: desenvolvimento com análise concreta, um ponto por slide
 Slide 5: implicação ou conclusão direta
-Máx 40 palavras por slide. Sem linguagem motivacional.`
+Máx 40 palavras por slide, corpo com pelo menos 1 frase completa. Sem linguagem motivacional.${noNarration}
+Retorne EXCLUSIVAMENTE JSON, sem texto antes ou depois, começando direto com "{":
+{"slides": [{"numero": 1, "titulo": "...", "corpo": "..."}, {"numero": 2, "titulo": "...", "corpo": "..."}, {"numero": 3, "titulo": "...", "corpo": "..."}, {"numero": 4, "titulo": "...", "corpo": "..."}, {"numero": 5, "titulo": "...", "corpo": "..."}]}`
     }
 
     if (fmt === 'reels') {
       return `${base}
 
-Gere um roteiro de Reels de 60 segundos com base nessa notícia. Estrutura:
-- 0-5s: gancho visual (o que acontece na tela + fala de abertura)
-- 5-45s: desenvolvimento em 3 blocos curtos
-- 45-60s: encerramento com implicação concreta
-Formato: [tempo] fala / [tempo] legenda sugerida
-Tom: conversa direta, sem voz de narrador de documentário.`
+Gere um roteiro COMPLETO de Reels de 60 segundos com base nessa notícia — as três seções abaixo, cada uma preenchida por inteiro, não apenas um parágrafo de abertura:
+- 0-5s: gancho visual (o que acontece na tela + fala de abertura exata)
+- 5-45s: desenvolvimento em 3 blocos curtos, cada bloco com [tempo] fala / [tempo] legenda sugerida
+- 45-60s: encerramento com implicação concreta, fala exata
+Tom: conversa direta, sem voz de narrador de documentário.${noNarration}`
     }
 
     if (fmt === 'thread') {
       return `${base}
 
-Gere uma thread de 5 posts curtos com base nessa notícia. Cada post: máx 280 caracteres.
+Gere uma thread COMPLETA de exatamente 5 posts com base nessa notícia. Cada post: máx 280 caracteres, todos os 5 preenchidos por inteiro.
 Post 1: gancho (declaração direta com o fato principal)
 Posts 2-4: desenvolvimento — um ângulo por post
 Post 5: implicação concreta ou pergunta de análise (não retórica)
-Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."`
+Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."${noNarration}`
     }
     return base
   }
@@ -326,6 +385,8 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
     }
   }
 
+  const MAX_TOKENS_BY_FORMAT = { post: 2000, carousel: 4000, reels: 3000, thread: 2000 }
+
   const generate = async () => {
     if (!selected || !apiKey) return
     setGenerating(true)
@@ -337,22 +398,22 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
         model: 'claude-sonnet-5',
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
-        max_tokens: 1200,
+        max_tokens: MAX_TOKENS_BY_FORMAT[format] || 2000,
         system: withManualOperacional(withAntiAIFilter('Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.')),
         messages: [{ role: 'user', content: prompt }],
       })
+      assertNotTruncated(res, 'A resposta ficou grande demais e foi cortada antes de terminar. Tente novamente.')
       const text = res.content?.find(b => b.type === 'text')?.text || ''
       if (format === 'carousel') {
         const match = text.match(/\{[\s\S]*\}/)
-        if (match) {
-          const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-          setResult(parsed.slides?.map(s => `**Slide ${s.numero}**\n${s.titulo}\n${s.corpo}`).join('\n\n') || text)
-        } else setResult(text)
+        if (!match) throw new Error('Resposta inválida da IA')
+        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+        setResult(parsed.slides?.map(s => `**Slide ${s.numero}**\n${s.titulo}\n${s.corpo}`).join('\n\n') || text)
       } else {
         setResult(text)
       }
     } catch (e) {
-      setGenError('Erro ao gerar. Verifique sua API key.')
+      setGenError(e.message || 'Erro ao gerar. Verifique sua API key.')
     } finally {
       setGenerating(false)
     }
@@ -379,6 +440,16 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
               <span className="text-[10px] text-gray-400">{articles.length} manchetes</span>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowFavoritesOnly(v => !v)}
+                className={clsx(
+                  'p-1.5 rounded-lg text-xs transition-colors',
+                  showFavoritesOnly ? 'bg-red-100 text-red-600' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                )}
+                title={showFavoritesOnly ? 'Ver todas as manchetes' : `Ver só favoritas (${newsFavorites.length})`}
+              >
+                <Heart size={14} className={showFavoritesOnly ? 'fill-current' : ''} />
+              </button>
               <button
                 onClick={() => setShowFeedManager(v => !v)}
                 className={clsx(
@@ -524,12 +595,16 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
           )}
           {!loading && !error && filtered.map((article, i) => {
             const isSelected = (selected?.guid || selected?.link) === (article.guid || article.link)
+            const favorited = isFavorited(article)
             return (
-              <button
+              <div
                 key={article.link || i}
+                role="button"
+                tabIndex={0}
                 onClick={() => { setSelected(article); setResult(''); setGenError(''); setTranslated(null); setShowTranslated(false) }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setSelected(article); setResult(''); setGenError(''); setTranslated(null); setShowTranslated(false) } }}
                 className={clsx(
-                  'w-full text-left px-4 py-3 border-b border-gray-50 transition-colors',
+                  'w-full text-left px-4 py-3 border-b border-gray-50 transition-colors cursor-pointer',
                   isSelected ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50'
                 )}
               >
@@ -537,6 +612,16 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
                   <p className={clsx('text-xs font-medium leading-snug line-clamp-2', isSelected ? 'text-orange-800' : 'text-gray-800')}>
                     {article.title}
                   </p>
+                  <button
+                    onClick={(e) => toggleFavorite(article, e)}
+                    className={clsx(
+                      'shrink-0 p-0.5 transition-colors',
+                      favorited ? 'text-red-500' : 'text-gray-200 hover:text-red-300'
+                    )}
+                    title={favorited ? 'Remover dos favoritos' : 'Favoritar — não some do feed'}
+                  >
+                    <Heart size={12} className={favorited ? 'fill-current' : ''} />
+                  </button>
                   {isSelected && <ChevronRight size={12} className="text-orange-500 shrink-0 mt-0.5" />}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
@@ -550,7 +635,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
                   ))}
                   <span className="text-[10px] text-gray-400 ml-auto">{timeAgo(article.pubDate)}</span>
                 </div>
-              </button>
+              </div>
             )
           })}
           {!loading && !error && filtered.length === 0 && (
