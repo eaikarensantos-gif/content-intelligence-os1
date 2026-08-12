@@ -1062,6 +1062,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [carTema, setCarTema] = useState('')
   const [carHooks, setCarHooks] = useState([])
   const [carHooksLoading, setCarHooksLoading] = useState(false)
+  const [carHooksError, setCarHooksError] = useState('')
   const [carActiveVersion, setCarActiveVersion] = useState('principal')
   const [carIdeia, setCarIdeia] = useState('')
   const [carTexto, setCarTexto] = useState('')
@@ -1441,7 +1442,7 @@ TEXTO:\n${revText.trim()}`
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 1500,
+          max_tokens: 2500,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
@@ -1451,9 +1452,10 @@ TEXTO:\n${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       const raw = data.content?.find(b => b.type === 'text')?.text || ''
       const match = raw.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('inválido')
+      if (!match) throw new Error('A IA não retornou uma análise válida.')
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
       // Detector determinístico: garante que estrutura proibida aparece na análise
       // mesmo quando o modelo deixa passar
@@ -1463,8 +1465,8 @@ TEXTO:\n${revText.trim()}`
         parsed.linguagem_robotica = [...new Set([...(parsed.linguagem_robotica || []), ...detected])]
       }
       setRevResult(parsed)
-    } catch {
-      setRevError('Erro ao analisar. Verifique sua API key.')
+    } catch (err) {
+      setRevError(err.message || 'Erro ao analisar. Tente novamente.')
     } finally {
       setRevLoading(false)
     }
@@ -1480,8 +1482,9 @@ TEXTO:\n${revText.trim()}`
   }
 
   async function revisorShorten() {
-    if (!revText.trim() || !apiKey) return
-    setRevShortenLoading(true); setRevShortened('')
+    if (!revText.trim()) return
+    if (!apiKey) { setRevError('Configure sua API key em Configurações.'); return }
+    setRevShortenLoading(true); setRevShortened(''); setRevError('')
     const bannedList = bannedWords.length
       ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS:\n${bannedWords.map(p => `- "${p}"`).join('\n')}`
       : ''
@@ -1507,7 +1510,7 @@ ${revText.trim()}`
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 2000,
+          max_tokens: 2500,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
@@ -1517,17 +1520,19 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       setRevShortened(data.content?.find(b => b.type === 'text')?.text?.trim() || '')
-    } catch {
-      /* silent */
+    } catch (err) {
+      setRevError(err.message || 'Erro ao encurtar. Tente novamente.')
     } finally {
       setRevShortenLoading(false)
     }
   }
 
   async function revisorRewrite() {
-    if (!revResult?.sugestoes?.length || !apiKey) return
-    setRevRewriteLoading(true); setRevRewritten('')
+    if (!revResult?.sugestoes?.length) return
+    if (!apiKey) { setRevError('Configure sua API key em Configurações.'); return }
+    setRevRewriteLoading(true); setRevRewritten(''); setRevError('')
     const list = revResult.sugestoes.map((s, i) => `${i + 1}. "${s.problema}" → "${s.melhoria}"`).join('\n')
     const bannedList = bannedWords.length
       ? `\n\nFRASES ABSOLUTAMENTE PROIBIDAS — nunca use no texto reescrito:\n${bannedWords.map(p => `- "${p}"`).join('\n')}`
@@ -1541,7 +1546,7 @@ ${revText.trim()}`
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 2000,
+          max_tokens: 2500,
           system: withManualOperacional(ANTI_AI_FILTER),
           messages: [{ role: 'user', content: prompt }],
         }),
@@ -1551,9 +1556,10 @@ ${revText.trim()}`
         throw new Error(err.error?.message || `Erro ${res.status}`)
       }
       const data = await res.json()
+      assertNotTruncated(data)
       setRevRewritten(data.content?.find(b => b.type === 'text')?.text?.trim() || '')
-    } catch {
-      /* silent */
+    } catch (err) {
+      setRevError(err.message || 'Erro ao reescrever. Tente novamente.')
     } finally {
       setRevRewriteLoading(false)
     }
@@ -1695,9 +1701,10 @@ ${revText.trim()}`
   }
 
   const generateHooks = async () => {
-    if (!apiKey) { return }
+    if (!apiKey) { setCarHooksError('Configure sua API key em Configurações.'); return }
     setCarHooksLoading(true)
     setCarHooks([])
+    setCarHooksError('')
     try {
       const tema = carTema.trim() || (isPessoal ? 'vida e cotidiano' : 'carreira e maturidade profissional')
       const res = await fetch('/api/ai?action=gemini', {
@@ -1707,7 +1714,7 @@ ${revText.trim()}`
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 1500,
+          max_tokens: 2500,
           system: withManualOperacional(`${ANTI_AI_FILTER}
 
 ---
@@ -1753,18 +1760,22 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
       const data = await res.json()
       assertNotTruncated(data)
       const text = data.content?.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
-      if (match) {
-        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-        // Estes hooks viram o slide 1 do carrossel — passam pela mesma varredura
-        try { await sweepAndFixPaths(parsed, (o) => hookListPaths(o, 'hooks')) } catch { /* mantém o original */ }
-        setCarHooks(parsed.hooks || [])
-      }
-    } catch { /* silencioso */ } finally {
+      if (!match) throw new Error('A IA não retornou hooks válidos.')
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+      // Estes hooks viram o slide 1 do carrossel — passam pela mesma varredura
+      try { await sweepAndFixPaths(parsed, (o) => hookListPaths(o, 'hooks')) } catch { /* mantém o original */ }
+      setCarHooks(parsed.hooks || [])
+    } catch (err) {
+      setCarHooksError(err.message || 'Erro ao gerar hooks. Tente novamente.')
+    } finally {
       setCarHooksLoading(false)
     }
   }
@@ -2045,7 +2056,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1500,
+          // Reclassificar manda TODOS os temas salvos de uma vez — pode ser
+          // dezenas. 1500 truncava com poucos itens; escala com o tamanho do
+          // lote, com piso testado ao vivo contra o mesmo tipo de prompt.
+          max_tokens: Math.max(3000, temas.length * 100),
           system: `Classifique cada tema na categoria mais adequada. Categorias disponíveis: ${categorias.join(', ')}.
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
@@ -2067,6 +2081,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
         }),
       })
       const data = await res.json()
+      assertNotTruncated(data)
       const match = (data.content?.find(b => b.type === 'text')?.text || '').match(/\[[\s\S]*\]/)
       if (!match) return fallback()
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
@@ -3206,6 +3221,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 placeholder={isPessoal ? 'Ex: a mania que herdei da minha mãe, achado da Shopee, domingo na feira...' : 'Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho...'}
                 className="input text-sm w-full"
               />
+              {carHooksError && (
+                <p className="text-[10px] text-red-500 mt-1">{carHooksError}</p>
+              )}
               {carHooks.length > 0 && (
                 <div className="mt-2 space-y-1">
                   <p className="text-[10px] text-gray-400 font-medium mb-1">Clique para usar como tema do slide 1:</p>
