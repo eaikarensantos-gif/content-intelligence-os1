@@ -89,7 +89,7 @@ function toGeminiParts(content) {
   })
 }
 
-async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking, messages }) {
+async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking, messages, grounding }) {
   const geminiModel = GEMINI_MODEL_MAP[model] || 'gemini-3.5-flash'
   const contents = (messages || []).map((m) => ({
     role: toGeminiRole(m.role),
@@ -117,6 +117,11 @@ async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking,
 
   const body = { contents, generationConfig }
   if (system) body.systemInstruction = { parts: [{ text: system }] }
+  // Grounding com Google Search — usado quando o caller precisa de dados reais
+  // e verificáveis (não a "memória" do modelo, que pode alucinar número e
+  // fonte). Com isso ligado o Gemini pesquisa de verdade antes de responder,
+  // e a resposta traz groundingMetadata com os links reais consultados.
+  if (grounding) body.tools = [{ google_search: {} }]
 
   const upstream = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
@@ -144,7 +149,17 @@ async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking,
   const stop_reason =
     finishReason === 'MAX_TOKENS' ? 'max_tokens' : finishReason === 'STOP' ? 'end_turn' : finishReason || null
 
-  return { status: 200, body: { content: [{ type: 'text', text }], stop_reason } }
+  const responseBody = { content: [{ type: 'text', text }], stop_reason }
+  if (grounding) {
+    const chunks = candidate.groundingMetadata?.groundingChunks || []
+    const seen = new Set()
+    responseBody.grounding_sources = chunks
+      .map((c) => c.web)
+      .filter((w) => w?.uri && w?.title && !seen.has(w.title) && seen.add(w.title))
+      .slice(0, 8)
+  }
+
+  return { status: 200, body: responseBody }
 }
 
 // ─── YouTube Data API v3 ──────────────────────────────────────────────────────

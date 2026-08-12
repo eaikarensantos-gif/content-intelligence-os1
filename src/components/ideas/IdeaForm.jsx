@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb } from 'lucide-react'
 import Modal from '../common/Modal'
 import ScriptBlockRegenerator from './ScriptBlockRegenerator'
+import FactFinder from './FactFinder'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { youtubeSearch } from '../../lib/aiService'
@@ -721,6 +722,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
             <textarea className="input resize-none min-h-[80px]"
               placeholder="Escreva o roteiro completo do conteúdo aqui..."
               value={form.script || ''} onChange={(e) => set('script', e.target.value)} />
+            <div className="mt-2">
+              <FactFinder
+                topic={[form.title, form.description].filter(Boolean).join(' — ')}
+                onInsert={(fact) => set('script', (form.script?.trim() ? form.script.trim() + '\n\n' : '') + fact)}
+              />
+            </div>
             {form.script?.trim() && (
               <div className="mt-2">
                 <ScriptBlockRegenerator
