@@ -26,11 +26,23 @@ async function callAI(apiKey, body) {
 const LS_KEY = 'cio-anthropic-key'
 const LS_FEEDS_KEY = 'cio-news-feeds'
 
+// Fontes brasileiras adicionadas depois do lançamento — ficam separadas do
+// DEFAULT_FEEDS original porque a migração one-time abaixo precisa saber
+// exatamente quais 3 IDs são "novos" pra somar na lista de quem já tinha
+// feeds salvos, sem tocar em tc/hbr/mit (que a pessoa pode ter removido de
+// propósito, e um diff genérico contra DEFAULT_FEEDS ressuscitaria).
+const NEW_BR_FEEDS = [
+  { id: 'tecnoblog', name: 'Tecnoblog', url: 'https://tecnoblog.net/feed/', color: 'bg-emerald-600' },
+  { id: 'canaltech', name: 'Canaltech', url: 'https://canaltech.com.br/rss/', color: 'bg-purple-600' },
+  { id: 'olhardigital', name: 'Olhar Digital', url: 'https://olhardigital.com.br/feed/', color: 'bg-amber-500' },
+]
 const DEFAULT_FEEDS = [
   { id: 'tc', name: 'TechCrunch', url: 'https://techcrunch.com/feed/', color: 'bg-orange-500' },
   { id: 'hbr', name: 'HBR', url: 'https://hbr.org/rss/topic/technology', color: 'bg-red-600' },
   { id: 'mit', name: 'MIT Tech Review', url: 'https://www.technologyreview.com/feed/', color: 'bg-blue-600' },
+  ...NEW_BR_FEEDS,
 ]
+const LS_BR_FEEDS_MIGRATED_KEY = 'cio-news-feeds-br-migrated'
 const loadFeeds = () => {
   try {
     const saved = localStorage.getItem(LS_FEEDS_KEY)
@@ -205,6 +217,24 @@ export default function NewsGenerator() {
   }, [feeds, activeFeeds, favorites])
 
   useEffect(() => { fetchNews() }, [fetchNews])
+
+  // Migração one-time: soma as novas fontes brasileiras na lista de quem já
+  // tinha feeds salvos, e marca como feita — depois disso a pessoa tem
+  // controle total (pode remover Tecnoblog/Canaltech/Olhar Digital e a
+  // remoção fica, em vez de reaparecer a cada carregamento da página).
+  useEffect(() => {
+    if (localStorage.getItem(LS_BR_FEEDS_MIGRATED_KEY)) return
+    const existingIds = new Set(feeds.map((f) => f.id))
+    const missing = NEW_BR_FEEDS.filter((f) => !existingIds.has(f.id))
+    if (missing.length > 0) {
+      const merged = [...feeds, ...missing]
+      setFeeds(merged)
+      saveFeeds(merged)
+      setActiveFeeds((prev) => [...prev, ...missing.map((f) => f.id)])
+    }
+    try { localStorage.setItem(LS_BR_FEEDS_MIGRATED_KEY, '1') } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const analyzeThemes = async () => {
     if (!apiKey || articles.length === 0) return

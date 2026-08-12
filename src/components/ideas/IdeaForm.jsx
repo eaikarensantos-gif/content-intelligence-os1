@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb } from 'lucide-react'
 import Modal from '../common/Modal'
 import ScriptBlockRegenerator from './ScriptBlockRegenerator'
+import ScriptCoherenceFixer from './ScriptCoherenceFixer'
 import FactFinder from './FactFinder'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
@@ -728,6 +729,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 onInsert={(fact) => set('script', (form.script?.trim() ? form.script.trim() + '\n\n' : '') + fact)}
               />
             </div>
+            {form.script?.trim() && (
+              <div className="mt-2">
+                <ScriptCoherenceFixer
+                  script={form.script}
+                  onApply={(newScript) => set('script', newScript)}
+                  voiceCtx={voiceCtx}
+                />
+              </div>
+            )}
             {form.script?.trim() && (
               <div className="mt-2">
                 <ScriptBlockRegenerator
