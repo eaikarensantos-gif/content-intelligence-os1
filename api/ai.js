@@ -97,12 +97,20 @@ async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking,
   }))
 
   const generationConfig = { maxOutputTokens: max_tokens || 2048 }
-  if (thinking && thinking.type !== 'disabled') {
+  if (thinking?.type === 'disabled') {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 }
+  } else {
     // Gemini's dynamic thinking budget (-1, uncapped) can consume most of
     // max_tokens on a complex prompt, starving the actual response and
     // causing silent truncation — the same failure mode as the Anthropic
-    // adaptive-thinking bug from earlier in this app's history. Capping it
-    // at half the total budget guarantees at least half stays for the text.
+    // adaptive-thinking bug from earlier in this app's history. This isn't
+    // opt-in: Gemini enables thinking by default even when the caller never
+    // passes a `thinking` param at all, so the cap has to apply
+    // unconditionally — checking `thinking &&` here left every caller that
+    // doesn't explicitly request thinking (title/hook/script/caption/cta in
+    // the Hub, refQueries, etc.) fully exposed to the same truncation bug
+    // this was supposed to have fixed for good. Capping at half the total
+    // budget guarantees at least half stays for the text either way.
     const thinkingBudget = Math.max(1024, Math.floor((max_tokens || 2048) * 0.5))
     generationConfig.thinkingConfig = { thinkingBudget, includeThoughts: true }
   }
