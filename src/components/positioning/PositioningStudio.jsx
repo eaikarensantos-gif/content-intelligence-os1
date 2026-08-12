@@ -196,7 +196,7 @@ export default function PositioningStudio() {
           Posicionamento
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          A fonte única da sua identidade de marca — alimenta a Diretriz de Marca, a lista negra e
+          A fonte única da sua identidade de marca — alimenta a Diretriz de Marca, os termos banidos e
           toda geração de conteúdo do app.
         </p>
       </div>
@@ -238,7 +238,7 @@ export default function PositioningStudio() {
         <PilaresSection />
       </Section>
 
-      <Section title="Lista negra" hint="Frases e estruturas banidas — vale pra todos os geradores do app.">
+      <Section title="Termos banidos" hint="Frases e estruturas banidas — vale pra todos os geradores do app.">
         <ListaNegraBox />
       </Section>
 

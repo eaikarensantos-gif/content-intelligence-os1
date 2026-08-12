@@ -37,6 +37,27 @@ export function migratePosicionamento(persistedState) {
   return s
 }
 
+/**
+ * loadFromDB() só deve substituir o posicionamento/brandVoice local por uma
+ * cópia do Supabase se essa cópia tiver conteúdo de verdade — um objeto
+ * vazio/default ainda é "truthy" em JS, então sem essa checagem uma linha
+ * vazia ou desatualizada no Supabase apaga silenciosamente o que acabou de
+ * ser preenchido localmente (ex.: o auto-save de 2.5s ainda não rodou e a
+ * página recarrega antes disso).
+ */
+function hasPositioningContent(p) {
+  if (!p) return false
+  return Boolean(
+    p.diretriz_marca?.trim() || p.ancora?.trim() || p.concorrencia_espaco_vago?.trim() ||
+    p.teste_coerencia?.trim() || p.trade_off?.trim() ||
+    p.publicos?.length || p.ativos?.length || p.pilares?.length || p.lista_negra?.length
+  )
+}
+
+function hasBrandVoiceContent(b) {
+  return Boolean(b?.prompt?.trim() || (b?.calibration && Object.keys(b.calibration).length))
+}
+
 const useStore = create(
   persist(
     (set, get) => ({
@@ -586,10 +607,10 @@ const useStore = create(
             ...(data.videoAnalyses?.length    ? { videoAnalyses: data.videoAnalyses }       : {}),
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
             ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
-            ...(data.posicionamento ? { posicionamento: data.posicionamento }               : {}),
+            ...(hasPositioningContent(data.posicionamento) ? { posicionamento: data.posicionamento } : {}),
             ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
             ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
-            ...(data.brandVoice ? { brandVoice: data.brandVoice } : {}),
+            ...(hasBrandVoiceContent(data.brandVoice) ? { brandVoice: data.brandVoice } : {}),
             dbStatus: 'connected',
             dbError: '',
           })
@@ -676,11 +697,27 @@ const useStore = create(
 )
 
 // ─── Auto-sync debounced ao Supabase ─────────────────────────────────────────
+// Se a aba fechar/recarregar dentro da janela de debounce, a edição nunca
+// chega no Supabase — e o próximo loadFromDB() carrega a cópia antiga.
+// flushSync() força o save pendente assim que a aba fica oculta, então a
+// perda só acontece se o navegador matar o processo antes do fetch sair.
 let _syncTimer = null
+const flushSync = () => {
+  if (!_syncTimer) return
+  clearTimeout(_syncTimer)
+  _syncTimer = null
+  dbSaveAll(useStore.getState())
+}
 useStore.subscribe((state) => {
   if (!isSupabaseConfigured()) return
   clearTimeout(_syncTimer)
-  _syncTimer = setTimeout(() => dbSaveAll(state), 2500)
+  _syncTimer = setTimeout(() => { _syncTimer = null; dbSaveAll(state) }, 2500)
 })
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSync()
+  })
+  window.addEventListener('pagehide', flushSync)
+}
 
 export default useStore
