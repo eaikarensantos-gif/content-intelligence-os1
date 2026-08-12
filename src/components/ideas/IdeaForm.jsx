@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb } from 'lucide-react'
 import Modal from '../common/Modal'
+import ScriptBlockRegenerator from './ScriptBlockRegenerator'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { youtubeSearch } from '../../lib/aiService'
@@ -638,50 +639,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
         <div className="border-t border-gray-100" />
 
-        {/* ── 2. AGENDAMENTO ───────────────────────────────────────────────── */}
-        <div className="space-y-3">
-          <SectionLabel>Agendamento</SectionLabel>
-
-          {/* Slots da semana */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {WEEK_SLOTS.map(({ day, offset, label }) => {
-              const today = new Date()
-              const dow = today.getDay()
-              const monday = new Date(today)
-              monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
-              monday.setHours(0, 0, 0, 0)
-              const slotDate = new Date(monday)
-              slotDate.setDate(monday.getDate() + offset)
-              const dateStr = localDateStr(slotDate)
-              const isSelected = form.scheduled_date === dateStr
-              return (
-                <button key={day} type="button" onClick={() => set('scheduled_date', isSelected ? '' : dateStr)}
-                  className={`flex flex-col items-center py-2.5 px-1 rounded-xl border text-center transition-all ${isSelected ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-orange-300 hover:bg-orange-50'}`}>
-                  <span className="text-xs font-bold">{day}</span>
-                  <span className="text-[9px] text-gray-400 mt-0.5 leading-tight">{label}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Data livre */}
-          <div>
-            <label className="label flex items-center gap-1.5">
-              Data Programada
-              {!initial?.id && initial?.scheduled_date && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium border border-orange-200">
-                  do calendário
-                </span>
-              )}
-            </label>
-            <input type="date" className="input" value={form.scheduled_date || ''}
-              onChange={(e) => set('scheduled_date', e.target.value)} />
-          </div>
-        </div>
-
-        <div className="border-t border-gray-100" />
-
-        {/* ── 3. CONTEÚDO ─────────────────────────────────────────────────── */}
+        {/* ── 2. CONTEÚDO ─────────────────────────────────────────────────── */}
         <div className="space-y-3">
           <SectionLabel>Conteúdo</SectionLabel>
 
@@ -739,6 +697,15 @@ Responda EXCLUSIVAMENTE com JSON válido:
             <textarea className="input resize-none min-h-[80px]"
               placeholder="Escreva o roteiro completo do conteúdo aqui..."
               value={form.script || ''} onChange={(e) => set('script', e.target.value)} />
+            {form.script?.trim() && (
+              <div className="mt-2">
+                <ScriptBlockRegenerator
+                  script={form.script}
+                  onChange={(newScript) => set('script', newScript)}
+                  voiceCtx={voiceCtx}
+                />
+              </div>
+            )}
           </div>
 
           {/* Legenda */}
@@ -791,7 +758,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
         <div className="border-t border-gray-100" />
 
-        {/* ── 4. ORGANIZAÇÃO ───────────────────────────────────────────────── */}
+        {/* ── 3. ORGANIZAÇÃO ───────────────────────────────────────────────── */}
         <div className="space-y-3">
           <SectionLabel>Organização</SectionLabel>
 
@@ -915,6 +882,49 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100" />
+
+        {/* ── 4. AGENDAMENTO ───────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <SectionLabel>Agendamento</SectionLabel>
+
+          {/* Slots da semana */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {WEEK_SLOTS.map(({ day, offset, label }) => {
+              const today = new Date()
+              const dow = today.getDay()
+              const monday = new Date(today)
+              monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+              monday.setHours(0, 0, 0, 0)
+              const slotDate = new Date(monday)
+              slotDate.setDate(monday.getDate() + offset)
+              const dateStr = localDateStr(slotDate)
+              const isSelected = form.scheduled_date === dateStr
+              return (
+                <button key={day} type="button" onClick={() => set('scheduled_date', isSelected ? '' : dateStr)}
+                  className={`flex flex-col items-center py-2.5 px-1 rounded-xl border text-center transition-all ${isSelected ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-orange-300 hover:bg-orange-50'}`}>
+                  <span className="text-xs font-bold">{day}</span>
+                  <span className="text-[9px] text-gray-400 mt-0.5 leading-tight">{label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Data livre */}
+          <div>
+            <label className="label flex items-center gap-1.5">
+              Data Programada
+              {!initial?.id && initial?.scheduled_date && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium border border-orange-200">
+                  do calendário
+                </span>
+              )}
+            </label>
+            <input type="date" className="input" value={form.scheduled_date || ''}
+              onChange={(e) => set('scheduled_date', e.target.value)} />
           </div>
         </div>
 
