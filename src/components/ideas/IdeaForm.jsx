@@ -337,7 +337,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       const parsed = JSON.parse(match ? match[0] : clean)
       if (Array.isArray(parsed) && parsed.length > 0) setTitleSuggestions(parsed.filter(Boolean))
       else alert('Não foi possível gerar títulos. Tente novamente.')
-    } catch { alert('Erro ao gerar títulos. Verifique sua API key.') }
+    } catch (err) { alert(err.message || 'Erro ao gerar títulos. Tente novamente.') }
     setGeneratingTitle(false)
   }
 
@@ -403,7 +403,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         set('description', hook.trim() + (form.description.trim() ? '\n\n' + form.description.trim() : ''))
         setTimeout(() => autoResizeDesc(descRef.current), 50)
       }
-    } catch { /* silent */ }
+    } catch (err) { alert(err.message || 'Erro ao gerar gancho. Tente novamente.') }
     setGeneratingHook(false)
   }
 
@@ -415,7 +415,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
     try {
       const script = await generateWithAI(apiKey, 'script', form, voiceCtx)
       if (script.trim()) set('script', script.trim())
-    } catch { /* silent */ }
+    } catch (err) { alert(err.message || 'Erro ao gerar roteiro. Tente novamente.') }
     setGeneratingScript(false)
   }
 
@@ -443,7 +443,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
       } else {
         set('caption', result)
       }
-    } catch { /* silent */ }
+    } catch (err) {
+      alert(err.message || (type === 'cta' ? 'Erro ao gerar CTAs. Tente novamente.' : 'Erro ao gerar legenda. Tente novamente.'))
+    }
     setter(false)
   }
 
@@ -466,7 +468,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         const parsed = JSON.parse(match ? match[0] : clean)
         if (Array.isArray(parsed)) setRefQueries(parsed.filter(Boolean))
       }
-    } catch { /* silent */ }
+    } catch (err) { alert(err.message || 'Erro ao buscar referências. Tente novamente.') }
     setSearchingRefs(false)
   }
 
