@@ -186,7 +186,9 @@ Responda APENAS com JSON válido (array de 4 strings), sem markdown:
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: isCreative ? 'claude-sonnet-5' : 'claude-haiku-4-5-20251001',
-      max_tokens: type === 'script' ? 3000 : type === 'caption' ? 2000 : 1024,
+      // 1024 batia exatamente no piso de 1024 tokens que o Gemini sempre
+      // reserva pro "pensamento" — sem margem nenhuma pro texto de fato.
+      max_tokens: type === 'script' ? 3000 : type === 'caption' ? 2000 : 1500,
       ...(isCreative && {
         system: withManualOperacional(withAntiAIFilter(
           `Você escreve conteúdo para Karen Santos, criadora brasileira. Siga as regras de voz abaixo em tudo que gerar.${voiceCtx}`
@@ -222,6 +224,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [searchingRefs, setSearchingRefs] = useState(false)
   const [refResults, setRefResults] = useState([])   // YouTube video cards
   const [refQueries, setRefQueries] = useState([])   // fallback: AI-generated query strings
+  const [refsSearchAttempted, setRefsSearchAttempted] = useState(false)
 
   const youtubeApiKey = useAIStore((s) => s.youtubeApiKey)
   const [generatingScript, setGeneratingScript] = useState(false)
@@ -296,6 +299,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setCtaSuggestions([])
     setRefResults([])
     setRefQueries([])
+    setRefsSearchAttempted(false)
     setShowThemeBank(false)
     setThemeBankOpenCategory(null)
     setSavedThemesRaw(loadSavedThemes())
@@ -369,7 +373,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
         body: JSON.stringify({
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
-          max_tokens: 1200,
+          max_tokens: 1500,
           messages: [{
             role: 'user',
             content: `Você é estrategista de conteúdo para criadores brasileiros de IA aplicada a negócios.
@@ -472,6 +476,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
   const handleSearchRefs = async () => {
     if (!form.title.trim()) { alert('Preencha o título antes de buscar referências.'); return }
     setSearchingRefs(true)
+    setRefsSearchAttempted(true)
     setRefResults([])
     setRefQueries([])
     try {
@@ -873,6 +878,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   Configure a YouTube API Key em <span className="text-orange-500 font-medium">Configurações</span> para buscar vídeos direto aqui.
                 </p>
               </div>
+            )}
+
+            {!searchingRefs && refsSearchAttempted && refResults.length === 0 && refQueries.length === 0 && (
+              <p className="text-[11px] text-gray-400 mb-2">Nenhuma referência encontrada pra esse título. Tente um termo mais específico ou mais genérico.</p>
             )}
 
             <div className="flex gap-2">

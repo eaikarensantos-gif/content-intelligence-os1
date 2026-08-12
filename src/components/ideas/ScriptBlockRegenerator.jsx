@@ -45,7 +45,11 @@ Responda APENAS com o texto novo desse trecho — mesmo formato e marcadores do 
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          max_tokens: 1000,
+          // Gemini sempre reserva um piso de 1024 tokens pro orçamento de
+          // "pensamento" antes de escrever qualquer texto — com max_tokens
+          // igual ou abaixo disso, a resposta corta antes de sair. 1500 dá
+          // margem real pro trecho reescrito mesmo no pior caso.
+          max_tokens: 1500,
           system: withManualOperacional(withAntiAIFilter(
             `Você escreve conteúdo para Karen Santos, criadora brasileira. Siga as regras de voz abaixo em tudo que gerar.${voiceCtx}`
           )),

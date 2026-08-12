@@ -1,4 +1,4 @@
-import { extractJsonArray } from './aiJson.js'
+import { extractJsonArray, assertNotTruncated } from './aiJson.js'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -40,13 +40,20 @@ Responda APENAS com JSON:
       model: 'claude-sonnet-5',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
-      max_tokens: 300,
+      // 300 era menor que o piso de 1024 tokens que o orçamento de "pensamento"
+      // do Gemini sempre reserva — a resposta cortava antes de qualquer texto
+      // sair. 1500 deixa espaço real pro texto mesmo com o piso de raciocínio.
+      max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
 
-  if (!res.ok) throw new Error('API error')
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error?.message || `Erro ${res.status}`)
+  }
   const data = await res.json()
+  assertNotTruncated(data)
   const text = data.content?.find(b => b.type === 'text')?.text || ''
-  return extractJsonArray(text, 'No JSON')
+  return extractJsonArray(text, 'A IA não retornou alternativas válidas.')
 }

@@ -18,14 +18,17 @@ function ViolationRow({ v }) {
   const [alts, setAlts] = useState(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(null)
+  const [error, setError] = useState(null)
 
   const handleSuggest = async () => {
     setLoading(true)
+    setError(null)
     try {
       const result = await fetchToneAlternatives(v.match, v.category, v.suggestion)
-      setAlts(result)
-    } catch {
-      setAlts([])
+      if (!result || result.length === 0) setError('A IA não retornou alternativas. Tente de novo.')
+      else setAlts(result)
+    } catch (err) {
+      setError(err.message || 'Erro ao gerar alternativas. Tente de novo.')
     } finally {
       setLoading(false)
     }
@@ -66,8 +69,8 @@ function ViolationRow({ v }) {
         </button>
       )}
 
-      {alts !== null && alts.length === 0 && (
-        <p className="text-[10px] text-red-400">Não foi possível gerar alternativas. Verifique sua API key.</p>
+      {error && (
+        <p className="text-[10px] text-red-400">{error}</p>
       )}
 
       {alts && alts.length > 0 && (
