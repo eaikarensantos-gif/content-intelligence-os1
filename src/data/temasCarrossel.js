@@ -85,11 +85,11 @@ export const TEMAS_CARROSSEL = [
     categoria: 'IA para criativos',
     temas: [
       'O criativo que usou IA e perdeu a própria voz no processo',
-      'Onde a IA acelera o rascunho e onde ela destrói a ideia original',
+      'Onde a IA acelera a produção e onde ela mata o acaso que fazia o trabalho funcionar',
       'A diferença entre gerar referência e terceirizar a criação',
-      'O portfólio que ficou parecido com todos os outros depois da IA entrar',
+      'O texto, a edição ou a composição que saem tecnicamente certos e ainda assim sem identidade nenhuma',
       'Por que o criativo que edita a IA vale mais que o que só aceita o resultado',
-      'O briefing que a IA nunca vai entender sozinho',
+      'O mesmo prompt não serve pro roteirista, pro editor de vídeo e pro músico — e é aí que a IA genérica falha',
     ],
   },
 ]

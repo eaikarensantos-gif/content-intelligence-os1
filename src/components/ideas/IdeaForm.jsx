@@ -10,6 +10,7 @@ import { withManualOperacional } from '../../lib/manualOperacional'
 import { buildVoiceContext } from '../../utils/voiceContext'
 import { assertNotTruncated } from '../../utils/aiJson'
 import { TEMAS_CARROSSEL } from '../../data/temasCarrossel'
+import { loadSavedThemes, appendSavedThemes } from '../../data/savedThemesStore'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
@@ -230,7 +231,19 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
   const [expandingThemes, setExpandingThemes] = useState(false)
   const [expandThemesError, setExpandThemesError] = useState(null)
-  const [extraTemas, setExtraTemas] = useState({})
+  // Bucket de temas expandidos compartilhado com o Studio (mesma chave de
+  // localStorage) — recarregado toda vez que o card abre, então o que foi
+  // expandido de um lado aparece do outro.
+  const [savedThemesRaw, setSavedThemesRaw] = useState([])
+  const extraTemas = useMemo(() => {
+    const map = {}
+    savedThemesRaw.forEach((t) => {
+      if (!t?.tema || !t?.categoria) return
+      if (!map[t.categoria]) map[t.categoria] = []
+      if (!map[t.categoria].includes(t.tema)) map[t.categoria].push(t.tema)
+    })
+    return map
+  }, [savedThemesRaw])
   const tagRef = useRef(null)
   const linkRef = useRef(null)
 
@@ -285,7 +298,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setRefQueries([])
     setShowThemeBank(false)
     setThemeBankOpenCategory(null)
-    setExtraTemas({})
+    setSavedThemesRaw(loadSavedThemes())
     setExpandThemesError(null)
   }, [open, initial])
 
@@ -385,7 +398,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const existingSet = new Set(existentes.map((t) => t.toLowerCase()))
       const novos = (parsed.temas || []).filter((t) => t && !existingSet.has(t.toLowerCase()))
       if (novos.length === 0) throw new Error('A IA não retornou temas novos. Tente de novo.')
-      setExtraTemas((prev) => ({ ...prev, [categoria]: [...(prev[categoria] || []), ...novos] }))
+      // Grava no mesmo bucket do Studio — o que foi expandido aqui aparece lá também.
+      const novosItens = novos.map((tema) => ({
+        id: Date.now() + Math.random(),
+        tema, temperatura: null, motivo: null, categoria,
+        fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
+      }))
+      setSavedThemesRaw(appendSavedThemes(novosItens))
     } catch (err) {
       setExpandThemesError(err.message || 'Erro ao expandir temas.')
     } finally {
