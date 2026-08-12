@@ -283,7 +283,7 @@ function CoherenceChecker({ text, posicionamento }) {
           {result.justificativa && <p className="text-[11px] text-gray-600 leading-relaxed">{result.justificativa}</p>}
           {result.frases_lista_negra_encontradas.length > 0 && (
             <p className="text-[11px] text-red-600">
-              <span className="font-medium">Frases da lista negra encontradas: </span>
+              <span className="font-medium">Frases banidas encontradas: </span>
               {result.frases_lista_negra_encontradas.map((f) => `"${f}"`).join(', ')}
             </p>
           )}

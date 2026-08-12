@@ -227,6 +227,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const [showProducao, setShowProducao] = useState(false)
   const [showThemeBank, setShowThemeBank] = useState(false)
   const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
+  const [expandingThemes, setExpandingThemes] = useState(false)
+  const [expandThemesError, setExpandThemesError] = useState(null)
+  const [extraTemas, setExtraTemas] = useState({})
   const tagRef = useRef(null)
   const linkRef = useRef(null)
 
@@ -281,6 +284,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setRefQueries([])
     setShowThemeBank(false)
     setThemeBankOpenCategory(null)
+    setExtraTemas({})
+    setExpandThemesError(null)
   }, [open, initial])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -334,6 +339,57 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       else alert('Não foi possível gerar títulos. Tente novamente.')
     } catch { alert('Erro ao gerar títulos. Verifique sua API key.') }
     setGeneratingTitle(false)
+  }
+
+  const expandThemes = async (categoria) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setExpandThemesError('Configure sua API key do Gemini primeiro.'); return }
+    setExpandingThemes(true)
+    setExpandThemesError(null)
+    try {
+      const base = TEMAS_CARROSSEL.find((c) => c.categoria === categoria)
+      const existentes = [...(base?.temas || []), ...(extraTemas[categoria] || [])]
+      const res = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'adaptive' },
+          max_tokens: 1200,
+          messages: [{
+            role: 'user',
+            content: `Você é estrategista de conteúdo para criadores brasileiros de IA aplicada a negócios.
+
+Categoria: "${categoria}"
+Temas já existentes nessa categoria:
+${existentes.map((t) => `- ${t}`).join('\n') || '(nenhum ainda)'}
+
+Gere 5 novos temas específicos e concretos para essa categoria — não repita os existentes, sem linguagem de coach, máximo 12 palavras cada.
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{"temas": ["tema 1", "tema 2", "tema 3", "tema 4", "tema 5"]}`,
+          }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      assertNotTruncated(data)
+      const text = data.content?.find((b) => b.type === 'text')?.text || ''
+      const match = text.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA.')
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+      const existingSet = new Set(existentes.map((t) => t.toLowerCase()))
+      const novos = (parsed.temas || []).filter((t) => t && !existingSet.has(t.toLowerCase()))
+      if (novos.length === 0) throw new Error('A IA não retornou temas novos. Tente de novo.')
+      setExtraTemas((prev) => ({ ...prev, [categoria]: [...(prev[categoria] || []), ...novos] }))
+    } catch (err) {
+      setExpandThemesError(err.message || 'Erro ao expandir temas.')
+    } finally {
+      setExpandingThemes(false)
+    }
   }
 
   const handleGenerateHook = async () => {
@@ -456,7 +512,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
                     </button>
                     {isCatOpen && (
                       <div className="px-2 py-1.5 space-y-0.5 bg-white">
-                        {temas.map((tema) => (
+                        {[...temas, ...(extraTemas[categoria] || [])].map((tema) => (
                           <button
                             key={tema}
                             type="button"
@@ -470,6 +526,18 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
                             {tema}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => expandThemes(categoria)}
+                          disabled={expandingThemes}
+                          className="w-full flex items-center justify-center gap-1.5 text-[10px] font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg py-1.5 mt-1 transition-colors disabled:opacity-50"
+                        >
+                          {expandingThemes ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                          {expandingThemes ? 'Gerando...' : 'Expandir com IA'}
+                        </button>
+                        {expandThemesError && (
+                          <p className="text-[10px] text-red-500 px-1 pt-1">{expandThemesError}</p>
+                        )}
                       </div>
                     )}
                   </div>
