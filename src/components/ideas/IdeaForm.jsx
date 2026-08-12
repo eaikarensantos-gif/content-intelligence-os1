@@ -32,8 +32,8 @@ const PLATFORM_COLORS = {
 const PRIORITIES = ['high', 'medium', 'low']
 const PRIORITY_LABELS = { high: 'Alta', medium: 'Média', low: 'Baixa' }
 
-const STATUSES = ['idea', 'draft', 'ready', 'scheduled', 'published']
-const STATUS_LABELS = { idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', scheduled: 'Agendado', published: 'Publicado' }
+const STATUSES = ['idea', 'draft', 'editing', 'ready', 'scheduled', 'published']
+const STATUS_LABELS = { idea: 'Ideia', draft: 'Rascunho', editing: 'Editando', ready: 'Pronto', scheduled: 'Agendado', published: 'Publicado' }
 
 const CONTENT_TYPES = [
   { id: 'organic',     label: 'Orgânico',  cls: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
