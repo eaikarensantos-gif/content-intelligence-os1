@@ -26,6 +26,7 @@ const KANBAN_COLUMNS = [
   { id: 'agent',     label: 'Agente Diário', color: 'border-purple-200 bg-purple-50/60',   dot: 'bg-purple-400',  count_bg: 'bg-purple-100 text-purple-700' },
   { id: 'idea',      label: 'Ideias',        color: 'border-orange-200 bg-orange-50/60',   dot: 'bg-orange-400',  count_bg: 'bg-orange-100 text-orange-700' },
   { id: 'draft',     label: 'Rascunhos',     color: 'border-blue-200 bg-blue-50/60',       dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
+  { id: 'editing',    label: 'Editando',      color: 'border-amber-200 bg-amber-50/60',      dot: 'bg-amber-400',    count_bg: 'bg-amber-100 text-amber-700' },
   { id: 'ready',      label: 'Pronto',        color: 'border-emerald-200 bg-emerald-50/60',  dot: 'bg-emerald-400',  count_bg: 'bg-emerald-100 text-emerald-700' },
   { id: 'scheduled',  label: 'Agendado',      color: 'border-violet-200 bg-violet-50/60',    dot: 'bg-violet-400',   count_bg: 'bg-violet-100 text-violet-700' },
   { id: 'published',  label: 'Publicado',     color: 'border-green-200 bg-green-50/60',      dot: 'bg-green-400',    count_bg: 'bg-green-100 text-green-700' },
@@ -34,6 +35,7 @@ const KANBAN_COLUMNS = [
 const STATUS_META = {
   idea:      { label: 'Ideia',     className: 'bg-orange-100 text-orange-700 border-orange-200' },
   draft:     { label: 'Rascunho',  className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  editing:   { label: 'Editando',  className: 'bg-amber-100 text-amber-700 border-amber-200' },
   ready:     { label: 'Pronto',    className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
   scheduled: { label: 'Agendado',  className: 'bg-violet-100 text-violet-700 border-violet-200' },
   published: { label: 'Publicado', className: 'bg-green-100 text-green-700 border-green-200' },
@@ -1374,10 +1376,11 @@ function WeeklyPlan({ ideas, addIdea, updateIdea, onCardClick, navigate }) {
                       idea.status === 'published'  ? 'bg-emerald-100 text-emerald-700' :
                       idea.status === 'scheduled'  ? 'bg-violet-100 text-violet-700' :
                       idea.status === 'ready'      ? 'bg-blue-100 text-blue-700' :
+                      idea.status === 'editing'    ? 'bg-amber-100 text-amber-700' :
                       idea.status === 'draft'      ? 'bg-gray-100 text-gray-600' :
                       'bg-orange-100 text-orange-700'
                     }`}>
-                      {idea.status === 'published' ? 'Publicado' : idea.status === 'scheduled' ? 'Agendado' : idea.status === 'ready' ? 'Pronto' : idea.status === 'draft' ? 'Rascunho' : 'Ideia'}
+                      {idea.status === 'published' ? 'Publicado' : idea.status === 'scheduled' ? 'Agendado' : idea.status === 'ready' ? 'Pronto' : idea.status === 'editing' ? 'Editando' : idea.status === 'draft' ? 'Rascunho' : 'Ideia'}
                     </span>
                     {idea.status === 'published' && (
                       <button onClick={(e) => { e.stopPropagation(); handleImpulsar(idea) }} className="text-[10px] text-orange-600 font-medium hover:underline flex items-center gap-0.5">
@@ -1526,11 +1529,12 @@ function OrderView({ ideas, updateIdea, onCardClick }) {
                         <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium ${
                           idea.status === 'idea'      ? 'bg-orange-100 text-orange-600' :
                           idea.status === 'draft'     ? 'bg-blue-100 text-blue-600' :
+                          idea.status === 'editing'   ? 'bg-amber-100 text-amber-600' :
                           idea.status === 'scheduled' ? 'bg-violet-100 text-violet-600' :
                           idea.status === 'published' ? 'bg-green-100 text-green-600' :
                           'bg-emerald-100 text-emerald-600'
                         }`}>
-                          {idea.status === 'idea' ? 'Ideia' : idea.status === 'draft' ? 'Rascunho' : idea.status === 'scheduled' ? 'Agendado' : idea.status === 'published' ? 'Publicado' : 'Pronto'}
+                          {idea.status === 'idea' ? 'Ideia' : idea.status === 'draft' ? 'Rascunho' : idea.status === 'editing' ? 'Editando' : idea.status === 'scheduled' ? 'Agendado' : idea.status === 'published' ? 'Publicado' : 'Pronto'}
                         </span>
                       </div>
                     )}
@@ -1546,7 +1550,7 @@ function OrderView({ ideas, updateIdea, onCardClick }) {
   )
 }
 
-const STATUS_LABELS_FILTER   = { all: 'Todos Status',      idea: 'Ideia', draft: 'Rascunho', ready: 'Pronto', scheduled: 'Agendado', published: 'Publicado' }
+const STATUS_LABELS_FILTER   = { all: 'Todos Status',      idea: 'Ideia', draft: 'Rascunho', editing: 'Editando', ready: 'Pronto', scheduled: 'Agendado', published: 'Publicado' }
 const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium: 'Média',   low: 'Baixa' }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -1722,7 +1726,7 @@ export default function IdeasHub() {
                   {allPlatforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Plataforma' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                 </select>
                 <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                  {['all','idea','draft','ready','scheduled','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
+                  {['all','idea','draft','editing','ready','scheduled','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
                 </select>
                 <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
                   {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}

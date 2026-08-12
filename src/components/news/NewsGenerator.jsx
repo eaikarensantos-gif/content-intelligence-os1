@@ -132,6 +132,8 @@ export default function NewsGenerator() {
   const [translating, setTranslating] = useState(false)
   const [translated, setTranslated] = useState(null)
   const [showTranslated, setShowTranslated] = useState(false)
+  const [translateError, setTranslateError] = useState('')
+  const [themesError, setThemesError] = useState('')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
   const fetchNews = useCallback(async () => {
@@ -209,6 +211,7 @@ export default function NewsGenerator() {
     setAnalyzingThemes(true)
     setThemes([])
     setActiveTheme(null)
+    setThemesError('')
     try {
       const headlines = articles
         .slice(0, 40)
@@ -229,23 +232,26 @@ Regras:
 - Retorne APENAS o JSON, sem texto antes ou depois`
       const res = await callAI(apiKey, {
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
+        // até 40 manchetes pra agrupar em 5 temas — 1500 ainda cortava com
+        // um lote real de manchetes, testado ao vivo até achar uma margem segura
+        max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }],
       })
+      assertNotTruncated(res)
       const text = res.content?.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
-      if (match) {
-        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-        const mapped = parsed.themes.map(t => ({
-          label: t.label,
-          relevance: t.relevance,
-          count: t.indexes.length,
-          articleIndexes: t.indexes,
-        }))
-        setThemes(mapped)
-      }
-    } catch {
-      // silently fail
+      if (!match) throw new Error('A IA não retornou temas válidos.')
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+      const mapped = (parsed.themes || []).map(t => ({
+        label: t.label,
+        relevance: t.relevance,
+        count: t.indexes.length,
+        articleIndexes: t.indexes,
+      }))
+      if (mapped.length === 0) throw new Error('A IA não identificou temas nas manchetes atuais.')
+      setThemes(mapped)
+    } catch (err) {
+      setThemesError(err.message || 'Erro ao identificar temas. Tente novamente.')
     } finally {
       setAnalyzingThemes(false)
     }
@@ -358,6 +364,7 @@ Retorne numerado: "1. ... / 2. ... / 3. ... / 4. ... / 5. ..."${noNarration}`
     if (!selected || !apiKey) return
     if (translated) { setShowTranslated(v => !v); return }
     setTranslating(true)
+    setTranslateError('')
     try {
       const title = selected.title || ''
       const desc = stripHtml(selected.description || '').slice(0, 600)
@@ -369,18 +376,18 @@ Resumo: ${desc}
 Retorne JSON: {"titulo": "...", "resumo": "..."}`
       const res = await callAI(apiKey, {
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }],
       })
+      assertNotTruncated(res)
       const text = res.content?.find(b => b.type === 'text')?.text || ''
       const match = text.match(/\{[\s\S]*\}/)
-      if (match) {
-        const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-        setTranslated({ title: parsed.titulo, description: parsed.resumo })
-        setShowTranslated(true)
-      }
-    } catch {
-      // silently fail, keep original
+      if (!match) throw new Error('A IA não retornou uma tradução válida.')
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+      setTranslated({ title: parsed.titulo, description: parsed.resumo })
+      setShowTranslated(true)
+    } catch (err) {
+      setTranslateError(err.message || 'Erro ao traduzir. Tente novamente.')
     } finally {
       setTranslating(false)
     }
@@ -574,6 +581,9 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
                 : <><Sparkles size={11} /> Identificar temas da semana</>}
             </button>
           )}
+          {themesError && (
+            <p className="text-[10px] text-red-500 mb-2 px-0.5">{themesError}</p>
+          )}
           {/* Busca */}
           <input
             type="text"
@@ -709,6 +719,10 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
                   </button>
                 </div>
               </div>
+
+              {translateError && (
+                <p className="text-[11px] text-red-500 mt-1.5">{translateError}</p>
+              )}
 
               {/* Format selector */}
               <div className="flex gap-2 mt-3">
