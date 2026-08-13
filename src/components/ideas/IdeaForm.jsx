@@ -726,7 +726,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
             <div className="mt-2">
               <FactFinder
                 topic={[form.title, form.description].filter(Boolean).join(' — ')}
-                onInsert={(fact) => set('script', (form.script?.trim() ? form.script.trim() + '\n\n' : '') + fact)}
+                onInsert={(fact, link) => {
+                  set('script', (form.script?.trim() ? form.script.trim() + '\n\n' : '') + fact)
+                  if (link) addLink(link)
+                }}
               />
             </div>
             {form.script?.trim() && (
