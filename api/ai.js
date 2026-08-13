@@ -157,6 +157,24 @@ async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking,
       .map((c) => c.web)
       .filter((w) => w?.uri && w?.title && !seen.has(w.title) && seen.add(w.title))
       .slice(0, 8)
+
+    // groundingSupports liga trechos específicos do texto gerado aos chunks
+    // que os embasam — é o jeito confiável de saber QUAL fonte respalda QUAL
+    // dado, em vez de confiar no modelo lembrar de citar a URL certa dentro
+    // do JSON ou tentar casar nome de fonte por string (falha na maioria dos
+    // casos, porque o título do resultado de busca raramente é igual ao nome
+    // da instituição citada no texto).
+    const supports = candidate.groundingMetadata?.groundingSupports || []
+    responseBody.grounding_supports = supports
+      .map((s) => ({
+        text: s.segment?.text || '',
+        sources: (s.groundingChunkIndices || [])
+          .map((i) => chunks[i]?.web)
+          .filter((w) => w?.uri)
+          .map((w) => ({ uri: w.uri, title: w.title || null })),
+      }))
+      .filter((s) => s.text.trim().length > 0 && s.sources.length > 0)
+      .slice(0, 40)
   }
 
   return { status: 200, body: responseBody }
