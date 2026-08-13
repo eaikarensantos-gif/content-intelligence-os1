@@ -98,7 +98,12 @@ Responda EXCLUSIVAMENTE com JSON válido, sem markdown, sem texto antes ou depoi
         body: JSON.stringify({
           model: 'claude-sonnet-5',
           grounding: true,
-          max_tokens: 2000,
+          // Cada dado agora carrega um campo "link" com a URL completa da
+          // fonte — a resposta ficou maior que quando só tinha dado/fonte/ano,
+          // e como o thinking budget do Gemini consome metade de max_tokens
+          // (ver callGeminiMessages em api/ai.js), 2000 não deixava espaço o
+          // bastante e a resposta vinha cortada (stop_reason max_tokens).
+          max_tokens: 3500,
           messages: [{ role: 'user', content: prompt }],
         }),
       })
