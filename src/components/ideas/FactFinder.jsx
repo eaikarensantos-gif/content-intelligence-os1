@@ -11,6 +11,27 @@ function stripCitationMarkers(text) {
   return (text || '').replace(/\s*\[[\d.]+\]?/g, '').trim()
 }
 
+// Só aceita um link se for de fato uma URL http(s) — a IA às vezes escreve
+// "null" como string ou inventa um formato que não é um link de verdade.
+function validUrl(link) {
+  if (!link || typeof link !== 'string') return null
+  try {
+    const u = new URL(link.trim())
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.toString() : null
+  } catch {
+    return null
+  }
+}
+
+// Quando o modelo não retorna o link do dado, tenta casar o nome da fonte
+// com um dos resultados de busca consultados (grounding_sources) pelo título.
+function matchSourceLink(fonte, sources) {
+  if (!fonte || !sources?.length) return null
+  const needle = fonte.toLowerCase()
+  const hit = sources.find((s) => s.title && (needle.includes(s.title.toLowerCase()) || s.title.toLowerCase().includes(needle)))
+  return hit ? validUrl(hit.uri) : null
+}
+
 /**
  * Busca dados reais e verificáveis (com fonte nomeada) pra enriquecer um
  * roteiro, usando grounding com Google Search no Gemini — não é o modelo
@@ -39,11 +60,12 @@ Busque e traga até 4 dados concretos e verificáveis (estatísticas, percentuai
 REGRAS OBRIGATÓRIAS:
 - Cada dado precisa ser um número ou fato específico, nunca uma afirmação vaga
 - Cite o nome da fonte (instituição, veículo de imprensa, pesquisa) exatamente como aparece na busca — NUNCA invente uma fonte
+- Para cada dado, inclua a URL real e completa da matéria/página de onde ele veio — precisa ser um link de verdade, um dos resultados da busca. NUNCA invente ou monte uma URL. Se não tiver certeza absoluta do link exato daquele dado, deixe "link" como null
 - Se não encontrar dado real e verificável sobre o tema, não invente — retorne menos itens ou nenhum
 - Ano da publicação/pesquisa, se disponível
 
 Responda EXCLUSIVAMENTE com JSON válido, sem markdown, sem texto antes ou depois:
-{"dados": [{"dado": "texto do dado com o número específico", "fonte": "nome da instituição ou veículo", "ano": "20XX ou null"}]}`
+{"dados": [{"dado": "texto do dado com o número específico", "fonte": "nome da instituição ou veículo", "ano": "20XX ou null", "link": "URL real da matéria/página ou null"}]}`
 
       const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
@@ -65,8 +87,13 @@ Responda EXCLUSIVAMENTE com JSON válido, sem markdown, sem texto antes ou depoi
       const parsed = extractJsonObject(text, 'A IA não retornou dados válidos.')
       const lista = Array.isArray(parsed.dados) ? parsed.dados : []
       if (lista.length === 0) throw new Error('Não encontrei dados reais e verificáveis pra esse tema. Tente descrever o tema de forma mais específica.')
-      setDados(lista.map((d) => ({ ...d, dado: stripCitationMarkers(d.dado) })))
-      setFontesConsultadas(data.grounding_sources || [])
+      const sources = data.grounding_sources || []
+      setDados(lista.map((d) => ({
+        ...d,
+        dado: stripCitationMarkers(d.dado),
+        link: validUrl(d.link) || matchSourceLink(d.fonte, sources),
+      })))
+      setFontesConsultadas(sources)
     } catch (err) {
       setError(err.message || 'Erro ao buscar dados.')
     } finally {
@@ -107,17 +134,28 @@ Responda EXCLUSIVAMENTE com JSON válido, sem markdown, sem texto antes ou depoi
                 <div key={i} className="border border-gray-100 rounded-lg p-2 bg-gray-50/60 space-y-1">
                   <p className="text-[11px] text-gray-800 leading-relaxed">{d.dado}</p>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-emerald-700 font-medium">
-                      Fonte: {d.fonte}{d.ano && d.ano !== 'null' ? ` (${d.ano})` : ''}
-                    </span>
+                    {d.link ? (
+                      <a href={d.link} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium hover:text-emerald-800 hover:underline underline-offset-2 min-w-0">
+                        <span className="truncate">Fonte: {d.fonte}{d.ano && d.ano !== 'null' ? ` (${d.ano})` : ''}</span>
+                        <ExternalLink size={9} className="shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="text-[10px] text-emerald-700 font-medium truncate">
+                        Fonte: {d.fonte}{d.ano && d.ano !== 'null' ? ` (${d.ano})` : ''}
+                      </span>
+                    )}
                     <button
                       type="button"
-                      onClick={() => onInsert(`${d.dado} (Fonte: ${d.fonte}${d.ano && d.ano !== 'null' ? `, ${d.ano}` : ''})`)}
+                      onClick={() => onInsert(`${d.dado} (Fonte: ${d.fonte}${d.ano && d.ano !== 'null' ? `, ${d.ano}` : ''})`, d.link)}
                       className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-violet-600 hover:text-violet-800 transition-colors"
                     >
                       <Plus size={10} /> Inserir no roteiro
                     </button>
                   </div>
+                  {!d.link && (
+                    <p className="text-[9px] text-amber-500">Link exato não confirmado — confira nas fontes consultadas abaixo antes de publicar.</p>
+                  )}
                 </div>
               ))}
 
