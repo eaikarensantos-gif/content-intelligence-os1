@@ -25,11 +25,36 @@ function validUrl(link) {
 
 // Quando o modelo não retorna o link do dado, tenta casar o nome da fonte
 // com um dos resultados de busca consultados (grounding_sources) pelo título.
+// É o fallback mais fraco — só entra em ação se os dois de cima falharem.
 function matchSourceLink(fonte, sources) {
   if (!fonte || !sources?.length) return null
   const needle = fonte.toLowerCase()
   const hit = sources.find((s) => s.title && (needle.includes(s.title.toLowerCase()) || s.title.toLowerCase().includes(needle)))
   return hit ? validUrl(hit.uri) : null
+}
+
+// O jeito confiável de achar o link de UM dado específico: o Gemini retorna
+// groundingSupports, que liga trechos exatos do texto que ele gerou aos
+// resultados de busca que os embasam. Casando o texto do dado contra esses
+// trechos a gente pega a fonte que de fato respalda aquele número — sem
+// depender do modelo lembrar de preencher o campo "link" no JSON.
+function matchSupportLink(dadoText, supports) {
+  if (!dadoText || !supports?.length) return null
+  const clean = stripCitationMarkers(dadoText).toLowerCase()
+  let best = null
+  let bestOverlap = 0
+  for (const s of supports) {
+    const segText = stripCitationMarkers(s.text).toLowerCase()
+    if (segText.length < 12) continue
+    const overlap = clean.includes(segText) ? segText.length : (segText.includes(clean) ? clean.length : 0)
+    if (overlap > bestOverlap) { bestOverlap = overlap; best = s }
+  }
+  if (!best) return null
+  for (const src of best.sources) {
+    const url = validUrl(src.uri)
+    if (url) return url
+  }
+  return null
 }
 
 /**
@@ -88,10 +113,11 @@ Responda EXCLUSIVAMENTE com JSON válido, sem markdown, sem texto antes ou depoi
       const lista = Array.isArray(parsed.dados) ? parsed.dados : []
       if (lista.length === 0) throw new Error('Não encontrei dados reais e verificáveis pra esse tema. Tente descrever o tema de forma mais específica.')
       const sources = data.grounding_sources || []
+      const supports = data.grounding_supports || []
       setDados(lista.map((d) => ({
         ...d,
         dado: stripCitationMarkers(d.dado),
-        link: validUrl(d.link) || matchSourceLink(d.fonte, sources),
+        link: validUrl(d.link) || matchSupportLink(d.dado, supports) || matchSourceLink(d.fonte, sources),
       })))
       setFontesConsultadas(sources)
     } catch (err) {
