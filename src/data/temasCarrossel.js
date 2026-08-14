@@ -92,6 +92,19 @@ export const TEMAS_CARROSSEL = [
       'O mesmo prompt não serve pro roteirista, pro editor de vídeo e pro músico — e é aí que a IA genérica falha',
     ],
   },
+  {
+    categoria: 'Temas Polêmicos — IA e mercado de trabalho',
+    temas: [
+      'Quem vai perder o emprego pra IA já devia ter sido demitido antes',
+      "Empresa que corta time e chama de 'eficiência com IA' tá mentindo pro mercado, não só pro funcionário",
+      'Se o seu trabalho pode ser substituído por um prompt, o problema começou muito antes da IA existir',
+      "'Aprenda IA ou fique pra trás' é a nova versão de 'trabalhe 80h ou não é comprometido'",
+      "A vaga que pede '5 anos de experiência em IA' não sabe o que tá contratando — só sabe que tá com medo de ficar pra trás",
+      "Quem mais lucra com o pânico de 'a IA vai tirar seu emprego' são os cursos de IA, não as empresas",
+      'Sênior que se recusa a usar IA por orgulho vai perder pro júnior que usa — mas sênior que usa sem critério vai perder pro júnior que pensa',
+      'O emprego que a IA "tirou" já tinha sido esvaziado de decisão há anos — só ninguém tinha coragem de admitir',
+    ],
+  },
 ]
 
 // Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
