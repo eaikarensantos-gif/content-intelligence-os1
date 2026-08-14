@@ -139,6 +139,15 @@ async function enrichBooks(items) {
       // Aceita só um volume cujo título realmente corresponde ao indicado —
       // o 1º resultado de busca fuzzy pode ser um livro sem relação nenhuma.
       const vol = (data.items || []).find((v) => similarity(item.titulo, v.volumeInfo?.title) >= 0.5)
+      // Link real confirmado pela IA via busca na web tem prioridade;
+      // o Google Books só complementa com a capa.
+      if (item.url) {
+        return {
+          ...item,
+          capa: vol?.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
+          verified: true,
+        }
+      }
       if (!vol) return item
       const tituloReal = vol.volumeInfo?.title || item.titulo
       const autorReal = vol.volumeInfo?.authors?.join(', ') || item.autor
@@ -159,8 +168,13 @@ async function enrichBooks(items) {
 }
 
 async function enrichVideos(items, youtubeApiKey) {
-  if (!youtubeApiKey) return items
   return Promise.all(items.map(async (item) => {
+    // Link direto do vídeo confirmado pela IA via busca na web — não precisa
+    // da YouTube API.
+    if (item.url && /youtube\.com\/watch|youtu\.be\//.test(item.url)) {
+      return { ...item, verified: true }
+    }
+    if (!youtubeApiKey) return item
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.canal || ''}`)
       const lang = item.idioma === 'PT' ? '&relevanceLanguage=pt&regionCode=BR' : ''
@@ -189,7 +203,7 @@ async function enrichVideos(items, youtubeApiKey) {
   }))
 }
 
-const PROMPT = (t, depth) => `Você é um curador de conteúdo educacional com foco em profundidade real.
+const PROMPT = (t, depth, comBusca) => `Você é um curador de conteúdo educacional com foco em profundidade real.
 
 Tema: "${t}"
 Nível: ${depth === 'avancado' ? 'avançado — a pessoa já conhece o básico' : 'intermediário — conhece o tema mas quer aprofundar'}
@@ -206,29 +220,131 @@ REGRAS:
 9. Só inclua o que você tem certeza que existe, com título e autor/canal EXATOS — nunca invente nem aproxime nomes, pois eles geram os links.
 10. Exatamente 4 itens por categoria.
 11. Descrições sempre em português e curtas: máximo 12 palavras cada.
-12. Em cada item, preencha "idioma" com "PT" (conteúdo em português) ou "EN" (inglês).
+12. Em cada item, preencha "idioma" com "PT" (conteúdo em português) ou "EN" (inglês).${comBusca ? `
+13. LINKS REAIS (obrigatório): use a busca na web para confirmar que cada item existe e preencha "url" com o link real e específico:
+   - livros: página do produto na amazon.com.br (contendo /dp/); se não achar, a página da editora
+   - vídeos: URL exata do vídeo (https://www.youtube.com/watch?v=...)
+   - podcasts: link do episódio no Spotify ou YouTube
+   - cursos: página oficial do curso na plataforma
+   - artigos: URL do próprio artigo
+   - ferramentas: site oficial da ferramenta
+   A "url" DEVE ser copiada exatamente de um resultado das buscas que você fez nesta conversa — NUNCA monte ou complete uma URL de memória, nunca use link de página de busca.
+14. ARTIGOS só podem vir dos resultados das suas buscas: use o título exato que apareceu no resultado e a URL exata do resultado. Se as buscas não retornarem artigos bons sobre o tema, retorne menos de 4 artigos — é proibido inventar título de artigo.
+15. Se não conseguir confirmar o link exato de um item, troque-o por outro que você consiga confirmar, ou deixe "url" como "".` : ''}
 
 Retorne APENAS JSON válido sem texto adicional:
 {
   "livros": [
-    { "titulo": "string", "autor": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "autor": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "videos": [
-    { "titulo": "string", "canal": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "canal": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "podcasts": [
-    { "titulo": "string", "programa": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "programa": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "cursos": [
-    { "titulo": "string", "plataforma": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "plataforma": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "artigos": [
-    { "titulo": "string", "fonte": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "fonte": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ],
   "ferramentas": [
-    { "titulo": "string", "tipo": "string", "descricao": "string", "idioma": "PT" }
+    { "titulo": "string", "tipo": "string", "descricao": "string", "idioma": "PT", "url": "" }
   ]
 }`
+
+// Chama a API da Anthropic em streaming; com useWebSearch, habilita a
+// ferramenta de busca na web para a IA confirmar cada indicação e obter o
+// link real. Streaming evita a conexão ficar muda por minutos (e travar)
+// enquanto as buscas rodam, e permite mostrar progresso na tela.
+async function callClaude(apiKey, messages, useWebSearch, onSearch, signal) {
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 8192,
+    stream: true,
+    messages,
+  }
+  if (useWebSearch) {
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8 }]
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+    signal,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    const e = new Error(err.error?.message || `Erro ${res.status}`)
+    e.status = res.status
+    throw e
+  }
+
+  // Reconstrói os blocos de conteúdo a partir dos eventos SSE.
+  const content = []
+  let stopReason = null
+  const handleEvent = (evt) => {
+    if (evt.type === 'error') {
+      throw new Error(evt.error?.message || 'Erro no stream da API')
+    } else if (evt.type === 'content_block_start') {
+      content[evt.index] = { ...evt.content_block }
+      if (evt.content_block.type === 'server_tool_use') {
+        content[evt.index]._json = ''
+        onSearch?.()
+      }
+    } else if (evt.type === 'content_block_delta') {
+      const block = content[evt.index]
+      if (!block) return
+      if (evt.delta.type === 'text_delta') block.text = (block.text || '') + evt.delta.text
+      else if (evt.delta.type === 'input_json_delta') block._json = (block._json || '') + evt.delta.partial_json
+      else if (evt.delta.type === 'thinking_delta') block.thinking = (block.thinking || '') + evt.delta.thinking
+    } else if (evt.type === 'content_block_stop') {
+      const block = content[evt.index]
+      if (block && block._json !== undefined) {
+        try { block.input = JSON.parse(block._json || '{}') } catch { block.input = {} }
+        delete block._json
+      }
+    } else if (evt.type === 'message_delta') {
+      stopReason = evt.delta?.stop_reason || stopReason
+    }
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const parts = buffer.split('\n\n')
+    buffer = parts.pop()
+    for (const part of parts) {
+      const line = part.split('\n').find((l) => l.startsWith('data:'))
+      if (!line) continue
+      const payload = line.slice(5).trim()
+      if (!payload) continue
+      let evt
+      try { evt = JSON.parse(payload) } catch { continue }
+      handleEvent(evt)
+    }
+  }
+  return { content, stop_reason: stopReason }
+}
+
+// Com busca na web, a resposta vem em vários blocos (buscas + texto);
+// o JSON final é a junção de todos os blocos de texto.
+function extractText(data) {
+  return (data.content || [])
+    .filter((b) => b.type === 'text')
+    .map((b) => b.text)
+    .join('\n')
+}
 
 export default function CommunityResources() {
   const apiKey = localStorage.getItem(LS_KEY) || ''
@@ -240,6 +356,8 @@ export default function CommunityResources() {
   const [error, setError]     = useState(null)
   const [results, setResults] = useState(null)
   const [lastTopic, setLastTopic] = useState('')
+  const [searchCount, setSearchCount] = useState(0)
+  const [noWebSearch, setNoWebSearch] = useState(false)
 
   async function buscar() {
     const t = topic.trim()
@@ -248,30 +366,55 @@ export default function CommunityResources() {
     setLoading(true)
     setError(null)
     setResults(null)
+    setSearchCount(0)
+
+    // Tempo-limite duro: melhor falhar com mensagem clara do que carregar
+    // para sempre.
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 240_000)
+    const onSearch = () => setSearchCount((n) => n + 1)
 
     try {
-      const res = await fetch('/api/ai?action=gemini', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-5',
-          thinking: { type: 'adaptive' },
-          output_config: { effort: 'medium' },
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: PROMPT(t, depth) }],
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
+      let useWebSearch = true
+      let messages = [{ role: 'user', content: PROMPT(t, depth, true) }]
+      let data
+      try {
+        data = await callClaude(apiKey, messages, true, onSearch, controller.signal)
+      } catch (e) {
+        // Chave sem acesso à busca na web → refaz sem a ferramenta
+        // (os links caem nos fallbacks de busca por categoria).
+        if (e.status !== 400) throw e
+        useWebSearch = false
+        messages = [{ role: 'user', content: PROMPT(t, depth, false) }]
+        data = await callClaude(apiKey, messages, false, onSearch, controller.signal)
       }
-      const data = await res.json()
-      const raw = data.content?.find(b => b.type === 'text')?.text || ''
-      const parsed = parseJSON(raw)
+      // O servidor pausa o loop de buscas após várias rodadas; reenviar a
+      // conversa continua de onde parou.
+      let guard = 0
+      while (data.stop_reason === 'pause_turn' && guard++ < 3) {
+        messages = [...messages, { role: 'assistant', content: data.content }]
+        data = await callClaude(apiKey, messages, useWebSearch, onSearch, controller.signal)
+      }
+      const parsed = parseJSON(extractText(data))
+
+      // Sanitiza as URLs confirmadas pela IA: só aceita http(s) sem espaços;
+      // item com link real válido já conta como verificado.
+      Object.keys(parsed).forEach((k) => {
+        if (!Array.isArray(parsed[k])) return
+        parsed[k] = parsed[k].map((it) => {
+          const url = typeof it.url === 'string' && /^https?:\/\/\S+$/.test(it.url.trim())
+            ? it.url.trim()
+            : undefined
+          return { ...it, url, verified: !!url }
+        })
+      })
+
+      // Artigo sem link confirmado é quase sempre invenção — melhor mostrar
+      // menos artigos do que um que não existe.
+      if (useWebSearch && Array.isArray(parsed.artigos)) {
+        parsed.artigos = parsed.artigos.filter((it) => it.url)
+      }
+      setNoWebSearch(!useWebSearch)
 
       const [livros, videos] = await Promise.all([
         enrichBooks(parsed.livros || []),
@@ -281,8 +424,13 @@ export default function CommunityResources() {
       setResults({ ...parsed, livros, videos })
       setLastTopic(t)
     } catch (e) {
-      setError(e.message)
+      if (e.name === 'AbortError') {
+        setError('A busca demorou demais e foi cancelada. Tente novamente — se persistir, refaça com um tema mais específico.')
+      } else {
+        setError(e.message)
+      }
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
     }
   }
@@ -342,6 +490,13 @@ export default function CommunityResources() {
       )}
 
       {loading && (
+        <>
+          <p className="text-xs text-gray-500 flex items-center gap-2">
+            <Loader2 size={12} className="animate-spin text-violet-500" />
+            {searchCount > 0
+              ? `Verificando indicações na web — ${searchCount} pesquisa${searchCount !== 1 ? 's' : ''} feita${searchCount !== 1 ? 's' : ''}... (leva ~1 min)`
+              : 'Gerando indicações... a verificação de links na web pode levar ~1 minuto'}
+          </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {CATEGORIES.map((c) => (
             <div key={c.key} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden animate-pulse">
@@ -357,6 +512,7 @@ export default function CommunityResources() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {results && !loading && (
@@ -364,8 +520,10 @@ export default function CommunityResources() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="text-xs text-gray-400">
               Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
-              {!youtubeApiKey && (
-                <span className="ml-2 text-amber-500">· vídeos sem YouTube API (links de busca)</span>
+              {noWebSearch ? (
+                <span className="ml-2 text-red-500">· sua chave da API não tem busca na web — links não verificados</span>
+              ) : CATEGORIES.some(({ key }) => (results[key] || []).some((it) => !it.url)) && (
+                <span className="ml-2 text-amber-500">· itens sem link confirmado abrem na busca</span>
               )}
             </p>
             <button
