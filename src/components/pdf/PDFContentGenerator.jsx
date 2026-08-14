@@ -22,9 +22,50 @@ async function extractTextFromPDF(file) {
   for (let i = 1; i <= Math.min(pdf.numPages, 80); i++) {
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
-    pages.push(content.items.map((item) => item.str).join(' '))
+    pages.push(content.items.map((item) => item.str + (item.hasEOL ? '\n' : ' ')).join(''))
   }
   return { text: pages.join('\n\n'), pageCount: pdf.numPages }
+}
+
+async function fileToBase64(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000))
+  }
+  return btoa(binary)
+}
+
+// Fallback para PDFs escaneados (sem camada de texto): envia o PDF ao Claude,
+// que lê as páginas como imagem e transcreve o conteúdo.
+async function extractTextWithAI(file, pageCount) {
+  const apiKey = localStorage.getItem(LS_KEY) || ''
+  if (!apiKey) {
+    throw new Error('Este PDF parece ser escaneado (sem texto selecionável). Adicione sua chave de API Anthropic em Configurações para que a leitura seja feita com IA.')
+  }
+  if (file.size > 30 * 1024 * 1024) {
+    throw new Error('Este PDF parece ser escaneado e tem mais de 30 MB — acima do limite para leitura com IA. Reduza o tamanho do arquivo ou use um PDF com texto selecionável.')
+  }
+  if (pageCount > 100) {
+    throw new Error(`Este PDF parece ser escaneado e tem ${pageCount} páginas — a leitura com IA suporta até 100. Divida o arquivo ou use um PDF com texto selecionável.`)
+  }
+
+  const base64 = await fileToBase64(file)
+  const text = await callAnthropic(
+    [
+      { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+      {
+        type: 'text',
+        text: 'Este é o PDF de um curso. Transcreva todo o texto do documento, preservando títulos, módulos, aulas e a ordem do conteúdo. Não resuma nem comente — retorne apenas o texto transcrito.',
+      },
+    ],
+    'Você transcreve documentos com fidelidade. Responda apenas com o texto transcrito, sem comentários.',
+    8000,
+  )
+  if (!text.trim()) {
+    throw new Error('Não foi possível extrair texto deste PDF, mesmo com leitura por IA. Verifique se as páginas estão legíveis.')
+  }
+  return text
 }
 
 function chunkText(text, maxChars = 12000) {
@@ -370,6 +411,7 @@ function ResultCard({ format, item, index }) {
 export default function PDFContentGenerator() {
   const [pdfInfo, setPdfInfo] = useState(null)
   const [extracting, setExtracting] = useState(false)
+  const [extractStage, setExtractStage] = useState('text') // 'text' | 'ai'
   const [extractError, setExtractError] = useState(null)
 
   // Lesson titles
@@ -390,12 +432,14 @@ export default function PDFContentGenerator() {
   const inputRef = useRef(null)
 
   const handleFile = useCallback(async (file) => {
-    if (!file || file.type !== 'application/pdf') {
+    const isPdf = file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''))
+    if (!isPdf) {
       setExtractError('Por favor, envie um arquivo PDF.')
       return
     }
     setExtractError(null)
     setExtracting(true)
+    setExtractStage('text')
     setPdfInfo(null)
     setLessons([])
     setSelectedLesson(null)
@@ -405,8 +449,23 @@ export default function PDFContentGenerator() {
     setCustomTopic('')
 
     try {
-      const { text, pageCount } = await extractTextFromPDF(file)
-      if (!text.trim()) throw new Error('Não foi possível extrair texto deste PDF. Verifique se o arquivo não é uma imagem escaneada.')
+      let text, pageCount
+      try {
+        ({ text, pageCount } = await extractTextFromPDF(file))
+      } catch (err) {
+        if (err?.name === 'PasswordException') {
+          throw new Error('Este PDF é protegido por senha. Remova a senha e envie novamente.')
+        }
+        throw new Error('Não foi possível abrir este PDF. Verifique se o arquivo não está corrompido.')
+      }
+
+      // Pouco ou nenhum texto selecionável → provavelmente escaneado; lê com IA
+      const minChars = 40 * Math.min(pageCount, 5)
+      if (text.trim().length < minChars) {
+        setExtractStage('ai')
+        text = await extractTextWithAI(file, pageCount)
+      }
+
       const info = { text, pageCount, name: file.name, size: file.size }
       setPdfInfo(info)
       setExtracting(false)
@@ -497,7 +556,12 @@ export default function PDFContentGenerator() {
         {extracting ? (
           <div className="space-y-2">
             <Loader2 size={32} className="animate-spin text-orange-500 mx-auto" />
-            <p className="text-sm text-gray-600">Extraindo texto do PDF…</p>
+            <p className="text-sm text-gray-600">
+              {extractStage === 'ai' ? 'PDF escaneado detectado — lendo com IA…' : 'Extraindo texto do PDF…'}
+            </p>
+            {extractStage === 'ai' && (
+              <p className="text-xs text-gray-400">Isso pode levar até um minuto para PDFs grandes.</p>
+            )}
           </div>
         ) : pdfInfo ? (
           <div className="space-y-2">
@@ -517,7 +581,7 @@ export default function PDFContentGenerator() {
           <div className="space-y-2">
             <Upload size={32} className="text-gray-400 mx-auto" />
             <p className="text-sm font-medium text-gray-700">Arraste o PDF aqui ou clique para selecionar</p>
-            <p className="text-xs text-gray-400">Suporte a PDFs com texto selecionável (não escaneados)</p>
+            <p className="text-xs text-gray-400">PDFs com texto selecionável ou escaneados (lidos com IA)</p>
           </div>
         )}
       </div>

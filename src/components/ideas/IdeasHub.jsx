@@ -7,7 +7,7 @@ import {
   Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
   ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound, Trash2,
   TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal, ListOrdered,
-  FlaskConical, Megaphone,
+  FlaskConical, Megaphone, Film,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
@@ -1662,6 +1662,20 @@ export default function IdeasHub() {
           ))}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => {
+              setFilterFormat((f) => (f === 'stories' ? 'all' : 'stories'))
+              setShowFilters(true)
+              if (tab !== 'kanban' && tab !== 'calendar' && tab !== 'order') setTab('kanban')
+            }}
+            className={`text-xs sm:text-sm px-3 sm:px-4 rounded-xl border font-medium flex items-center gap-1.5 transition-all ${
+              filterFormat === 'stories'
+                ? 'bg-amber-50 text-amber-700 border-amber-300'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <Film size={14} /> <span className="hidden sm:inline">Ideias p/ Stories</span>
+          </button>
           <button onClick={() => navigate('/generate')} className="btn-secondary text-xs sm:text-sm px-3 sm:px-4">
             <Zap size={14} /> <span className="hidden sm:inline">Gerar com IA</span>
           </button>
