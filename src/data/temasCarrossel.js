@@ -118,6 +118,21 @@ export const TEMAS_CARROSSEL = [
       'Checar a resposta da IA do mesmo jeito compulsivo que checa notificação — não por necessidade, por hábito',
     ],
   },
+  {
+    categoria: 'Temas Polêmicos — Mercado de Trabalho e Cultura Corporativa',
+    temas: [
+      'Chamar demissão em massa de "reestruturação" não muda o que é — só mostra quem redigiu o comunicado',
+      'Startup que se descreve como "família" é a primeira a te cortar quando o caixa aperta',
+      "'Trabalho remoto quebra a cultura da empresa' é discurso de quem confunde cultura com controle",
+      'Unlimited PTO é a política mais elogiada e menos usada — porque ninguém quer ser o primeiro a tirar',
+      "'Ser dono do problema' virou forma elegante de dar responsabilidade sem dar autoridade nem aumento junto",
+      'Quem posta "orgulho de fazer parte desse time" um dia antes do layoff também foi usado — só que pelo marketing de RH',
+      "'Feedback radical' em startup costuma ser honestidade de cima pra baixo e silêncio de baixo pra cima",
+      'Chamar de "salário emocional" o que devia ser aumento é a forma mais barata de reter gente boa',
+      'A vaga que exige "paixão pela missão" quer alguém disposto a trabalhar mais por menos e sem reclamar',
+      'Promover quem tem mais tempo de casa em vez de quem entrega mais é conforto disfarçado de meritocracia',
+    ],
+  },
 ]
 
 // Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
