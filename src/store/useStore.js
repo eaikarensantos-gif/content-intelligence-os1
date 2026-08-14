@@ -582,6 +582,20 @@ const useStore = create(
       deleteHybridArchetype: (id) =>
         set((s) => ({ hybridArchetypes: s.hybridArchetypes.filter((h) => h.id !== id) })),
 
+      // ── Referências Virais (Vídeos Virais) ────────────────
+      viralReferences: [],
+
+      addViralReference: (ref) =>
+        set((s) => ({
+          viralReferences: [
+            { id: uuidv4(), created_at: new Date().toISOString(), ...ref },
+            ...s.viralReferences,
+          ],
+        })),
+
+      removeViralReference: (id) =>
+        set((s) => ({ viralReferences: s.viralReferences.filter((v) => v.id !== id) })),
+
       // ── Supabase sync ─────────────────────────────────────
       dbStatus: 'idle',
       dbError: '',
@@ -603,6 +617,7 @@ const useStore = create(
             ...(data.favorites?.length    ? { favorites: data.favorites }       : {}),
             ...(data.archetypes?.length   ? { archetypes: data.archetypes }     : {}),
             ...(data.hybridArchetypes?.length ? { hybridArchetypes: data.hybridArchetypes } : {}),
+            ...(data.viralReferences?.length  ? { viralReferences: data.viralReferences }  : {}),
             ...(data.thoughtCaptures?.length  ? { thoughtCaptures: data.thoughtCaptures }   : {}),
             ...(data.videoAnalyses?.length    ? { videoAnalyses: data.videoAnalyses }       : {}),
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
@@ -639,6 +654,7 @@ const useStore = create(
           archetypes: [],
           hybridArchetypes: [],
           favorites: [],
+          viralReferences: [],
         }),
     }),
     {
@@ -677,6 +693,7 @@ const useStore = create(
         archetypes: s.archetypes,
         hybridArchetypes: s.hybridArchetypes,
         favorites: s.favorites,
+        viralReferences: s.viralReferences,
         pricingProducts: s.pricingProducts,
         proposals: s.proposals,
         hiddenReportTags: s.hiddenReportTags,

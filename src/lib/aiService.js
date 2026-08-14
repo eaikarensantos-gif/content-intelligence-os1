@@ -244,6 +244,11 @@ export async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
   return platformSearch({ action: 'tiktok-search', rapidApiKey, rapidApiHost, query })
 }
 
+export async function instagramSearch(apifyToken, apifyActorId, query) {
+  if (!apifyToken?.trim()) throw new Error('Apify API token não configurado.')
+  return platformSearch({ action: 'instagram-search', apifyToken, apifyActorId, query })
+}
+
 // ─── Whisper transcription (via serverless proxy) ─────────────────────────────
 
 export async function transcribeAudio(openaiApiKey, audioUrl) {

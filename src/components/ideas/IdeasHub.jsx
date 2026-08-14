@@ -13,6 +13,7 @@ import useStore from '../../store/useStore'
 import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
 import IdeaForm from './IdeaForm'
 import RepositioningTest from './RepositioningTest'
+import ViralReferences from './ViralReferences'
 import DailyAgentBanner from './DailyAgentBanner'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import Modal from '../common/Modal'
@@ -1205,6 +1206,7 @@ const TABS = [
   { id: 'order',    label: 'Ordem',     icon: ListOrdered },
   { id: 'week',     label: 'Semana',    icon: Target },
   { id: 'teste',    label: 'Teste 6 semanas', icon: FlaskConical },
+  { id: 'viral',    label: 'Vídeos Virais', icon: Flame },
 ]
 
 // ─── Plano Semanal ────────────────────────────────────────────────────────────
@@ -1815,6 +1817,9 @@ export default function IdeasHub() {
 
       {/* Teste de reposicionamento — 6 semanas / 18 peças */}
       {tab === 'teste' && <RepositioningTest onOpenIdea={openEdit} />}
+
+      {/* Vídeos Virais — busca por tema, analisa (legenda + métricas) e salva */}
+      {tab === 'viral' && <ViralReferences />}
 
       {/* Visualização Plano Semanal */}
       {tab === 'week' && (

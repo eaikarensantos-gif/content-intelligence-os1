@@ -1,4 +1,4 @@
-import { youtubeSearch, dailymotionSearch, vimeoSearch, tiktokSearch } from './aiService'
+import { youtubeSearch, dailymotionSearch, vimeoSearch, tiktokSearch, instagramSearch } from './aiService'
 
 // localStorage slots for the per-platform credentials. YouTube reuses the same
 // slot the rest of the app already uses.
@@ -6,6 +6,8 @@ export const LS_YOUTUBE = 'cio-youtube-key'
 export const LS_VIMEO = 'cio-vimeo-token'
 export const LS_RAPIDAPI = 'cio-rapidapi-key'
 export const LS_RAPIDAPI_HOST = 'cio-rapidapi-tiktok-host'
+export const LS_APIFY = 'cio-apify-token'
+export const LS_APIFY_ACTOR = 'cio-apify-instagram-actor'
 
 function embedUrl(platform, videoId) {
   switch (platform) {
@@ -13,6 +15,7 @@ function embedUrl(platform, videoId) {
     case 'dailymotion': return `https://www.dailymotion.com/embed/video/${videoId}`
     case 'vimeo':       return `https://player.vimeo.com/video/${videoId}`
     case 'tiktok':      return `https://www.tiktok.com/embed/v2/${videoId}`
+    case 'instagram':   return ''
     default:            return ''
   }
 }
@@ -36,6 +39,7 @@ export function normalizeResult(raw, category, query) {
     thumbnailUrl: raw.thumbnail || fallbackThumb(platform, videoId),
     embedUrl: embedUrl(platform, videoId),
     url: raw.url || '',
+    caption: raw.caption || '',
     viewCount: raw.viewCount || null,
     likeCount: raw.likeCount || null,
     engagementRate: raw.engagementRate || null,
@@ -67,6 +71,12 @@ export function getEnabledPlatforms() {
   if (rapidKey) {
     const host = (localStorage.getItem(LS_RAPIDAPI_HOST) || '').trim()
     platforms.push({ id: 'tiktok', label: 'TikTok', run: (q) => tiktokSearch(rapidKey, host, q) })
+  }
+
+  const apifyToken = (localStorage.getItem(LS_APIFY) || '').trim()
+  if (apifyToken) {
+    const actorId = (localStorage.getItem(LS_APIFY_ACTOR) || '').trim()
+    platforms.push({ id: 'instagram', label: 'Instagram', run: (q) => instagramSearch(apifyToken, actorId, q) })
   }
 
   return platforms
