@@ -494,11 +494,30 @@ CRITÉRIO DE APROVAÇÃO:
 Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
 Se promete → reprova. Se é específica e reconhecível → aprovado.`
 
+/* ── Fórmulas de Gancho de Referência — padrões sintáticos (não frases prontas)
+   que sobreviveram ao filtro anti-clichê de Karen: sem "ninguém fala/conta",
+   sem hedge ("talvez", "acho que"), sem clickbait manipulador, sem hype vago
+   ("isso muda tudo"). Servem de referência de MOLDE pro gerador de ganchos —
+   nunca pra copiar a frase literal, sempre preenchida com o tema específico. ── */
+const HOOK_FORMULAS = [
+  { formula: 'Você não precisa de mais [coisa que todo mundo empilha].', exemplo: 'Você não precisa de mais dashboard. Precisa de um critério pra decidir o que olhar nele.' },
+  { formula: 'Você está complicando [algo específico que devia ser simples].', exemplo: 'Você está complicando uma decisão que só precisava de um critério, não de uma planilha nova.' },
+  { formula: 'Isso não é chamativo, mas [o que resolveu de verdade].', exemplo: 'Isso não é chamativo, mas foi o que salvou o mês desse cliente.' },
+  { formula: 'Uma decisão [específica] mudou [consequência concreta].', exemplo: 'Uma decisão de preço mudou o resultado inteiro desse contrato.' },
+  { formula: 'Preciso falar sobre [algo específico e direto, sem hedge].', exemplo: 'Preciso falar sobre o motivo real de vocês não fecharem aquele contrato.' },
+  { formula: 'Você está prestando atenção em [coisa errada], não em [coisa certa].', exemplo: 'Você está prestando atenção no preço do concorrente, não no motivo de perder cliente.' },
+  { formula: 'Você provavelmente está deixando passar [algo específico].', exemplo: 'Você provavelmente está deixando passar o dado que já respondeu essa pergunta.' },
+  { formula: 'O conselho que [público] segue é o que [consequência negativa específica].', exemplo: 'O conselho que todo mundo segue pra precificar é exatamente o que te deixa preso na média do mercado.' },
+]
+
 const buildHookPrompt = (tema, roteiro, isPessoal) => `
 TEMA DO REELS: ${tema}
 ${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
 
-Gere 3 hooks de abertura para este reels — um de cada tipo.
+FÓRMULAS DE GANCHO DE REFERÊNCIA — use como molde de PADRÃO SINTÁTICO, nunca copie a frase literal nem o exemplo. Preencha cada colchete com algo específico do tema acima, não genérico:
+${HOOK_FORMULAS.map(h => `- "${h.formula}" (ex.: "${h.exemplo}")`).join('\n')}
+
+Gere 3 hooks de abertura para este reels — um de cada tipo. Pelo menos um dos 3 deve se inspirar numa das fórmulas acima; os outros podem seguir livres, desde que sigam as mesmas regras.
 
 Cada hook deve:
 - Prender nos primeiros 1-3 segundos
