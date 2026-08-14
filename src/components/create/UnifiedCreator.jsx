@@ -539,15 +539,16 @@ Responda EXCLUSIVAMENTE com JSON válido:
   ]
 }`
 
-const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto }) => `
+const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto, template }) => `
 TEMA: ${tema}
 ${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
 ${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
 ${gerarIdeia ? 'Crie uma ideia criativa para este tema — específica e concreta, não abstrata.' : ''}
 ${gerarTexto ? 'Crie um texto base para este tema — como observação real, não como artigo.' : ''}
+${template ? `\nESTRUTURA DE ROTEIRO: ${template.label}\n${template.estrutura}\nEssa estrutura substitui o passo 1 (roteiro principal) abaixo — siga exatamente essa sequência de partes em vez da sequência genérica situação/comportamento/leitura/tensão/pergunta. Os passos seguintes (variação emocional, variação provocativa, exercício prático, validação) continuam se aplicando normalmente sobre o roteiro gerado nessa estrutura.\n` : ''}
 
 Execute o protocolo:
-1. ROTEIRO PRINCIPAL: situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.
+1. ROTEIRO PRINCIPAL: ${template ? `siga a ESTRUTURA DE ROTEIRO definida acima (${template.label}).` : 'situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.'}
 2. VARIAÇÃO EMOCIONAL (mudança real — mais próxima, mais íntima — não cosmética)
 3. VARIAÇÃO PROVOCATIVA (mudança real — mais desconfortável, mais direta — não cosmética)
 4. EXERCÍCIO PRÁTICO: máximo 2 frases. Sempre no passado ou presente imediato. Sempre sobre comportamento próprio. Impossível responder sem memória específica.
@@ -929,6 +930,48 @@ const CAROUSEL_TEMPLATES = {
   },
 }
 
+/* ── Estruturas de Roteiro — Protocolo de Engajamento (Reels). Cada estrutura
+   define o formato do roteiro falado (o "passo 1" do protocolo), substituindo
+   a sequência genérica situação→comportamento→leitura→tensão→pergunta por uma
+   forma nomeada e testada. Os demais passos do protocolo (variação emocional,
+   variação provocativa, exercício prático, validação) continuam se aplicando
+   normalmente em cima do roteiro gerado. ── */
+const ENGAGEMENT_TEMPLATES = {
+  yapping: {
+    label: 'Yapping',
+    alavanca: 'retenção até o fim',
+    desc: 'Falar pra câmera como quem está pensando em voz alta — parece improviso, mas segue uma estrutura fixa em 5 partes',
+    estrutura: `Roteiro falado em 5 partes, sem saudação, sem introdução, sem "bom dia seguidores":
+
+1. O GANCHO — começa como no meio de um pensamento, não como abertura de vídeo.
+   ❌ Errado: "Bem-vindos ao meu canal", "Hoje eu trago", "Como muita gente já sabe"
+   ✅ Certo: "Desculpa, mas alguém precisava dizer isso" / "Faz 3 dias que eu penso nisso e não consigo parar" / "Uma cliente me falou uma coisa ontem e eu ainda tô processando"
+   Teste rápido: se a primeira frase funciona como cumprimento, apague.
+
+2. O BURACO — precisa ter algo que não fecha.
+   ❌ Errado: só explicar — isso é dado, e dado a pessoa passa reto.
+   ✅ Certo: deixar algo em aberto — isso é fofoca, e fofoca a pessoa assiste até o fim.
+   Receita: o que você fez → o que devia acontecer → o que aconteceu (spoiler: outra coisa).
+   Exemplo: "Baixei meus preços pela metade achando que ia vender o dobro. Vendi menos que no mês passado."
+   Esse buraco segura a atenção pelos próximos 20 segundos — sem ele, não sobra nada pra esperar.
+
+3. A EPIFANIA — o momento exato em que você pensou "epa... eu estava errado".
+   ❌ Errado (genérico, soa como conselho): "aprendi a conhecer melhor meu público"
+   ✅ Certo (específico, soa como confissão): "reli meus últimos 40 posts e em NENHUM deles eu dizia o que eu vendo"
+   Ninguém guarda um conselho. Todo mundo guarda uma confissão.
+
+4. A LIÇÃO — curta, soa como se você mesmo tivesse descoberto, se sustenta sozinha num comentário.
+   ❌ Errado: "acho que o importante é entender bem seu público e oferecer algo que ele realmente precise no momento certo"
+   ✅ Certo: "eu estava vendendo uma coisa que ninguém sabia que existia"
+   Teste: se a frase faz sentido sozinha, sem contexto nenhum, está pronta.
+
+5. O FECHAMENTO — termina onde começou, ecoando o gancho.
+   Abriu com "Desculpa, mas alguém precisava dizer isso" → fecha com "Pronto, já falei. Agora vai lá e revê seus primeiros 3 segundos."
+   Abriu com "Uma cliente me falou uma coisa ontem e eu ainda tô processando" → fecha com "Já processei, e acho que agora é sua vez também."
+   Um "bom, era isso, me segue pra mais" deixa o vídeo pendurado — parece cortado, não fechado.`,
+  },
+}
+
 /* ── Temas Sugeridos para Carrossel (compartilhado com o Captura de Pensamento — ver src/data/temasCarrossel.js) ── */
 
 // Detecta se dois textos são essencialmente o mesmo conteúdo (repetição literal
@@ -1042,6 +1085,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
+  const [engTemplate, setEngTemplate] = useState(null)
   const [engIdeia, setEngIdeia] = useState('')
   const [engTexto, setEngTexto] = useState('')
   const [engGerarIdeia, setEngGerarIdeia] = useState(false)
@@ -1618,7 +1662,7 @@ ${revText.trim()}`
           output_config: { effort: 'medium' },
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
-          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto }) }],
+          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
         }),
       })
       if (!res.ok) {
@@ -1904,8 +1948,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       platforms: ['instagram'],
       priority: 'medium',
       status: 'ready',
-      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20)],
-      source: 'Protocolo Anti-Emoji',
+      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20), ...(engTemplate ? [ENGAGEMENT_TEMPLATES[engTemplate].label.toLowerCase()] : [])],
+      source: engTemplate ? `Protocolo Anti-Emoji — ${ENGAGEMENT_TEMPLATES[engTemplate].label}` : 'Protocolo Anti-Emoji',
     })
     setEngSavedHub(true)
   }
@@ -2754,6 +2798,32 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 className="input text-sm w-full"
                 autoFocus
               />
+            </div>
+
+            {/* Estrutura de Roteiro */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                Estrutura de roteiro <span className="text-gray-300">(opcional)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {Object.entries(ENGAGEMENT_TEMPLATES).map(([key, t]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setEngTemplate(prev => prev === key ? null : key)}
+                    title={t.desc}
+                    className={clsx(
+                      'text-left px-2.5 py-2 rounded-lg border transition-all',
+                      engTemplate === key
+                        ? 'bg-violet-50 border-violet-300 text-violet-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                    )}
+                  >
+                    <p className="text-[11px] font-semibold leading-tight">{t.label}</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 capitalize">{t.alavanca}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Ideia */}
