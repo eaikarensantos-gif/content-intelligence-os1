@@ -11,6 +11,8 @@ const LS_YOUTUBE         = 'cio-youtube-key'
 const LS_VIMEO           = 'cio-vimeo-token'
 const LS_RAPIDAPI        = 'cio-rapidapi-key'
 const LS_RAPIDAPI_HOST   = 'cio-rapidapi-tiktok-host'
+const LS_APIFY           = 'cio-apify-token'
+const LS_APIFY_ACTOR     = 'cio-apify-instagram-actor'
 const SUPABASE_URL_KEY   = 'supabase-url'
 const SUPABASE_KEY_KEY   = 'supabase-key'
 
@@ -32,12 +34,15 @@ export default function SupabaseSettings() {
   const [vimeoToken,   setVimeoToken]   = useState(() => localStorage.getItem(LS_VIMEO)      || '')
   const [rapidApiKey,  setRapidApiKey]  = useState(() => localStorage.getItem(LS_RAPIDAPI)   || '')
   const [rapidHost,    setRapidHost]    = useState(() => localStorage.getItem(LS_RAPIDAPI_HOST) || '')
+  const [apifyToken,   setApifyToken]   = useState(() => localStorage.getItem(LS_APIFY)      || '')
+  const [apifyActor,   setApifyActor]   = useState(() => localStorage.getItem(LS_APIFY_ACTOR) || '')
 
   const [showAnthropicKey, setShowAnthropicKey] = useState(false)
   const [showGroqKey,      setShowGroqKey]      = useState(false)
   const [showYoutubeKey,   setShowYoutubeKey]   = useState(false)
   const [showVimeoToken,   setShowVimeoToken]   = useState(false)
   const [showRapidKey,     setShowRapidKey]     = useState(false)
+  const [showApifyToken,   setShowApifyToken]   = useState(false)
 
   const [testing,  setTesting]  = useState(false)
   const [syncing,  setSyncing]  = useState(false)
@@ -76,12 +81,18 @@ export default function SupabaseSettings() {
     else localStorage.removeItem(LS_RAPIDAPI)
     if (rapidHost.trim()) localStorage.setItem(LS_RAPIDAPI_HOST, rapidHost.trim())
     else localStorage.removeItem(LS_RAPIDAPI_HOST)
+    if (apifyToken.trim()) localStorage.setItem(LS_APIFY, apifyToken.trim())
+    else localStorage.removeItem(LS_APIFY)
+    if (apifyActor.trim()) localStorage.setItem(LS_APIFY_ACTOR, apifyActor.trim())
+    else localStorage.removeItem(LS_APIFY_ACTOR)
 
-    // Sync to AI store so Video Swipe reacts immediately (without reload)
+    // Sync to AI store so Video Swipe / Vídeos Virais reagem na hora (sem reload)
     useAIStore.getState().setYoutubeApiKey(youtubeKey.trim())
     useAIStore.getState().setVimeoToken(vimeoToken.trim())
     useAIStore.getState().setRapidApiKey(rapidApiKey.trim())
     useAIStore.getState().setRapidApiHost(rapidHost.trim())
+    useAIStore.getState().setApifyToken(apifyToken.trim())
+    useAIStore.getState().setApifyActorId(apifyActor.trim())
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -246,6 +257,22 @@ alter table user_data disable row level security;`}</pre>
             <p className="text-[10px] text-gray-400 mt-1">Assine um provedor TikTok no RapidAPI e informe a chave + host.</p>
           </div>
 
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5">
+              <Key size={12} className="text-fuchsia-500" /> Apify API token (opcional — Instagram nos Vídeos Virais)
+            </label>
+            <div className="relative">
+              <input type={showApifyToken ? 'text' : 'password'} value={apifyToken} onChange={(e) => setApifyToken(e.target.value)} placeholder="apify_api_..." className="input w-full pr-10 text-sm font-mono" />
+              <button onClick={() => setShowApifyToken(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+                {showApifyToken ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            <input type="text" value={apifyActor} onChange={(e) => setApifyActor(e.target.value)} placeholder="Ator do Apify (padrão: apify~instagram-scraper)" className="input w-full text-sm font-mono mt-2" />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Crie uma conta em apify.com e gere um token em Settings → Integrations. Buscar/baixar conteúdo do Instagram por scraper viola os Termos de Serviço da Meta — use por sua conta e risco.
+            </p>
+          </div>
+
           <p className="text-[10px] text-gray-400 bg-gray-50 rounded-lg p-2 border border-gray-100">
             💡 Dailymotion é buscado automaticamente no Video Swipe sem necessidade de chave.
           </p>
@@ -260,6 +287,7 @@ alter table user_data disable row level security;`}</pre>
           <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Groq (gratuito)</a>
           <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer" className="text-xs text-red-500 hover:underline flex items-center gap-1"><ExternalLink size={11} /> YouTube API</a>
           <a href="https://developer.vimeo.com/apps" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Vimeo Dev</a>
+          <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener noreferrer" className="text-xs text-fuchsia-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Apify Console</a>
         </div>
       </div>
     </div>

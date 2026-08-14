@@ -6,6 +6,8 @@ const LS_YOUTUBE      = 'cio-youtube-key'
 const LS_VIMEO        = 'cio-vimeo-token'
 const LS_RAPIDAPI     = 'cio-rapidapi-key'
 const LS_RAPIDAPI_HOST = 'cio-rapidapi-tiktok-host'
+const LS_APIFY        = 'cio-apify-token'
+const LS_APIFY_ACTOR  = 'cio-apify-instagram-actor'
 
 const useAIStore = create(
   persist(
@@ -18,6 +20,8 @@ const useAIStore = create(
       vimeoToken: '',
       rapidApiKey: '',
       rapidApiHost: '',
+      apifyToken: '',
+      apifyActorId: '',
 
       setProvider: (provider) => {
         const def = PROVIDERS[provider]
@@ -30,6 +34,8 @@ const useAIStore = create(
       setVimeoToken:    (vimeoToken)    => set({ vimeoToken }),
       setRapidApiKey:   (rapidApiKey)   => set({ rapidApiKey }),
       setRapidApiHost:  (rapidApiHost)  => set({ rapidApiHost }),
+      setApifyToken:    (apifyToken)    => set({ apifyToken }),
+      setApifyActorId:  (apifyActorId)  => set({ apifyActorId }),
 
       getSettings: () => {
         const { provider, apiKey, model, customBaseUrl } = get()
@@ -40,6 +46,7 @@ const useAIStore = create(
       isYoutubeConfigured: () => !!get().youtubeApiKey?.trim(),
       isVimeoConfigured:   () => !!get().vimeoToken?.trim(),
       isTiktokConfigured:  () => !!get().rapidApiKey?.trim(),
+      isInstagramConfigured: () => !!get().apifyToken?.trim(),
     }),
     {
       name: 'content-intelligence-ai-settings',
@@ -52,6 +59,8 @@ const useAIStore = create(
         vimeoToken:    s.vimeoToken,
         rapidApiKey:   s.rapidApiKey,
         rapidApiHost:  s.rapidApiHost,
+        apifyToken:    s.apifyToken,
+        apifyActorId:  s.apifyActorId,
       }),
       // Bridge existing localStorage keys saved by SupabaseSettings
       onRehydrateStorage: () => (state) => {
@@ -71,6 +80,14 @@ const useAIStore = create(
         if (!state.rapidApiHost) {
           const v = localStorage.getItem(LS_RAPIDAPI_HOST)
           if (v) state.rapidApiHost = v
+        }
+        if (!state.apifyToken) {
+          const v = localStorage.getItem(LS_APIFY)
+          if (v) state.apifyToken = v
+        }
+        if (!state.apifyActorId) {
+          const v = localStorage.getItem(LS_APIFY_ACTOR)
+          if (v) state.apifyActorId = v
         }
       },
     }

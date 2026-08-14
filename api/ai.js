@@ -223,6 +223,7 @@ async function youtubeSearch(youtubeApiKey, query, opts = {}) {
       description:   item.snippet.description?.slice(0, 200) || '',
       publishedAt:   item.snippet.publishedAt,
       thumbnail:     item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+      caption:       item.snippet.description || '',
       channelId:     item.snippet.channelId,
       url:           `https://www.youtube.com/watch?v=${item.id.videoId}`,
       channelUrl:    `https://www.youtube.com/channel/${item.snippet.channelId}`,
@@ -307,6 +308,7 @@ function normalizeTiktokItem(raw) {
     videoId:    id,
     platform:   'tiktok',
     videoTitle: v.desc || v.title || 'TikTok',
+    caption:    v.desc || v.title || '',
     name:       author.nickname || author.unique_id || author.uniqueId || 'TikTok',
     thumbnail:  video.cover || video.originCover || video.origin_cover || v.cover || null,
     url:        `https://www.tiktok.com/@${unique}/video/${id}`,
@@ -330,6 +332,55 @@ async function tiktokSearch(rapidApiKey, rapidApiHost, query) {
     (Array.isArray(data.data?.data) ? data.data.data : null) ||
     []
   return (Array.isArray(items) ? items : []).map(normalizeTiktokItem).filter((v) => v.id)
+}
+
+// ─── Instagram via Apify ────────────────────────────────────────────────────
+// Usa o ator oficial "Instagram Scraper" da Apify (apify/instagram-scraper),
+// buscando por hashtag. O actorId é configurável (mesma ideia do host do
+// RapidAPI no TikTok) porque outros atores de scraping do Instagram têm
+// entrada/saída em formatos diferentes — o mapeamento abaixo segue o schema
+// documentado do ator oficial e pode precisar de ajuste pra outros atores.
+
+function normalizeInstagramItem(v) {
+  const id = String(v.id || v.shortCode || '')
+  const views = v.videoViewCount ?? v.videoPlayCount ?? null
+  return {
+    id,
+    videoId:    id,
+    platform:   'instagram',
+    videoTitle: (v.caption || '').slice(0, 100) || 'Instagram Reel',
+    caption:    v.caption || '',
+    name:       v.ownerFullName || v.ownerUsername || 'Instagram',
+    thumbnail:  v.displayUrl || null,
+    url:        v.url || (v.shortCode ? `https://www.instagram.com/p/${v.shortCode}/` : ''),
+    viewCount:  views != null ? String(views) : null,
+    likeCount:  v.likesCount != null ? String(v.likesCount) : null,
+  }
+}
+
+async function instagramSearch(apifyToken, actorId, query) {
+  const actor = (actorId && actorId.trim()) || 'apify~instagram-scraper'
+  const url = `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${encodeURIComponent(apifyToken)}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      search: query,
+      searchType: 'hashtag',
+      searchLimit: 1,
+      resultsLimit: 10,
+    }),
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    const message = (data && !Array.isArray(data) && (data.error?.message || data.message)) || `Apify error ${res.status}`
+    throw new Error(message)
+  }
+  const items = Array.isArray(data) ? data : []
+  return items
+    .filter((v) => v.type === 'Video' || v.productType === 'clips' || v.videoUrl)
+    .map(normalizeInstagramItem)
+    .filter((v) => v.id)
 }
 
 // ─── Whisper ──────────────────────────────────────────────────────────────────
@@ -453,6 +504,15 @@ export default async function handler(req, res) {
       if (!rapidApiKey?.trim()) return res.status(400).json({ error: 'RapidAPI key is required' })
       if (!query?.trim())       return res.status(400).json({ error: 'Search query is required' })
       const results = await tiktokSearch(rapidApiKey, rapidApiHost, query)
+      return res.status(200).json({ results })
+    }
+
+    // ── Instagram ─────────────────────────────────────────────────────────────
+    if (action === 'instagram-search') {
+      const { apifyToken, apifyActorId, query } = req.body
+      if (!apifyToken?.trim()) return res.status(400).json({ error: 'Apify API token is required' })
+      if (!query?.trim())      return res.status(400).json({ error: 'Search query is required' })
+      const results = await instagramSearch(apifyToken, apifyActorId, query)
       return res.status(200).json({ results })
     }
 
