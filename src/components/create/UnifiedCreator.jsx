@@ -970,6 +970,100 @@ const ENGAGEMENT_TEMPLATES = {
    Abriu com "Uma cliente me falou uma coisa ontem e eu ainda tô processando" → fecha com "Já processei, e acho que agora é sua vez também."
    Um "bom, era isso, me segue pra mais" deixa o vídeo pendurado — parece cortado, não fechado.`,
   },
+  hot_take: {
+    label: 'Hot Take',
+    alavanca: 'comentário e discordância',
+    desc: 'Opinião crua sustentada por evidência real, terminando em convite a discordar — não a confirmar',
+    estrutura: `Roteiro falado em 4 partes:
+
+1. AFIRMAÇÃO DIRETA — a opinião crua, sem suavizar, dita como quem já pensou muito nisso.
+   ❌ Errado (suaviza, não é hot take): "Eu acho que talvez a gente devesse repensar um pouco o jeito que usa IA"
+   ✅ Certo: "Eu não confio em quem decide preço só olhando o que a concorrência cobra"
+   Se a frase precisa de "eu acho que" ou "talvez" pra existir, ainda não é a afirmação — é o rascunho dela.
+
+2. JUSTIFICATIVA — o porquê, baseado em algo que você viu de verdade, não em teoria abstrata.
+   ❌ Errado (genérico): "Porque isso é importante pro negócio"
+   ✅ Certo: "Vi três clientes que cobravam o mesmo que a concorrência quebrarem no mesmo trimestre"
+   A justificativa é um fato ou uma cena — nunca um princípio geral.
+
+3. CONSEQUÊNCIA PRÁTICA — o que acontece com quem ignora isso, contado como fato, não como ameaça.
+   ❌ Errado: "Isso pode ser um problema no futuro"
+   ✅ Certo: "Quem faz isso desconta o próprio trabalho antes mesmo do cliente pedir desconto"
+
+4. CONVITE A DISCORDAR — pergunta que pede posição, nunca confirmação.
+   ❌ Errado (pede sim/não): "Vocês concordam?"
+   ✅ Certo (pede posição e história): "Quem aqui já cobrou olhando só pro concorrente — e sabe dizer por quê?"
+   Termina sem suavizar a opinião do passo 1. Hot take que pede desculpa no fechamento não é hot take.`,
+  },
+  mito_fato: {
+    label: 'Mito x Fato',
+    alavanca: 'salvamento e correção',
+    desc: 'Desmonta uma crença comum com a lógica que a sustenta, depois o fato que a derruba',
+    estrutura: `Roteiro falado em 4 partes:
+
+1. O MITO — a crença comum, dita como quem ouviu isso de novo, sem introduzir como "mito" ainda.
+   ❌ Errado (já entrega a virada cedo demais): "Todo mundo pensa que X, mas isso é mentira"
+   ✅ Certo: "Toda vez que alguém me pergunta sobre preço, a resposta vem pronta: cobra o que o mercado paga"
+   O mito é apresentado como verdade aceita, não como alvo.
+
+2. POR QUE PARECE VERDADE — a lógica aparente que sustenta o mito, tratada com seriedade, não com ironia.
+   ❌ Errado (zomba do mito antes de explicar): "Óbvio que isso não faz sentido nenhum"
+   ✅ Certo: "Faz sentido: se todo mundo cobra parecido, parece mais seguro cobrar parecido também"
+   Se a lógica do mito não for levada a sério aqui, a virada do passo 3 perde força.
+
+3. O QUE DE FATO ACONTECE — a virada, sustentada por um dado ou uma experiência concreta, não por opinião.
+   ❌ Errado: "Na verdade não é bem assim"
+   ✅ Certo: "Só que o mercado que 'todo mundo' olha pra precificar geralmente já quebrou ou tá prestes a quebrar"
+
+4. O CUSTO DE ACREDITAR — a consequência real de quem levou o mito a sério, nomeada sem moralismo.
+   ❌ Errado: "Por isso é importante sempre questionar"
+   ✅ Certo: "Quem precifica assim descobre o erro só quando o caixa já fechou o mês no vermelho"`,
+  },
+  confissao_bastidor: {
+    label: 'Confissão/Bastidor',
+    alavanca: 'identificação e confiança',
+    desc: 'Decisão real que deu errado, contada sem embelezar, terminando numa lição que se sustenta sozinha',
+    estrutura: `Roteiro falado em 4 partes:
+
+1. A CONFISSÃO — a decisão real que você tomou, sem embelezar, admitindo o risco ou o erro de cara.
+   ❌ Errado (embeleza, vira case de sucesso disfarçado): "Uma vez eu tomei uma decisão arriscada que no fim valeu a pena"
+   ✅ Certo: "Fechei um contrato sem colocar cláusula de escopo porque confiei na palavra do cliente"
+   Se a confissão já entrega que "no fim deu certo", não é confissão — é propaganda.
+
+2. O QUE DEU ERRADO — a consequência concreta, contada como fato, não como desabafo genérico.
+   ❌ Errado: "As coisas não saíram como eu esperava"
+   ✅ Certo: "O escopo dobrou em três semanas e eu não tinha nada assinado pra cobrar por isso"
+
+3. O MOMENTO QUE PERCEBEU — o instante específico da virada de percepção, não uma reflexão vaga depois.
+   ❌ Errado (genérico, soa como conselho): "Aprendi que contrato é importante"
+   ✅ Certo (específico, soa como confissão): "Foi quando o cliente disse 'mas isso não tava combinado assim' que eu vi que a palavra dele não valia nada sem estar no papel"
+
+4. A LIÇÃO — curta, aplicável, soa como descoberta própria, se sustenta sozinha num comentário.
+   ❌ Errado: "Por isso sempre documente tudo com seus clientes"
+   ✅ Certo: "Confiança não substitui cláusula — as duas coisas fazem trabalhos diferentes"`,
+  },
+  estudo_de_caso: {
+    label: 'Estudo de caso em 60s',
+    alavanca: 'comentário e credibilidade',
+    desc: 'Situação real e específica, decisão tomada, resultado concreto — sem fechar a parte que ainda incomoda',
+    estrutura: `Roteiro falado em 4 partes:
+
+1. A SITUAÇÃO — contexto real e específico (troque nome/detalhe sensível se precisar, mas mantenha a especificidade).
+   ❌ Errado (abstrato, poderia ser qualquer caso): "Um cliente meu tinha um problema de gestão"
+   ✅ Certo: "Uma loja de roupas femininas em bairro de bairro vendia bem no Instagram e nada na loja física"
+
+2. A DECISÃO — o que foi decidido e por quê, incluindo a alternativa que foi descartada.
+   ❌ Errado (só descreve a ação, sem julgamento): "Decidimos investir em tráfego pago"
+   ✅ Certo: "Descartei investir em tráfego pago primeiro porque o problema não era gente vendo a loja — era gente não entrando"
+
+3. O RESULTADO — número ou fato concreto, nunca "melhorou muito" ou "deu super certo".
+   ❌ Errado: "O resultado foi ótimo"
+   ✅ Certo: "As vendas na loja física subiram 30% no mês seguinte só mudando a vitrine pra mostrar o que tava bombando online"
+
+4. O QUE FICOU SEM RESPOSTA — a parte do caso que não fechou, nomeada sem resolver — mantém a tensão em aberto.
+   ❌ Errado (fecha tudo, vira case perfeito): "E desde então nunca mais tivemos problema"
+   ✅ Certo: "Ainda não sei dizer se foi a vitrine ou se foi coincidência com a época do ano — não tive como isolar as duas coisas"`,
+  },
 }
 
 /* ── Temas Sugeridos para Carrossel (compartilhado com o Captura de Pensamento — ver src/data/temasCarrossel.js) ── */

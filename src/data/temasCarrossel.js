@@ -105,6 +105,19 @@ export const TEMAS_CARROSSEL = [
       'O emprego que a IA "tirou" já tinha sido esvaziado de decisão há anos — só ninguém tinha coragem de admitir',
     ],
   },
+  {
+    categoria: 'IA no comportamento humano',
+    temas: [
+      'A criança que cresce vendo o adulto perguntar tudo pra IA antes de tentar sozinho — e aprende a desconfiar do próprio raciocínio antes até de formar um',
+      'Quem some quando o crédito de uma ideia é da IA, mas aparece rápido quando o elogio cai sobre a mesma ideia',
+      'A pessoa que prefere falar com a IA porque ela nunca está ocupada, cansada ou de mau humor — e o que isso ensina sobre paciência com gente',
+      "Como ver todo mundo 'produtivo com IA' no feed virou uma nova régua de ansiedade de performance",
+      'Quem acredita mais rápido numa resposta da IA do que na experiência de quem já viveu aquilo na pele',
+      'A pessoa que não sabe mais se aquele gosto é dela ou é o que o algoritmo decidiu repetir pra ela',
+      'O músculo de pensar sozinho que atrofia de tanto perguntar antes de tentar',
+      'Checar a resposta da IA do mesmo jeito compulsivo que checa notificação — não por necessidade, por hábito',
+    ],
+  },
 ]
 
 // Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
