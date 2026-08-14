@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Flame, Search, Loader2, Sparkles, ExternalLink, Trash2, Check,
   AlertCircle, ChevronDown, ChevronUp, Eye, Heart, Save, Info,
+  LayoutGrid, List,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
@@ -213,6 +214,8 @@ export default function ViralReferences() {
   ])
 
   const [selectedTopics, setSelectedTopics] = useState(new Set())
+  const [selectedPlatforms, setSelectedPlatforms] = useState(() => new Set(getEnabledPlatforms().map((p) => p.id)))
+  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState(null)
   const [results, setResults] = useState([])
@@ -229,16 +232,30 @@ export default function ViralReferences() {
     })
   }
 
+  const togglePlatform = (id) => {
+    setSelectedPlatforms((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const savedSourceIds = useMemo(() => new Set(viralReferences.map((r) => r.sourceId)), [viralReferences])
 
+  const platformsToSearch = useMemo(
+    () => enabledPlatforms.filter((p) => selectedPlatforms.has(p.id)),
+    [enabledPlatforms, selectedPlatforms]
+  )
+
   const handleSearch = async () => {
-    if (selectedTopics.size === 0 || enabledPlatforms.length === 0) return
+    if (selectedTopics.size === 0 || platformsToSearch.length === 0) return
     setSearching(true)
     setSearchError(null)
     try {
       const tasks = []
       for (const topic of selectedTopics) {
-        for (const platform of enabledPlatforms) {
+        for (const platform of platformsToSearch) {
           tasks.push(
             platform.run(topic)
               .then((raw) => raw.map((v) => normalizeResult(v, topic, topic)))
@@ -340,18 +357,27 @@ export default function ViralReferences() {
       )}
 
       <div>
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Plataformas ativas</p>
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Plataformas — escolha onde buscar</p>
         <div className="flex flex-wrap gap-2">
           {['youtube', 'dailymotion', 'tiktok', 'instagram'].map((id) => {
-            const active = enabledPlatforms.some((p) => p.id === id)
+            const configured = enabledPlatforms.some((p) => p.id === id)
+            const active = configured && selectedPlatforms.has(id)
             return (
-              <span key={id} className={clsx(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium',
-                active ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-gray-50 text-gray-400'
-              )}>
+              <button
+                key={id}
+                type="button"
+                onClick={() => configured && togglePlatform(id)}
+                disabled={!configured}
+                className={clsx(
+                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all',
+                  active     ? 'border-orange-400 bg-orange-50 text-orange-700' :
+                  configured ? 'border-gray-200 bg-white text-gray-500 hover:border-orange-300 hover:text-orange-600' :
+                               'border-gray-200 bg-gray-50 text-gray-400 cursor-default'
+                )}
+              >
                 {active && <Check size={11} />} {PLATFORM_LABELS[id]}
-                {!active && <Link to="/settings" className="ml-0.5 text-orange-500 hover:underline text-[10px] font-semibold">Configurar</Link>}
-              </span>
+                {!configured && <Link to="/settings" onClick={(e) => e.stopPropagation()} className="ml-0.5 text-orange-500 hover:underline text-[10px] font-semibold">Configurar</Link>}
+              </button>
             )
           })}
         </div>
@@ -389,12 +415,15 @@ export default function ViralReferences() {
 
       <button
         onClick={handleSearch}
-        disabled={searching || selectedTopics.size === 0 || !hasAnyPlatform}
+        disabled={searching || selectedTopics.size === 0 || platformsToSearch.length === 0}
         className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl text-sm font-semibold hover:from-orange-600 hover:to-rose-600 disabled:opacity-50 transition-all shadow-lg shadow-orange-200"
       >
         {searching ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
         {searching ? 'Buscando...' : 'Buscar vídeos virais'}
       </button>
+      {hasAnyPlatform && platformsToSearch.length === 0 && (
+        <p className="text-xs text-amber-600 -mt-4">Selecione ao menos uma plataforma configurada acima.</p>
+      )}
 
       {searchError && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 flex items-center gap-2">
@@ -409,27 +438,91 @@ export default function ViralReferences() {
 
       {results.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            {results.length} resultado{results.length !== 1 ? 's' : ''}, ordenado por visualizações
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {results.map((video) => (
-              <div key={video.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-                {video.thumbnailUrl ? (
-                  <img src={video.thumbnailUrl} alt="" className="w-full h-32 object-cover bg-gray-100" />
-                ) : (
-                  <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-gray-300 text-xs">Sem thumbnail</div>
-                )}
-                <div className="p-3 flex-1 flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-md self-start">
-                    {PLATFORM_LABELS[video.platform] || video.platform}
-                  </span>
-                  <p className="text-xs font-medium text-gray-800 line-clamp-2">{video.title}</p>
-                  <p className="text-[10px] text-gray-400 flex items-center gap-2">
-                    {formatCount(video.viewCount) && <span className="flex items-center gap-1"><Eye size={10} /> {formatCount(video.viewCount)}</span>}
-                    {formatCount(video.likeCount) && <span className="flex items-center gap-1"><Heart size={10} /> {formatCount(video.likeCount)}</span>}
-                  </p>
-                  <div className="mt-auto flex items-center gap-1.5 pt-1.5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+              {results.length} resultado{results.length !== 1 ? 's' : ''}, ordenado por visualizações
+            </p>
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                title="Visão em grade"
+                className={clsx('p-1.5 rounded-md', viewMode === 'grid' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:text-gray-600')}
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                title="Visão em lista"
+                className={clsx('p-1.5 rounded-md', viewMode === 'list' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:text-gray-600')}
+              >
+                <List size={14} />
+              </button>
+            </div>
+          </div>
+
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {results.map((video) => (
+                <div key={video.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+                  {video.thumbnailUrl ? (
+                    <img src={video.thumbnailUrl} alt="" className="w-full h-32 object-cover bg-gray-100" />
+                  ) : (
+                    <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-gray-300 text-xs">Sem thumbnail</div>
+                  )}
+                  <div className="p-3 flex-1 flex flex-col gap-1.5">
+                    <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-md self-start">
+                      {PLATFORM_LABELS[video.platform] || video.platform}
+                    </span>
+                    <p className="text-xs font-medium text-gray-800 line-clamp-2">{video.title}</p>
+                    <p className="text-[10px] text-gray-400 flex items-center gap-2">
+                      {formatCount(video.viewCount) && <span className="flex items-center gap-1"><Eye size={10} /> {formatCount(video.viewCount)}</span>}
+                      {formatCount(video.likeCount) && <span className="flex items-center gap-1"><Heart size={10} /> {formatCount(video.likeCount)}</span>}
+                    </p>
+                    <div className="mt-auto flex items-center gap-1.5 pt-1.5">
+                      {video.url && (
+                        <a href={video.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600" title="Abrir">
+                          <ExternalLink size={13} />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleAnalyze(video)}
+                        disabled={analyzingId === video.id}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-orange-500 text-white rounded-lg text-[11px] font-semibold hover:bg-orange-600 disabled:opacity-50"
+                      >
+                        {analyzingId === video.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                        {analyzingId === video.id ? 'Analisando...' : 'Analisar e salvar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+              {results.map((video) => (
+                <div key={video.id} className="flex items-center gap-3 p-2.5">
+                  {video.thumbnailUrl ? (
+                    <img src={video.thumbnailUrl} alt="" className="w-16 h-16 object-cover rounded-lg bg-gray-100 shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-[9px] shrink-0">Sem thumb</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-md shrink-0">
+                        {PLATFORM_LABELS[video.platform] || video.platform}
+                      </span>
+                      <p className="text-xs font-medium text-gray-800 truncate">{video.title}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-400 flex items-center gap-2 mt-1">
+                      {formatCount(video.viewCount) && <span className="flex items-center gap-1"><Eye size={10} /> {formatCount(video.viewCount)}</span>}
+                      {formatCount(video.likeCount) && <span className="flex items-center gap-1"><Heart size={10} /> {formatCount(video.likeCount)}</span>}
+                      <span className="text-gray-300">·</span>
+                      <span>{video.category}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {video.url && (
                       <a href={video.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600" title="Abrir">
                         <ExternalLink size={13} />
@@ -438,16 +531,16 @@ export default function ViralReferences() {
                     <button
                       onClick={() => handleAnalyze(video)}
                       disabled={analyzingId === video.id}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-orange-500 text-white rounded-lg text-[11px] font-semibold hover:bg-orange-600 disabled:opacity-50"
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-[11px] font-semibold hover:bg-orange-600 disabled:opacity-50 whitespace-nowrap"
                     >
                       {analyzingId === video.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                       {analyzingId === video.id ? 'Analisando...' : 'Analisar e salvar'}
                     </button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
