@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapeamento de Preços da Concorrência · IA</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --card:#121826; --line:#1e2840; --txt:#e8edf7;
+    --muted:#8a97b3; --accent:#5b8cff; --green:#36d399; --amber:#fbbf24;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,#16203a 0%,var(--bg) 60%);
+    color:var(--txt); min-height:100vh; padding:40px 20px;
+  }
+  .wrap{max-width:920px;margin:0 auto}
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+  .kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:30px;font-weight:800;margin:10px 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:15px;margin-bottom:26px}
+  .card{
+    background:linear-gradient(180deg,var(--card),#0e1422);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+  }
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:16px 18px;text-align:left;border-bottom:1px solid var(--line);font-size:15px}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:#0d1322}
+  td[contenteditable]{outline:none;transition:background .15s}
+  td[contenteditable]:focus{background:#172138;border-radius:6px}
+  tr:last-child td{border-bottom:none}
+  .name{font-weight:700}
+  .price{font-weight:800;color:var(--green);white-space:nowrap}
+  .tag{display:inline-block;font-size:12px;padding:4px 10px;border-radius:999px;background:#1a2236;color:var(--accent);border:1px solid #25324f}
+  .gap{color:var(--amber);font-weight:600}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:22px;flex-wrap:wrap;gap:14px}
+  .insight{font-size:14px;color:var(--muted);max-width:560px;line-height:1.5}
+  .insight b{color:var(--txt)}
+  .btns{display:flex;gap:10px}
+  button{
+    background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:11px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  button.ghost{background:#1a2236;border:1px solid var(--line);color:var(--txt)}
+  button:active{transform:translateY(1px)}
+  .hint{font-size:12px;color:var(--muted);margin-top:14px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head"><span class="dot"></span><span class="kicker">Inteligência de mercado · gerado com IA</span></div>
+    <h1>Mapeamento de Preços da Concorrência</h1>
+    <p class="sub">Briefing fictício: identidade visual · startup de tecnologia · prazo 30 dias</p>
+
+    <div class="card">
+      <table id="tbl">
+        <thead>
+          <tr><th>Concorrente</th><th>Valor</th><th>Entregável</th><th>Estrutura da proposta</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name" contenteditable>Concorrente A</td>
+            <td class="price" contenteditable>R$ 7.500</td>
+            <td contenteditable>Logo + manual de marca</td>
+            <td><span class="tag">Pacote fechado</span></td>
+          </tr>
+          <tr>
+            <td class="name" contenteditable>Concorrente B</td>
+            <td class="price" contenteditable>R$ 9.200</td>
+            <td contenteditable>Identidade + social kit + papelaria</td>
+            <td><span class="tag">Por etapas</span></td>
+          </tr>
+          <tr>
+            <td class="name" contenteditable>Concorrente C</td>
+            <td class="price" contenteditable>R$ 12.000</td>
+            <td contenteditable>Branding + naming + brand voice</td>
+            <td><span class="tag">Consultoria + execução</span></td>
+          </tr>
+          <tr>
+            <td class="name gap" contenteditable>Você (antes)</td>
+            <td class="price" contenteditable style="color:var(--amber)">R$ 5.000</td>
+            <td contenteditable>Logo + manual</td>
+            <td><span class="tag" style="color:var(--amber);border-color:#5a4a1f;background:#241d0d">se subestimando</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="foot">
+      <p class="insight">📌 <b>Descoberta:</b> a média do mercado cobra <b>~40% a mais</b> do que você achava ser "caro" — e há pacotes (naming, brand voice) que você nem oferecia. <b>O mercado real só aparece quando você olha pra ele de frente.</b></p>
+      <div class="btns">
+        <button class="ghost" onclick="addRow()">+ Linha</button>
+        <button onclick="window.print()">Exportar / Print</button>
+      </div>
+    </div>
+    <p class="hint">Clique em qualquer célula para editar com seus próprios dados · use “Exportar / Print” para salvar a imagem</p>
+  </div>
+
+<script>
+function addRow(){
+  const tb=document.querySelector('#tbl tbody');
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td class="name" contenteditable>Concorrente</td><td class="price" contenteditable>R$ 0</td><td contenteditable>Entregável</td><td><span class="tag">Estrutura</span></td>';
+  tb.appendChild(tr);
+}
+</script>
+</body>
+</html>
