@@ -14,6 +14,7 @@ import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
 import IdeaForm from './IdeaForm'
 import RepositioningTest from './RepositioningTest'
 import DailyAgentBanner from './DailyAgentBanner'
+import StoryIdeasPanel from './StoryIdeasPanel'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import Modal from '../common/Modal'
 import { generateIdeasFromInsights, generateIdeasFromTrends, generateIdeasWithClaude, generateSignalBasedIdeas } from '../../utils/ideaGenerator'
@@ -1786,6 +1787,11 @@ export default function IdeasHub() {
         </div>
         )
       })()}
+
+      {/* Sugestões de Stories — aparece ao filtrar por formato Stories */}
+      {(tab === 'kanban' || tab === 'calendar' || tab === 'order') && filterFormat === 'stories' && (
+        <StoryIdeasPanel onAddIdea={addIdea} />
+      )}
 
       {/* Visualização Kanban */}
       {tab === 'kanban' && (
