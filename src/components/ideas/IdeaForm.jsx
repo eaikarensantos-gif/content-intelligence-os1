@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb } from 'lucide-react'
+import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb, Film } from 'lucide-react'
 import Modal from '../common/Modal'
 import ScriptBlockRegenerator from './ScriptBlockRegenerator'
 import ScriptCoherenceFixer from './ScriptCoherenceFixer'
@@ -16,6 +16,8 @@ import { loadSavedThemes, appendSavedThemes } from '../../data/savedThemesStore'
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/contentEnums'
+import { STORY_IDEA_PROMPTS } from '../../data/storyIdeaPrompts'
+import { generateMoreStoryPrompts } from '../../utils/storyIdeaGenerator'
 
 const LS_KEY = 'cio-anthropic-key'
 
@@ -231,6 +233,9 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const youtubeApiKey = useAIStore((s) => s.youtubeApiKey)
   const [generatingScript, setGeneratingScript] = useState(false)
   const [linkInput, setLinkInput] = useState('')
+  const [storyExtraPrompts, setStoryExtraPrompts] = useState([])
+  const [generatingStoryIdeas, setGeneratingStoryIdeas] = useState(false)
+  const [storyIdeasError, setStoryIdeasError] = useState(null)
   const [showProducao, setShowProducao] = useState(false)
   const [showThemeBank, setShowThemeBank] = useState(false)
   const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
@@ -306,6 +311,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
     setThemeBankOpenCategory(null)
     setSavedThemesRaw(loadSavedThemes())
     setExpandThemesError(null)
+    setStoryExtraPrompts([])
+    setStoryIdeasError(null)
   }, [open, initial])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -415,6 +422,21 @@ Responda EXCLUSIVAMENTE com JSON válido:
       setExpandThemesError(err.message || 'Erro ao expandir temas.')
     } finally {
       setExpandingThemes(false)
+    }
+  }
+
+  const handleGenerateStoryIdeas = async () => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setStoryIdeasError('Configure sua API key do Gemini primeiro.'); return }
+    setGeneratingStoryIdeas(true)
+    setStoryIdeasError(null)
+    try {
+      const more = await generateMoreStoryPrompts(apiKey, { existing: [...STORY_IDEA_PROMPTS, ...storyExtraPrompts] })
+      setStoryExtraPrompts((prev) => [...prev, ...more.filter(Boolean)])
+    } catch (err) {
+      setStoryIdeasError(err.message || 'Erro ao gerar ideias de Stories.')
+    } finally {
+      setGeneratingStoryIdeas(false)
     }
   }
 
@@ -639,6 +661,32 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </select>
             </div>
           </div>
+
+          {/* Ideias para Stories — aparece só quando o formato é Story */}
+          {form.format === 'story' && (
+            <div className="border border-amber-200 bg-amber-50/50 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1">
+                  <Film size={11} /> Ideias para Stories
+                </p>
+                <button type="button" onClick={handleGenerateStoryIdeas} disabled={generatingStoryIdeas}
+                  className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white text-amber-700 hover:bg-amber-100 border border-amber-300 font-medium transition-all disabled:opacity-50">
+                  {generatingStoryIdeas ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                  {generatingStoryIdeas ? 'Gerando...' : 'Gerar com IA'}
+                </button>
+              </div>
+              {storyIdeasError && <p className="text-[10px] text-red-500">{storyIdeasError}</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {[...STORY_IDEA_PROMPTS, ...storyExtraPrompts].map((text, i) => (
+                  <button key={`${i}-${text}`} type="button"
+                    onClick={() => { set('title', text); setTitleSuggestions([]) }}
+                    className="text-left text-[11px] text-gray-700 hover:text-amber-800 bg-white hover:bg-amber-100 border border-amber-100 hover:border-amber-300 rounded-lg px-2.5 py-1.5 leading-snug transition-all">
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tipo de Conteúdo — inline chips */}
           <div>
