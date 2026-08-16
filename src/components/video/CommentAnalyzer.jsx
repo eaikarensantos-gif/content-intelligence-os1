@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2 } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Reply, Copy, Check } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 
@@ -9,6 +9,9 @@ export default function CommentAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false)
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState('')
+  const [replyStates, setReplyStates] = useState({})
+  const [copiedId, setCopiedId] = useState(null)
+  const [savedIdeaKeys, setSavedIdeaKeys] = useState(new Set())
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const fileRef = useRef(null)
@@ -134,16 +137,95 @@ Responda APENAS com JSON válido, sem markdown:
     finally { setAnalyzing(false) }
   }
 
-  const handleSaveIdea = (idea, profileName) => {
+  const toggleReplyPanel = (id) => {
+    setReplyStates(prev => ({
+      ...prev,
+      [id]: prev[id]?.open
+        ? { ...prev[id], open: false }
+        : { context: '', direction: '', suggestion: '', loading: false, error: '', ...prev[id], open: true },
+    }))
+  }
+
+  const updateReplyField = (id, field, value) => {
+    setReplyStates(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }))
+  }
+
+  const generateReply = async (comment) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { updateReplyField(comment.id, 'error', 'Configure sua API key do Gemini primeiro'); return }
+
+    const state = replyStates[comment.id] || {}
+    setReplyStates(prev => ({ ...prev, [comment.id]: { ...prev[comment.id], loading: true, error: '', suggestion: '' } }))
+    try {
+      const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
+      const resp = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
+          max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: `Você é um especialista em engajamento de comunidade e resposta a comentários.
+
+COMENTÁRIO ORIGINAL:
+"${comment.text}"
+
+CONTEXTO ADICIONAL (fornecido pelo criador):
+${state.context?.trim() || 'Nenhum contexto adicional.'}
+
+CAMINHO/DIREÇÃO DESEJADA PARA A RESPOSTA:
+${state.direction?.trim() || 'Nenhuma direção específica, use seu melhor julgamento.'}
+${voiceContext}
+
+Escreva uma resposta pronta para postar como comentário, curta e natural (máximo 2-3 frases), seguindo o contexto e a direção fornecidos e o tom de voz do criador.
+
+Responda APENAS com JSON válido, sem markdown:
+{
+  "reply": "texto da resposta sugerida"
+}`
+          }]
+        })
+      })
+      const data = await resp.json()
+      const text = data.content?.find(b => b.type === 'text')?.text || '{}'
+      const clean = text.replace(/```json\n?|\n?```/g, '').trim()
+      const parsed = JSON.parse(clean)
+      setReplyStates(prev => ({ ...prev, [comment.id]: { ...prev[comment.id], loading: false, suggestion: parsed.reply || '' } }))
+    } catch (e) {
+      setReplyStates(prev => ({ ...prev, [comment.id]: { ...prev[comment.id], loading: false, error: e.message } }))
+    }
+  }
+
+  const copyReply = (id, text) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
+
+  const handleSaveIdea = (idea, profileName, key) => {
+    if (savedIdeaKeys.has(key)) return
     addIdea({
       title: idea.title,
-      description: `Ângulo: ${idea.angle}\n\nGancho: ${idea.hook}\n\nPor quê: ${idea.why}\n\nPerfil de dor: ${profileName}`,
+      description: [
+        idea.angle && `Ângulo: ${idea.angle}`,
+        idea.hook && `Gancho: ${idea.hook}`,
+        idea.why && `Por quê: ${idea.why}`,
+        `Perfil de dor: ${profileName}`,
+      ].filter(Boolean).join('\n\n'),
       format: idea.format,
       hook_type: 'pain-point',
       priority: 'high',
       status: 'idea',
       tags: ['comentarios', 'dor-audiencia'],
     })
+    setSavedIdeaKeys(prev => new Set(prev).add(key))
   }
 
   const removeComment = (id) => setComments(prev => prev.filter(c => c.id !== id))
@@ -222,19 +304,82 @@ Responda APENAS com JSON válido, sem markdown:
               Limpar todos
             </button>
           </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {comments.map(c => (
-              <div key={c.id} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg group">
-                <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
-                <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
-                <button
-                  onClick={() => removeComment(c.id)}
-                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                >
-                  <X size={13} />
-                </button>
+          <div className="space-y-2 max-h-[32rem] overflow-y-auto">
+            {comments.map(c => {
+              const rs = replyStates[c.id] || {}
+              return (
+              <div key={c.id} className="bg-gray-50 rounded-lg group">
+                <div className="flex items-start gap-2 p-3">
+                  <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
+                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
+                  <button
+                    onClick={() => toggleReplyPanel(c.id)}
+                    className={`shrink-0 text-[11px] font-medium flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${rs.open ? 'bg-indigo-100 text-indigo-700' : 'text-indigo-500 hover:bg-indigo-50 opacity-0 group-hover:opacity-100'}`}
+                  >
+                    <Reply size={12} /> Responder
+                  </button>
+                  <button
+                    onClick={() => removeComment(c.id)}
+                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+
+                {rs.open && (
+                  <div className="px-3 pb-3 space-y-2 border-t border-gray-200 pt-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Contexto sobre o comentário</label>
+                      <textarea
+                        value={rs.context || ''}
+                        onChange={(e) => updateReplyField(c.id, 'context', e.target.value)}
+                        placeholder="Ex: essa pessoa já é cliente, esse comentário é sarcástico, é uma dúvida técnica..."
+                        rows={2}
+                        className="mt-1 w-full px-3 py-2 text-xs border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Caminho que você quer na resposta</label>
+                      <textarea
+                        value={rs.direction || ''}
+                        onChange={(e) => updateReplyField(c.id, 'direction', e.target.value)}
+                        placeholder="Ex: agradecer e convidar pro conteúdo X, discordar com gentileza, ser direto e objetivo..."
+                        rows={2}
+                        className="mt-1 w-full px-3 py-2 text-xs border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 bg-white"
+                      />
+                    </div>
+                    <button
+                      onClick={() => generateReply(c)}
+                      disabled={rs.loading}
+                      className="w-full py-2 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                    >
+                      {rs.loading ? (
+                        <><Loader2 size={13} className="animate-spin" /> Gerando resposta...</>
+                      ) : (
+                        <><Sparkles size={13} /> Sugerir resposta</>
+                      )}
+                    </button>
+
+                    {rs.error && (
+                      <p className="text-[11px] text-red-600">{rs.error}</p>
+                    )}
+
+                    {rs.suggestion && (
+                      <div className="p-3 bg-white border border-indigo-100 rounded-lg space-y-2">
+                        <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">{rs.suggestion}</p>
+                        <button
+                          onClick={() => copyReply(c.id, rs.suggestion)}
+                          className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
+                        >
+                          {copiedId === c.id ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar resposta</>}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Analyze button */}
@@ -298,7 +443,10 @@ Responda APENAS com JSON válido, sem markdown:
               </div>
 
               <div className="space-y-2">
-                {(profile.content_ideas || []).map((idea, ii) => (
+                {(profile.content_ideas || []).map((idea, ii) => {
+                  const ideaKey = `${pi}-${ii}`
+                  const isSaved = savedIdeaKeys.has(ideaKey)
+                  return (
                   <div key={ii} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
@@ -311,10 +459,15 @@ Responda APENAS com JSON válido, sem markdown:
                         </div>
                       </div>
                       <button
-                        onClick={() => handleSaveIdea(idea, profile.name)}
-                        className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
+                        onClick={() => handleSaveIdea(idea, profile.name, ideaKey)}
+                        disabled={isSaved}
+                        className={`text-[11px] font-medium flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-lg transition-colors ${
+                          isSaved
+                            ? 'text-emerald-700 bg-emerald-100 cursor-default'
+                            : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                        }`}
                       >
-                        <Plus size={12} /> Salvar
+                        {isSaved ? <><Check size={12} /> Salvo no Hub</> : <><Plus size={12} /> Salvar</>}
                       </button>
                     </div>
                     {idea.hook && (
@@ -327,7 +480,8 @@ Responda APENAS com JSON válido, sem markdown:
                       <p className="text-xs text-gray-500 italic">{idea.why}</p>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           ))}
