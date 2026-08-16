@@ -1,17 +1,27 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2 } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 
 export default function CommentAnalyzer() {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
+  const [context, setContext] = useState('')
+  const [responsePaths, setResponsePaths] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState('')
+  const [copiedId, setCopiedId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const fileRef = useRef(null)
+
+  const copyReply = (id, text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 2000)
+    })
+  }
 
   const addComment = () => {
     if (!commentText.trim()) return
@@ -82,6 +92,9 @@ export default function CommentAnalyzer() {
     setSuggestions(null)
     try {
       const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
+      const contextSection = context.trim() ? `\n\nCONTEXTO DOS COMENTÁRIOS:\n${context.trim()}` : ''
+      const pathsList = responsePaths.split('\n').map(s => s.trim()).filter(Boolean)
+      const pathsSection = pathsList.length ? `\n\nCAMINHOS DE RESPOSTA DESEJADOS:\nAlém dos conteúdos, para cada perfil de dor gere também sugestões de RESPOSTA (texto pronto para comentar/responder), seguindo estritamente estes caminhos/direções pedidos pelo usuário:\n${pathsList.map((p, i) => `${i + 1}. ${p}`).join('\n')}` : ''
       const resp = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
@@ -97,14 +110,14 @@ export default function CommentAnalyzer() {
           messages: [{
             role: 'user',
             content: `Você é um estrategista de conteúdo especializado em transformar dores e dúvidas reais da audiência em conteúdos de alto impacto.
-${voiceContext}
+${voiceContext}${contextSection}${pathsSection}
 
 COMENTÁRIOS DA AUDIÊNCIA:
 ${comments.map((c, i) => `${i + 1}. "${c.text}"`).join('\n')}
 
 Analise esses comentários e identifique:
 1. Os PERFIS DE DOR (agrupamento de problemas/frustrações similares)
-2. Para CADA perfil de dor, sugira 2-3 conteúdos que resolvam, eduquem ou conectem com essa pessoa
+2. Para CADA perfil de dor, sugira 2-3 conteúdos que resolvam, eduquem ou conectem com essa pessoa${pathsList.length ? '\n3. Para CADA perfil de dor, gere as sugestões de resposta pedidas em "CAMINHOS DE RESPOSTA DESEJADOS"' : ''}
 
 Responda APENAS com JSON válido, sem markdown:
 {
@@ -122,7 +135,14 @@ Responda APENAS com JSON válido, sem markdown:
           "angle": "abordagem/ângulo do conteúdo",
           "why": "por que esse conteúdo resolve essa dor"
         }
-      ]
+      ]${pathsList.length ? `,
+      "suggested_replies": [
+        {
+          "path": "qual dos caminhos de resposta pedidos esta resposta segue",
+          "reply": "texto de resposta pronto para postar como comentário/resposta",
+          "tone": "tom da resposta"
+        }
+      ]` : ''}
     }
   ],
   "meta_insight": "insight geral sobre o que a audiência está pedindo entre linhas"
@@ -164,6 +184,34 @@ Responda APENAS com JSON válido, sem markdown:
             <h3 className="text-sm font-bold text-gray-900">Analisador de Comentários</h3>
             <p className="text-[11px] text-gray-500">Printe comentários do seu nicho e a IA sugere conteúdos para resolver essas dores</p>
           </div>
+        </div>
+      </div>
+
+      {/* Context & response paths */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Compass size={14} className="text-indigo-500" />
+          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-500 mb-1 block">Contexto dos comentários</label>
+          <textarea
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+            placeholder="Ex: comentários do meu vídeo sobre X, público é iniciante, tom da marca é..."
+            rows={2}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+          />
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-500 mb-1 block">Caminhos de resposta desejados (um por linha)</label>
+          <textarea
+            value={responsePaths}
+            onChange={(e) => setResponsePaths(e.target.value)}
+            placeholder={'Ex:\nResposta empática, acolhendo a dor\nResposta educativa, explicando o porquê\nResposta com CTA convidando pro produto'}
+            rows={3}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+          />
         </div>
       </div>
 
@@ -333,6 +381,33 @@ Responda APENAS com JSON válido, sem markdown:
                   </div>
                 ))}
               </div>
+
+              {/* Suggested replies */}
+              {(profile.suggested_replies || []).length > 0 && (
+                <div className="space-y-2 pt-3 border-t border-gray-100">
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Sugestões de resposta</p>
+                  {profile.suggested_replies.map((r, ri) => {
+                    const replyId = `${pi}-${ri}`
+                    return (
+                      <div key={ri} className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            {r.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{r.path}</span>}
+                            {r.tone && <span className="text-[10px] text-gray-400">{r.tone}</span>}
+                          </div>
+                          <button
+                            onClick={() => copyReply(replyId, r.reply)}
+                            className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors"
+                          >
+                            {copiedId === replyId ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-700 leading-relaxed">{r.reply}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           ))}
         </div>
