@@ -10,39 +10,45 @@ import clsx from 'clsx'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/create', icon: PenTool, label: 'Studio de Criação' },
-  { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
-  { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
-  { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
 ]
 
 const NAV_GROUPS = [
+  {
+    id: 'studio-criacao',
+    label: 'Studio de Criação',
+    children: [
+      { to: '/create', icon: PenTool, label: 'Studio de Criação' },
+      { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
+      { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
+      { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
+      { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
+      { to: '/swipe', icon: Flame, label: 'Video Swipe' },
+      { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
+      { to: '/pdf-studio', icon: FileText, label: 'Conteúdo de PDF' },
+    ],
+  },
+  {
+    id: 'metricas',
+    label: 'Métricas',
+    children: [
+      { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+      { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
+      { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
+      { to: '/trends', icon: Radar, label: 'Creator Insights' },
+      { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
+    ],
+  },
   {
     id: 'inteligencia',
     label: 'Inteligência',
     children: [
       { to: '/posicionamento', icon: Compass, label: 'Posicionamento' },
       { to: '/social', icon: Activity, label: 'Social Dashboard' },
-      { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
-      { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/news', icon: Newspaper, label: 'Notícias' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
-      { to: '/trends', icon: Radar, label: 'Creator Insights' },
-    ],
-  },
-  {
-    id: 'ferramentas',
-    label: 'Ferramentas',
-    children: [
-      { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
-      { to: '/swipe', icon: Flame, label: 'Video Swipe' },
-      { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
-      { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
       { to: '/community', icon: Users, label: 'Community Studio' },
-      { to: '/pdf-studio', icon: FileText, label: 'Conteúdo de PDF' },
     ],
   },
 ]
