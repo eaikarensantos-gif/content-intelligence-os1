@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
-import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
+import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../utils/aiJson'
 import { handleApiError } from '../../utils/apiError'
 
 export default function CommentAnalyzer() {
@@ -60,7 +60,7 @@ export default function CommentAnalyzer() {
             model: 'claude-sonnet-5',
             thinking: { type: 'adaptive' },
             output_config: { effort: 'medium' },
-            max_tokens: 1000,
+            max_tokens: 3000,
             messages: [{
               role: 'user',
               content: [
@@ -70,15 +70,12 @@ export default function CommentAnalyzer() {
             }]
           })
         })
+        if (!resp.ok) await handleApiError(resp)
         const data = await resp.json()
-        const text = data.content?.find(b => b.type === 'text')?.text || '[]'
-        try {
-          const clean = text.replace(/```json\n?|\n?```/g, '').trim()
-          const extracted = JSON.parse(clean)
-          if (Array.isArray(extracted)) {
-            setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
-          }
-        } catch { setComments(prev => [...prev, { id: Date.now(), text: text, source: 'image' }]) }
+        assertNotTruncated(data, 'A imagem tem texto demais e a extração foi cortada antes de terminar. Tente uma imagem com menos comentários por vez.')
+        const text = data.content?.find(b => b.type === 'text')?.text
+        const extracted = extractJsonArray(text, 'Não consegui ler os comentários dessa imagem. Tente uma imagem mais nítida ou com menos texto.')
+        setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
       }
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
@@ -86,10 +83,15 @@ export default function CommentAnalyzer() {
   }
 
   const analyzeComments = async () => {
-    if (!comments.length) return
+    const pendingText = commentText.trim()
+    const allComments = pendingText
+      ? [...comments, { id: Date.now(), text: pendingText, source: 'text' }]
+      : comments
+    if (!allComments.length) return
     const apiKey = localStorage.getItem(LS_KEY)
     if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
 
+    if (pendingText) { setComments(allComments); setCommentText('') }
     setAnalyzing(true)
     setError('')
     setSuggestions(null)
@@ -118,7 +120,7 @@ export default function CommentAnalyzer() {
 ${voiceContext}${contextSection}${pathsSection}
 
 COMENTÁRIOS DA AUDIÊNCIA:
-${comments.map((c, i) => `${i + 1}. "${c.text}"`).join('\n')}
+${allComments.map((c, i) => `${i + 1}. "${c.text}"`).join('\n')}
 
 Tarefa PRIORITÁRIA: para CADA comentário da lista, gere 2-3 sugestões de RESPOSTA prontas para postar, seguindo os caminhos de resposta pedidos acima.
 
@@ -293,7 +295,7 @@ Responda APENAS com JSON válido, sem markdown:
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment() }
               }}
-              placeholder="Cole um comentário manualmente, ou envie um print... (Enter adiciona, Shift+Enter quebra linha)"
+              placeholder="Cole um comentário aqui, ou envie um print. Pode clicar direto em Analisar — só use o + se quiser adicionar mais de um antes de analisar."
               rows={2}
               className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
             />
@@ -350,7 +352,7 @@ Responda APENAS com JSON válido, sem markdown:
         <div className="border-t border-gray-100 pt-4">
           <button
             onClick={analyzeComments}
-            disabled={analyzing || !comments.length}
+            disabled={analyzing || (!comments.length && !commentText.trim())}
             className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {analyzing ? (
@@ -359,8 +361,8 @@ Responda APENAS com JSON válido, sem markdown:
               <><Sparkles size={16} /> Analisar e Sugerir Conteúdos</>
             )}
           </button>
-          {!comments.length && (
-            <p className="text-[11px] text-gray-400 text-center mt-2">Adicione pelo menos um comentário para habilitar a análise</p>
+          {!comments.length && !commentText.trim() && (
+            <p className="text-[11px] text-gray-400 text-center mt-2">Escreva ou cole pelo menos um comentário para habilitar a análise</p>
           )}
         </div>
       </div>
