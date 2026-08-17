@@ -438,6 +438,77 @@ async function instagramOAuthConnect(appId, appSecret, code, redirectUri) {
   }
 }
 
+// ─── Instagram — sincronizar posts recentes + insights ────────────────────────
+// Busca os últimos posts da conta conectada e, pra cada um, tenta puxar
+// alcance/salvamentos/compartilhamentos via /insights. Esse endpoint exige o
+// escopo instagram_business_manage_insights — se o token só tem
+// instagram_business_basic (conexões feitas antes desse escopo existir), a
+// chamada de insights falha e devolvemos os posts só com like_count/comments_count
+// (que vêm do próprio objeto de mídia, sem precisar de permissão extra).
+
+async function instagramFetchMetrics(accessToken, limit) {
+  const mediaRes = await fetch(
+    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count` +
+    `&limit=${encodeURIComponent(limit)}&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const mediaData = await mediaRes.json().catch(() => ({}))
+  if (!mediaRes.ok) {
+    throw new Error(mediaData.error?.message || 'Falha ao buscar publicações do Instagram.')
+  }
+
+  const items = mediaData.data || []
+  let insightsAvailable = true
+
+  const postTypeMap = { REELS: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: 'image', VIDEO: 'video' }
+
+  const rows = []
+  for (const m of items) {
+    let reach = 0, saves = 0, shares = 0, plays = 0
+
+    if (insightsAvailable) {
+      const metricNames = m.media_product_type === 'REELS' ? 'reach,saved,shares,plays' : 'reach,saved,shares'
+      const insRes = await fetch(
+        `https://graph.instagram.com/${m.id}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
+      )
+      const insData = await insRes.json().catch(() => ({}))
+      if (insRes.ok) {
+        for (const metric of insData.data || []) {
+          const val = metric.values?.[0]?.value ?? metric.total_value?.value ?? 0
+          if (metric.name === 'reach')  reach  = val
+          if (metric.name === 'saved')  saves  = val
+          if (metric.name === 'shares') shares = val
+          if (metric.name === 'plays')  plays  = val
+        }
+      } else if (insRes.status === 400 || insRes.status === 403) {
+        insightsAvailable = false
+      }
+    }
+
+    const isoDate = m.timestamp || ''
+    rows.push({
+      post_id:      m.id,
+      platform:     'instagram',
+      date:         isoDate.slice(0, 10),
+      publish_time: isoDate.slice(11, 16),
+      impressions:  plays || reach,
+      reach,
+      likes:        m.like_count || 0,
+      comments:     m.comments_count || 0,
+      shares,
+      saves,
+      follows:      0,
+      link_clicks:  0,
+      duration_sec: 0,
+      description:  m.caption || '',
+      link:         m.permalink || '',
+      post_type:    postTypeMap[m.media_product_type] || (m.media_type || '').toLowerCase(),
+      client:       '',
+    })
+  }
+
+  return { rows, insightsAvailable }
+}
+
 // ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
@@ -578,6 +649,14 @@ export default async function handler(req, res) {
       if (!code?.trim())        return res.status(400).json({ error: 'Código de autorização ausente.' })
       if (!redirectUri?.trim()) return res.status(400).json({ error: 'redirectUri é obrigatório.' })
       const result = await instagramOAuthConnect(appId, appSecret, code, redirectUri)
+      return res.status(200).json(result)
+    }
+
+    // ── Instagram — sincronizar métricas ──────────────────────────────────────
+    if (action === 'instagram-sync-metrics') {
+      const { accessToken, limit } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchMetrics(accessToken, limit || 25)
       return res.status(200).json(result)
     }
 

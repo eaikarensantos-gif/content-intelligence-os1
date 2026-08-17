@@ -262,6 +262,17 @@ export async function instagramOAuthConnect(appId, appSecret, code, redirectUri)
   return data
 }
 
+export async function instagramSyncMetrics(accessToken, limit = 25) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-sync-metrics', accessToken, limit }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data
+}
+
 // ─── Whisper transcription (via serverless proxy) ─────────────────────────────
 
 export async function transcribeAudio(openaiApiKey, audioUrl) {

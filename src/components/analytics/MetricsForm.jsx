@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Upload, Plus, FileText, ExternalLink } from 'lucide-react'
+import { Upload, Plus, FileText, ExternalLink, Instagram, Loader2 } from 'lucide-react'
 import { parseFile } from '../../utils/csvNormalizer'
 import Modal from '../common/Modal'
 import useStore from '../../store/useStore'
+import { getConnection } from '../../lib/instagramAuth'
+import { instagramSyncMetrics } from '../../lib/aiService'
 
 const EMPTY = {
   post_id: '', platform: 'instagram', date: new Date().toISOString().split('T')[0],
@@ -25,6 +27,37 @@ export default function MetricsForm({ open, onClose }) {
   const [tab, setTab] = useState('manual')
   const [csvResult, setCsvResult] = useState(null)
   const [updateResult, setUpdateResult] = useState(null)
+
+  const igConnection = getConnection()
+  const [igLoading, setIgLoading] = useState(false)
+  const [igError, setIgError] = useState(null)
+  const [igRows, setIgRows] = useState(null)
+  const [igInsightsAvailable, setIgInsightsAvailable] = useState(true)
+
+  const existingPostIds = new Set(metrics.map((m) => m.post_id).filter(Boolean))
+  const igNewRows = igRows ? igRows.filter((r) => !existingPostIds.has(r.post_id)) : null
+
+  const handleFetchInstagram = async () => {
+    if (!igConnection) return
+    setIgLoading(true)
+    setIgError(null)
+    try {
+      const { rows, insightsAvailable } = await instagramSyncMetrics(igConnection.accessToken)
+      setIgRows(rows)
+      setIgInsightsAvailable(insightsAvailable)
+    } catch (err) {
+      setIgError(err.message)
+    } finally {
+      setIgLoading(false)
+    }
+  }
+
+  const importInstagram = () => {
+    if (!igNewRows) return
+    igNewRows.forEach((row) => addMetric(row))
+    setIgRows(null)
+    onClose()
+  }
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -275,7 +308,11 @@ export default function MetricsForm({ open, onClose }) {
     <Modal open={open} onClose={onClose} title="Adicionar Métricas de Desempenho">
       {/* Abas */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5">
-        {[['manual', 'Entrada Manual'], ['csv', 'Upload CSV']].map(([id, label]) => (
+        {[
+          ['manual', 'Entrada Manual'],
+          ['csv', 'Upload CSV'],
+          ...(igConnection ? [['instagram', 'Instagram']] : []),
+        ].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -440,6 +477,75 @@ export default function MetricsForm({ open, onClose }) {
                     Importar {csvResult.length} linhas
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'instagram' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 text-center">
+            <Instagram size={24} className="text-pink-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-700 mb-1">Buscar posts recentes direto da conta conectada</p>
+            <p className="text-xs text-gray-400 mb-3">
+              Conectado como @{igConnection?.accounts?.[0]?.username || igConnection?.accounts?.[0]?.id}
+            </p>
+            <button className="btn-primary inline-flex" onClick={handleFetchInstagram} disabled={igLoading}>
+              {igLoading ? <><Loader2 size={14} className="animate-spin" /> Buscando...</> : <>Buscar posts do Instagram</>}
+            </button>
+          </div>
+
+          {igError && (
+            <p className="text-xs text-red-500">{igError}</p>
+          )}
+
+          {!igInsightsAvailable && igRows && (
+            <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg p-2 border border-amber-200">
+              ⚠️ Conexão sem permissão de Insights — alcance/salvamentos/compartilhamentos vieram zerados. Reconecte o Instagram em Configurações pra liberar esses números.
+            </p>
+          )}
+
+          {igRows && (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500">
+                <span className="text-emerald-600 font-semibold">{igNewRows.length} posts novos</span> prontos para importar
+                {igRows.length > igNewRows.length && ` (${igRows.length - igNewRows.length} já importados anteriormente, ignorados)`}
+              </p>
+              <div className="max-h-40 overflow-y-auto rounded-lg bg-gray-50 border border-gray-200">
+                {igNewRows.slice(0, 5).map((row) => (
+                  <div key={row.post_id} className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 last:border-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {row.post_type && (
+                        <span className="chip border text-[10px] bg-purple-50 text-purple-600 border-purple-200 capitalize">{row.post_type}</span>
+                      )}
+                      <span className="font-medium text-gray-700">{row.date}</span>
+                      {row.link && (
+                        <a href={row.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-400 hover:text-blue-600">
+                          <ExternalLink size={10} />
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                      <span>{(row.reach || 0).toLocaleString()} alc.</span>
+                      <span>{row.likes} curt.</span>
+                      <span>{row.comments} coment.</span>
+                      <span>{row.saves} salv.</span>
+                    </div>
+                    {row.description && (
+                      <p className="text-[10px] text-gray-400 truncate">{row.description.slice(0, 80)}{row.description.length > 80 ? '…' : ''}</p>
+                    )}
+                  </div>
+                ))}
+                {igNewRows.length > 5 && (
+                  <div className="px-3 py-2 text-xs text-gray-400">+ {igNewRows.length - 5} posts mais</div>
+                )}
+              </div>
+              <div className="flex justify-end gap-2">
+                <button className="btn-secondary" onClick={() => setIgRows(null)}>Limpar</button>
+                <button className="btn-primary" onClick={importInstagram} disabled={igNewRows.length === 0}>
+                  Importar {igNewRows.length} posts
+                </button>
               </div>
             </div>
           )}
