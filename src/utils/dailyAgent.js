@@ -5,6 +5,7 @@
 const LS_KEY = 'cio-anthropic-key'
 const LS_DAILY_PREFIX = 'cio-daily-agent-'
 
+// Fallback: usado só quando /posicionamento ainda não tem pilares definidos.
 const PILARES = [
   'transição CLT para PJ solo',
   'identidade profissional na era da IA',
@@ -31,13 +32,17 @@ export function clearDailyAgentStatus() {
   localStorage.removeItem(getTodayKey())
 }
 
-export async function runDailyIdeasAgent() {
+export async function runDailyIdeasAgent(posicionamento = null) {
   const apiKey = localStorage.getItem(LS_KEY)
   if (!apiKey) throw new Error('API key não encontrada. Configure em Configurações.')
 
-  // Pega 3 pilares aleatórios do dia pra variar
-  const shuffled = [...PILARES].sort(() => Math.random() - 0.5)
-  const pilaresDoDia = shuffled.slice(0, 3).join(', ')
+  // Pega 3 pilares aleatórios do dia pra variar — prioriza os pilares reais
+  // cadastrados em /posicionamento, caindo pro fallback só se não houver nenhum.
+  const nomesPilares = posicionamento?.pilares?.length
+    ? posicionamento.pilares.map(p => p.nome).filter(Boolean)
+    : PILARES
+  const shuffled = [...nomesPilares].sort(() => Math.random() - 0.5)
+  const pilaresDoDia = shuffled.slice(0, Math.min(3, shuffled.length)).join(', ')
 
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long',

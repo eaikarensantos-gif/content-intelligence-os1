@@ -9,6 +9,7 @@ import useStore from '../store/useStore'
 
 export default function useDailyAgent() {
   const addIdea = useStore((s) => s.addIdea)
+  const posicionamento = useStore((s) => s.posicionamento)
   const [status, setStatus] = useState(() => getDailyAgentStatus())
   const [running, setRunning] = useState(false)
   const [error, setError] = useState(null)
@@ -19,7 +20,7 @@ export default function useDailyAgent() {
     setError(null)
     setNewCount(0)
     try {
-      const ideas = await runDailyIdeasAgent()
+      const ideas = await runDailyIdeasAgent(posicionamento)
       ideas.forEach((idea) => addIdea(idea))
       setNewCount(ideas.length)
       setStatus(getDailyAgentStatus())
@@ -28,7 +29,7 @@ export default function useDailyAgent() {
     } finally {
       setRunning(false)
     }
-  }, [addIdea])
+  }, [addIdea, posicionamento])
 
   // Auto-disparo: roda no mount se não rodou hoje e são >= 10h
   useEffect(() => {
