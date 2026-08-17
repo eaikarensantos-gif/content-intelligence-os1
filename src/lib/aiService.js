@@ -295,6 +295,17 @@ export async function instagramFetchComments(accessToken, mediaId) {
   return data.comments ?? []
 }
 
+export async function instagramAccountOverview(accessToken) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-account-overview', accessToken }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data
+}
+
 // ─── Whisper transcription (via serverless proxy) ─────────────────────────────
 
 export async function transcribeAudio(openaiApiKey, audioUrl) {

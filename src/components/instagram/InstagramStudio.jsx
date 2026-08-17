@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { getConnection } from '../../lib/instagramAuth'
 import { instagramFetchPosts, instagramFetchComments } from '../../lib/aiService'
 import Modal from '../common/Modal'
+import AccountOverview from './AccountOverview'
 
 const POST_TYPE_LABEL = { reel: 'Reel', carousel: 'Carrossel', image: 'Foto', video: 'Vídeo' }
 
@@ -180,6 +181,8 @@ export default function InstagramStudio() {
           </button>
         </div>
       </div>
+
+      <AccountOverview accessToken={connection.accessToken} />
 
       {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
 

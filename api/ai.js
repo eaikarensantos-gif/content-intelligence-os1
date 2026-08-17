@@ -618,6 +618,108 @@ async function instagramFetchComments(accessToken, mediaId) {
   }))
 }
 
+// ─── Instagram — visão geral da conta (não por post) ──────────────────────────
+// Perfil (contadores em tempo real), métricas agregadas dos últimos 30 dias,
+// crescimento de seguidores dia a dia, e demografia da audiência. Cada bloco é
+// buscado e degradado de forma independente — se um falhar (conta pequena
+// demais pra ter demografia, métrica não suportada, etc.) os outros blocos
+// continuam disponíveis em vez de derrubar a resposta inteira.
+
+async function instagramFetchAccountOverview(accessToken) {
+  const profileRes = await fetch(
+    `https://graph.instagram.com/me?fields=id,username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url` +
+    `&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const profile = await profileRes.json().catch(() => ({}))
+  if (!profileRes.ok) {
+    throw new Error(profile.error?.message || 'Falha ao buscar o perfil da conta.')
+  }
+
+  const until = Math.floor(Date.now() / 1000)
+  const since = until - 30 * 24 * 60 * 60
+
+  async function fetchInsights(metricNames, extraParams = '') {
+    const url = `https://graph.instagram.com/me/insights?metric=${metricNames}&period=day&since=${since}&until=${until}${extraParams}` +
+      `&access_token=${encodeURIComponent(accessToken)}`
+    const res = await fetch(url)
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
+  // Totais do período (soma os valores diários de cada métrica)
+  let periodStats = null
+  {
+    const tiers = [
+      'reach,profile_views,website_clicks,accounts_engaged,total_interactions',
+      'reach,profile_views,accounts_engaged',
+      'reach',
+    ]
+    let result = null
+    for (const metricNames of tiers) {
+      result = await fetchInsights(metricNames)
+      if (result.ok || result.status !== 400) break
+    }
+    if (result?.ok) {
+      periodStats = {}
+      for (const metric of result.data.data || []) {
+        periodStats[metric.name] = (metric.values || []).reduce((sum, v) => sum + (v.value || 0), 0)
+      }
+    }
+  }
+
+  // Crescimento de seguidores dia a dia
+  let followerGrowth = []
+  {
+    const result = await fetchInsights('follower_count')
+    if (result.ok) {
+      const series = (result.data.data || []).find((m) => m.name === 'follower_count')
+      followerGrowth = (series?.values || [])
+        .map((v) => ({ date: (v.end_time || '').slice(0, 10), value: v.value || 0 }))
+        .filter((p) => p.date)
+    }
+  }
+
+  // Demografia — idade+gênero, cidade, país (cada dimensão é uma chamada própria)
+  async function fetchDemographics(breakdown) {
+    const url = `https://graph.instagram.com/me/insights?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=${breakdown}` +
+      `&access_token=${encodeURIComponent(accessToken)}`
+    const res = await fetch(url)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return null
+    const results = data.data?.[0]?.total_value?.breakdowns?.[0]?.results || []
+    return results
+      .map((r) => ({ key: (r.dimension_values || []).join(' · '), value: r.value || 0 }))
+      .sort((a, b) => b.value - a.value)
+  }
+
+  const [ageGender, city, country] = await Promise.all([
+    fetchDemographics('age,gender'),
+    fetchDemographics('city'),
+    fetchDemographics('country'),
+  ])
+
+  return {
+    profile: {
+      username:          profile.username || '',
+      name:              profile.name || '',
+      biography:         profile.biography || '',
+      website:           profile.website || '',
+      followersCount:    profile.followers_count || 0,
+      followsCount:      profile.follows_count || 0,
+      mediaCount:        profile.media_count || 0,
+      profilePictureUrl: profile.profile_picture_url || null,
+    },
+    periodStats,
+    followerGrowth,
+    demographics: {
+      ageGender: ageGender || [],
+      city:      city || [],
+      country:   country || [],
+      available: !!(ageGender?.length || city?.length || country?.length),
+    },
+  }
+}
+
 // ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
@@ -783,6 +885,14 @@ export default async function handler(req, res) {
       if (!mediaId?.trim())      return res.status(400).json({ error: 'mediaId é obrigatório.' })
       const comments = await instagramFetchComments(accessToken, mediaId)
       return res.status(200).json({ comments })
+    }
+
+    // ── Instagram — visão geral da conta ──────────────────────────────────────
+    if (action === 'instagram-account-overview') {
+      const { accessToken } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchAccountOverview(accessToken)
+      return res.status(200).json(result)
     }
 
     // ── Whisper ───────────────────────────────────────────────────────────────
