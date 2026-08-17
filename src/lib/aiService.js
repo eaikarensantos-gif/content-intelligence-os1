@@ -249,6 +249,19 @@ export async function instagramSearch(apifyToken, apifyActorId, query) {
   return platformSearch({ action: 'instagram-search', apifyToken, apifyActorId, query })
 }
 
+// ─── Instagram OAuth (Meta Graph API oficial, via serverless proxy) ──────────
+
+export async function instagramOAuthConnect(appId, appSecret, code, redirectUri) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-oauth-connect', appId, appSecret, code, redirectUri }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data
+}
+
 // ─── Whisper transcription (via serverless proxy) ─────────────────────────────
 
 export async function transcribeAudio(openaiApiKey, audioUrl) {
