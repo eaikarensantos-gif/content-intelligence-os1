@@ -94,7 +94,9 @@ export default function CommentAnalyzer() {
       const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
       const contextSection = context.trim() ? `\n\nCONTEXTO DOS COMENTÁRIOS:\n${context.trim()}` : ''
       const pathsList = responsePaths.split('\n').map(s => s.trim()).filter(Boolean)
-      const pathsSection = pathsList.length ? `\n\nCAMINHOS DE RESPOSTA DESEJADOS:\nAlém dos conteúdos, para cada perfil de dor gere também sugestões de RESPOSTA (texto pronto para comentar/responder), seguindo estritamente estes caminhos/direções pedidos pelo usuário:\n${pathsList.map((p, i) => `${i + 1}. ${p}`).join('\n')}` : ''
+      const pathsSection = pathsList.length
+        ? `\n\nCAMINHOS DE RESPOSTA DESEJADOS:\nSiga estritamente estes caminhos/direções ao gerar as respostas:\n${pathsList.map((p, i) => `${i + 1}. ${p}`).join('\n')}`
+        : '\n\nNenhum caminho de resposta específico foi definido: gere respostas variando o tom (ex: empática, direta, educativa).'
       const resp = await fetch('/api/ai?action=gemini', {
         method: 'POST',
         headers: {
@@ -109,18 +111,30 @@ export default function CommentAnalyzer() {
           max_tokens: 4000,
           messages: [{
             role: 'user',
-            content: `Você é um estrategista de conteúdo especializado em transformar dores e dúvidas reais da audiência em conteúdos de alto impacto.
+            content: `Você é um estrategista de conteúdo e de comunidade, especializado em responder comentários da audiência e transformar dores/dúvidas reais em conteúdos de alto impacto.
 ${voiceContext}${contextSection}${pathsSection}
 
 COMENTÁRIOS DA AUDIÊNCIA:
 ${comments.map((c, i) => `${i + 1}. "${c.text}"`).join('\n')}
 
-Analise esses comentários e identifique:
-1. Os PERFIS DE DOR (agrupamento de problemas/frustrações similares)
-2. Para CADA perfil de dor, sugira 2-3 conteúdos que resolvam, eduquem ou conectem com essa pessoa${pathsList.length ? '\n3. Para CADA perfil de dor, gere as sugestões de resposta pedidas em "CAMINHOS DE RESPOSTA DESEJADOS"' : ''}
+Tarefa PRIORITÁRIA: para CADA comentário da lista, gere 2-3 sugestões de RESPOSTA prontas para postar (texto direto, pronto para copiar e colar como resposta ao comentário), seguindo os caminhos de resposta pedidos acima.
+
+Tarefa secundária: agrupe os comentários em PERFIS DE DOR (problemas/frustrações similares) e sugira 2-3 ideias de conteúdo por perfil.
 
 Responda APENAS com JSON válido, sem markdown:
 {
+  "replies": [
+    {
+      "comment_index": 1,
+      "comment_excerpt": "trecho do comentário original (até 140 caracteres)",
+      "suggestions": [
+        {
+          "path": "qual caminho de resposta pedido esta sugestão segue (ou o tom usado, se nenhum caminho foi pedido)",
+          "reply": "texto de resposta pronto para postar"
+        }
+      ]
+    }
+  ],
   "pain_profiles": [
     {
       "name": "nome do perfil de dor",
@@ -135,14 +149,7 @@ Responda APENAS com JSON válido, sem markdown:
           "angle": "abordagem/ângulo do conteúdo",
           "why": "por que esse conteúdo resolve essa dor"
         }
-      ]${pathsList.length ? `,
-      "suggested_replies": [
-        {
-          "path": "qual dos caminhos de resposta pedidos esta resposta segue",
-          "reply": "texto de resposta pronto para postar como comentário/resposta",
-          "tone": "tom da resposta"
-        }
-      ]` : ''}
+      ]
     }
   ],
   "meta_insight": "insight geral sobre o que a audiência está pedindo entre linhas"
@@ -187,9 +194,10 @@ Responda APENAS com JSON válido, sem markdown:
         </div>
       </div>
 
-      {/* Context & response paths */}
+      {/* Unified input block */}
       <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
+        {/* Context & response paths */}
+        <div className="flex items-center gap-2">
           <Compass size={14} className="text-indigo-500" />
           <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
         </div>
@@ -213,87 +221,81 @@ Responda APENAS com JSON válido, sem markdown:
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
           />
         </div>
-      </div>
 
-      {/* Input area */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-1">
+        {/* Add comments */}
+        <div className="border-t border-gray-100 pt-4 space-y-2">
           <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Adicionar comentários</h4>
-        </div>
-
-        {/* Upload image */}
-        <div className="flex gap-3">
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={analyzing}
-            className="flex-1 flex items-center justify-center gap-2 py-4 border-2 border-dashed border-indigo-200 rounded-xl text-sm text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer"
-          >
-            <Upload size={16} />
-            {analyzing ? 'Extraindo comentários...' : 'Upload de print (imagem)'}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleImageUpload}
-          />
-        </div>
-
-        {/* Manual text input */}
-        <div className="flex gap-2">
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Ou cole um comentário manualmente..."
-            rows={2}
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
-          />
-          <button
-            onClick={addComment}
-            disabled={!commentText.trim()}
-            className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Comments list */}
-      {comments.length > 0 && (
-        <div className="card p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              {comments.length} comentário{comments.length !== 1 ? 's' : ''} coletado{comments.length !== 1 ? 's' : ''}
-            </h4>
+          <div className="flex gap-2">
             <button
-              onClick={() => setComments([])}
-              className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+              onClick={() => fileRef.current?.click()}
+              disabled={analyzing}
+              title="Upload de print (imagem)"
+              className="shrink-0 w-9 h-9 self-end flex items-center justify-center border border-gray-200 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 disabled:opacity-40 transition-colors"
             >
-              Limpar todos
+              {analyzing ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
             </button>
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Cole um comentário manualmente, ou envie um print..."
+              rows={2}
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+            />
+            <button
+              onClick={addComment}
+              disabled={!commentText.trim()}
+              className="shrink-0 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
+            >
+              <Plus size={16} />
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleImageUpload}
+            />
           </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {comments.map(c => (
-              <div key={c.id} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg group">
-                <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
-                <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
-                <button
-                  onClick={() => removeComment(c.id)}
-                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
+        </div>
 
-          {/* Analyze button */}
+        {/* Comments list */}
+        {comments.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                {comments.length} comentário{comments.length !== 1 ? 's' : ''} coletado{comments.length !== 1 ? 's' : ''}
+              </h4>
+              <button
+                onClick={() => setComments([])}
+                className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+              >
+                Limpar todos
+              </button>
+            </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {comments.map(c => (
+                <div key={c.id} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg group">
+                  <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
+                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
+                  <button
+                    onClick={() => removeComment(c.id)}
+                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Analyze button */}
+        <div className="border-t border-gray-100 pt-4">
           <button
             onClick={analyzeComments}
-            disabled={analyzing}
-            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+            disabled={analyzing || !comments.length}
+            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {analyzing ? (
               <><Loader2 size={16} className="animate-spin" /> Analisando dores...</>
@@ -301,8 +303,11 @@ Responda APENAS com JSON válido, sem markdown:
               <><Sparkles size={16} /> Analisar e Sugerir Conteúdos</>
             )}
           </button>
+          {!comments.length && (
+            <p className="text-[11px] text-gray-400 text-center mt-2">Adicione pelo menos um comentário para habilitar a análise</p>
+          )}
         </div>
-      )}
+      </div>
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
@@ -321,6 +326,37 @@ Responda APENAS com JSON válido, sem markdown:
                   <p className="text-xs text-gray-700">{suggestions.meta_insight}</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Suggested replies per comment (priority) */}
+          {(suggestions.replies || []).length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Respostas sugeridas</h4>
+              {suggestions.replies.map((r, ci) => (
+                <div key={ci} className="card p-4 space-y-3">
+                  <p className="text-xs text-gray-500 italic border-l-2 border-gray-200 pl-2">"{r.comment_excerpt}"</p>
+                  <div className="space-y-2">
+                    {(r.suggestions || []).map((s, si) => {
+                      const replyId = `${ci}-${si}`
+                      return (
+                        <div key={si} className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            {s.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{s.path}</span>}
+                            <button
+                              onClick={() => copyReply(replyId, s.reply)}
+                              className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors ml-auto"
+                            >
+                              {copiedId === replyId ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-700 leading-relaxed">{s.reply}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -381,33 +417,6 @@ Responda APENAS com JSON válido, sem markdown:
                   </div>
                 ))}
               </div>
-
-              {/* Suggested replies */}
-              {(profile.suggested_replies || []).length > 0 && (
-                <div className="space-y-2 pt-3 border-t border-gray-100">
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Sugestões de resposta</p>
-                  {profile.suggested_replies.map((r, ri) => {
-                    const replyId = `${pi}-${ri}`
-                    return (
-                      <div key={ri} className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            {r.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{r.path}</span>}
-                            {r.tone && <span className="text-[10px] text-gray-400">{r.tone}</span>}
-                          </div>
-                          <button
-                            onClick={() => copyReply(replyId, r.reply)}
-                            className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors"
-                          >
-                            {copiedId === replyId ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
-                          </button>
-                        </div>
-                        <p className="text-xs text-gray-700 leading-relaxed">{r.reply}</p>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           ))}
         </div>
