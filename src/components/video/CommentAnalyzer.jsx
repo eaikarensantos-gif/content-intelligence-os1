@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2, Bookmark } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2, Bookmark, RefreshCw } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../utils/aiJson'
@@ -15,6 +15,7 @@ export default function CommentAnalyzer() {
   const [error, setError] = useState('')
   const [copiedId, setCopiedId] = useState(null)
   const [shorteningId, setShorteningId] = useState(null)
+  const [regeneratingId, setRegeneratingId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const commentContexts = useStore(s => s.commentContexts)
@@ -236,6 +237,58 @@ Responda APENAS com JSON válido, sem markdown:
     finally { setShorteningId(null) }
   }
 
+  const regenerateReply = async (ci, si) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    const replyEntry = suggestions.replies[ci]
+    const current = replyEntry.suggestions[si]
+    const replyId = `${ci}-${si}`
+    setRegeneratingId(replyId)
+    setError('')
+    try {
+      const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
+      const resp = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
+          max_tokens: 600,
+          messages: [{
+            role: 'user',
+            content: `Você é a própria pessoa respondendo comentários do seu post/vídeo.${voiceContext}
+
+COMENTÁRIO ORIGINAL:
+"${replyEntry.comment_excerpt}"
+
+RESPOSTA ATUAL (a pessoa não gostou, quer uma alternativa):
+"${current.reply}"
+
+Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `, seguindo o mesmo caminho/direção: "${current.path}"` : ''}. Precisa ser genuinamente diferente da atual — outro ângulo, outra abertura, outra forma de dizer — mas manter o mesmo tom conversacional e informal. Responda APENAS com o novo texto da resposta, sem aspas, sem explicação.`,
+          }]
+        })
+      })
+      if (!resp.ok) await handleApiError(resp)
+      const data = await resp.json()
+      assertNotTruncated(data)
+      const regenerated = data.content?.find(b => b.type === 'text')?.text?.trim()
+      if (regenerated) {
+        setSuggestions(prev => ({
+          ...prev,
+          replies: prev.replies.map((r, i) => i !== ci ? r : {
+            ...r,
+            suggestions: r.suggestions.map((s, j) => j === si ? { ...s, reply: regenerated } : s),
+          }),
+        }))
+      }
+    } catch (e) { setError(e.message) }
+    finally { setRegeneratingId(null) }
+  }
+
   const handleSaveIdea = (idea, profileName) => {
     addIdea({
       title: idea.title,
@@ -451,6 +504,13 @@ Responda APENAS com JSON válido, sem markdown:
                           <div className="flex items-center justify-between gap-2">
                             {s.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{s.path}</span>}
                             <div className="flex items-center gap-1 ml-auto">
+                              <button
+                                onClick={() => regenerateReply(ci, si)}
+                                disabled={regeneratingId === replyId}
+                                className="text-[11px] text-gray-500 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                              >
+                                {regeneratingId === replyId ? <><Loader2 size={11} className="animate-spin" /> Gerando...</> : <><RefreshCw size={11} /> Regenerar</>}
+                              </button>
                               <button
                                 onClick={() => shortenReply(ci, si)}
                                 disabled={shorteningId === replyId}
