@@ -2,6 +2,8 @@ import { useState, useRef } from 'react'
 import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
+import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
+import { handleApiError } from '../../utils/apiError'
 
 export default function CommentAnalyzer() {
   const [comments, setComments] = useState([])
@@ -108,7 +110,7 @@ export default function CommentAnalyzer() {
           model: 'claude-sonnet-5',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
-          max_tokens: 4000,
+          max_tokens: 6000,
           messages: [{
             role: 'user',
             content: `Você é um estrategista de conteúdo e de comunidade, especializado em responder comentários da audiência e transformar dores/dúvidas reais em conteúdos de alto impacto.
@@ -157,10 +159,11 @@ Responda APENAS com JSON válido, sem markdown:
           }]
         })
       })
+      if (!resp.ok) await handleApiError(resp)
       const data = await resp.json()
-      const text = data.content?.find(b => b.type === 'text')?.text || '{}'
-      const clean = text.replace(/```json\n?|\n?```/g, '').trim()
-      setSuggestions(JSON.parse(clean))
+      assertNotTruncated(data, 'A análise ficou grande demais e foi cortada antes de terminar. Tente novamente com menos comentários.')
+      const text = data.content?.find(b => b.type === 'text')?.text
+      setSuggestions(extractJsonObject(text))
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
   }
