@@ -348,12 +348,11 @@ export default function Analytics() {
   const [savedTemplates, setSavedTemplates] = useState({})
 
   // Publi tab state - analytics dashboard
-  const [publiMonth, setPubliMonth] = useState(() => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    return `${year}-${month}`
+  const [publiDateFrom, setPubliDateFrom] = useState(() => {
+    const year = new Date().getFullYear()
+    return `${year}-01-01`
   })
+  const [publiDateTo, setPubliDateTo] = useState(() => new Date().toISOString().slice(0, 10))
   const [publiClient, setPubliClient] = useState('')
   const [publiReport, setPubliReport] = useState(null)
   const [publiLoading, setPubliLoading] = useState(false)
@@ -1364,14 +1363,19 @@ export default function Analytics() {
 
       {/* ===== PUBLI — Relatório de Publicidade ===== */}
       {tab === 'publi' && (() => {
-        const [year, month] = publiMonth.split('-').map(Number)
-        const firstOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
-        const lastDayNum = new Date(year, month, 0).getDate()
-        const lastDay = `${year}-${String(month).padStart(2, '0')}-${lastDayNum}`
+        // Período livre (não mais preso a um único mês) — firstOfMonth/lastDay
+        // seguem com esse nome pra não precisar renomear todo uso abaixo, mas
+        // agora vêm direto do range escolhido em publiDateFrom/publiDateTo.
+        const firstOfMonth = publiDateFrom
+        const lastDay = publiDateTo
+        const fmtRangeDate = (d) => {
+          if (!d) return '—'
+          try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) }
+          catch { return d }
+        }
+        const monthLabel = `${fmtRangeDate(firstOfMonth)} a ${fmtRangeDate(lastDay)}`
 
-        const monthLabel = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-
-        // Filtra por mês + sinalizadores publi
+        // Filtra pelo período selecionado + sinalizadores publi
         // Inclui: posts com sinais na descrição (hashtags/menções) OU com cliente preenchido manualmente
         let publiPosts = enriched.filter(m => {
           if (m.date < firstOfMonth || m.date > lastDay) return false
@@ -1419,19 +1423,6 @@ export default function Analytics() {
         }
 
         const selectedClientName = publiClient ? (clients.find(c => c.id === publiClient)?.name || '') : ''
-
-        // Gera meses disponíveis baseado nos dados
-        const availableMonths = (() => {
-          const months = new Set()
-          enriched.forEach(m => {
-            if (m.date) months.add(m.date.slice(0, 7))
-          })
-          // Sempre incluir mês atual
-          const _now = new Date()
-          const cur = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
-          months.add(cur)
-          return [...months].sort().reverse()
-        })()
 
         // ── Análise de Maturidade (prompt técnico) ──
         const handlePubliAnalysis = async () => {
@@ -1794,17 +1785,21 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <Calendar size={12} className="text-gray-400" />
-                    <select
-                      className="select text-xs py-1.5 w-44"
-                      value={publiMonth}
-                      onChange={(e) => { setPubliMonth(e.target.value); setPubliSearch(''); setPubliReport(null); setPubliClientReport(null) }}
-                    >
-                      {availableMonths.map(m => {
-                        const [y, mo] = m.split('-').map(Number)
-                        const label = new Date(y, mo - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-                        return <option key={m} value={m}>{label}</option>
-                      })}
-                    </select>
+                    <input
+                      type="date"
+                      className="input text-xs py-1.5 w-36"
+                      value={publiDateFrom}
+                      max={publiDateTo}
+                      onChange={(e) => { setPubliDateFrom(e.target.value); setPubliSearch(''); setPubliReport(null); setPubliClientReport(null) }}
+                    />
+                    <span className="text-xs text-gray-400">até</span>
+                    <input
+                      type="date"
+                      className="input text-xs py-1.5 w-36"
+                      value={publiDateTo}
+                      min={publiDateFrom}
+                      onChange={(e) => { setPubliDateTo(e.target.value); setPubliSearch(''); setPubliReport(null); setPubliClientReport(null) }}
+                    />
                   </div>
                   {clients.length > 0 && (
                     <select
@@ -1848,7 +1843,7 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
             {publiPosts.length === 0 ? (
               <div className="card p-8 text-center">
                 <AlertTriangle size={24} className="mx-auto mb-3 text-gray-300" />
-                <p className="text-sm font-medium text-gray-600">Nenhum dado de publicidade detectado em {monthLabel}.</p>
+                <p className="text-sm font-medium text-gray-600">Nenhum dado de publicidade detectado no período selecionado ({monthLabel}).</p>
                 <p className="text-xs text-gray-400 mt-1">Certifique-se de que seus posts contêm #publi, #ad, #parceria ou @marca na descrição.</p>
               </div>
             ) : (
