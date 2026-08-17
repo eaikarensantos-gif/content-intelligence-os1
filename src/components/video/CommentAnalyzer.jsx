@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2 } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2, Bookmark } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../utils/aiJson'
@@ -17,7 +17,24 @@ export default function CommentAnalyzer() {
   const [shorteningId, setShorteningId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
+  const commentContexts = useStore(s => s.commentContexts)
+  const addCommentContext = useStore(s => s.addCommentContext)
+  const deleteCommentContext = useStore(s => s.deleteCommentContext)
   const fileRef = useRef(null)
+
+  const saveContext = () => {
+    if (!context.trim()) return
+    addCommentContext({
+      title: context.trim().split('\n')[0].slice(0, 60),
+      context: context.trim(),
+      responsePaths,
+    })
+  }
+
+  const loadContext = (ctx) => {
+    setContext(ctx.context)
+    setResponsePaths(ctx.responsePaths || '')
+  }
 
   const copyReply = (id, text) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -251,10 +268,43 @@ Responda APENAS com JSON válido, sem markdown:
       {/* Unified input block */}
       <div className="card p-5 space-y-4">
         {/* Context & response paths */}
-        <div className="flex items-center gap-2">
-          <Compass size={14} className="text-indigo-500" />
-          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Compass size={14} className="text-indigo-500" />
+            <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
+          </div>
+          <button
+            onClick={saveContext}
+            disabled={!context.trim()}
+            title="Salvar este contexto para reabrir depois"
+            className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Bookmark size={12} /> Salvar contexto
+          </button>
         </div>
+
+        {commentContexts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {commentContexts.map((ctx) => (
+              <div key={ctx.id} className="flex items-center gap-1 bg-gray-100 rounded-full pl-2.5 pr-1 py-1 group">
+                <button
+                  onClick={() => loadContext(ctx)}
+                  title={ctx.context}
+                  className="text-[11px] text-gray-600 hover:text-indigo-700 font-medium max-w-[180px] truncate"
+                >
+                  {ctx.title || 'Contexto salvo'}
+                </button>
+                <button
+                  onClick={() => deleteCommentContext(ctx.id)}
+                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div>
           <label className="text-[11px] font-medium text-gray-500 mb-1 block">Contexto dos comentários</label>
           <textarea
