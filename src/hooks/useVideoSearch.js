@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { youtubeSearch, dailymotionSearch, vimeoSearch, tiktokSearch } from '../lib/aiService'
+import { youtubeSearch, dailymotionSearch, vimeoSearch, tiktokSearch, instagramSearch } from '../lib/aiService'
 import useAIStore from '../store/useAIStore'
 import useVideoSwipeStore from '../store/useVideoSwipeStore'
 import { queriesForCategories } from '../lib/videoCategories'
@@ -37,6 +37,8 @@ export function useVideoSearch() {
   const vimeoToken    = useAIStore((s) => s.vimeoToken)
   const rapidApiKey   = useAIStore((s) => s.rapidApiKey)
   const rapidApiHost  = useAIStore((s) => s.rapidApiHost)
+  const apifyToken    = useAIStore((s) => s.apifyToken)
+  const apifyActorId  = useAIStore((s) => s.apifyActorId)
   const seenIds = useVideoSwipeStore((s) => s.seenIds)
 
   const [loading, setLoading] = useState(false)
@@ -86,6 +88,13 @@ export function useVideoSearch() {
                 .catch(() => [])
             )
           }
+          if (platforms.includes('instagram') && apifyToken) {
+            tasks.push(
+              instagramSearch(apifyToken, apifyActorId, query)
+                .then((r) => r.map((v) => toVideoResult(v, category, query)))
+                .catch(() => [])
+            )
+          }
         }
 
         if (tasks.length === 0) return []
@@ -117,7 +126,7 @@ export function useVideoSearch() {
         setLoading(false)
       }
     },
-    [youtubeApiKey, vimeoToken, rapidApiKey, rapidApiHost, seenIds]
+    [youtubeApiKey, vimeoToken, rapidApiKey, rapidApiHost, apifyToken, apifyActorId, seenIds]
   )
 
   return { search, loading, error }
