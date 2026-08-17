@@ -461,25 +461,40 @@ async function instagramFetchMetrics(accessToken, limit) {
 
   const postTypeMap = { REELS: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: 'image', VIDEO: 'video' }
 
+  // "views" é a métrica universal de visualizações (substitui "plays", que só
+  // existia pra Reels) — tentamos o conjunto completo primeiro e, se a API
+  // rejeitar (nem todo media_product_type aceita "views"), caímos pro conjunto
+  // básico que já sabemos que funciona antes de desistir de vez dos insights.
+  async function fetchInsights(mediaId, metricNames) {
+    const res = await fetch(
+      `https://graph.instagram.com/${mediaId}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
   const rows = []
   for (const m of items) {
-    let reach = 0, saves = 0, shares = 0, plays = 0
+    let reach = 0, saves = 0, shares = 0, views = 0
 
     if (insightsAvailable) {
-      const metricNames = m.media_product_type === 'REELS' ? 'reach,saved,shares,plays' : 'reach,saved,shares'
-      const insRes = await fetch(
-        `https://graph.instagram.com/${m.id}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
-      )
-      const insData = await insRes.json().catch(() => ({}))
-      if (insRes.ok) {
-        for (const metric of insData.data || []) {
+      const fullMetrics  = 'reach,saved,shares,views'
+      const basicMetrics = 'reach,saved,shares'
+
+      let { ok, status, data } = await fetchInsights(m.id, fullMetrics)
+      if (!ok && (status === 400)) {
+        ({ ok, status, data } = await fetchInsights(m.id, basicMetrics))
+      }
+
+      if (ok) {
+        for (const metric of data.data || []) {
           const val = metric.values?.[0]?.value ?? metric.total_value?.value ?? 0
-          if (metric.name === 'reach')  reach  = val
-          if (metric.name === 'saved')  saves  = val
+          if (metric.name === 'reach')  reach = val
+          if (metric.name === 'saved')  saves = val
           if (metric.name === 'shares') shares = val
-          if (metric.name === 'plays')  plays  = val
+          if (metric.name === 'views')  views = val
         }
-      } else if (insRes.status === 400 || insRes.status === 403) {
+      } else if (status === 400 || status === 403) {
         insightsAvailable = false
       }
     }
@@ -490,7 +505,7 @@ async function instagramFetchMetrics(accessToken, limit) {
       platform:     'instagram',
       date:         isoDate.slice(0, 10),
       publish_time: isoDate.slice(11, 16),
-      impressions:  plays || reach,
+      impressions:  views || reach,
       reach,
       likes:        m.like_count || 0,
       comments:     m.comments_count || 0,
