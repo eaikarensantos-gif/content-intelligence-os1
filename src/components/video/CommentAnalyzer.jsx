@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
@@ -14,6 +14,7 @@ export default function CommentAnalyzer() {
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState('')
   const [copiedId, setCopiedId] = useState(null)
+  const [shorteningId, setShorteningId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const fileRef = useRef(null)
@@ -113,13 +114,19 @@ export default function CommentAnalyzer() {
           max_tokens: 6000,
           messages: [{
             role: 'user',
-            content: `Você é um estrategista de conteúdo e de comunidade, especializado em responder comentários da audiência e transformar dores/dúvidas reais em conteúdos de alto impacto.
+            content: `Você é a própria pessoa respondendo os comentários do seu post/vídeo — não um assistente de marketing escrevendo texto genérico.
 ${voiceContext}${contextSection}${pathsSection}
 
 COMENTÁRIOS DA AUDIÊNCIA:
 ${comments.map((c, i) => `${i + 1}. "${c.text}"`).join('\n')}
 
-Tarefa PRIORITÁRIA: para CADA comentário da lista, gere 2-3 sugestões de RESPOSTA prontas para postar (texto direto, pronto para copiar e colar como resposta ao comentário), seguindo os caminhos de resposta pedidos acima.
+Tarefa PRIORITÁRIA: para CADA comentário da lista, gere 2-3 sugestões de RESPOSTA prontas para postar, seguindo os caminhos de resposta pedidos acima.
+
+Regras para as respostas:
+- Tom conversacional e informal por padrão (a menos que a voz do criador ou os caminhos pedidos indiquem outro tom) — nada de linguagem corporativa ou de "discurso de vendas".
+- Responda especificamente ao que ESSA pessoa disse, retomando o ponto que ela trouxe — nunca uma resposta padrão que serviria pra qualquer comentário.
+- Se o CONTEXTO DOS COMENTÁRIOS trouxer o vídeo/post original, dados, ou um exemplo de resposta já escrita pela própria pessoa, use isso para aprofundar o raciocínio e espelhar o tom, vocabulário e nível de formalidade desse exemplo.
+- Respostas podem ser curtas — nem toda resposta precisa de parágrafos longos.
 
 Tarefa secundária: agrupe os comentários em PERFIS DE DOR (problemas/frustrações similares) e sugira 2-3 ideias de conteúdo por perfil.
 
@@ -166,6 +173,49 @@ Responda APENAS com JSON válido, sem markdown:
       setSuggestions(extractJsonObject(text))
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
+  }
+
+  const shortenReply = async (ci, si) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    const current = suggestions.replies[ci].suggestions[si].reply
+    const replyId = `${ci}-${si}`
+    setShorteningId(replyId)
+    setError('')
+    try {
+      const resp = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'low' },
+          max_tokens: 400,
+          messages: [{
+            role: 'user',
+            content: `Reescreva a resposta abaixo de forma mais curta e direta, mantendo o mesmo sentido, tom e nível de informalidade. Responda APENAS com o novo texto da resposta, sem aspas, sem explicação.\n\nResposta original:\n${current}`,
+          }]
+        })
+      })
+      if (!resp.ok) await handleApiError(resp)
+      const data = await resp.json()
+      assertNotTruncated(data)
+      const shortened = data.content?.find(b => b.type === 'text')?.text?.trim()
+      if (shortened) {
+        setSuggestions(prev => {
+          const next = { ...prev, replies: prev.replies.map((r, i) => {
+            if (i !== ci) return r
+            return { ...r, suggestions: r.suggestions.map((s, j) => j === si ? { ...s, reply: shortened } : s) }
+          }) }
+          return next
+        })
+      }
+    } catch (e) { setError(e.message) }
+    finally { setShorteningId(null) }
   }
 
   const handleSaveIdea = (idea, profileName) => {
@@ -240,7 +290,10 @@ Responda APENAS com JSON válido, sem markdown:
             <textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Cole um comentário manualmente, ou envie um print..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment() }
+              }}
+              placeholder="Cole um comentário manualmente, ou envie um print... (Enter adiciona, Shift+Enter quebra linha)"
               rows={2}
               className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
             />
@@ -346,12 +399,21 @@ Responda APENAS com JSON válido, sem markdown:
                         <div key={si} className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-1.5">
                           <div className="flex items-center justify-between gap-2">
                             {s.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{s.path}</span>}
-                            <button
-                              onClick={() => copyReply(replyId, s.reply)}
-                              className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors ml-auto"
-                            >
-                              {copiedId === replyId ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
-                            </button>
+                            <div className="flex items-center gap-1 ml-auto">
+                              <button
+                                onClick={() => shortenReply(ci, si)}
+                                disabled={shorteningId === replyId}
+                                className="text-[11px] text-gray-500 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                              >
+                                {shorteningId === replyId ? <><Loader2 size={11} className="animate-spin" /> Diminuindo...</> : <><Minimize2 size={11} /> Diminuir</>}
+                              </button>
+                              <button
+                                onClick={() => copyReply(replyId, s.reply)}
+                                className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors"
+                              >
+                                {copiedId === replyId ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                              </button>
+                            </div>
                           </div>
                           <p className="text-xs text-gray-700 leading-relaxed">{s.reply}</p>
                         </div>
