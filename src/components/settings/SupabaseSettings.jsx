@@ -1,9 +1,13 @@
-import { useState } from 'react'
-import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon, Instagram, Copy } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
+import {
+  getAppId, getAppSecret, saveCredentials, getRedirectUri,
+  getConnection, clearConnection, isExpiringSoon, startConnect,
+} from '../../lib/instagramAuth'
 
 const LS_ANTHROPIC       = 'cio-anthropic-key'
 const LS_GROQ            = 'cio-groq-key'
@@ -47,6 +51,24 @@ export default function SupabaseSettings() {
   const [testing,  setTesting]  = useState(false)
   const [syncing,  setSyncing]  = useState(false)
   const [saved,    setSaved]    = useState(false)
+
+  const [igAppId,     setIgAppId]     = useState(() => getAppId())
+  const [igAppSecret, setIgAppSecret] = useState(() => getAppSecret())
+  const [showIgSecret, setShowIgSecret] = useState(false)
+  const [igConnection, setIgConnection] = useState(() => getConnection())
+  const [igSaved,        setIgSaved]        = useState(false)
+  const [igJustConnected, setIgJustConnected] = useState(false)
+  const [copiedUri,      setCopiedUri]      = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('instagram') === 'connected') {
+      setIgConnection(getConnection())
+      setIgJustConnected(true)
+      window.history.replaceState({}, '', '/settings')
+      setTimeout(() => setIgJustConnected(false), 4000)
+    }
+  }, [])
 
   const handleSaveSupabase = () => {
     localStorage.setItem(SUPABASE_URL_KEY, sbUrl.trim())
@@ -96,6 +118,28 @@ export default function SupabaseSettings() {
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleSaveIgCredentials = () => {
+    saveCredentials(igAppId, igAppSecret)
+    setIgSaved(true)
+    setTimeout(() => setIgSaved(false), 2000)
+  }
+
+  const handleConnectInstagram = () => {
+    saveCredentials(igAppId, igAppSecret)
+    startConnect(igAppId.trim())
+  }
+
+  const handleDisconnectInstagram = () => {
+    clearConnection()
+    setIgConnection(null)
+  }
+
+  const handleCopyRedirectUri = async () => {
+    await navigator.clipboard.writeText(getRedirectUri())
+    setCopiedUri(true)
+    setTimeout(() => setCopiedUri(false), 1500)
   }
 
   const configured = isSupabaseConfigured()
@@ -289,6 +333,92 @@ alter table user_data disable row level security;`}</pre>
           <a href="https://developer.vimeo.com/apps" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Vimeo Dev</a>
           <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener noreferrer" className="text-xs text-fuchsia-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Apify Console</a>
         </div>
+      </div>
+
+      {/* ── Instagram (API oficial da Meta) ───────────────────────────────────── */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Instagram size={15} className="text-pink-500" /> Instagram (API oficial da Meta)
+          </h2>
+          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${
+            igConnection ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'
+          }`}>
+            {igConnection ? <><CheckCircle2 size={11} /> Conectado</> : 'Não conectado'}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500">
+          Conexão oficial via Facebook Login for Business — sem scraper, sem violar os Termos da Meta. Requer um App em{' '}
+          <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">developers.facebook.com</a>{' '}
+          e uma conta Instagram Business/Creator vinculada a uma Página do Facebook.
+        </p>
+
+        {igJustConnected && (
+          <p className="text-xs text-emerald-600 flex items-center gap-1.5"><CheckCircle2 size={12} /> Instagram conectado com sucesso!</p>
+        )}
+
+        <div>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+            Redirect URI (cole em Facebook Login for Business → Configurações → URIs de redirecionamento OAuth válidos)
+          </label>
+          <div className="flex gap-2">
+            <input type="text" readOnly value={getRedirectUri()} onFocus={(e) => e.target.select()} className="input w-full text-sm font-mono bg-gray-50" />
+            <button onClick={handleCopyRedirectUri} type="button" className="btn-secondary text-xs px-3 shrink-0">
+              {copiedUri ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">App ID</label>
+          <input type="text" value={igAppId} onChange={(e) => setIgAppId(e.target.value)} placeholder="123456789012345" className="input w-full text-sm font-mono" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">App Secret</label>
+          <div className="relative">
+            <input type={showIgSecret ? 'text' : 'password'} value={igAppSecret} onChange={(e) => setIgAppSecret(e.target.value)} placeholder="App Secret do Meta" className="input w-full pr-10 text-sm font-mono" />
+            <button onClick={() => setShowIgSecret((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
+              {showIgSecret ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={handleSaveIgCredentials} className="btn-secondary text-xs">
+            {igSaved ? <><CheckCircle2 size={12} /> Salvo!</> : 'Salvar credenciais'}
+          </button>
+          {!igConnection ? (
+            <button onClick={handleConnectInstagram} disabled={!igAppId.trim() || !igAppSecret.trim()} className="btn-primary text-xs">
+              Conectar Instagram
+            </button>
+          ) : (
+            <button onClick={handleDisconnectInstagram} className="btn-secondary text-xs text-red-600">
+              Desconectar
+            </button>
+          )}
+        </div>
+
+        {igConnection && (
+          <div className="p-3 rounded-lg bg-gray-50 border border-gray-100 space-y-2">
+            {igConnection.accounts.map((acc) => (
+              <div key={acc.id} className="flex items-center gap-2 text-xs text-gray-700">
+                {acc.profilePictureUrl && <img src={acc.profilePictureUrl} alt="" className="w-6 h-6 rounded-full" />}
+                <span className="font-medium">@{acc.username || acc.id}</span>
+                <span className="text-gray-400">via Página "{acc.pageName}"</span>
+              </div>
+            ))}
+            {igConnection.expiresAt && (
+              <p className={`text-[11px] ${isExpiringSoon(igConnection) ? 'text-amber-600' : 'text-gray-400'}`}>
+                Token válido até {new Date(igConnection.expiresAt).toLocaleDateString('pt-BR')}
+                {isExpiringSoon(igConnection) && ' — expira em breve, reconecte para renovar.'}
+              </p>
+            )}
+          </div>
+        )}
+
+        <a href="https://developers.facebook.com/docs/instagram-platform" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-pink-600 hover:underline">
+          <ExternalLink size={11} /> Documentação da Instagram Platform (Meta)
+        </a>
       </div>
     </div>
   )

@@ -28,6 +28,7 @@ const CarouselStudio = lazy(() => import('./components/trends/CarouselStudio'))
 const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
 const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
 const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
+const InstagramCallback = lazy(() => import('./components/settings/InstagramCallback'))
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
 const ReportsPage = lazy(() => import('./components/reports/ReportsPage'))
 const BrandVoiceSetup = lazy(() => import('./components/brand/BrandVoiceSetup'))
@@ -154,6 +155,7 @@ export default function App() {
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
+            <Route path="/instagram-callback" element={<InstagramCallback />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />

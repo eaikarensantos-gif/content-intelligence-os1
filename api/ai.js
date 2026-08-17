@@ -383,6 +383,65 @@ async function instagramSearch(apifyToken, actorId, query) {
     .filter((v) => v.id)
 }
 
+// ─── Instagram OAuth oficial (Meta Graph API) ─────────────────────────────────
+// Não existe login "só Instagram" para contas Business — o fluxo é o Facebook
+// Login for Business: o usuário autoriza via Facebook, trocamos o code por um
+// token de longa duração, e descobrimos a conta do Instagram a partir das
+// Páginas do Facebook que essa pessoa administra (campo instagram_business_account).
+
+const META_GRAPH_VERSION = 'v21.0'
+
+async function instagramOAuthConnect(appId, appSecret, code, redirectUri) {
+  const base = `https://graph.facebook.com/${META_GRAPH_VERSION}`
+
+  const shortRes = await fetch(
+    `${base}/oauth/access_token?client_id=${encodeURIComponent(appId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&client_secret=${encodeURIComponent(appSecret)}` +
+    `&code=${encodeURIComponent(code)}`
+  )
+  const shortData = await shortRes.json().catch(() => ({}))
+  if (!shortRes.ok || !shortData.access_token) {
+    throw new Error(shortData.error?.message || 'Falha ao trocar o código de autorização por um token.')
+  }
+
+  const longRes = await fetch(
+    `${base}/oauth/access_token?grant_type=fb_exchange_token` +
+    `&client_id=${encodeURIComponent(appId)}` +
+    `&client_secret=${encodeURIComponent(appSecret)}` +
+    `&fb_exchange_token=${encodeURIComponent(shortData.access_token)}`
+  )
+  const longData = await longRes.json().catch(() => ({}))
+  if (!longRes.ok || !longData.access_token) {
+    throw new Error(longData.error?.message || 'Falha ao gerar o token de longa duração.')
+  }
+
+  const pagesRes = await fetch(
+    `${base}/me/accounts?fields=id,name,instagram_business_account{id,username,profile_picture_url}` +
+    `&access_token=${encodeURIComponent(longData.access_token)}`
+  )
+  const pagesData = await pagesRes.json().catch(() => ({}))
+  if (!pagesRes.ok) {
+    throw new Error(pagesData.error?.message || 'Falha ao listar as Páginas do Facebook.')
+  }
+
+  const accounts = (pagesData.data || [])
+    .filter((p) => p.instagram_business_account)
+    .map((p) => ({
+      id:                p.instagram_business_account.id,
+      username:          p.instagram_business_account.username || null,
+      profilePictureUrl: p.instagram_business_account.profile_picture_url || null,
+      pageId:            p.id,
+      pageName:          p.name,
+    }))
+
+  return {
+    accessToken: longData.access_token,
+    expiresIn:   longData.expires_in || null,
+    accounts,
+  }
+}
+
 // ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
@@ -514,6 +573,16 @@ export default async function handler(req, res) {
       if (!query?.trim())      return res.status(400).json({ error: 'Search query is required' })
       const results = await instagramSearch(apifyToken, apifyActorId, query)
       return res.status(200).json({ results })
+    }
+
+    // ── Instagram OAuth (Meta Graph API oficial) ─────────────────────────────
+    if (action === 'instagram-oauth-connect') {
+      const { appId, appSecret, code, redirectUri } = req.body
+      if (!appId?.trim() || !appSecret?.trim()) return res.status(400).json({ error: 'App ID e App Secret do Meta são obrigatórios.' })
+      if (!code?.trim())        return res.status(400).json({ error: 'Código de autorização ausente.' })
+      if (!redirectUri?.trim()) return res.status(400).json({ error: 'redirectUri é obrigatório.' })
+      const result = await instagramOAuthConnect(appId, appSecret, code, redirectUri)
+      return res.status(200).json(result)
     }
 
     // ── Whisper ───────────────────────────────────────────────────────────────
