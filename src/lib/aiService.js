@@ -273,6 +273,28 @@ export async function instagramSyncMetrics(accessToken, limit = 25) {
   return data
 }
 
+export async function instagramFetchPosts(accessToken, limit = 25) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-fetch-posts', accessToken, limit }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data
+}
+
+export async function instagramFetchComments(accessToken, mediaId) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-fetch-comments', accessToken, mediaId }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data.comments ?? []
+}
+
 // ─── Whisper transcription (via serverless proxy) ─────────────────────────────
 
 export async function transcribeAudio(openaiApiKey, audioUrl) {

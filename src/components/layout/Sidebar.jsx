@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
-  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass,
+  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -26,6 +26,7 @@ const NAV_GROUPS = [
     children: [
       { to: '/posicionamento', icon: Compass, label: 'Posicionamento' },
       { to: '/social', icon: Activity, label: 'Social Dashboard' },
+      { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
       { to: '/news', icon: Newspaper, label: 'Notícias' },
       { to: '/dna', icon: Dna, label: 'Content DNA' },
