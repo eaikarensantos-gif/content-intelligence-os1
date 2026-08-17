@@ -4,7 +4,7 @@ import { fetchFile } from '@ffmpeg/util'
 import {
   Video, Link2, ChevronRight, BookOpen,
   Lightbulb, Layers, Clock, Eye, Copy, Check,
-  Sparkles, Trash2, RotateCcw, ExternalLink,
+  Sparkles, Trash2, RotateCcw, ExternalLink, MessageSquare,
   Mic, Film, Zap, Target, TrendingUp, Star,
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
@@ -509,7 +509,9 @@ Return ONLY this JSON:
 // ── Groq Key Modal ────────────────────────────────────────────────────────────
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function VideoAnalyzer() {
+// initialMode/lockedMode permitem montar o analisador travado num modo
+// específico (ex.: rota de roteiro dentro do Studio de Criação usa 'script').
+export default function VideoAnalyzer({ initialMode = 'reference', lockedMode = false }) {
   const addVideoAnalysis = useStore((s) => s.addVideoAnalysis)
   const deleteVideoAnalysis = useStore((s) => s.deleteVideoAnalysis)
   const videoAnalyses = useStore((s) => s.videoAnalyses)
@@ -549,7 +551,7 @@ export default function VideoAnalyzer() {
   const [showHistory, setShowHistory] = useState(false)
   const [savedAnalysis, setSavedAnalysis] = useState(false)
   const [error, setError] = useState('')
-  const [analysisMode, setAnalysisMode] = useState('reference') // 'reference' | 'mine' | 'script'
+  const [analysisMode, setAnalysisMode] = useState(initialMode) // 'reference' | 'transcribe' | 'comments' | 'script'
   const [scriptText, setScriptText] = useState('')
 
   // Script
@@ -774,7 +776,7 @@ export default function VideoAnalyzer() {
       setLoadingStep(2)
       const hasFinalTranscript = finalTranscript.trim().length > 30
       const source = hasFinalTranscript ? 'transcript' : hasFramesData ? 'frames' : 'inference'
-      const prompt = (analysisMode === 'mine' || analysisMode === 'script')
+      const prompt = analysisMode === 'script'
         ? buildFeedbackPrompt({
             title: metaTitle,
             transcript: hasFinalTranscript ? finalTranscript : '',
@@ -803,7 +805,7 @@ export default function VideoAnalyzer() {
     } catch (e) {
       setError(e.message || 'Erro inesperado. Verifique sua API key e tente novamente.')
     } finally {
-      setActiveTab((analysisMode === 'mine' || analysisMode === 'script') ? 'melhorar' : 'resumo')
+      setActiveTab(analysisMode === 'script' ? 'melhorar' : 'resumo')
       setLoading(false)
     }
   }
@@ -995,7 +997,7 @@ Responda APENAS com este JSON:
   const canAnalyze = !extractingFrames && hasAnyData && !!apiKey
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5 animate-fade-in">
       {showKeyModal && <ApiKeyModal onClose={() => setShowKeyModal(false)} onSave={handleSaveKey} />}
       {showGroqModal && <GroqKeyModal onClose={() => setShowGroqModal(false)} onSave={handleSaveGroqKey} />}
       {generatedScript && <ScriptModal script={generatedScript} onClose={() => setGeneratedScript(null)} />}
@@ -1033,50 +1035,36 @@ Responda APENAS com este JSON:
         </div>
       </div>
 
-      {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit flex-wrap">
-        <button
-          onClick={() => { setAnalysisMode('reference'); setAnalysis(null); setError('') }}
-          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'reference' ? 'bg-violet-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Sparkles size={13} /> Analisar Referência
-        </button>
-        <button
-          onClick={() => { setAnalysisMode('mine'); setAnalysis(null); setError('') }}
-          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'mine' ? 'bg-orange-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Target size={13} /> Meu Vídeo
-        </button>
-        <button
-          onClick={() => { setAnalysisMode('script'); setAnalysis(null); setError('') }}
-          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'script' ? 'bg-indigo-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <FileText size={13} /> Meu Roteiro
-        </button>
+      {/* Mode selector — cards descritivos (oculto quando montado travado num modo) */}
+      {!lockedMode && (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {[
+          { id: 'reference', icon: Sparkles, label: 'Analisar Referência', desc: 'Aprenda com vídeos de outros criadores', on: 'border-violet-300 bg-violet-50/70 ring-1 ring-violet-200', iconOn: 'bg-violet-600 text-white shadow-sm' },
+          { id: 'transcribe', icon: Mic, label: 'Transcrever Vídeo', desc: 'Transforme vídeo ou áudio em texto', on: 'border-emerald-300 bg-emerald-50/70 ring-1 ring-emerald-200', iconOn: 'bg-emerald-600 text-white shadow-sm' },
+          { id: 'comments', icon: MessageSquare, label: 'Analisar Comentários', desc: 'Prints de comentários viram ideias', on: 'border-rose-300 bg-rose-50/70 ring-1 ring-rose-200', iconOn: 'bg-rose-500 text-white shadow-sm' },
+        ].map(({ id, icon: Icon, label, desc, on, iconOn }) => (
+          <button
+            key={id}
+            onClick={() => { setAnalysisMode(id); setAnalysis(null); setError('') }}
+            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+              analysisMode === id ? on : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className={`p-2 rounded-lg shrink-0 transition-colors ${analysisMode === id ? iconOn : 'bg-gray-100 text-gray-400'}`}>
+              <Icon size={15} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-900">{label}</p>
+              <p className="text-[10px] text-gray-400 leading-snug">{desc}</p>
+            </div>
+          </button>
+        ))}
       </div>
-
-      {analysisMode === 'mine' && !analysis && (
-        <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3">
-          <Target size={15} className="text-orange-500 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Feedback do Meu Vídeo</p>
-            <p className="text-xs text-gray-600">Envie seu próprio vídeo ou cole a transcrição. A IA vai analisar criticamente e apontar o que melhorar com base no seu posicionamento e objetivos como criadora.</p>
-          </div>
-        </div>
       )}
 
-      {analysisMode === 'script' && !analysis && (
-        <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-start gap-3">
-          <FileText size={15} className="text-indigo-500 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Análise de Roteiro</p>
-            <p className="text-xs text-gray-600">Cole o roteiro do vídeo que você ainda vai gravar. A IA vai analisar gancho, estrutura, tom de voz, CTA e pontuar o que precisa melhorar antes de você gravar.</p>
-          </div>
-        </div>
-      )}
-
-      {/* No API key banner */}
-      {!apiKey && !analysis && (
+      {/* No API key banner — só onde a IA da Anthropic é usada (referência e roteiro).
+          Transcrição usa Groq; comentários têm fluxo próprio. */}
+      {!apiKey && !analysis && (analysisMode === 'reference' || analysisMode === 'script') && (
         <div className="p-4 rounded-xl bg-violet-50 border border-violet-200 flex items-start gap-3">
           <Key size={15} className="text-violet-500 mt-0.5 shrink-0" />
           <div className="flex-1">
@@ -1170,38 +1158,62 @@ Responda APENAS com este JSON:
         </div>
       )}
 
+      {/* ── ANALISAR COMENTÁRIOS — aba exclusiva ─────────────────────────── */}
+      {analysisMode === 'comments' && !loading && (
+        <div className="animate-fade-in">
+          <CommentAnalyzer />
+        </div>
+      )}
+
+      {/* ── TRANSCREVER — banner explicativo ─────────────────────────────── */}
+      {analysisMode === 'transcribe' && !analysis && !loading && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
+          <Mic size={15} className="text-emerald-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-gray-800 mb-0.5">Modo: Transcrição de Vídeo</p>
+            <p className="text-xs text-gray-600">Envie um vídeo ou áudio em <strong>Fonte do Vídeo</strong> e transcreva automaticamente com o Whisper. A transcrição fica pronta para copiar, salvar ou traduzir — sem gerar nenhuma análise.</p>
+          </div>
+        </div>
+      )}
+
       {/* ── LANDING / INPUT VIEW ─────────────────────────────────────────── */}
-      {!analysis && !loading && (
+      {!analysis && !loading && analysisMode !== 'comments' && (
         <div className="space-y-4">
 
-          {/* What this tool analyzes — visual overview */}
+          {/* What this tool analyzes — visual overview (só no modo referência) */}
+          {analysisMode === 'reference' && (
           <div className="card overflow-hidden">
-            <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">O que será analisado</p>
+            <div className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-violet-50 to-transparent border-b border-gray-100">
+              <div className="p-1 rounded-md bg-violet-100">
+                <Sparkles size={12} className="text-violet-600" />
+              </div>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">O que será analisado</p>
+              <span className="ml-auto text-[10px] text-gray-400 font-medium">8 dimensões</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-y divide-gray-100">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4">
               {[
                 { icon: Zap,        color: 'text-orange-500 bg-orange-50', label: 'Gancho & Estrutura',    desc: 'Hook, promessa, seções, CTA' },
                 { icon: Mic,        color: 'text-purple-500 bg-purple-50', label: 'Tom de Voz',            desc: 'Formalidade, estilo, persona' },
-                { icon: TrendingUp, color: 'text-amber-500  bg-amber-50',  label: 'Padrões de Conteúdo',  desc: 'Lista, storytelling, contrário…' },
-                { icon: Eye,        color: 'text-sky-500    bg-sky-50',    label: 'Retenção',              desc: 'Técnicas de engajamento' },
-                { icon: Film,       color: 'text-gray-500   bg-gray-100',  label: 'Estilo Visual',         desc: 'Edição, pacing, texto na tela' },
+                { icon: TrendingUp, color: 'text-amber-500 bg-amber-50',   label: 'Padrões de Conteúdo',  desc: 'Lista, storytelling, contrário…' },
+                { icon: Eye,        color: 'text-sky-500 bg-sky-50',       label: 'Retenção',              desc: 'Técnicas de engajamento' },
+                { icon: Film,       color: 'text-gray-500 bg-gray-100',    label: 'Estilo Visual',         desc: 'Edição, pacing, texto na tela' },
                 { icon: Star,       color: 'text-orange-500 bg-orange-50', label: 'Por Que Funciona',      desc: 'Fatores de sucesso do vídeo' },
                 { icon: BookOpen,   color: 'text-violet-500 bg-violet-50', label: 'Template Reutilizável', desc: 'Fórmulas prontas para copiar' },
                 { icon: Lightbulb,  color: 'text-emerald-500 bg-emerald-50', label: 'Ideias de Conteúdo', desc: '5 ideias com gancho e ângulo' },
               ].map(({ icon: Icon, color, label, desc }) => (
-                <div key={label} className="flex items-start gap-2.5 p-3.5 hover:bg-gray-50/70 transition-colors">
+                <div key={label} className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all">
                   <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${color}`}>
                     <Icon size={13} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-800 leading-tight">{label}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{desc}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">{desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+          )}
 
           {/* ── Video Reducer Banner — shown when large file is loaded ─── */}
           {videoFile && videoFile.size > 24 * 1024 * 1024 && (
@@ -1330,9 +1342,10 @@ Responda APENAS com este JSON:
 
             {/* LEFT — Video source */}
             <div className="card p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-violet-50 text-violet-500"><Video size={13} /></div>
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-lg bg-violet-100 text-violet-600 text-[11px] font-bold flex items-center justify-center shrink-0">1</span>
                 <p className="text-sm font-semibold text-gray-900">Fonte do Vídeo</p>
+                <span className="ml-auto text-[10px] text-gray-400">URL ou arquivo</span>
               </div>
 
               {/* URL input */}
@@ -1373,7 +1386,7 @@ Responda APENAS com este JSON:
 
               {/* File upload */}
               <div
-                className={`border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer ${
+                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
                   videoFile ? 'border-violet-300 bg-violet-50/30' : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/20'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
@@ -1401,9 +1414,11 @@ Responda APENAS com este JSON:
                   </div>
                 ) : (
                   <>
-                    <Upload size={18} className="mx-auto text-gray-300 mb-1.5" />
-                    <p className="text-xs text-gray-500 font-medium">Arraste ou clique para selecionar</p>
-                    <p className="text-[10px] text-gray-300 mt-0.5">MP4, MOV, AVI, MP3, M4A — áudio e vídeo</p>
+                    <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
+                      <Upload size={16} className="text-gray-400" />
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">Arraste ou clique para selecionar</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">MP4, MOV, AVI, MP3, M4A — áudio e vídeo</p>
                     {groqKey && (
                       <p className="text-[10px] text-emerald-500 mt-1">🎙 Whisper transcreve automaticamente ao analisar</p>
                     )}
@@ -1511,11 +1526,13 @@ Responda APENAS com este JSON:
             {/* RIGHT — Transcript */}
             <div className="card p-5 space-y-4 flex flex-col">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600"><AlignLeft size={13} /></div>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 text-[11px] font-bold flex items-center justify-center shrink-0">2</span>
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Transcrição do Vídeo</p>
-                    <p className="text-[10px] text-emerald-600 font-medium">Análise mais precisa — IA lê o conteúdo real</p>
+                    <p className="text-[10px] text-emerald-600 font-medium">
+                      {analysisMode === 'transcribe' ? 'Fala vira texto com o Whisper' : 'Análise mais precisa — IA lê o conteúdo real'}
+                    </p>
                   </div>
                 </div>
                 {transcript.trim().length > 30 && (
@@ -1561,9 +1578,9 @@ Responda APENAS com este JSON:
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-2 p-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 text-center">
-                        <p className="text-[11px] text-emerald-600 w-full">
-                          Envie um arquivo de vídeo ou áudio no painel ao lado para transcrever automaticamente
+                      <div className="p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/60">
+                        <p className="text-[11px] text-gray-500 text-center">
+                          Envie um arquivo em <strong className="text-gray-600">Fonte do Vídeo</strong> para transcrever automaticamente
                         </p>
                       </div>
                     )}
@@ -1601,11 +1618,9 @@ Responda APENAS com este JSON:
               <div className="flex-1 flex flex-col">
                 <textarea
                   className="input flex-1 min-h-[240px] resize-none text-xs leading-relaxed"
-                  placeholder={`Cole aqui a transcrição real do vídeo...
-
-A IA irá citar trechos EXATOS da transcrição no gancho, promessa, CTA e padrões detectados. Nenhuma frase será inventada.
-
-Quanto mais completa a transcrição, mais precisa será a análise.`}
+                  placeholder={analysisMode === 'transcribe'
+                    ? `A transcrição aparece aqui...\n\nEnvie um arquivo em Fonte do Vídeo e clique em "Transcrever Arquivo", ou cole/edite o texto manualmente.\n\nDepois é só copiar, salvar nos favoritos ou traduzir para PT.`
+                    : `Cole aqui a transcrição real do vídeo...\n\nA IA irá citar trechos EXATOS da transcrição no gancho, promessa, CTA e padrões detectados. Nenhuma frase será inventada.\n\nQuanto mais completa a transcrição, mais precisa será a análise.`}
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                 />
@@ -1642,7 +1657,8 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                 </div>
               </div>
 
-              {/* Data availability indicator */}
+              {/* Data availability indicator (só no modo referência) */}
+              {analysisMode === 'reference' && (
               <div className="pt-3 border-t border-gray-100 space-y-1.5">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Dados disponíveis para análise</p>
                 {[
@@ -1680,6 +1696,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
                   </p>
                 )}
               </div>
+              )}
             </div>
           </div>
 
@@ -1694,7 +1711,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
           )}
 
           {/* Upgrade-path hint — shown only when no real data (inference mode) */}
-          {analysisMode !== 'script' && !hasRealData && !extractingFrames && (
+          {analysisMode === 'reference' && !hasRealData && !extractingFrames && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
               <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
                 <Info size={12} /> Análise por inferência — para análise mais precisa:
@@ -1717,7 +1734,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
             </div>
           )}
 
-          {analysisMode !== 'script' && !apiKey && (
+          {analysisMode === 'reference' && !apiKey && (
             <button
               onClick={() => setShowKeyModal(true)}
               className="btn-primary w-full py-2 text-xs mb-2"
@@ -1726,22 +1743,29 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
               <Key size={13} /> Adicionar API Key para Analisar
             </button>
           )}
-          {analysisMode !== 'script' && (
-          <button
-            onClick={handleAnalyze}
-            disabled={extractingFrames || !hasAnyData}
-            className="btn-primary w-full py-3 text-sm"
-            style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
-          >
-            {extractingFrames
-              ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
-              : transcribing
-              ? <><RefreshCw size={15} className="animate-spin" /> {transcribingStatus || 'Transcrevendo...'}</>
-              : videoFile && groqKey && transcript.trim().length < 30
-              ? <><Mic size={15} /> Transcrever e Analisar com IA</>
-              : <><Sparkles size={15} /> Analisar Vídeo com IA</>
-            }
-          </button>
+          {analysisMode === 'reference' && (
+          <div className="space-y-2">
+            <button
+              onClick={handleAnalyze}
+              disabled={extractingFrames || !hasAnyData}
+              className="btn-primary w-full py-3.5 text-sm rounded-xl shadow-lg shadow-violet-200/60"
+              style={{ background: canAnalyze ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : undefined }}
+            >
+              {extractingFrames
+                ? <><RefreshCw size={15} className="animate-spin" /> Extraindo frames do vídeo...</>
+                : transcribing
+                ? <><RefreshCw size={15} className="animate-spin" /> {transcribingStatus || 'Transcrevendo...'}</>
+                : videoFile && groqKey && transcript.trim().length < 30
+                ? <><Mic size={15} /> Transcrever e Analisar com IA</>
+                : <><Sparkles size={15} /> Analisar Vídeo com IA</>
+              }
+            </button>
+            {!hasAnyData && !extractingFrames && (
+              <p className="text-[11px] text-gray-400 text-center">
+                Adicione uma URL, um arquivo ou uma transcrição acima para liberar a análise
+              </p>
+            )}
+          </div>
           )}
         </div>
       )}
@@ -1831,7 +1855,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
-            {(analysisMode === 'mine' || analysisMode === 'script' ? MY_VIDEO_TABS : TABS).map((t) => (
+            {(analysisMode === 'script' ? MY_VIDEO_TABS : TABS).map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === t.id
@@ -2771,17 +2795,6 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
         </div>
       )}
 
-      {/* ── ANALISADOR DE COMENTÁRIOS (sempre acessível) ────────────────── */}
-      {!loading && !analysis && (
-        <div className="mt-6">
-          <CommentAnalyzer />
-        </div>
-      )}
-      {analysis && !loading && activeTab === 'comentarios' && (
-        <div className="mt-4">
-          <CommentAnalyzer />
-        </div>
-      )}
     </div>
   )
 }

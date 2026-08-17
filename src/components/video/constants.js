@@ -1,4 +1,4 @@
-import { Link2, BookOpen, Lightbulb, Layers, Eye, Mic, Target, Star, FileVideo, FileText, Upload, AlignLeft, MessageSquare } from 'lucide-react'
+import { Link2, BookOpen, Lightbulb, Layers, Eye, Mic, Target, Star, FileVideo, FileText, Upload, AlignLeft } from 'lucide-react'
 
 export const CDN = '/ffmpeg'
 
@@ -20,7 +20,6 @@ export const TABS = [
   { id: 'template', label: 'Template', icon: BookOpen },
   { id: 'ideias', label: 'Ideias', icon: Lightbulb },
   { id: 'transcricao', label: 'Transcrição', icon: FileText },
-  { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
 ]
 
 export const MY_VIDEO_TABS = [
@@ -32,7 +31,6 @@ export const MY_VIDEO_TABS = [
   { id: 'template', label: 'Template', icon: BookOpen },
   { id: 'ideias', label: 'Ideias', icon: Lightbulb },
   { id: 'transcricao', label: 'Transcrição', icon: FileText },
-  { id: 'comentarios', label: 'Comentários', icon: MessageSquare },
   { id: 'melhorar', label: 'O que Melhorar', icon: Target },
 ]
 
