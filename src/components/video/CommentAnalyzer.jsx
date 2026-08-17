@@ -45,7 +45,7 @@ export default function CommentAnalyzer() {
 
   const addComment = () => {
     if (!commentText.trim()) return
-    setComments(prev => [...prev, { id: Date.now(), text: commentText.trim(), source: 'text' }])
+    setComments(prev => [{ id: Date.now(), text: commentText.trim(), source: 'text' }, ...prev])
     setCommentText('')
   }
 
@@ -92,7 +92,7 @@ export default function CommentAnalyzer() {
         assertNotTruncated(data, 'A imagem tem texto demais e a extração foi cortada antes de terminar. Tente uma imagem com menos comentários por vez.')
         const text = data.content?.find(b => b.type === 'text')?.text
         const extracted = extractJsonArray(text, 'Não consegui ler os comentários dessa imagem. Tente uma imagem mais nítida ou com menos texto.')
-        setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
+        setComments(prev => [...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' })), ...prev])
       }
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
@@ -102,7 +102,7 @@ export default function CommentAnalyzer() {
   const analyzeComments = async () => {
     const pendingText = commentText.trim()
     const allComments = pendingText
-      ? [...comments, { id: Date.now(), text: pendingText, source: 'text' }]
+      ? [{ id: Date.now(), text: pendingText, source: 'text' }, ...comments]
       : comments
     if (!allComments.length) return
     const apiKey = localStorage.getItem(LS_KEY)
