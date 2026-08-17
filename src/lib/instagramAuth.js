@@ -1,15 +1,14 @@
-// Conexão oficial com a Instagram Graph API (Meta) via Facebook Login for
-// Business. Não existe OAuth direto "só Instagram" para contas Business — o
-// fluxo passa pelo login do Facebook e descobre a conta do Instagram a partir
-// das Páginas que a pessoa administra.
+// Conexão oficial com a API do Instagram via Instagram Business Login — login
+// direto pela conta do Instagram (appId/appSecret são o "ID do app do
+// Instagram" e a "Chave secreta do app do Instagram" do caso de uso "API do
+// Instagram", não as credenciais do App do Facebook).
 
 const LS_APP_ID     = 'cio-ig-app-id'
 const LS_APP_SECRET = 'cio-ig-app-secret'
 const LS_CONNECTION = 'cio-ig-connection'
 const SS_STATE       = 'cio-ig-oauth-state'
 
-const META_GRAPH_VERSION = 'v21.0'
-const SCOPES = 'instagram_basic,pages_show_list,pages_read_engagement'
+const SCOPES = 'instagram_business_basic'
 
 export function getAppId()     { return localStorage.getItem(LS_APP_ID) || '' }
 export function getAppSecret() { return localStorage.getItem(LS_APP_SECRET) || '' }
@@ -57,7 +56,7 @@ export function startConnect(appId) {
     scope: SCOPES,
     response_type: 'code',
   })
-  window.location.href = `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?${params.toString()}`
+  window.location.href = `https://www.instagram.com/oauth/authorize?${params.toString()}`
 }
 
 // Confere o state recebido no callback contra o que foi salvo antes do
