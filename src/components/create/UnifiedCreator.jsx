@@ -1083,6 +1083,32 @@ const ENGAGEMENT_TEMPLATES = {
    ❌ Errado (fecha tudo, vira case perfeito): "E desde então nunca mais tivemos problema"
    ✅ Certo: "Ainda não sei dizer se foi a vitrine ou se foi coincidência com a época do ano — não tive como isolar as duas coisas"`,
   },
+  como_eu_usaria: {
+    label: 'Como Eu Usaria',
+    alavanca: 'aplicação específica e replicável',
+    desc: 'Assume o papel de dono do negócio do tema e ensina, passo a passo, exatamente como usaria IA ali — específico o bastante pra copiar',
+    estrutura: `Roteiro falado em 4 partes — o criador assume o papel de dono(a) do negócio citado no TEMA e ensina, passo a passo, como usaria IA especificamente ali:
+
+1. A PREMISSA — assume o papel do dono do negócio específico do TEMA, sem introdução de aula genérica.
+   ❌ Errado: "Hoje eu vou te ensinar como usar IA no seu negócio"
+   ✅ Certo: "Se eu fosse dona de um salão de beleza, essa semana eu já tinha feito isso com IA"
+   O gancho promete um caso específico, não uma aula genérica sobre IA.
+
+2. PASSO 1 — a primeira aplicação de IA, nomeando a ferramenta/tarefa exata e o problema real que ela resolve nesse negócio.
+   ❌ Errado (vago): "Eu usaria IA pra atender melhor os clientes"
+   ✅ Certo: "Eu pegava as últimas 200 conversas de WhatsApp da recepção e treinava um agente só pra responder 'vocês têm horário hoje?' sozinho"
+   Precisa nomear a ferramenta, o dado de entrada e a tarefa — sem isso vira propaganda genérica de IA.
+
+3. PASSO 2 — uma segunda aplicação, num ponto de dor diferente do mesmo negócio, igualmente específica.
+   ❌ Errado (repete a ideia do passo 1 com outras palavras): "E também usaria pra criar posts"
+   ✅ Certo: "E usava a mesma IA pra olhar o histórico de agendamento e me avisar quando uma cliente que sempre vem a cada 6 semanas passa 8 sem aparecer"
+   Cada passo resolve um problema diferente do anterior — não é a mesma ideia repetida.
+
+4. O FECHAMENTO — nomeia o que isso muda de verdade pro negócio (tempo, dinheiro ou decisão), e devolve pro espectador adaptar pro dele.
+   ❌ Errado: "E foi assim que a IA revolucionou meu negócio"
+   ✅ Certo: "Isso sozinho já tira 2 horas por semana da recepção — e o seu negócio provavelmente tem o mesmo tipo de tarefa repetitiva escondida em algum canto"
+   Termina apontando pra ação do espectador, não fechando a história como case perfeito.`,
+  },
 }
 
 /* ── Temas Sugeridos para Carrossel (compartilhado com o Captura de Pensamento — ver src/data/temasCarrossel.js) ── */
