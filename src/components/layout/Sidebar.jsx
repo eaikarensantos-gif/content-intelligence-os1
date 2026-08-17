@@ -4,9 +4,10 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
-  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram,
+  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin,
 } from 'lucide-react'
 import clsx from 'clsx'
+import useStore from '../../store/useStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
@@ -59,6 +60,10 @@ const BOTTOM_NAV = [
   { to: '/security', icon: Shield, label: 'Registro de Acessos' },
 ]
 
+// Todos os itens navegáveis, achatados — usado pra resolver ícone/label de um
+// item fixado sem importar de qual seção (topo, grupo ou rodapé) ele veio.
+const ALL_NAV_ITEMS = [...TOP_NAV, ...NAV_GROUPS.flatMap((g) => g.children), ...BOTTOM_NAV]
+
 // Helper: find which group contains a given path
 function findGroupForPath(pathname) {
   for (const g of NAV_GROUPS) {
@@ -74,6 +79,9 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const importRef = useRef(null)
   const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
+  const pinnedPages = useStore((s) => s.pinnedPages)
+  const togglePinnedPage = useStore((s) => s.togglePinnedPage)
+  const pinnedItems = pinnedPages.map((to) => ALL_NAV_ITEMS.find((i) => i.to === to)).filter(Boolean)
 
   // Email da sessão logada (LoginGate grava em localStorage)
   const sessionEmail = (() => {
@@ -162,34 +170,48 @@ export default function Sidebar({ isOpen, onClose }) {
     const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation', '/carousel']
     const isCreateGroup = to === '/create'
     const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
+    const isPinned = pinnedPages.includes(to)
 
     return (
-      <NavLink
-        key={to}
-        to={to}
-        end={to === '/' || isCreateGroup}
-        className={({ isActive }) => {
-          const active = isActive || forceActive
-          return clsx(
-            'flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative',
-            indent ? 'px-3 pl-10' : 'px-3',
-            active
-              ? 'bg-orange-100 text-orange-800 border border-orange-200'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-white'
-          )
-        }}
-      >
-        {({ isActive }) => {
-          const active = isActive || forceActive
-          return (
-            <>
-              <Icon size={16} className={active ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
-              <span className="flex-1">{label}</span>
-              {active && <ChevronRight size={12} className="text-orange-500" />}
-            </>
-          )
-        }}
-      </NavLink>
+      <div key={to} className="relative group/item">
+        <NavLink
+          to={to}
+          end={to === '/' || isCreateGroup}
+          className={({ isActive }) => {
+            const active = isActive || forceActive
+            return clsx(
+              'flex items-center gap-3 py-2.5 pr-8 rounded-xl text-sm font-medium transition-all duration-150 group relative',
+              indent ? 'px-3 pl-10' : 'px-3',
+              active
+                ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-white'
+            )
+          }}
+        >
+          {({ isActive }) => {
+            const active = isActive || forceActive
+            return (
+              <>
+                <Icon size={16} className={active ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'} />
+                <span className="flex-1">{label}</span>
+                {active && <ChevronRight size={12} className="text-orange-500" />}
+              </>
+            )
+          }}
+        </NavLink>
+        <button
+          onClick={() => togglePinnedPage(to)}
+          title={isPinned ? 'Desafixar do topo' : 'Fixar no topo'}
+          className={clsx(
+            'absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all',
+            isPinned
+              ? 'text-amber-500 opacity-100'
+              : 'text-gray-300 opacity-0 group-hover/item:opacity-100 hover:text-amber-500'
+          )}
+        >
+          <Pin size={12} className={isPinned ? 'fill-current' : ''} />
+        </button>
+      </div>
     )
   }
 
@@ -226,6 +248,18 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {/* Fixados */}
+        {pinnedItems.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-amber-600 uppercase tracking-wider">
+              <Pin size={11} className="fill-current" /> Fixados
+            </div>
+            <div className="space-y-0.5">
+              {pinnedItems.map((item) => renderNavItem(item))}
+            </div>
+          </div>
+        )}
+
         {/* Top-level items */}
         {TOP_NAV.map((item) => renderNavItem(item))}
 
