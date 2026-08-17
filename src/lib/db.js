@@ -12,7 +12,7 @@ import { getSupabase, isSupabaseConfigured } from './supabase'
 
 const COLLECTIONS = [
   'ideas', 'posts', 'metrics', 'clients', 'videoAnalyses',
-  'thoughtCaptures', 'tasks', 'ads', 'leads', 'archetypes',
+  'thoughtCaptures', 'commentContexts', 'tasks', 'ads', 'leads', 'archetypes',
   'hybridArchetypes', 'favorites', 'pricingProducts', 'proposals',
   'creatorProfile', 'brandVoice', 'posicionamento', 'hiddenReportTags',
   'viralReferences',

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2 } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2, Bookmark, RefreshCw } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../utils/aiJson'
@@ -15,9 +15,27 @@ export default function CommentAnalyzer() {
   const [error, setError] = useState('')
   const [copiedId, setCopiedId] = useState(null)
   const [shorteningId, setShorteningId] = useState(null)
+  const [regeneratingId, setRegeneratingId] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
+  const commentContexts = useStore(s => s.commentContexts)
+  const addCommentContext = useStore(s => s.addCommentContext)
+  const deleteCommentContext = useStore(s => s.deleteCommentContext)
   const fileRef = useRef(null)
+
+  const saveContext = () => {
+    if (!context.trim()) return
+    addCommentContext({
+      title: context.trim().split('\n')[0].slice(0, 60),
+      context: context.trim(),
+      responsePaths,
+    })
+  }
+
+  const loadContext = (ctx) => {
+    setContext(ctx.context)
+    setResponsePaths(ctx.responsePaths || '')
+  }
 
   const copyReply = (id, text) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -28,7 +46,7 @@ export default function CommentAnalyzer() {
 
   const addComment = () => {
     if (!commentText.trim()) return
-    setComments(prev => [...prev, { id: Date.now(), text: commentText.trim(), source: 'text' }])
+    setComments(prev => [{ id: Date.now(), text: commentText.trim(), source: 'text' }, ...prev])
     setCommentText('')
   }
 
@@ -75,7 +93,7 @@ export default function CommentAnalyzer() {
         assertNotTruncated(data, 'A imagem tem texto demais e a extração foi cortada antes de terminar. Tente uma imagem com menos comentários por vez.')
         const text = data.content?.find(b => b.type === 'text')?.text
         const extracted = extractJsonArray(text, 'Não consegui ler os comentários dessa imagem. Tente uma imagem mais nítida ou com menos texto.')
-        setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
+        setComments(prev => [...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' })), ...prev])
       }
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
@@ -85,7 +103,7 @@ export default function CommentAnalyzer() {
   const analyzeComments = async () => {
     const pendingText = commentText.trim()
     const allComments = pendingText
-      ? [...comments, { id: Date.now(), text: pendingText, source: 'text' }]
+      ? [{ id: Date.now(), text: pendingText, source: 'text' }, ...comments]
       : comments
     if (!allComments.length) return
     const apiKey = localStorage.getItem(LS_KEY)
@@ -219,6 +237,58 @@ Responda APENAS com JSON válido, sem markdown:
     finally { setShorteningId(null) }
   }
 
+  const regenerateReply = async (ci, si) => {
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    const replyEntry = suggestions.replies[ci]
+    const current = replyEntry.suggestions[si]
+    const replyId = `${ci}-${si}`
+    setRegeneratingId(replyId)
+    setError('')
+    try {
+      const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
+      const resp = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'disabled' },
+          max_tokens: 600,
+          messages: [{
+            role: 'user',
+            content: `Você é a própria pessoa respondendo comentários do seu post/vídeo.${voiceContext}
+
+COMENTÁRIO ORIGINAL:
+"${replyEntry.comment_excerpt}"
+
+RESPOSTA ATUAL (a pessoa não gostou, quer uma alternativa):
+"${current.reply}"
+
+Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `, seguindo o mesmo caminho/direção: "${current.path}"` : ''}. Precisa ser genuinamente diferente da atual — outro ângulo, outra abertura, outra forma de dizer — mas manter o mesmo tom conversacional e informal. Responda APENAS com o novo texto da resposta, sem aspas, sem explicação.`,
+          }]
+        })
+      })
+      if (!resp.ok) await handleApiError(resp)
+      const data = await resp.json()
+      assertNotTruncated(data)
+      const regenerated = data.content?.find(b => b.type === 'text')?.text?.trim()
+      if (regenerated) {
+        setSuggestions(prev => ({
+          ...prev,
+          replies: prev.replies.map((r, i) => i !== ci ? r : {
+            ...r,
+            suggestions: r.suggestions.map((s, j) => j === si ? { ...s, reply: regenerated } : s),
+          }),
+        }))
+      }
+    } catch (e) { setError(e.message) }
+    finally { setRegeneratingId(null) }
+  }
+
   const handleSaveIdea = (idea, profileName) => {
     addIdea({
       title: idea.title,
@@ -251,10 +321,43 @@ Responda APENAS com JSON válido, sem markdown:
       {/* Unified input block */}
       <div className="card p-5 space-y-4">
         {/* Context & response paths */}
-        <div className="flex items-center gap-2">
-          <Compass size={14} className="text-indigo-500" />
-          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Compass size={14} className="text-indigo-500" />
+            <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
+          </div>
+          <button
+            onClick={saveContext}
+            disabled={!context.trim()}
+            title="Salvar este contexto para reabrir depois"
+            className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Bookmark size={12} /> Salvar contexto
+          </button>
         </div>
+
+        {commentContexts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {commentContexts.map((ctx) => (
+              <div key={ctx.id} className="flex items-center gap-1 bg-gray-100 rounded-full pl-2.5 pr-1 py-1 group">
+                <button
+                  onClick={() => loadContext(ctx)}
+                  title={ctx.context}
+                  className="text-[11px] text-gray-600 hover:text-indigo-700 font-medium max-w-[180px] truncate"
+                >
+                  {ctx.title || 'Contexto salvo'}
+                </button>
+                <button
+                  onClick={() => deleteCommentContext(ctx.id)}
+                  className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div>
           <label className="text-[11px] font-medium text-gray-500 mb-1 block">Contexto dos comentários</label>
           <textarea
@@ -401,6 +504,13 @@ Responda APENAS com JSON válido, sem markdown:
                           <div className="flex items-center justify-between gap-2">
                             {s.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{s.path}</span>}
                             <div className="flex items-center gap-1 ml-auto">
+                              <button
+                                onClick={() => regenerateReply(ci, si)}
+                                disabled={regeneratingId === replyId}
+                                className="text-[11px] text-gray-500 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                              >
+                                {regeneratingId === replyId ? <><Loader2 size={11} className="animate-spin" /> Gerando...</> : <><RefreshCw size={11} /> Regenerar</>}
+                              </button>
                               <button
                                 onClick={() => shortenReply(ci, si)}
                                 disabled={shorteningId === replyId}

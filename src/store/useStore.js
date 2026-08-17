@@ -72,6 +72,7 @@ const useStore = create(
       clients: [],
       videoAnalyses: [],
       thoughtCaptures: [],
+      commentContexts: [],
       tasks: [],
       ads: [],
       pricingProducts: [],
@@ -451,6 +452,18 @@ const useStore = create(
       deleteThoughtCapture: (id) =>
         set((s) => ({ thoughtCaptures: s.thoughtCaptures.filter((t) => t.id !== id) })),
 
+      // ── Contextos de Comentários (Analisador de Comentários) ────
+      addCommentContext: (ctx) =>
+        set((s) => ({
+          commentContexts: [
+            { id: uuidv4(), created_at: new Date().toISOString(), ...ctx },
+            ...s.commentContexts,
+          ],
+        })),
+
+      deleteCommentContext: (id) =>
+        set((s) => ({ commentContexts: s.commentContexts.filter((c) => c.id !== id) })),
+
       // ── Ideias Geradas ─────────────────────────────────────
       setGeneratedIdeas: (ideas) => set({ generatedIdeas: ideas }),
 
@@ -619,6 +632,7 @@ const useStore = create(
             ...(data.hybridArchetypes?.length ? { hybridArchetypes: data.hybridArchetypes } : {}),
             ...(data.viralReferences?.length  ? { viralReferences: data.viralReferences }  : {}),
             ...(data.thoughtCaptures?.length  ? { thoughtCaptures: data.thoughtCaptures }   : {}),
+            ...(data.commentContexts?.length  ? { commentContexts: data.commentContexts }   : {}),
             ...(data.videoAnalyses?.length    ? { videoAnalyses: data.videoAnalyses }       : {}),
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
             ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
@@ -648,6 +662,7 @@ const useStore = create(
           clients: [],
           videoAnalyses: [],
           thoughtCaptures: [],
+          commentContexts: [],
           tasks: [],
           ads: [],
           leads: [],
@@ -687,6 +702,7 @@ const useStore = create(
         clients: s.clients,
         videoAnalyses: s.videoAnalyses,
         thoughtCaptures: s.thoughtCaptures,
+        commentContexts: s.commentContexts,
         tasks: s.tasks,
         ads: s.ads,
         leads: s.leads,
