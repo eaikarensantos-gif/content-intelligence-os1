@@ -9,7 +9,7 @@ import {
   Plus, FileVideo, AlertCircle, Key, X, ShieldCheck,
   FileText, Globe, ArrowRight, RefreshCw,
   Upload, AlignLeft, Info, Bookmark, BookMarked, Pencil,
-  Scissors, Download, Languages,
+  Scissors, Download, Languages, MessageSquare,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
@@ -1055,8 +1055,19 @@ Responda APENAS com este JSON:
         >
           <FileText size={13} /> Meu Roteiro
         </button>
+        <button
+          onClick={() => setAnalysisMode('comentarios')}
+          className={`flex items-center gap-2 text-xs py-2 px-4 rounded-lg font-medium transition-all ${analysisMode === 'comentarios' ? 'bg-pink-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <MessageSquare size={13} /> Comentários
+        </button>
       </div>
 
+      {analysisMode === 'comentarios' ? (
+        <div className="mt-2">
+          <CommentAnalyzer />
+        </div>
+      ) : <>
       {analysisMode === 'mine' && !analysis && (
         <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 flex items-start gap-3">
           <Target size={15} className="text-orange-500 mt-0.5 shrink-0" />
@@ -2772,18 +2783,7 @@ Quanto mais completa a transcrição, mais precisa será a análise.`}
 
         </div>
       )}
-
-      {/* ── ANALISADOR DE COMENTÁRIOS (sempre acessível) ────────────────── */}
-      {!loading && !analysis && (
-        <div className="mt-6">
-          <CommentAnalyzer />
-        </div>
-      )}
-      {analysis && !loading && activeTab === 'comentarios' && (
-        <div className="mt-4">
-          <CommentAnalyzer />
-        </div>
-      )}
+      </>}
     </div>
   )
 }
