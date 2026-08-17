@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2 } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Info, Copy, Check } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 
@@ -9,9 +9,62 @@ export default function CommentAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false)
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState('')
+  const [replyContext, setReplyContext] = useState('')
+  const [responsePaths, setResponsePaths] = useState('')
+  const [generatedReply, setGeneratedReply] = useState('')
+  const [generatingReply, setGeneratingReply] = useState(false)
+  const [copied, setCopied] = useState(false)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const fileRef = useRef(null)
+
+  const generateReply = async () => {
+    if (!replyContext.trim()) { setError('Preencha o contexto do comentário que você quer responder'); return }
+    const apiKey = localStorage.getItem(LS_KEY)
+    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+
+    setGeneratingReply(true)
+    setError('')
+    setGeneratedReply('')
+    setCopied(false)
+    try {
+      const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
+      const pathsList = responsePaths.split('\n').map(p => p.trim()).filter(Boolean)
+      const resp = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: `Você é um especialista em criar respostas autênticas para comentários em redes sociais.${voiceContext}
+
+CONTEXTO:
+${replyContext.trim()}
+${pathsList.length ? `\nCAMINHOS DE RESPOSTA DESEJADOS:\n${pathsList.map(p => `- ${p}`).join('\n')}\n` : ''}
+Escreva UMA resposta ao comentário indicado no contexto acima. A resposta deve ser curta, natural e, se houver caminhos de resposta desejados, alinhada a eles. Responda APENAS com o texto da resposta, sem aspas, sem markdown, sem explicações.`
+          }]
+        })
+      })
+      const data = await resp.json()
+      const text = data.content?.find(b => b.type === 'text')?.text || ''
+      setGeneratedReply(text.trim())
+    } catch (e) { setError(e.message) }
+    finally { setGeneratingReply(false) }
+  }
+
+  const copyReply = () => {
+    navigator.clipboard.writeText(generatedReply)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const addComment = () => {
     if (!commentText.trim()) return
@@ -165,6 +218,63 @@ Responda APENAS com JSON válido, sem markdown:
             <p className="text-[11px] text-gray-500">Printe comentários do seu nicho e a IA sugere conteúdos para resolver essas dores</p>
           </div>
         </div>
+      </div>
+
+      {/* Reply context */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Info size={13} className="text-gray-400" />
+          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Contexto e caminhos de resposta (opcional)</h4>
+        </div>
+
+        <div>
+          <label className="text-xs text-gray-500 mb-1 block">Contexto dos comentários</label>
+          <textarea
+            value={replyContext}
+            onChange={(e) => setReplyContext(e.target.value)}
+            placeholder="Cole aqui o contexto do vídeo e o comentário que você quer responder..."
+            rows={6}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-gray-500 mb-1 block">Caminhos de resposta desejados (um por linha)</label>
+          <textarea
+            value={responsePaths}
+            onChange={(e) => setResponsePaths(e.target.value)}
+            placeholder="educativa"
+            rows={2}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+          />
+        </div>
+
+        <button
+          onClick={generateReply}
+          disabled={generatingReply || !replyContext.trim()}
+          className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+        >
+          {generatingReply ? (
+            <><Loader2 size={16} className="animate-spin" /> Gerando resposta...</>
+          ) : (
+            <><Sparkles size={16} /> Gerar resposta</>
+          )}
+        </button>
+
+        {generatedReply && (
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Resposta gerada</p>
+              <button
+                onClick={copyReply}
+                className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0"
+              >
+                {copied ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+              </button>
+            </div>
+            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{generatedReply}</p>
+          </div>
+        )}
       </div>
 
       {/* Input area */}
