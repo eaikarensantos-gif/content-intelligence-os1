@@ -194,9 +194,8 @@ Responda APENAS com JSON válido, sem markdown:
         },
         body: JSON.stringify({
           model: 'claude-sonnet-5',
-          thinking: { type: 'adaptive' },
-          output_config: { effort: 'low' },
-          max_tokens: 400,
+          thinking: { type: 'disabled' },
+          max_tokens: 500,
           messages: [{
             role: 'user',
             content: `Reescreva a resposta abaixo de forma mais curta e direta, mantendo o mesmo sentido, tom e nível de informalidade. Responda APENAS com o novo texto da resposta, sem aspas, sem explicação.\n\nResposta original:\n${current}`,
