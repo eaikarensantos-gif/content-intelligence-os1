@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
-import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
+import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../utils/aiJson'
 import { handleApiError } from '../../utils/apiError'
 
 export default function CommentAnalyzer() {
@@ -60,7 +60,7 @@ export default function CommentAnalyzer() {
             model: 'claude-sonnet-5',
             thinking: { type: 'adaptive' },
             output_config: { effort: 'medium' },
-            max_tokens: 1000,
+            max_tokens: 3000,
             messages: [{
               role: 'user',
               content: [
@@ -70,15 +70,12 @@ export default function CommentAnalyzer() {
             }]
           })
         })
+        if (!resp.ok) await handleApiError(resp)
         const data = await resp.json()
-        const text = data.content?.find(b => b.type === 'text')?.text || '[]'
-        try {
-          const clean = text.replace(/```json\n?|\n?```/g, '').trim()
-          const extracted = JSON.parse(clean)
-          if (Array.isArray(extracted)) {
-            setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
-          }
-        } catch { setComments(prev => [...prev, { id: Date.now(), text: text, source: 'image' }]) }
+        assertNotTruncated(data, 'A imagem tem texto demais e a extração foi cortada antes de terminar. Tente uma imagem com menos comentários por vez.')
+        const text = data.content?.find(b => b.type === 'text')?.text
+        const extracted = extractJsonArray(text, 'Não consegui ler os comentários dessa imagem. Tente uma imagem mais nítida ou com menos texto.')
+        setComments(prev => [...prev, ...extracted.map(c => ({ id: Date.now() + Math.random(), text: c, source: 'image' }))])
       }
     } catch (e) { setError(e.message) }
     finally { setAnalyzing(false) }
