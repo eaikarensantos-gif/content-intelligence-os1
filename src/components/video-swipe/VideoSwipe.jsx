@@ -34,15 +34,17 @@ export default function VideoSwipe() {
   const filterSort         = useVideoSwipeStore((s) => s.filterSort)
   const setFilterSort      = useVideoSwipeStore((s) => s.setFilterSort)
 
-  const youtubeReady = useAIStore((s) => !!s.youtubeApiKey?.trim())
-  const vimeoReady   = useAIStore((s) => !!s.vimeoToken?.trim())
-  const tiktokReady  = useAIStore((s) => !!s.rapidApiKey?.trim())
+  const youtubeReady   = useAIStore((s) => !!s.youtubeApiKey?.trim())
+  const vimeoReady     = useAIStore((s) => !!s.vimeoToken?.trim())
+  const tiktokReady    = useAIStore((s) => !!s.rapidApiKey?.trim())
+  const instagramReady = useAIStore((s) => s.isInstagramConfigured())
 
   const PLATFORMS = [
-    { id: 'youtube',     label: 'YouTube',     ready: youtubeReady },
-    { id: 'dailymotion', label: 'Dailymotion', ready: true         },
-    { id: 'vimeo',       label: 'Vimeo',       ready: vimeoReady   },
-    { id: 'tiktok',      label: 'TikTok',      ready: tiktokReady  },
+    { id: 'youtube',     label: 'YouTube',     ready: youtubeReady   },
+    { id: 'dailymotion', label: 'Dailymotion', ready: true           },
+    { id: 'vimeo',       label: 'Vimeo',       ready: vimeoReady     },
+    { id: 'tiktok',      label: 'TikTok',      ready: tiktokReady    },
+    { id: 'instagram',   label: 'Instagram',   ready: instagramReady },
   ]
 
   const activePlatforms    = selectedPlatforms.filter((p) => PLATFORMS.find((x) => x.id === p)?.ready)

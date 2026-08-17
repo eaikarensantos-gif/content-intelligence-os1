@@ -5,6 +5,7 @@ const PLATFORM_BADGE = {
   dailymotion: { label: 'Dailymotion', bg: 'bg-blue-600'  },
   vimeo:       { label: 'Vimeo',       bg: 'bg-teal-500'  },
   tiktok:      { label: 'TikTok',      bg: 'bg-zinc-900'  },
+  instagram:   { label: 'Instagram',   bg: 'bg-pink-500'  },
 }
 
 function formatCount(n) {

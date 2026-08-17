@@ -438,6 +438,353 @@ async function instagramOAuthConnect(appId, appSecret, code, redirectUri) {
   }
 }
 
+// ─── Instagram — sincronizar posts recentes + insights ────────────────────────
+// Busca os últimos posts da conta conectada e, pra cada um, tenta puxar
+// alcance/salvamentos/compartilhamentos via /insights. Esse endpoint exige o
+// escopo instagram_business_manage_insights — se o token só tem
+// instagram_business_basic (conexões feitas antes desse escopo existir), a
+// chamada de insights falha e devolvemos os posts só com like_count/comments_count
+// (que vêm do próprio objeto de mídia, sem precisar de permissão extra).
+
+async function instagramFetchMetrics(accessToken, limit) {
+  const mediaRes = await fetch(
+    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count` +
+    `&limit=${encodeURIComponent(limit)}&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const mediaData = await mediaRes.json().catch(() => ({}))
+  if (!mediaRes.ok) {
+    throw new Error(mediaData.error?.message || 'Falha ao buscar publicações do Instagram.')
+  }
+
+  const items = mediaData.data || []
+  let insightsAvailable = true
+
+  const postTypeMap = { REELS: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: 'image', VIDEO: 'video' }
+
+  // "views" é a métrica universal de visualizações (substitui "plays", que só
+  // existia pra Reels) — tentamos o conjunto completo primeiro e, se a API
+  // rejeitar (nem todo media_product_type aceita "views"), caímos pro conjunto
+  // básico que já sabemos que funciona antes de desistir de vez dos insights.
+  async function fetchInsights(mediaId, metricNames) {
+    const res = await fetch(
+      `https://graph.instagram.com/${mediaId}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
+  const rows = []
+  for (const m of items) {
+    let reach = 0, saves = 0, shares = 0, views = 0
+
+    if (insightsAvailable) {
+      const fullMetrics  = 'reach,saved,shares,views'
+      const basicMetrics = 'reach,saved,shares'
+
+      let { ok, status, data } = await fetchInsights(m.id, fullMetrics)
+      if (!ok && (status === 400)) {
+        ({ ok, status, data } = await fetchInsights(m.id, basicMetrics))
+      }
+
+      if (ok) {
+        for (const metric of data.data || []) {
+          const val = metric.values?.[0]?.value ?? metric.total_value?.value ?? 0
+          if (metric.name === 'reach')  reach = val
+          if (metric.name === 'saved')  saves = val
+          if (metric.name === 'shares') shares = val
+          if (metric.name === 'views')  views = val
+        }
+      } else if (status === 400 || status === 403) {
+        insightsAvailable = false
+      }
+    }
+
+    const isoDate = m.timestamp || ''
+    rows.push({
+      post_id:      m.id,
+      platform:     'instagram',
+      date:         isoDate.slice(0, 10),
+      publish_time: isoDate.slice(11, 16),
+      impressions:  views || reach,
+      reach,
+      likes:        m.like_count || 0,
+      comments:     m.comments_count || 0,
+      shares,
+      saves,
+      follows:      0,
+      link_clicks:  0,
+      duration_sec: 0,
+      description:  m.caption || '',
+      link:         m.permalink || '',
+      post_type:    postTypeMap[m.media_product_type] || (m.media_type || '').toLowerCase(),
+      client:       '',
+    })
+  }
+
+  return { rows, insightsAvailable }
+}
+
+// ─── Instagram — posts com thumbnail, tempo assistido e comentários ──────────
+// Fetch mais rico que instagramFetchMetrics, pra tela dedicada de Posts do
+// Instagram (thumbnail, tempo médio assistido de Reels). Mantido separado do
+// fetch usado no import de métricas pra não pesar o fluxo mais simples do
+// MetricsForm com campos que ele não usa.
+
+async function instagramFetchPosts(accessToken, limit) {
+  const mediaRes = await fetch(
+    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count` +
+    `&limit=${encodeURIComponent(limit)}&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const mediaData = await mediaRes.json().catch(() => ({}))
+  if (!mediaRes.ok) {
+    throw new Error(mediaData.error?.message || 'Falha ao buscar publicações do Instagram.')
+  }
+
+  const items = mediaData.data || []
+  let insightsAvailable = true
+  const postTypeMap = { REELS: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: 'image', VIDEO: 'video' }
+
+  async function fetchInsights(mediaId, metricNames) {
+    const res = await fetch(
+      `https://graph.instagram.com/${mediaId}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
+  const posts = []
+  for (const m of items) {
+    let reach = 0, saves = 0, shares = 0, views = 0, avgWatchTimeMs = 0
+
+    if (insightsAvailable) {
+      // Tenta do conjunto mais completo pro mais básico — "ig_reels_avg_watch_time"
+      // pode não existir nessa API (ela é nova, a métrica foi documentada
+      // originalmente pro fluxo via Página do Facebook), então cada tier cai
+      // pro anterior se a API rejeitar um nome de métrica específico (400).
+      const tiers = m.media_product_type === 'REELS'
+        ? ['reach,saved,shares,views,ig_reels_avg_watch_time', 'reach,saved,shares,views', 'reach,saved,shares']
+        : ['reach,saved,shares,views', 'reach,saved,shares']
+
+      let result = null
+      for (const metricNames of tiers) {
+        result = await fetchInsights(m.id, metricNames)
+        if (result.ok || result.status !== 400) break
+      }
+
+      if (result?.ok) {
+        for (const metric of result.data.data || []) {
+          const val = metric.values?.[0]?.value ?? metric.total_value?.value ?? 0
+          if (metric.name === 'reach')  reach = val
+          if (metric.name === 'saved')  saves = val
+          if (metric.name === 'shares') shares = val
+          if (metric.name === 'views')  views = val
+          if (metric.name === 'ig_reels_avg_watch_time') avgWatchTimeMs = val
+        }
+      } else if (result?.status === 400 || result?.status === 403) {
+        insightsAvailable = false
+      }
+    }
+
+    posts.push({
+      id:              m.id,
+      caption:         m.caption || '',
+      postType:        postTypeMap[m.media_product_type] || (m.media_type || '').toLowerCase(),
+      thumbnailUrl:    m.thumbnail_url || m.media_url || null,
+      permalink:       m.permalink || '',
+      timestamp:       m.timestamp || '',
+      likes:           m.like_count || 0,
+      comments:        m.comments_count || 0,
+      reach, saves, shares, views,
+      avgWatchTimeSec: avgWatchTimeMs ? Math.round(avgWatchTimeMs / 1000) : 0,
+    })
+  }
+
+  return { posts, insightsAvailable }
+}
+
+// ─── Instagram — Stories ativos ────────────────────────────────────────────
+// Stories somem 24h depois de publicados — não há como ter histórico sem uma
+// sincronização recorrente própria (o app não tem cron, só serverless
+// disparada por requisição), então isso sempre reflete só o que está no ar
+// agora, no momento em que a página é aberta.
+
+async function instagramFetchStories(accessToken) {
+  const mediaRes = await fetch(
+    `https://graph.instagram.com/me/stories?fields=id,media_type,media_url,thumbnail_url,permalink,timestamp` +
+    `&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const mediaData = await mediaRes.json().catch(() => ({}))
+  if (!mediaRes.ok) {
+    throw new Error(mediaData.error?.message || 'Falha ao buscar Stories ativos.')
+  }
+
+  const items = mediaData.data || []
+  let insightsAvailable = true
+
+  async function fetchInsights(mediaId, metricNames) {
+    const res = await fetch(
+      `https://graph.instagram.com/${mediaId}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
+  const stories = []
+  for (const m of items) {
+    let reach = 0, replies = 0, exits = 0, tapsForward = 0, tapsBack = 0
+
+    if (insightsAvailable) {
+      const tiers = ['reach,replies,exits,taps_forward,taps_back', 'reach,replies', 'reach']
+      let result = null
+      for (const metricNames of tiers) {
+        result = await fetchInsights(m.id, metricNames)
+        if (result.ok || result.status !== 400) break
+      }
+      if (result?.ok) {
+        for (const metric of result.data.data || []) {
+          const val = metric.values?.[0]?.value ?? metric.total_value?.value ?? 0
+          if (metric.name === 'reach')        reach       = val
+          if (metric.name === 'replies')      replies     = val
+          if (metric.name === 'exits')        exits       = val
+          if (metric.name === 'taps_forward') tapsForward = val
+          if (metric.name === 'taps_back')    tapsBack    = val
+        }
+      } else if (result?.status === 400 || result?.status === 403) {
+        insightsAvailable = false
+      }
+    }
+
+    stories.push({
+      id:           m.id,
+      mediaType:    m.media_type || '',
+      thumbnailUrl: m.thumbnail_url || m.media_url || null,
+      permalink:    m.permalink || '',
+      timestamp:    m.timestamp || '',
+      reach, replies, exits, tapsForward, tapsBack,
+    })
+  }
+
+  return { stories, insightsAvailable }
+}
+
+async function instagramFetchComments(accessToken, mediaId) {
+  const res = await fetch(
+    `https://graph.instagram.com/${mediaId}/comments?fields=id,text,username,timestamp,like_count` +
+    `&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error?.message || 'Falha ao buscar comentários.')
+  return (data.data || []).map((c) => ({
+    id:        c.id,
+    text:      c.text || '',
+    username:  c.username || '',
+    timestamp: c.timestamp || '',
+    likeCount: c.like_count || 0,
+  }))
+}
+
+// ─── Instagram — visão geral da conta (não por post) ──────────────────────────
+// Perfil (contadores em tempo real), métricas agregadas dos últimos 30 dias,
+// crescimento de seguidores dia a dia, e demografia da audiência. Cada bloco é
+// buscado e degradado de forma independente — se um falhar (conta pequena
+// demais pra ter demografia, métrica não suportada, etc.) os outros blocos
+// continuam disponíveis em vez de derrubar a resposta inteira.
+
+async function instagramFetchAccountOverview(accessToken) {
+  const profileRes = await fetch(
+    `https://graph.instagram.com/me?fields=id,username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url` +
+    `&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const profile = await profileRes.json().catch(() => ({}))
+  if (!profileRes.ok) {
+    throw new Error(profile.error?.message || 'Falha ao buscar o perfil da conta.')
+  }
+
+  const until = Math.floor(Date.now() / 1000)
+  const since = until - 30 * 24 * 60 * 60
+
+  async function fetchInsights(metricNames, extraParams = '') {
+    const url = `https://graph.instagram.com/me/insights?metric=${metricNames}&period=day&since=${since}&until=${until}${extraParams}` +
+      `&access_token=${encodeURIComponent(accessToken)}`
+    const res = await fetch(url)
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
+  // Totais do período (soma os valores diários de cada métrica)
+  let periodStats = null
+  {
+    const tiers = [
+      'reach,profile_views,website_clicks,accounts_engaged,total_interactions',
+      'reach,profile_views,accounts_engaged',
+      'reach',
+    ]
+    let result = null
+    for (const metricNames of tiers) {
+      result = await fetchInsights(metricNames)
+      if (result.ok || result.status !== 400) break
+    }
+    if (result?.ok) {
+      periodStats = {}
+      for (const metric of result.data.data || []) {
+        periodStats[metric.name] = (metric.values || []).reduce((sum, v) => sum + (v.value || 0), 0)
+      }
+    }
+  }
+
+  // Crescimento de seguidores dia a dia
+  let followerGrowth = []
+  {
+    const result = await fetchInsights('follower_count')
+    if (result.ok) {
+      const series = (result.data.data || []).find((m) => m.name === 'follower_count')
+      followerGrowth = (series?.values || [])
+        .map((v) => ({ date: (v.end_time || '').slice(0, 10), value: v.value || 0 }))
+        .filter((p) => p.date)
+    }
+  }
+
+  // Demografia — idade+gênero, cidade, país (cada dimensão é uma chamada própria)
+  async function fetchDemographics(breakdown) {
+    const url = `https://graph.instagram.com/me/insights?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=${breakdown}` +
+      `&access_token=${encodeURIComponent(accessToken)}`
+    const res = await fetch(url)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return null
+    const results = data.data?.[0]?.total_value?.breakdowns?.[0]?.results || []
+    return results
+      .map((r) => ({ key: (r.dimension_values || []).join(' · '), value: r.value || 0 }))
+      .sort((a, b) => b.value - a.value)
+  }
+
+  const [ageGender, city, country] = await Promise.all([
+    fetchDemographics('age,gender'),
+    fetchDemographics('city'),
+    fetchDemographics('country'),
+  ])
+
+  return {
+    profile: {
+      username:          profile.username || '',
+      name:              profile.name || '',
+      biography:         profile.biography || '',
+      website:           profile.website || '',
+      followersCount:    profile.followers_count || 0,
+      followsCount:      profile.follows_count || 0,
+      mediaCount:        profile.media_count || 0,
+      profilePictureUrl: profile.profile_picture_url || null,
+    },
+    periodStats,
+    followerGrowth,
+    demographics: {
+      ageGender: ageGender || [],
+      city:      city || [],
+      country:   country || [],
+      available: !!(ageGender?.length || city?.length || country?.length),
+    },
+  }
+}
+
 // ─── Whisper ──────────────────────────────────────────────────────────────────
 
 async function transcribeAudio(openaiApiKey, audioUrl) {
@@ -578,6 +925,46 @@ export default async function handler(req, res) {
       if (!code?.trim())        return res.status(400).json({ error: 'Código de autorização ausente.' })
       if (!redirectUri?.trim()) return res.status(400).json({ error: 'redirectUri é obrigatório.' })
       const result = await instagramOAuthConnect(appId, appSecret, code, redirectUri)
+      return res.status(200).json(result)
+    }
+
+    // ── Instagram — sincronizar métricas ──────────────────────────────────────
+    if (action === 'instagram-sync-metrics') {
+      const { accessToken, limit } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchMetrics(accessToken, limit || 25)
+      return res.status(200).json(result)
+    }
+
+    // ── Instagram — posts com thumbnail + comentários ─────────────────────────
+    if (action === 'instagram-fetch-posts') {
+      const { accessToken, limit } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchPosts(accessToken, limit || 25)
+      return res.status(200).json(result)
+    }
+
+    if (action === 'instagram-fetch-comments') {
+      const { accessToken, mediaId } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      if (!mediaId?.trim())      return res.status(400).json({ error: 'mediaId é obrigatório.' })
+      const comments = await instagramFetchComments(accessToken, mediaId)
+      return res.status(200).json({ comments })
+    }
+
+    // ── Instagram — visão geral da conta ──────────────────────────────────────
+    if (action === 'instagram-account-overview') {
+      const { accessToken } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchAccountOverview(accessToken)
+      return res.status(200).json(result)
+    }
+
+    // ── Instagram — Stories ativos ────────────────────────────────────────────
+    if (action === 'instagram-fetch-stories') {
+      const { accessToken } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchStories(accessToken)
       return res.status(200).json(result)
     }
 

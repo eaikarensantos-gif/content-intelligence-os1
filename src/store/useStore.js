@@ -84,6 +84,14 @@ const useStore = create(
       theme: 'light',
       desafioHistory: [],
       brainItems: [],
+      pinnedPages: [],
+
+      togglePinnedPage: (path) =>
+        set((s) => ({
+          pinnedPages: s.pinnedPages.includes(path)
+            ? s.pinnedPages.filter((p) => p !== path)
+            : [...s.pinnedPages, path],
+        })),
 
       // ── Perfil do Criador ────────────────────────────────
       creatorProfile: {
@@ -718,6 +726,7 @@ const useStore = create(
         creatorProfile: s.creatorProfile,
         desafioHistory: s.desafioHistory,
         brainItems: s.brainItems,
+        pinnedPages: s.pinnedPages,
         audienceProfiles: s.audienceProfiles,
         audienceWeights: s.audienceWeights,
         audienceCuts: s.audienceCuts,
