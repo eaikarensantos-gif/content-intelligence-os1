@@ -339,7 +339,7 @@ alter table user_data disable row level security;`}</pre>
       <div className="card p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <Instagram size={15} className="text-pink-500" /> Instagram (API oficial da Meta)
+            <Instagram size={15} className="text-pink-500" /> Instagram (API oficial)
           </h2>
           <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${
             igConnection ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'
@@ -348,9 +348,10 @@ alter table user_data disable row level security;`}</pre>
           </span>
         </div>
         <p className="text-xs text-gray-500">
-          Conexão oficial via Facebook Login for Business — sem scraper, sem violar os Termos da Meta. Requer um App em{' '}
+          Conexão oficial via Instagram Business Login — sem scraper, sem violar os Termos da Meta. Requer o caso de uso{' '}
+          <strong>API do Instagram</strong> configurado no seu App em{' '}
           <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">developers.facebook.com</a>{' '}
-          e uma conta Instagram Business/Creator vinculada a uma Página do Facebook.
+          (Casos de uso → API do Instagram → Configuração da API com login da empresa no Instagram) e uma conta Instagram Business/Creator.
         </p>
 
         {igJustConnected && (
@@ -359,7 +360,7 @@ alter table user_data disable row level security;`}</pre>
 
         <div>
           <label className="text-xs text-gray-500 font-medium mb-1.5 block">
-            Redirect URI (cole em Facebook Login for Business → Configurações → URIs de redirecionamento OAuth válidos)
+            Redirect URI (cole em API do Instagram → Configuração da API com login da empresa → URI de redirecionamento OAuth)
           </label>
           <div className="flex gap-2">
             <input type="text" readOnly value={getRedirectUri()} onFocus={(e) => e.target.select()} className="input w-full text-sm font-mono bg-gray-50" />
@@ -370,13 +371,13 @@ alter table user_data disable row level security;`}</pre>
         </div>
 
         <div>
-          <label className="text-xs text-gray-500 font-medium mb-1.5 block">App ID</label>
-          <input type="text" value={igAppId} onChange={(e) => setIgAppId(e.target.value)} placeholder="123456789012345" className="input w-full text-sm font-mono" />
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">ID do app do Instagram</label>
+          <input type="text" value={igAppId} onChange={(e) => setIgAppId(e.target.value)} placeholder="3201261233418178" className="input w-full text-sm font-mono" />
         </div>
         <div>
-          <label className="text-xs text-gray-500 font-medium mb-1.5 block">App Secret</label>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">Chave secreta do app do Instagram</label>
           <div className="relative">
-            <input type={showIgSecret ? 'text' : 'password'} value={igAppSecret} onChange={(e) => setIgAppSecret(e.target.value)} placeholder="App Secret do Meta" className="input w-full pr-10 text-sm font-mono" />
+            <input type={showIgSecret ? 'text' : 'password'} value={igAppSecret} onChange={(e) => setIgAppSecret(e.target.value)} placeholder="Chave secreta do app do Instagram" className="input w-full pr-10 text-sm font-mono" />
             <button onClick={() => setShowIgSecret((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
               {showIgSecret ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -404,7 +405,7 @@ alter table user_data disable row level security;`}</pre>
               <div key={acc.id} className="flex items-center gap-2 text-xs text-gray-700">
                 {acc.profilePictureUrl && <img src={acc.profilePictureUrl} alt="" className="w-6 h-6 rounded-full" />}
                 <span className="font-medium">@{acc.username || acc.id}</span>
-                <span className="text-gray-400">via Página "{acc.pageName}"</span>
+                {acc.accountType && <span className="text-gray-400">({acc.accountType})</span>}
               </div>
             ))}
             {igConnection.expiresAt && (
@@ -414,6 +415,12 @@ alter table user_data disable row level security;`}</pre>
               </p>
             )}
           </div>
+        )}
+
+        {!igConnection && (
+          <p className="text-[10px] text-gray-400 bg-gray-50 rounded-lg p-2 border border-gray-100">
+            💡 Antes de conectar: em "Gerar tokens de acesso" no seu App, adicione sua conta como <strong>Testador do Instagram</strong> (aba Funções) e aceite o convite dentro do app do Instagram (Configurações → Apps e sites → Convites de testador) — sem isso o login trava com "You don't have access".
+          </p>
         )}
 
         <a href="https://developers.facebook.com/docs/instagram-platform" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-pink-600 hover:underline">
