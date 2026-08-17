@@ -602,6 +602,71 @@ async function instagramFetchPosts(accessToken, limit) {
   return { posts, insightsAvailable }
 }
 
+// ─── Instagram — Stories ativos ────────────────────────────────────────────
+// Stories somem 24h depois de publicados — não há como ter histórico sem uma
+// sincronização recorrente própria (o app não tem cron, só serverless
+// disparada por requisição), então isso sempre reflete só o que está no ar
+// agora, no momento em que a página é aberta.
+
+async function instagramFetchStories(accessToken) {
+  const mediaRes = await fetch(
+    `https://graph.instagram.com/me/stories?fields=id,media_type,media_url,thumbnail_url,permalink,timestamp` +
+    `&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const mediaData = await mediaRes.json().catch(() => ({}))
+  if (!mediaRes.ok) {
+    throw new Error(mediaData.error?.message || 'Falha ao buscar Stories ativos.')
+  }
+
+  const items = mediaData.data || []
+  let insightsAvailable = true
+
+  async function fetchInsights(mediaId, metricNames) {
+    const res = await fetch(
+      `https://graph.instagram.com/${mediaId}/insights?metric=${metricNames}&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, status: res.status, data }
+  }
+
+  const stories = []
+  for (const m of items) {
+    let reach = 0, replies = 0, exits = 0, tapsForward = 0, tapsBack = 0
+
+    if (insightsAvailable) {
+      const tiers = ['reach,replies,exits,taps_forward,taps_back', 'reach,replies', 'reach']
+      let result = null
+      for (const metricNames of tiers) {
+        result = await fetchInsights(m.id, metricNames)
+        if (result.ok || result.status !== 400) break
+      }
+      if (result?.ok) {
+        for (const metric of result.data.data || []) {
+          const val = metric.values?.[0]?.value ?? metric.total_value?.value ?? 0
+          if (metric.name === 'reach')        reach       = val
+          if (metric.name === 'replies')      replies     = val
+          if (metric.name === 'exits')        exits       = val
+          if (metric.name === 'taps_forward') tapsForward = val
+          if (metric.name === 'taps_back')    tapsBack    = val
+        }
+      } else if (result?.status === 400 || result?.status === 403) {
+        insightsAvailable = false
+      }
+    }
+
+    stories.push({
+      id:           m.id,
+      mediaType:    m.media_type || '',
+      thumbnailUrl: m.thumbnail_url || m.media_url || null,
+      permalink:    m.permalink || '',
+      timestamp:    m.timestamp || '',
+      reach, replies, exits, tapsForward, tapsBack,
+    })
+  }
+
+  return { stories, insightsAvailable }
+}
+
 async function instagramFetchComments(accessToken, mediaId) {
   const res = await fetch(
     `https://graph.instagram.com/${mediaId}/comments?fields=id,text,username,timestamp,like_count` +
@@ -892,6 +957,14 @@ export default async function handler(req, res) {
       const { accessToken } = req.body
       if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
       const result = await instagramFetchAccountOverview(accessToken)
+      return res.status(200).json(result)
+    }
+
+    // ── Instagram — Stories ativos ────────────────────────────────────────────
+    if (action === 'instagram-fetch-stories') {
+      const { accessToken } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      const result = await instagramFetchStories(accessToken)
       return res.status(200).json(result)
     }
 

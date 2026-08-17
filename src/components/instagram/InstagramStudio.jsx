@@ -8,6 +8,7 @@ import { getConnection } from '../../lib/instagramAuth'
 import { instagramFetchPosts, instagramFetchComments } from '../../lib/aiService'
 import Modal from '../common/Modal'
 import AccountOverview from './AccountOverview'
+import StoriesGrid from './StoriesGrid'
 
 const POST_TYPE_LABEL = { reel: 'Reel', carousel: 'Carrossel', image: 'Foto', video: 'Vídeo' }
 
@@ -55,6 +56,7 @@ export default function InstagramStudio() {
   const [posts, setPosts] = useState(null)
   const [insightsAvailable, setInsightsAvailable] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [tab, setTab] = useState('posts')
   const [view, setView] = useState('grid')
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -159,31 +161,51 @@ export default function InstagramStudio() {
             @{connection.accounts?.[0]?.username || connection.accounts?.[0]?.id}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-            <button
-              onClick={() => setView('grid')}
-              className={`p-1.5 rounded-md transition-all ${view === 'grid' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Visão em grade"
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              onClick={() => setView('list')}
-              className={`p-1.5 rounded-md transition-all ${view === 'list' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Visão em lista"
-            >
-              <List size={14} />
+        {tab === 'posts' && (
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+              <button
+                onClick={() => setView('grid')}
+                className={`p-1.5 rounded-md transition-all ${view === 'grid' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                title="Visão em grade"
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setView('list')}
+                className={`p-1.5 rounded-md transition-all ${view === 'list' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                title="Visão em lista"
+              >
+                <List size={14} />
+              </button>
+            </div>
+            <button onClick={fetchPosts} disabled={loading} className="btn-secondary text-xs">
+              {loading ? <><Loader2 size={13} className="animate-spin" /> Atualizando...</> : <><RefreshCw size={13} /> Atualizar</>}
             </button>
           </div>
-          <button onClick={fetchPosts} disabled={loading} className="btn-secondary text-xs">
-            {loading ? <><Loader2 size={13} className="animate-spin" /> Atualizando...</> : <><RefreshCw size={13} /> Atualizar</>}
-          </button>
-        </div>
+        )}
       </div>
 
       <AccountOverview accessToken={connection.accessToken} />
 
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5 w-fit">
+        {[['posts', 'Posts'], ['stories', 'Stories']].map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`text-xs px-4 py-1.5 rounded-md font-medium transition-all ${
+              tab === id ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'stories' && <StoriesGrid accessToken={connection.accessToken} />}
+
+      {tab === 'posts' && (
+      <>
       {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
 
       {!insightsAvailable && posts && (
@@ -371,6 +393,8 @@ export default function InstagramStudio() {
             </table>
           </div>
         </div>
+      )}
+      </>
       )}
 
       <PostDetailModal post={selected} accessToken={connection.accessToken} onClose={() => setSelected(null)} />
