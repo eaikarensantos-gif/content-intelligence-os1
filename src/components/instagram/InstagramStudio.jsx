@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Instagram, RefreshCw, Loader2, ExternalLink, Heart, MessageCircle, Bookmark, Repeat2, Eye, Users, Clock } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Instagram, RefreshCw, Loader2, ExternalLink, Heart, MessageCircle, Bookmark, Repeat2, Eye, Users, Clock,
+  LayoutGrid, List, Search, Download, ChevronUp, ChevronDown, ChevronsUpDown,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getConnection } from '../../lib/instagramAuth'
 import { instagramFetchPosts, instagramFetchComments } from '../../lib/aiService'
@@ -15,6 +18,35 @@ function StatChip({ icon: Icon, value, label }) {
   )
 }
 
+const engagementOf = (p) => (p.likes || 0) + (p.comments || 0) + (p.shares || 0) + (p.saves || 0)
+const impressionsOf = (p) => p.views || p.reach || 0
+const engagementRateOf = (p) => {
+  const imp = impressionsOf(p)
+  return imp ? engagementOf(p) / imp : 0
+}
+
+const SORT_COLS = [
+  { key: 'date', label: 'Data' },
+  { key: 'postType', label: 'Tipo' },
+  { key: 'description', label: 'Descrição', sortable: false },
+  { key: 'views', label: 'Visualizações' },
+  { key: 'reach', label: 'Alcance' },
+  { key: 'likes', label: 'Curtidas' },
+  { key: 'comments', label: 'Coment.' },
+  { key: 'shares', label: 'Compart.' },
+  { key: 'saves', label: 'Salvam.' },
+  { key: 'engagement', label: 'Eng.' },
+  { key: 'engagementRate', label: 'Taxa Eng.' },
+]
+
+function sortValue(post, key) {
+  if (key === 'date') return post.timestamp || ''
+  if (key === 'views') return impressionsOf(post)
+  if (key === 'engagement') return engagementOf(post)
+  if (key === 'engagementRate') return engagementRateOf(post)
+  return post[key] ?? 0
+}
+
 export default function InstagramStudio() {
   const connection = getConnection()
   const [loading, setLoading] = useState(false)
@@ -22,6 +54,69 @@ export default function InstagramStudio() {
   const [posts, setPosts] = useState(null)
   const [insightsAvailable, setInsightsAvailable] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [view, setView] = useState('grid')
+  const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState('')
+  const [sortBy, setSortBy] = useState('date')
+  const [sortDir, setSortDir] = useState('desc')
+
+  const availableTypes = useMemo(
+    () => Array.from(new Set((posts || []).map((p) => p.postType).filter(Boolean))),
+    [posts]
+  )
+
+  const filteredSorted = useMemo(() => {
+    if (!posts) return []
+    const q = search.trim().toLowerCase()
+    const filtered = posts.filter((p) => {
+      if (filterType && p.postType !== filterType) return false
+      if (!q) return true
+      return (
+        (p.caption || '').toLowerCase().includes(q) ||
+        (p.postType || '').toLowerCase().includes(q) ||
+        (p.timestamp || '').toLowerCase().includes(q)
+      )
+    })
+    const dir = sortDir === 'asc' ? 1 : -1
+    return [...filtered].sort((a, b) => {
+      const av = sortValue(a, sortBy)
+      const bv = sortValue(b, sortBy)
+      if (av < bv) return -1 * dir
+      if (av > bv) return 1 * dir
+      return 0
+    })
+  }, [posts, search, filterType, sortBy, sortDir])
+
+  const handleSort = (key) => {
+    if (sortBy === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortBy(key); setSortDir('desc') }
+  }
+
+  const exportCSV = () => {
+    const headers = ['Data', 'Tipo', 'Descrição', 'Visualizações', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Engajamento', 'Taxa Eng.%', 'Link']
+    const rows = filteredSorted.map((p) => [
+      p.timestamp ? new Date(p.timestamp).toLocaleString('pt-BR') : '',
+      POST_TYPE_LABEL[p.postType] || p.postType || '',
+      (p.caption || '').replace(/"/g, '""'),
+      impressionsOf(p),
+      p.reach || 0,
+      p.likes || 0,
+      p.comments || 0,
+      p.shares || 0,
+      p.saves || 0,
+      engagementOf(p),
+      (engagementRateOf(p) * 100).toFixed(2),
+      p.permalink || '',
+    ])
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `instagram_posts_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const fetchPosts = async () => {
     if (!connection) return
@@ -63,9 +158,27 @@ export default function InstagramStudio() {
             @{connection.accounts?.[0]?.username || connection.accounts?.[0]?.id}
           </p>
         </div>
-        <button onClick={fetchPosts} disabled={loading} className="btn-secondary text-xs">
-          {loading ? <><Loader2 size={13} className="animate-spin" /> Atualizando...</> : <><RefreshCw size={13} /> Atualizar</>}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+            <button
+              onClick={() => setView('grid')}
+              className={`p-1.5 rounded-md transition-all ${view === 'grid' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              title="Visão em grade"
+            >
+              <LayoutGrid size={14} />
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={`p-1.5 rounded-md transition-all ${view === 'list' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              title="Visão em lista"
+            >
+              <List size={14} />
+            </button>
+          </div>
+          <button onClick={fetchPosts} disabled={loading} className="btn-secondary text-xs">
+            {loading ? <><Loader2 size={13} className="animate-spin" /> Atualizando...</> : <><RefreshCw size={13} /> Atualizar</>}
+          </button>
+        </div>
       </div>
 
       {error && <p className="text-xs text-red-500 mb-4">{error}</p>}
@@ -87,8 +200,57 @@ export default function InstagramStudio() {
       )}
 
       {posts && posts.length > 0 && (
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por data, tipo, descrição..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500 transition-colors"
+              />
+            </div>
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 px-2 py-1.5 rounded hover:bg-emerald-50 transition-colors"
+              title={`Exportar ${filteredSorted.length} posts como CSV`}
+            >
+              <Download size={12} /> Exportar CSV
+            </button>
+          </div>
+
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => setFilterType('')}
+              className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                filterType === '' ? 'bg-pink-600 text-white border-pink-600' : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300 hover:text-pink-600'
+              }`}
+            >
+              Todos
+            </button>
+            {availableTypes.map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterType(t)}
+                className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                  filterType === t ? 'bg-pink-600 text-white border-pink-600' : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300 hover:text-pink-600'
+                }`}
+              >
+                {POST_TYPE_LABEL[t] || t}
+              </button>
+            ))}
+            <span className="text-xs text-gray-400 self-center ml-1">
+              {filteredSorted.length} {filteredSorted.length === 1 ? 'post' : 'posts'}{search || filterType ? ` (de ${posts.length})` : ''}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {posts && posts.length > 0 && view === 'grid' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {posts.map((post) => (
+          {filteredSorted.map((post) => (
             <button
               key={post.id}
               onClick={() => setSelected(post)}
@@ -127,6 +289,84 @@ export default function InstagramStudio() {
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {posts && posts.length > 0 && view === 'list' && (
+        <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  {SORT_COLS.map((col) => (
+                    <th
+                      key={col.key}
+                      className={`text-left py-2 px-2.5 text-gray-400 font-medium whitespace-nowrap select-none ${col.sortable === false ? '' : 'cursor-pointer hover:text-pink-600 transition-colors'}`}
+                      onClick={() => col.sortable !== false && handleSort(col.key)}
+                    >
+                      <span className="inline-flex items-center">
+                        {col.label}
+                        {col.sortable !== false && (
+                          sortBy !== col.key
+                            ? <ChevronsUpDown size={10} className="text-gray-300 ml-0.5" />
+                            : sortDir === 'asc'
+                              ? <ChevronUp size={10} className="text-pink-500 ml-0.5" />
+                              : <ChevronDown size={10} className="text-pink-500 ml-0.5" />
+                        )}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSorted.map((post) => (
+                  <tr
+                    key={post.id}
+                    onClick={() => setSelected(post)}
+                    className="border-b border-gray-100 hover:bg-pink-50/50 cursor-pointer group"
+                  >
+                    <td className="py-2 px-2.5 text-gray-400 whitespace-nowrap">
+                      {post.timestamp ? new Date(post.timestamp).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                    </td>
+                    <td className="py-2 px-2.5">
+                      <span className="chip border text-[10px] bg-pink-50 text-pink-600 border-pink-200 capitalize">
+                        {POST_TYPE_LABEL[post.postType] || post.postType || '—'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2.5 max-w-[240px]">
+                      <div className="flex items-center gap-1.5">
+                        {post.caption ? (
+                          <span className="text-gray-500 truncate block" title={post.caption}>
+                            {post.caption.slice(0, 60)}{post.caption.length > 60 ? '…' : ''}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                        {post.permalink && (
+                          <a href={post.permalink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400 hover:text-blue-600">
+                            <ExternalLink size={11} />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2 px-2.5 text-gray-700">{impressionsOf(post).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{(post.reach || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{(post.likes || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{(post.comments || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{(post.shares || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{(post.saves || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-700 font-medium">{engagementOf(post).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5">
+                      <span className={`font-semibold ${engagementRateOf(post) > 0.04 ? 'text-emerald-600' : engagementRateOf(post) > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
+                        {(engagementRateOf(post) * 100).toFixed(2)}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
