@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react'
 import {
   UploadCloud, BarChart2, Bookmark, Share2, Eye,
-  TrendingUp, AlertCircle, Users, Zap, RefreshCw, FileText
+  TrendingUp, AlertCircle, Users, Zap, RefreshCw, FileText, Instagram
 } from 'lucide-react'
+import useStore from '../../store/useStore'
 
 // ─── PILARES ─────────────────────────────────────────────────────────────────
 
@@ -119,27 +120,46 @@ function normalizarRow(r, formato) {
 }
 
 function ehFeed(tipo) {
-  return tipo.includes('reel') || tipo.includes('carrossel') || tipo.includes('carousel') || tipo.includes('imagem') || tipo.includes('image')
+  return tipo.includes('reel') || tipo.includes('carrossel') || tipo.includes('carousel') ||
+    tipo.includes('imagem') || tipo.includes('image') || tipo.includes('video') || tipo.includes('vídeo')
+}
+
+// ─── NORMALIZAR A PARTIR DO STORE (posts sincronizados do Instagram) ──────────
+// Mesma forma de linha que normalizarRow produz pro CSV — assim
+// processarNormalizado serve pros dois caminhos sem duplicar a lógica de
+// classificação/estatística.
+
+function normalizarFromMetric(m) {
+  const interacoes = (m.likes || 0) + (m.comments || 0) + (m.saves || 0) + (m.shares || 0)
+  const base = m.impressions || m.reach || 0
+  return {
+    tipo: (m.post_type || '').toLowerCase(),
+    desc: m.description || '',
+    cliente: m.client || '',
+    data: m.date || '',
+    alcance: m.reach || 0,
+    impressoes: m.impressions || 0,
+    curtidas: m.likes || 0,
+    comentarios: m.comments || 0,
+    compartilhamentos: m.shares || 0,
+    salvamentos: m.saves || 0,
+    taxaEng: base > 0 ? (interacoes / base) * 100 : 0,
+  }
 }
 
 // ─── PROCESSAMENTO ────────────────────────────────────────────────────────────
 
-function processarDados(rows) {
-  const headers = Object.keys(rows[0] || {})
-  const formato = detectarFormato(headers)
-
+function processarNormalizado(normalizado, totalRows) {
   // dedup
   const seen = new Set()
-  const unique = rows.filter(r => {
-    const nr = normalizarRow(r, formato)
-    const key = `${nr.data}|${nr.tipo}|${nr.desc.slice(0, 40)}`
+  const unique = normalizado.filter(r => {
+    const key = `${r.data}|${r.tipo}|${r.desc.slice(0, 40)}`
     if (seen.has(key)) return false
     seen.add(key); return true
   })
 
-  const normalizado = unique.map(r => ({ ...normalizarRow(r, formato), _raw: r }))
-  const feed = normalizado.filter(r => ehFeed(r.tipo))
-  const stories = normalizado.filter(r => !ehFeed(r.tipo))
+  const feed = unique.filter(r => ehFeed(r.tipo))
+  const stories = unique.filter(r => !ehFeed(r.tipo))
 
   feed.forEach(r => { r._pilar = classificar(r.desc) })
 
@@ -203,7 +223,19 @@ function processarDados(rows) {
 
   const topPosts = [...feed].sort((a, b) => b.taxaEng - a.taxaEng).slice(0, 6)
 
-  return { totalRows: rows.length, uniquePosts: unique.length, feedPosts: feed.length, pilarStats, formatoStats, storiesStats, topPosts, formato }
+  return { totalRows, uniquePosts: unique.length, feedPosts: feed.length, pilarStats, formatoStats, storiesStats, topPosts }
+}
+
+function processarDados(rows) {
+  const headers = Object.keys(rows[0] || {})
+  const formato = detectarFormato(headers)
+  const normalizado = rows.map(r => ({ ...normalizarRow(r, formato), _raw: r }))
+  return { ...processarNormalizado(normalizado, rows.length), formato, origem: 'csv' }
+}
+
+function processarDadosFromStore(metrics) {
+  const normalizado = metrics.map(normalizarFromMetric)
+  return { ...processarNormalizado(normalizado, metrics.length), formato: 'sync', origem: 'instagram' }
 }
 
 // ─── INSIGHTS ─────────────────────────────────────────────────────────────────
@@ -264,9 +296,17 @@ function Barra({ label, valor, max, cor, sufixo = '' }) {
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function AudienceAnalytics() {
+  const metrics = useStore((s) => s.metrics)
+  const igMetrics = metrics.filter((m) => m.platform === 'instagram')
   const [dados, setDados] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const [erro, setErro] = useState(null)
+
+  const usarSincronizados = () => {
+    const result = processarDadosFromStore(igMetrics)
+    if (result.feedPosts === 0) { setErro('Nenhum post de feed sincronizado ainda. Sincronize em Analytics → Adicionar Métricas → Instagram.'); return }
+    setDados(result); setErro(null)
+  }
 
   const processarArquivo = useCallback((file) => {
     if (!file || !file.name.endsWith('.csv')) { setErro('Envie o CSV exportado pelo seu painel de métricas.'); return }
@@ -297,6 +337,17 @@ export default function AudienceAnalytics() {
           <p className="text-sm text-gray-300 max-w-xl">Importe o CSV de reels e carrosséis para ver performance por pilar, sinais de comportamento e padrões da audiência.</p>
         </div>
       </div>
+
+      {igMetrics.length > 0 && (
+        <button
+          onClick={usarSincronizados}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-pink-200 bg-pink-50 hover:bg-pink-100 p-5 transition-colors"
+        >
+          <Instagram size={18} className="text-pink-500" />
+          <span className="text-sm font-semibold text-pink-700">Usar os {igMetrics.length} posts já sincronizados do Instagram</span>
+        </button>
+      )}
+
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
@@ -315,7 +366,7 @@ export default function AudienceAnalytics() {
     </div>
   )
 
-  const { totalRows, uniquePosts, feedPosts, pilarStats, formatoStats, storiesStats, topPosts } = dados
+  const { totalRows, uniquePosts, feedPosts, pilarStats, formatoStats, storiesStats, topPosts, origem } = dados
   const insights = gerarInsights(dados)
   const porTaxa = Object.entries(pilarStats).sort((a, b) => b[1].avgTaxa - a[1].avgTaxa)
   const porSalv = Object.entries(pilarStats).sort((a, b) => b[1].avgSalvamentos - a[1].avgSalvamentos)
@@ -338,10 +389,12 @@ export default function AudienceAnalytics() {
         <div className="relative z-10 flex items-start justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1"><Users size={18} className="text-violet-400" /><h2 className="text-base font-bold">Análise de Audiência</h2></div>
-            <p className="text-xs text-gray-400">{totalRows} entradas → {uniquePosts} únicos após deduplicação · {feedPosts} posts de feed</p>
+            <p className="text-xs text-gray-400">
+              {origem === 'instagram' ? <span className="inline-flex items-center gap-1"><Instagram size={11} /> Sincronizado do Instagram</span> : `${totalRows} entradas → ${uniquePosts} únicos após deduplicação`} · {feedPosts} posts de feed
+            </p>
           </div>
           <button onClick={() => setDados(null)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 hover:bg-white/20 transition-colors">
-            <RefreshCw size={12} /> Novo CSV
+            <RefreshCw size={12} /> {origem === 'instagram' ? 'Recomeçar' : 'Novo CSV'}
           </button>
         </div>
       </div>
