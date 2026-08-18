@@ -389,7 +389,7 @@ export default function WeeklyPlanner() {
           </div>
           <h3 className="text-gray-700 font-semibold mb-2">Dados insuficientes</h3>
           <p className="text-gray-400 text-sm max-w-sm">
-            Importe pelo menos 2 posts com métricas nos últimos {period} dias para gerar o plano semanal.
+            Adicione pelo menos 2 posts com métricas nos últimos {period} dias para gerar o plano semanal — importe um CSV ou sincronize direto do Instagram em Analytics → Adicionar Métricas.
           </p>
         </div>
       )}
