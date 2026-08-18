@@ -15,6 +15,7 @@ import {
   MessageSquare, FileText, Calendar, Printer, ClipboardCopy, BarChart2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import { confirmDialog } from '../../store/useUIStore'
 import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
 import WeeklyPlanner from './WeeklyPlanner'
@@ -1243,8 +1244,8 @@ export default function Analytics() {
                   <Upload size={12} /> Importar arquivo
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm('Isso vai limpar todos os dados atuais e permitir reimportar. Continuar?')) {
+                  onClick={async () => {
+                    if (await confirmDialog({ message: 'Isso vai limpar todos os dados atuais e permitir reimportar. Continuar?', confirmLabel: 'Limpar', danger: true })) {
                       clearMetrics()
                     }
                   }}

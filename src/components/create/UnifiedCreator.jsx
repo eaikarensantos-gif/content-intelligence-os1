@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
+import { confirmDialog } from '../../store/useUIStore'
 import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
 import { assertNotTruncated } from '../../utils/aiJson'
 import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from '../../data/temasCarrossel'
@@ -2502,7 +2503,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
               {savedThemes.length > 0 && (
                 <button
-                  onClick={() => { if (window.confirm('Limpar todos os temas salvos?')) setSavedThemes([]) }}
+                  onClick={async () => { if (await confirmDialog({ message: 'Limpar todos os temas salvos?', confirmLabel: 'Limpar', danger: true })) setSavedThemes([]) }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-500 border border-red-200 rounded-lg hover:bg-red-100 transition-colors shrink-0"
                 >
                   <X size={11} /> Limpar
@@ -2525,9 +2526,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     {clt.length} tema{clt.length > 1 ? 's' : ''} do posicionamento antigo — escrito{clt.length > 1 ? 's' : ''} do lugar de empregado, não de dono de negócio.
                   </span>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       const ids = new Set(clt.map(t => t.id))
-                      if (window.confirm(`Remover ${clt.length} tema${clt.length > 1 ? 's' : ''} de rotina CLT do banco?`)) {
+                      if (await confirmDialog({ message: `Remover ${clt.length} tema${clt.length > 1 ? 's' : ''} de rotina CLT do banco?`, confirmLabel: 'Remover', danger: true })) {
                         setSavedThemes(prev => prev.filter(t => !ids.has(t.id)))
                       }
                     }}

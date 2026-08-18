@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
+import { toast } from '../../store/useUIStore'
 
 const TYPE_LABELS = {
   article: { label: 'Artigo', icon: BookOpen, color: 'blue' },
@@ -269,7 +270,7 @@ export default function WebClipper() {
     const provider = aiConfig?.provider
     const apiKey = aiConfig?.apiKey || localStorage.getItem('cio-openai-key') || localStorage.getItem('cio-groq-key')
     if (!apiKey) {
-      alert('Configure uma chave de API em Configurações para usar resumos com IA.')
+      toast.error('Configure uma chave de API em Configurações para usar resumos com IA.')
       return
     }
 
