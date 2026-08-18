@@ -306,6 +306,17 @@ export async function instagramAccountOverview(accessToken) {
   return data
 }
 
+export async function instagramReplyComment(accessToken, commentId, message) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-reply-comment', accessToken, commentId, message }),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data
+}
+
 export async function instagramFetchStories(accessToken) {
   const res = await fetch('/api/ai', {
     method: 'POST',

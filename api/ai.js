@@ -667,6 +667,23 @@ async function instagramFetchStories(accessToken) {
   return { stories, insightsAvailable }
 }
 
+// ─── Instagram — responder comentário ──────────────────────────────────────
+// Requer o escopo instagram_business_manage_comments (conexões feitas antes
+// desse escopo existir precisam reconectar antes de conseguir usar isso).
+
+async function instagramReplyToComment(accessToken, commentId, message) {
+  const res = await fetch(`https://graph.instagram.com/${commentId}/replies`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ message, access_token: accessToken }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Falha ao publicar a resposta no Instagram.')
+  }
+  return { id: data.id }
+}
+
 async function instagramFetchComments(accessToken, mediaId) {
   const res = await fetch(
     `https://graph.instagram.com/${mediaId}/comments?fields=id,text,username,timestamp,like_count` +
@@ -950,6 +967,15 @@ export default async function handler(req, res) {
       if (!mediaId?.trim())      return res.status(400).json({ error: 'mediaId é obrigatório.' })
       const comments = await instagramFetchComments(accessToken, mediaId)
       return res.status(200).json({ comments })
+    }
+
+    if (action === 'instagram-reply-comment') {
+      const { accessToken, commentId, message } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      if (!commentId?.trim())   return res.status(400).json({ error: 'commentId é obrigatório.' })
+      if (!message?.trim())     return res.status(400).json({ error: 'Mensagem de resposta vazia.' })
+      const result = await instagramReplyToComment(accessToken, commentId, message)
+      return res.status(200).json(result)
     }
 
     // ── Instagram — visão geral da conta ──────────────────────────────────────

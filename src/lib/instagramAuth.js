@@ -8,7 +8,7 @@ const LS_APP_SECRET = 'cio-ig-app-secret'
 const LS_CONNECTION = 'cio-ig-connection'
 const SS_STATE       = 'cio-ig-oauth-state'
 
-const SCOPES = 'instagram_business_basic,instagram_business_manage_insights'
+const SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments'
 
 export function getAppId()     { return localStorage.getItem(LS_APP_ID) || '' }
 export function getAppSecret() { return localStorage.getItem(LS_APP_SECRET) || '' }
