@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { detectCliches } from '../../lib/clicheDetector'
@@ -13,7 +13,7 @@ import {
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
   MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
-  AlertCircle,
+  AlertCircle, Building2,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -1111,6 +1111,84 @@ const ENGAGEMENT_TEMPLATES = {
   },
 }
 
+/* ── Gerador dedicado — série "Como eu aplicaria IA na minha empresa se eu
+   fosse [TIPO DE NEGÓCIO]". Roteiro de Reels mostrando aplicações reais de
+   IA na operação de um negócio específico — não é o protocolo genérico de
+   engajamento (sem variação emocional/provocativa, sem exercício de memória
+   pessoal): é um formato fechado, com ordem fixa de 10 partes e frases
+   obrigatórias de abertura e fechamento. ── */
+const IA_NEGOCIO_SYSTEM = `Você escreve roteiros de Reels para a série "Como eu aplicaria IA na minha empresa se eu fosse [TIPO DE NEGÓCIO]".
+
+O roteiro mostra aplicações reais de inteligência artificial na operação de um negócio específico. NUNCA transforme o conteúdo em lista de ferramentas, dicas genéricas ou ideias soltas para redes sociais.
+
+FORMATO: uma pessoa falando pra câmera, intercalada com demonstrações no celular. Duração falada entre 60 e 90 segundos (aproximadamente 150 a 230 palavras de narração, sem contar as indicações de gravação entre colchetes).
+
+SIGA EXATAMENTE ESTA ORDEM:
+
+1. ABERTURA COM TESE OPERACIONAL
+Comece OBRIGATORIAMENTE com a frase, adaptada ao negócio e à área:
+"Se eu fosse [dona/dono] de [TIPO DE NEGÓCIO], essa semana eu já colocaria a IA pra trabalhar [EM QUAL ÁREA]."
+A primeira frase revela imediatamente onde a IA seria aplicada. NUNCA comece explicando o que é inteligência artificial.
+
+2. PERDA CONCRETA DO COTIDIANO
+Uma tarefa repetitiva que consome tempo, dinheiro ou atenção da equipe. Situação cotidiana e reconhecível. Quando fizer sentido, inclua uma frase real que clientes costumam repetir. Comece com algo como "Porque uma parte enorme do dia é gasta...".
+
+3. PRIMEIRA AUTOMAÇÃO
+Explique: quais informações seriam usadas; qual ferramenta ou integração executaria a tarefa; qual ação seria automatizada; o que deixaria de depender de trabalho manual. A solução precisa ser tecnicamente plausível — nunca invente funcionalidade, e nunca diga que uma planilha sozinha "dispara" ou "executa" uma automação (planilha guarda e organiza dado; quem dispara ação é uma integração, um chatbot ou um agente). Diferencie análise (ler e interpretar dado), integração (conectar sistemas) e disparo automático (agir sozinho sem toque humano) quando isso mudar o que está sendo descrito.
+
+4. DEMONSTRAÇÃO VISUAL
+Uma indicação de gravação entre colchetes (ex.: [MOSTRA AS MENSAGENS NO CELULAR], [MOSTRA A PLANILHA], [MOSTRA O FLUXO DA AUTOMAÇÃO], [MOSTRA O RESULTADO NA TELA]). Logo depois, explique o funcionamento numa frase no formato: "Quando [EVENTO], o sistema [AÇÃO] e, em seguida, [RESULTADO]."
+
+5. BENEFÍCIO IMEDIATO PARA A EQUIPE
+Qual interrupção, tarefa repetitiva ou esforço manual deixa de existir — de forma concreta. NUNCA use "otimizar processos", "aumentar a produtividade" ou equivalentes vagos. Diga exatamente o que a pessoa não precisa mais fazer.
+
+6. SEGUNDA AUTOMAÇÃO
+Uma segunda aplicação, ligada a uma perda DIFERENTE da primeira. Priorize uma destas áreas: recuperar clientes; reduzir ociosidade; prever demanda; organizar estoque; diminuir desperdício; identificar atrasos; melhorar recorrência; analisar rentabilidade; priorizar atendimentos. Faça a transição com a frase: "O segundo passo seria..."
+
+7. EXEMPLO CONCRETO
+Uma situação com frequência, prazo, quantidade, comportamento ou condição específica, no formato: "Se [SITUAÇÃO OBSERVADA], o sistema [AÇÃO AUTOMÁTICA]." Precisa ajudar quem assiste a visualizar a automação funcionando de verdade nesse negócio.
+
+8. IMPACTO OPERACIONAL
+Conecte a segunda automação a uma consequência mensurável ou observável (ocupar horário vazio, recuperar uma venda, reduzir desperdício, evitar falta de produto, diminuir tempo de resposta, liberar a equipe para o atendimento, melhorar frequência de compra). NUNCA prometa resultado financeiro sem dado real por trás.
+
+9. CONTRAPONTO HUMANO
+Deixe evidente que a IA assume tarefas repetitivas, mas não substitui o conhecimento, a decisão ou o atendimento humano. Use uma construção no espírito de: "A inteligência artificial não substituiria [PESSOA OU FUNÇÃO]. Ela assumiria [TAREFA REPETITIVA] para que [PESSOA OU EQUIPE] pudesse [ATIVIDADE HUMANA MAIS IMPORTANTE]." Adapte a frase ao negócio específico — NUNCA repita o mesmo fechamento genérico roteiro após roteiro.
+
+10. CTA FUNCIONAL
+Finalize EXATAMENTE com esta frase, sem alterar nenhuma palavra:
+"Comenta qual é o seu negócio. Eu posso mostrar onde colocaria a IA pra trabalhar nele."
+
+REGRAS DE ESCRITA:
+- Escreva para ser falado, não lido. Frases curtas, linguagem brasileira simples.
+- Tom próximo, seguro, observacional. NUNCA tom motivacional.
+- Use "IA" ou "inteligência artificial" sem alternar excessivamente entre os dois.
+- Apenas DUAS aplicações de IA no roteiro inteiro, com profundidade suficiente pra serem entendidas — nunca uma lista de três ou mais.
+- NUNCA vire tutorial técnico. NUNCA infantilize quem está assistindo.
+- PROIBIDO usar: "ninguém te conta", "não é só sobre", "o mais curioso é", "revolucionário", "insights", "pode transformar o seu negócio".
+- No máximo uma pergunta retórica em todo o roteiro — evite empilhar perguntas.
+- NUNCA invente dados, funcionalidades, integrações ou resultados que não foram informados ou que não sejam plausíveis para o tipo de negócio.
+- Se a automação envolver dado de cliente (mensagem, agenda, histórico de compra, prontuário, dado de saúde), mencione em UMA frase curta o cuidado necessário com privacidade e consentimento — sem transformar isso num aviso jurídico longo.
+- Se a automação exigir mais do que uma planilha ou um chatbot simples, nomeie a integração necessária numa frase simples (ex.: "isso passa por uma automação que liga o WhatsApp à agenda").
+
+Responda EXCLUSIVAMENTE com JSON válido, sem texto antes ou depois, começando direto com "{":
+{
+  "titulo": "título curto pra identificar a ideia no Hub — ex: 'Reels IA — Salão de Beleza'",
+  "tipo_negocio_usado": "o tipo de negócio como ficou no roteiro final",
+  "roteiro": "o roteiro completo, pronto pra ser falado, com as indicações de gravação entre colchetes, seguindo a ordem 1 a 10 (use \\n\\n entre as partes)",
+  "ferramentas_mencionadas": ["ferramenta ou integração 1", "ferramenta ou integração 2"],
+  "duracao_estimada_segundos": 75,
+  "nota_privacidade": "1 frase sobre o cuidado com dado de cliente citado no roteiro, ou null se a automação não envolve dado de cliente"
+}`
+
+const buildIANegocioPrompt = ({ tipoNegocio, tarefa, perda, ferramentas, objetivo }) => `
+TIPO DE NEGÓCIO: ${tipoNegocio}
+PRINCIPAL TAREFA REPETITIVA: ${tarefa?.trim() ? tarefa : 'não informado — identifique uma tarefa repetitiva plausível e comum nesse tipo de negócio.'}
+PRINCIPAL PERDA OPERACIONAL: ${perda?.trim() ? perda : 'não informado — identifique, a partir da tarefa repetitiva, qual perda de tempo, dinheiro ou atenção ela causa.'}
+FERRAMENTAS QUE O NEGÓCIO JÁ UTILIZA: ${ferramentas?.trim() ? ferramentas : 'não informado — sugira ferramentas realistas e comuns nesse tipo de negócio (ex.: WhatsApp Business, agenda do Google, planilha).'}
+OBJETIVO DA AUTOMAÇÃO: ${objetivo?.trim() ? objetivo : 'não informado — identifique um objetivo plausível a partir da tarefa e da perda descritas.'}
+
+Escreva o roteiro completo seguindo rigorosamente as 10 partes e todas as regras do system prompt, nessa ordem, para este negócio específico.`
+
 /* ── Temas Sugeridos para Carrossel (compartilhado com o Captura de Pensamento — ver src/data/temasCarrossel.js) ── */
 
 // Detecta se dois textos são essencialmente o mesmo conteúdo (repetição literal
@@ -1159,6 +1237,7 @@ function getCleanLegenda(legenda, exercicio) {
 /* ── Componente Principal ── */
 export default function UnifiedCreator({ persona = 'trabalho' }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isPessoal = persona === 'pessoal'
   const brandVoice = useStore(s => s.brandVoice)
   const dislikedContent = useStore(s => s.dislikedContent)
@@ -1208,7 +1287,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState('studio') // 'studio' | 'revisor' | 'engagement' | 'carousel' | 'stories'
+  const [mode, setMode] = useState(() => searchParams.get('submode') === 'ia_negocio' ? 'ia_negocio' : 'studio') // 'studio' | 'revisor' | 'engagement' | 'carousel' | 'stories' | 'ia_negocio'
 
   // ── Revisor de Texto ──
   const [revText, setRevText] = useState('')
@@ -1269,6 +1348,19 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [strError, setStrError] = useState(null)
   const [strCopied, setStrCopied] = useState(false)
   const [strSweepReport, setStrSweepReport] = useState(null) // varredura anti-clichê do stories
+
+  // IA no Negócio — série "Como eu aplicaria IA na minha empresa se eu fosse..."
+  const [ianTipoNegocio, setIanTipoNegocio] = useState('')
+  const [ianTarefa, setIanTarefa] = useState('')
+  const [ianPerda, setIanPerda] = useState('')
+  const [ianFerramentas, setIanFerramentas] = useState('')
+  const [ianObjetivo, setIanObjetivo] = useState('')
+  const [ianLoading, setIanLoading] = useState(false)
+  const [ianResult, setIanResult] = useState(null)
+  const [ianError, setIanError] = useState(null)
+  const [ianCopied, setIanCopied] = useState(false)
+  const [ianSavedHub, setIanSavedHub] = useState(false)
+  const [ianSweepReport, setIanSweepReport] = useState(null) // varredura anti-clichê do roteiro IA no Negócio
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
@@ -2120,6 +2212,86 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setStrSavedHub(true)
   }
 
+  const generateIANegocio = async () => {
+    if (!ianTipoNegocio.trim()) return
+    if (!apiKey) { setIanError('Configure sua API key em Analytics > Configurações'); return }
+    setIanLoading(true)
+    setIanError(null)
+    setIanResult(null)
+    setIanSavedHub(false)
+    setIanSweepReport(null)
+    try {
+      const res = await fetch('/api/ai?action=gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
+          max_tokens: 4000,
+          system: withManualOperacional(IA_NEGOCIO_SYSTEM),
+          messages: [{ role: 'user', content: buildIANegocioPrompt({
+            tipoNegocio: ianTipoNegocio, tarefa: ianTarefa, perda: ianPerda, ferramentas: ianFerramentas, objetivo: ianObjetivo,
+          }) }],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erro ${res.status}`)
+      }
+      const data = await res.json()
+      assertNotTruncated(data)
+      const raw = data.content?.find(b => b.type === 'text')?.text || ''
+      const match = raw.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta inválida da IA')
+      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+
+      let report = null
+      try {
+        report = await sweepAndFixPaths(parsed, (o) => [
+          ...(typeof o.roteiro === 'string' ? [{ path: ['roteiro'], isClosing: true, short: false, label: 'Roteiro' }] : []),
+        ])
+      } catch { /* se a correção falhar, mantém o texto original */ }
+      setIanSweepReport(report)
+
+      setIanResult(parsed)
+    } catch (err) {
+      setIanError(err.message)
+    } finally {
+      setIanLoading(false)
+    }
+  }
+
+  const handleIanCopy = () => {
+    if (!ianResult?.roteiro) return
+    navigator.clipboard.writeText(ianResult.roteiro)
+    setIanCopied(true)
+    setTimeout(() => setIanCopied(false), 2000)
+  }
+
+  const handleIanSaveHub = () => {
+    if (!ianResult) return
+    addIdea({
+      title: ianResult.titulo || `Reels IA — ${ianTipoNegocio}`,
+      description: ianResult.roteiro?.slice(0, 300) || '',
+      script: ianResult.roteiro,
+      caption: '',
+      cta: 'Comenta qual é o seu negócio. Eu posso mostrar onde colocaria a IA pra trabalhar nele.',
+      format: 'reel',
+      platform: 'instagram',
+      platforms: ['instagram'],
+      priority: 'medium',
+      status: 'ready',
+      tags: ['ia-no-negocio', (ianResult.tipo_negocio_usado || ianTipoNegocio).toLowerCase().slice(0, 24)].filter(Boolean),
+      source: 'Como eu aplicaria IA na minha empresa',
+    })
+    setIanSavedHub(true)
+  }
+
   const generateStories = async () => {
     if (!strTema.trim()) return
     if (!apiKey) { setStrError('Configure sua API key em Configurações'); return }
@@ -2662,6 +2834,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
             mode === 'stories' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
           )}>
           <Film size={13} /> Stories
+        </button>
+        <button onClick={() => setMode('ia_negocio')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'ia_negocio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Building2 size={13} /> IA no Negócio
         </button>
       </div>
 
@@ -3891,6 +4069,185 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
                 >
                   <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Formulário: IA no Negócio ── */}
+      {mode === 'ia_negocio' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center shrink-0">
+                <Building2 size={15} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Como eu aplicaria IA na minha empresa</p>
+                <p className="text-xs text-gray-400 mt-0.5">Roteiro de Reels com aplicações reais de IA na operação de um negócio — não é lista de ferramentas</p>
+              </div>
+            </div>
+
+            {/* Tipo de negócio */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
+                Tipo de negócio <span className="text-red-400">*</span>
+              </label>
+              <input
+                value={ianTipoNegocio}
+                onChange={e => setIanTipoNegocio(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateIANegocio()}
+                placeholder="Ex: salão de beleza, clínica odontológica, floricultura, advogada..."
+                className="input text-sm w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Campos opcionais — se vazios, a IA identifica */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                  Tarefa repetitiva <span className="text-gray-300">(opcional — IA identifica)</span>
+                </label>
+                <textarea
+                  value={ianTarefa}
+                  onChange={e => setIanTarefa(e.target.value)}
+                  rows={2}
+                  placeholder="Ex: responder as mesmas perguntas no WhatsApp"
+                  className="input text-sm w-full resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                  Perda operacional <span className="text-gray-300">(opcional — IA identifica)</span>
+                </label>
+                <textarea
+                  value={ianPerda}
+                  onChange={e => setIanPerda(e.target.value)}
+                  rows={2}
+                  placeholder="Ex: tempo da equipe, horário vago, cliente que some"
+                  className="input text-sm w-full resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                  Ferramentas que já usa <span className="text-gray-300">(opcional — IA sugere)</span>
+                </label>
+                <input
+                  value={ianFerramentas}
+                  onChange={e => setIanFerramentas(e.target.value)}
+                  placeholder="Ex: WhatsApp Business, Google Agenda"
+                  className="input text-sm w-full"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+                  Objetivo da automação <span className="text-gray-300">(opcional — IA identifica)</span>
+                </label>
+                <input
+                  value={ianObjetivo}
+                  onChange={e => setIanObjetivo(e.target.value)}
+                  placeholder="Ex: reduzir tempo de resposta"
+                  className="input text-sm w-full"
+                />
+              </div>
+            </div>
+
+            <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
+
+            {ianError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{ianError}</div>
+            )}
+
+            <button
+              onClick={generateIANegocio}
+              disabled={ianLoading || !ianTipoNegocio.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-slate-700 to-gray-900 text-white rounded-xl hover:from-slate-800 hover:to-black transition-all shadow-lg shadow-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {ianLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Building2 size={15} /> Gerar Roteiro</>}
+            </button>
+          </div>
+
+          {/* ── Output: IA no Negócio ── */}
+          {ianResult && (
+            <div className="space-y-4 animate-fade-in">
+
+              {ianSweepReport?.fixed > 0 && !ianSweepReport.remaining.length && (
+                <p className="text-[10px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                  <ShieldCheck size={10} /> {ianSweepReport.fixed} clichê{ianSweepReport.fixed > 1 ? 's' : ''} corrigido{ianSweepReport.fixed > 1 ? 's' : ''} na varredura
+                </p>
+              )}
+              <SweepReportPanel report={ianSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
+
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-600" />
+                    <span className="text-[10px] font-semibold text-gray-700 uppercase">{ianResult.titulo || 'Roteiro'}</span>
+                  </div>
+                  <button onClick={handleIanCopy}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-slate-700 transition-colors">
+                    {ianCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
+                  </button>
+                </div>
+                <div
+                  className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed select-text"
+                  onMouseUp={handleTextSelectionForBan}
+                >
+                  {ianResult.roteiro}
+                </div>
+                {(ianResult.ferramentas_mencionadas?.length > 0 || ianResult.duracao_estimada_segundos) && (
+                  <div className="flex flex-wrap items-center gap-1.5 px-4 pb-4">
+                    {ianResult.duracao_estimada_segundos && (
+                      <span className="chip border text-[9px] bg-gray-100 text-gray-600 border-gray-200">~{ianResult.duracao_estimada_segundos}s</span>
+                    )}
+                    {(ianResult.ferramentas_mencionadas || []).map((f) => (
+                      <span key={f} className="chip border text-[9px] bg-slate-100 text-slate-700 border-slate-200">{f}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {ianResult.nota_privacidade && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                  <AlertCircle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700">{ianResult.nota_privacidade}</p>
+                </div>
+              )}
+
+              {/* Salvar + Regenerar */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleIanSaveHub}
+                  disabled={ianSavedHub}
+                  className={clsx(
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
+                    ianSavedHub
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  )}
+                >
+                  {ianSavedHub
+                    ? <><Check size={13} /> Salvo no Hub</>
+                    : <><Save size={13} /> Salvar no Hub de Ideias</>
+                  }
+                </button>
+                {ianSavedHub && (
+                  <button
+                    onClick={() => navigate('/ideas')}
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-slate-700 hover:border-slate-300 rounded-xl transition-all"
+                  >
+                    <ExternalLink size={12} /> Abrir Hub
+                  </button>
+                )}
+                <button
+                  onClick={generateIANegocio}
+                  disabled={ianLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw size={13} className={ianLoading ? 'animate-spin' : ''} /> Regenerar
                 </button>
               </div>
             </div>
