@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
+import { tiktokSearch, instagramSearch } from '../../lib/aiService'
 import {
   Search, Radar, Users, TrendingUp, Lightbulb, Plus, ExternalLink,
   ChevronDown, ChevronUp, Loader2, Brain, Zap, BarChart2,
   MessageSquare, Layout, BookOpen, Target, AlertCircle,
   Flame, Sparkles, Globe, Check, ArrowUpRight, Hash,
   FileText, Eye, Filter, KeyRound, Layers, Youtube, RefreshCw,
-  Heart, Bookmark,
+  Heart, Bookmark, Music2, Instagram,
 } from 'lucide-react'
 
-const LS_YOUTUBE = 'cio-youtube-key'
+const LS_YOUTUBE       = 'cio-youtube-key'
+const LS_RAPIDAPI      = 'cio-rapidapi-key'
+const LS_RAPIDAPI_HOST = 'cio-rapidapi-tiktok-host'
+const LS_APIFY         = 'cio-apify-token'
+const LS_APIFY_ACTOR   = 'cio-apify-instagram-actor'
 
 async function searchYouTubeChannels(query, apiKey) {
   // Step 1: search for channels
@@ -53,6 +58,83 @@ async function searchYouTubeChannels(query, apiKey) {
     }
   })
 }
+
+// TikTok e Instagram devolvem o mesmo formato normalizado (id, videoTitle,
+// caption, name, thumbnail, url, viewCount, likeCount) — um grid só serve
+// pras duas plataformas, sem duplicar a UI de cada uma.
+function RealPostsSection({ label, Icon, accent, results, loading, error, searched, ready, onSearch, settingsHint, warning }) {
+  return (
+    <div className="border-t border-gray-100 pt-4 space-y-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Icon size={15} className={accent.text} /> {label}
+          {results.length > 0 && <span className="text-[11px] text-gray-400 font-normal">· {results.length} encontrados</span>}
+        </h4>
+        {ready ? (
+          <button
+            onClick={onSearch}
+            disabled={loading}
+            className={`flex items-center gap-1.5 text-xs font-medium ${accent.text} ${accent.hover} ${accent.bg} ${accent.bgHover} border ${accent.border} px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors`}
+          >
+            {loading ? <><Loader2 size={12} className="animate-spin" /> Buscando...</> : <><Icon size={12} /> {searched ? 'Buscar novamente' : 'Buscar posts reais'}</>}
+          </button>
+        ) : (
+          <a href="/settings" className={`text-[11px] ${accent.text} hover:underline flex items-center gap-1`}>
+            <KeyRound size={11} /> {settingsHint}
+          </a>
+        )}
+      </div>
+
+      {warning && ready && (
+        <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg p-2 border border-amber-200">{warning}</p>
+      )}
+
+      {error && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-[11px] text-red-700">
+          <AlertCircle size={13} className="shrink-0 mt-0.5" /> {error}
+        </div>
+      )}
+
+      {searched && !loading && results.length === 0 && !error && (
+        <p className="text-[11px] text-gray-400 text-center py-4">Nenhum post encontrado para este tema.</p>
+      )}
+
+      {results.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {results.map((v) => (
+            <a key={v.id} href={v.url} target="_blank" rel="noopener noreferrer"
+              className="card p-0 overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                {v.thumbnail
+                  ? <img src={v.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  : <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon size={22} /></div>
+                }
+              </div>
+              <div className="p-2.5 space-y-1">
+                <p className="text-xs font-medium text-gray-800 truncate">{v.name || 'Sem nome'}</p>
+                {(v.videoTitle || v.caption) && (
+                  <p className="text-[11px] text-gray-500 line-clamp-2">{v.videoTitle || v.caption}</p>
+                )}
+                <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                  {v.viewCount && <span>{Number(v.viewCount).toLocaleString('pt-BR')} views</span>}
+                  {v.likeCount && <span>{Number(v.likeCount).toLocaleString('pt-BR')} curtidas</span>}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {!searched && (
+        <div className="flex items-start gap-2 bg-gray-50 border border-dashed border-gray-200 rounded-xl px-3 py-3 text-[11px] text-gray-500">
+          <Icon size={13} className={`${accent.text} shrink-0 mt-0.5`} />
+          <span>{ready ? 'Clique em "Buscar posts reais" para buscar conteúdo real sobre este tema.' : settingsHint}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 import useStore from '../../store/useStore'
 import { buildPositioningBlock } from '../../utils/voiceContext'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
@@ -611,11 +693,21 @@ export default function TrendRadar() {
   const [ytLoading, setYtLoading] = useState(false)
   const [ytError, setYtError] = useState(null)
   const [ytSearched, setYtSearched] = useState(false)
+  const [tiktokResults, setTiktokResults] = useState([])
+  const [tiktokLoading, setTiktokLoading] = useState(false)
+  const [tiktokError, setTiktokError] = useState(null)
+  const [tiktokSearched, setTiktokSearched] = useState(false)
+  const [igResults, setIgResults] = useState([])
+  const [igLoading, setIgLoading] = useState(false)
+  const [igError, setIgError] = useState(null)
+  const [igSearched, setIgSearched] = useState(false)
 
   const addFavorite = useStore((s) => s.addFavorite)
   const favorites   = useStore((s) => s.favorites)
   const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
   const hasYtKey  = !!localStorage.getItem(LS_YOUTUBE)
+  const hasTiktokKey = !!localStorage.getItem(LS_RAPIDAPI)
+  const hasApifyToken = !!localStorage.getItem(LS_APIFY)
 
   const handleYouTubeSearch = async () => {
     const ytKey = localStorage.getItem(LS_YOUTUBE)
@@ -633,6 +725,40 @@ export default function TrendRadar() {
     }
   }
 
+  const handleTiktokSearch = async () => {
+    const key = localStorage.getItem(LS_RAPIDAPI)
+    const host = localStorage.getItem(LS_RAPIDAPI_HOST)
+    if (!key || !trendResults?.topic) return
+    setTiktokLoading(true)
+    setTiktokError(null)
+    setTiktokSearched(true)
+    try {
+      const results = await tiktokSearch(key, host, trendResults.topic)
+      setTiktokResults(results)
+    } catch (e) {
+      setTiktokError(e.message)
+    } finally {
+      setTiktokLoading(false)
+    }
+  }
+
+  const handleInstagramSearch = async () => {
+    const token = localStorage.getItem(LS_APIFY)
+    const actorId = localStorage.getItem(LS_APIFY_ACTOR)
+    if (!token || !trendResults?.topic) return
+    setIgLoading(true)
+    setIgError(null)
+    setIgSearched(true)
+    try {
+      const results = await instagramSearch(token, actorId, trendResults.topic)
+      setIgResults(results)
+    } catch (e) {
+      setIgError(e.message)
+    } finally {
+      setIgLoading(false)
+    }
+  }
+
   const handleSearch = async () => {
     if (!topic.trim()) return
     setLoading(true)
@@ -642,6 +768,12 @@ export default function TrendRadar() {
     setYtResults([])
     setYtSearched(false)
     setYtError(null)
+    setTiktokResults([])
+    setTiktokSearched(false)
+    setTiktokError(null)
+    setIgResults([])
+    setIgSearched(false)
+    setIgError(null)
 
     const phaseInterval = setInterval(() => {
       setLoadPhase((p) => (p < LOADING_PHASES.length - 1 ? p + 1 : p))
@@ -1070,6 +1202,35 @@ export default function TrendRadar() {
                   </div>
                 )}
               </div>
+
+              {/* ── TikTok real posts ── */}
+              <RealPostsSection
+                label="Posts Reais no TikTok"
+                Icon={Music2}
+                accent={{ text: 'text-zinc-700', hover: 'hover:text-zinc-900', bg: 'bg-zinc-50', bgHover: 'hover:bg-zinc-100', border: 'border-zinc-200' }}
+                results={tiktokResults}
+                loading={tiktokLoading}
+                error={tiktokError}
+                searched={tiktokSearched}
+                ready={hasTiktokKey}
+                onSearch={handleTiktokSearch}
+                settingsHint="Configure a chave RapidAPI (TikTok) em Configurações"
+              />
+
+              {/* ── Instagram real posts ── */}
+              <RealPostsSection
+                label="Posts Reais no Instagram"
+                Icon={Instagram}
+                accent={{ text: 'text-pink-600', hover: 'hover:text-pink-800', bg: 'bg-pink-50', bgHover: 'hover:bg-pink-100', border: 'border-pink-200' }}
+                results={igResults}
+                loading={igLoading}
+                error={igError}
+                searched={igSearched}
+                ready={hasApifyToken}
+                onSearch={handleInstagramSearch}
+                settingsHint="Configure o token Apify em Configurações"
+                warning="⚠️ Busca via scraper (Apify) — viola os Termos de Serviço da Meta. Use por sua conta e risco."
+              />
             </div>
           )}
 
