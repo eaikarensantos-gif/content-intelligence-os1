@@ -780,6 +780,23 @@ async function instagramFetchAccountOverview(accessToken) {
     fetchDemographics('country'),
   ])
 
+  // Seguidores online por hora — a métrica pública da Meta (online_followers)
+  // agrega isso pela semana toda; não expõe uma quebra por dia da semana.
+  let onlineFollowers = null
+  {
+    const res = await fetch(
+      `https://graph.instagram.com/me/insights?metric=online_followers&period=lifetime` +
+      `&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      const raw = data.data?.[0]?.values?.[0]?.value
+      if (raw && typeof raw === 'object') {
+        onlineFollowers = Array.from({ length: 24 }, (_, hour) => ({ hour, count: raw[String(hour)] || 0 }))
+      }
+    }
+  }
+
   return {
     profile: {
       username:          profile.username || '',
@@ -793,6 +810,7 @@ async function instagramFetchAccountOverview(accessToken) {
     },
     periodStats,
     followerGrowth,
+    onlineFollowers,
     demographics: {
       ageGender: ageGender || [],
       city:      city || [],

@@ -124,6 +124,28 @@ export default function AccountOverview({ accessToken }) {
         </div>
       )}
 
+      {/* Seguidores online por hora */}
+      {data.onlineFollowers ? (
+        <div className="card p-4">
+          <p className="text-xs font-semibold text-gray-700 mb-3">Quando sua audiência está online (por hora do dia)</p>
+          <div className="flex items-end gap-1 h-20">
+            {(() => {
+              const max = Math.max(...data.onlineFollowers.map((h) => h.count), 1)
+              return data.onlineFollowers.map(({ hour, count }) => (
+                <div key={hour} className="flex-1 flex flex-col items-center justify-end h-full gap-1" title={`${hour}h: ${count} seguidores online`}>
+                  <div className="w-full bg-pink-400 rounded-t" style={{ height: `${Math.max((count / max) * 100, count > 0 ? 4 : 0)}%` }} />
+                  {hour % 3 === 0 && <span className="text-[8px] text-gray-400">{hour}h</span>}
+                </div>
+              ))
+            })()}
+          </div>
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-400 bg-gray-50 rounded-lg p-2.5 border border-gray-100">
+          Horários de atividade da audiência não disponíveis nessa conexão.
+        </p>
+      )}
+
       {/* Demografia da audiência */}
       {demographics.available ? (
         <div className="card p-4 grid grid-cols-1 sm:grid-cols-3 gap-5">

@@ -8,6 +8,8 @@ import { getConnection } from '../../lib/instagramAuth'
 import { instagramFetchPosts, instagramFetchComments, instagramReplyComment } from '../../lib/aiService'
 import Modal from '../common/Modal'
 
+const POST_TYPE_LABEL = { reel: 'Reel', carousel: 'carrossel', image: 'post', video: 'vídeo' }
+
 export default function CommentAnalyzer() {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
@@ -348,6 +350,12 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
         })),
         ...prev,
       ])
+      if (post.caption) {
+        const postDate = post.timestamp ? new Date(post.timestamp).toLocaleDateString('pt-BR') : ''
+        const postLabel = POST_TYPE_LABEL[post.postType] || post.postType || 'post'
+        const postContext = `Comentários do ${postLabel} do Instagram${postDate ? ` (${postDate})` : ''}. Legenda do post: "${post.caption}"`
+        setContext(prev => prev.trim() ? `${prev.trim()}\n\n${postContext}` : postContext)
+      }
       setIgModalOpen(false)
     } catch (e) {
       setIgPostsError(e.message)
