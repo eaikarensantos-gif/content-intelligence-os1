@@ -7,7 +7,7 @@ import {
   Check, ChevronLeft, ChevronRight, X, Brain, Target, ChevronDown,
   ChevronUp, Hash, FileText, Users, AlertCircle, KeyRound, Trash2,
   TrendingUp, ArrowRight, Flame, Minus, SlidersHorizontal, ListOrdered,
-  FlaskConical, Megaphone, Film,
+  FlaskConical, Megaphone, Film, Building2,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
@@ -749,6 +749,7 @@ function SignalIdeaCard({ idea, signal, onSave, saved, rank }) {
 
 // ─── Visualização Gerar ───────────────────────────────────────────────────────
 function GenerateView() {
+  const navigate           = useNavigate()
   const insights          = useStore((s) => s.insights)
   const trendResults      = useStore((s) => s.trendResults)
   const generatedIdeas    = useStore((s) => s.generatedIdeas)
@@ -863,7 +864,7 @@ function GenerateView() {
       <DailyAgentBanner />
 
       {/* Mode selector */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           {
             id: 'signals',
@@ -905,6 +906,25 @@ function GenerateView() {
             </div>
           </button>
         ))}
+
+        {/* Gerador dedicado — abre no Studio de Criação */}
+        <button
+          onClick={() => navigate('/create?tool=criar&submode=ia_negocio')}
+          className="text-left p-4 rounded-xl border-2 border-gray-200 hover:border-slate-400 bg-white transition-all"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg shrink-0 bg-gray-100">
+              <Building2 size={14} className="text-gray-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-bold text-gray-600">Como eu aplicaria IA no negócio</span>
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Roteiro de Reels</span>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-snug">Aplicações reais de IA na operação de um negócio específico — abre o gerador dedicado no Studio de Criação</p>
+            </div>
+          </div>
+        </button>
       </div>
 
       {/* Config inputs */}
