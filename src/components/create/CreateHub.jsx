@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Loader2 } from 'lucide-react'
+import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import UnifiedCreator from './UnifiedCreator'
 
@@ -9,6 +9,7 @@ const IdeaGenerator = lazy(() => import('../generate/IdeaGenerator'))
 const TextStudio = lazy(() => import('../text/TextStudio'))
 const BriefingStudio = lazy(() => import('../brand/BriefingStudio'))
 const WeeklyPlanner = lazy(() => import('../analytics/WeeklyPlanner'))
+const InstagramPublisher = lazy(() => import('../instagram/InstagramPublisher'))
 
 // Cada ferramenta mantém a identidade visual (ícone/cor) já usada no seu
 // próprio cabeçalho, pra reconhecimento consistente entre a aba e o conteúdo.
@@ -19,6 +20,7 @@ const TOOLS = [
   { id: 'text', label: 'Adaptador Multi-plataforma', desc: 'Um texto → versões para cada rede', icon: Wand2, accent: 'violet' },
   { id: 'briefing', label: 'Briefing Studio', desc: 'PDF/briefing → roteiros estratégicos', icon: Megaphone, accent: 'red' },
   { id: 'planner', label: 'Planejador Semanal', desc: 'Plano de conteúdo baseado em dados reais', icon: Calendar, accent: 'pink' },
+  { id: 'publish', label: 'Publicar no Instagram', desc: 'Envia o post direto pra sua conta conectada', icon: Instagram, accent: 'rose' },
 ]
 
 const TOOL_IDS = new Set(TOOLS.map((t) => t.id))
@@ -30,6 +32,7 @@ const ACCENT = {
   violet: { active: 'bg-violet-50 border-violet-300 text-violet-700', icon: 'text-violet-500' },
   red:    { active: 'bg-red-50 border-red-300 text-red-700', icon: 'text-red-500' },
   pink:   { active: 'bg-pink-50 border-pink-300 text-pink-700', icon: 'text-pink-500' },
+  rose:   { active: 'bg-rose-50 border-rose-300 text-rose-700', icon: 'text-rose-500' },
 }
 
 function ToolLoader() {
@@ -60,7 +63,7 @@ export default function CreateHub({ persona = 'trabalho' }) {
     <div className="flex flex-col h-full">
       <div className="shrink-0 bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-6 sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-7 sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 sm:mx-0 sm:px-0">
             {TOOLS.map((t) => {
               const Icon = t.icon
               const a = ACCENT[t.accent]
@@ -115,6 +118,11 @@ export default function CreateHub({ persona = 'trabalho' }) {
         {visited.has('planner') && (
           <div className="h-full p-4 sm:p-6" hidden={active !== 'planner'}>
             <Suspense fallback={<ToolLoader />}><WeeklyPlanner /></Suspense>
+          </div>
+        )}
+        {visited.has('publish') && (
+          <div className="h-full p-4 sm:p-6" hidden={active !== 'publish'}>
+            <Suspense fallback={<ToolLoader />}><InstagramPublisher /></Suspense>
           </div>
         )}
       </div>
