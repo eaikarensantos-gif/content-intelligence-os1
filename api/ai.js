@@ -838,6 +838,32 @@ async function instagramFetchAccountOverview(accessToken) {
     }
   }
 
+  // Melhores dias da semana pra postar — a Meta não expõe isso como métrica
+  // agregada, então calculamos a partir do engajamento (curtidas + comentários)
+  // dos próprios posts recentes, agrupado por dia da semana da publicação.
+  let dayPeaks = null
+  {
+    const res = await fetch(
+      `https://graph.instagram.com/me/media?fields=timestamp,like_count,comments_count` +
+      `&limit=50&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+      const byDay = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }))
+      for (const m of data.data || []) {
+        if (!m.timestamp) continue
+        const d = new Date(m.timestamp).getDay()
+        byDay[d].sum += (m.like_count || 0) + (m.comments_count || 0)
+        byDay[d].count += 1
+      }
+      const withPosts = byDay
+        .map((d, i) => ({ day: DAY_NAMES[i], avgEngagement: d.count ? Math.round(d.sum / d.count) : 0, count: d.count }))
+        .filter((d) => d.count > 0)
+      if (withPosts.length) dayPeaks = withPosts
+    }
+  }
+
   return {
     profile: {
       username:          profile.username || '',
@@ -851,6 +877,7 @@ async function instagramFetchAccountOverview(accessToken) {
     },
     periodStats,
     followerGrowth,
+    dayPeaks,
     onlineFollowers,
     demographics: {
       ageGender: ageGender || [],
