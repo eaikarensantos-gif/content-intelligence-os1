@@ -9,7 +9,6 @@ import { instagramFetchPosts, instagramFetchComments } from '../../lib/aiService
 import Modal from '../common/Modal'
 import AccountOverview from './AccountOverview'
 import StoriesGrid from './StoriesGrid'
-import WeeklyPlanner from '../analytics/WeeklyPlanner'
 
 const POST_TYPE_LABEL = { reel: 'Reel', carousel: 'Carrossel', image: 'Foto', video: 'Vídeo' }
 
@@ -190,7 +189,7 @@ export default function InstagramStudio() {
       <AccountOverview accessToken={connection.accessToken} />
 
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5 w-fit">
-        {[['posts', 'Posts'], ['stories', 'Stories'], ['planner', 'Planejamento']].map(([id, label]) => (
+        {[['posts', 'Posts'], ['stories', 'Stories']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -204,8 +203,6 @@ export default function InstagramStudio() {
       </div>
 
       {tab === 'stories' && <StoriesGrid accessToken={connection.accessToken} />}
-
-      {tab === 'planner' && <WeeklyPlanner />}
 
       {tab === 'posts' && (
       <>

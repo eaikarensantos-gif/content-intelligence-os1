@@ -61,7 +61,7 @@ export default function AccountOverview({ accessToken }) {
   if (error) return <p className="text-xs text-red-500 mb-4">{error}</p>
   if (!data) return null
 
-  const { profile, periodStats, followerGrowth, demographics } = data
+  const { profile, periodStats, followerGrowth, demographics, dayPeaks } = data
 
   return (
     <div className="space-y-4 mb-6">
@@ -143,6 +143,28 @@ export default function AccountOverview({ accessToken }) {
       ) : (
         <p className="text-[11px] text-gray-400 bg-gray-50 rounded-lg p-2.5 border border-gray-100">
           Horários de atividade da audiência não disponíveis nessa conexão.
+        </p>
+      )}
+
+      {/* Melhores dias da semana pra postar */}
+      {dayPeaks?.length > 0 ? (
+        <div className="card p-4">
+          <p className="text-xs font-semibold text-gray-700 mb-3">Melhores dias para postar (engajamento médio por post)</p>
+          <div className="flex items-end gap-2 h-20">
+            {(() => {
+              const max = Math.max(...dayPeaks.map((d) => d.avgEngagement), 1)
+              return dayPeaks.map(({ day, avgEngagement, count }) => (
+                <div key={day} className="flex-1 flex flex-col items-center justify-end h-full gap-1" title={`${day}: ${avgEngagement} de engajamento médio (${count} posts)`}>
+                  <div className="w-full bg-pink-400 rounded-t" style={{ height: `${Math.max((avgEngagement / max) * 100, avgEngagement > 0 ? 4 : 0)}%` }} />
+                  <span className="text-[8px] text-gray-400">{day.slice(0, 3)}</span>
+                </div>
+              ))
+            })()}
+          </div>
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-400 bg-gray-50 rounded-lg p-2.5 border border-gray-100">
+          Melhores dias para postar não disponíveis ainda — publique mais posts pra calcular.
         </p>
       )}
 
