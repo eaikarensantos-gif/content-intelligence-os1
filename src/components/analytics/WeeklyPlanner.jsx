@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Sparkles, Loader2, Calendar, TrendingUp, Zap, AlertCircle,
   ChevronRight, Trophy, Lightbulb, Clock, Target, Key, Check,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
+import { getConnection } from '../../lib/instagramAuth'
+import { instagramAccountOverview } from '../../lib/aiService'
 
 function getLastNDays(n) {
   const to = new Date()
@@ -13,7 +15,7 @@ function getLastNDays(n) {
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
 }
 
-function buildPrompt(topPosts, allPosts, period) {
+function buildPrompt(topPosts, allPosts, period, topHours) {
   const topData = topPosts.map((m, i) =>
     `${i + 1}. [${m.post_type || '?'}] "${(m.description || '').slice(0, 120)}" | ER: ${(m.engagement_rate * 100).toFixed(2)}% | Imp: ${m.impressions} | Likes: ${m.likes} | Saves: ${m.saves || 0} | Shares: ${m.shares || 0} | Data: ${m.date}`
   ).join('\n')
@@ -57,13 +59,14 @@ ${formatSummary}
 ${daySummary}
 
 ═══ TOTAL: ${allPosts.length} posts no período ═══
-
+${topHours ? `\n═══ HORÁRIOS REAIS EM QUE A AUDIÊNCIA ESTÁ ONLINE (dado do Instagram, não estimativa) ═══\n${topHours.map(h => `- ${h.hour}h: ${h.count} seguidores online`).join('\n')}\n` : ''}
 REGRAS:
 1. Baseie CADA sugestão em dados concretos dos top posts
 2. Indique o MELHOR DIA e FORMATO para cada post baseado nos dados
 3. Explique POR QUÊ aquele tema/formato vai funcionar (cite números)
 4. Sugira de 5 a 7 posts para a semana
 5. Inclua variações dos temas que mais performaram + 1-2 temas novos para testar
+${topHours ? '6. Pra cada sugestão, indique também um HORÁRIO baseado nos horários reais de audiência online listados acima (não invente outro horário).' : ''}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -76,6 +79,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
   "suggestions": [
     {
       "day": "Segunda|Terça|...",
+      ${topHours ? '"time": "horário sugerido, ex: 19h",' : ''}
       "title": "Título curto do post sugerido",
       "format": "Reel|Carrossel|Story|Post estático",
       "theme": "Tema baseado nos dados",
@@ -112,6 +116,21 @@ export default function WeeklyPlanner() {
   const [error, setError] = useState(null)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-anthropic-key') || '')
   const [showKeyInput, setShowKeyInput] = useState(false)
+  const [onlineHours, setOnlineHours] = useState(null)
+
+  // Horários reais de audiência online — melhor esforço, silencioso se falhar
+  // ou se não houver conexão (o planejador continua funcionando sem isso).
+  useEffect(() => {
+    const connection = getConnection()
+    if (!connection) return
+    instagramAccountOverview(connection.accessToken)
+      .then((data) => { if (data.onlineFollowers) setOnlineHours(data.onlineFollowers) })
+      .catch(() => {})
+  }, [])
+
+  const topHours = onlineHours
+    ? [...onlineHours].sort((a, b) => b.count - a.count).slice(0, 3).filter((h) => h.count > 0)
+    : null
 
   // Usa a data do post mais recente como referência (não "hoje")
   const sortedByDate = [...enriched].filter(m => m.date).sort((a, b) => b.date.localeCompare(a.date))
@@ -134,7 +153,7 @@ export default function WeeklyPlanner() {
     try {
       if (!apiKey) throw new Error('Configure sua API key clicando no ícone de chave.')
 
-      const prompt = buildPrompt(topPosts, postsInPeriod, period)
+      const prompt = buildPrompt(topPosts, postsInPeriod, period, topHours?.length ? topHours : null)
 
       const res = await fetch('/api/ai?action=gemini', {
         method: 'POST',
@@ -257,6 +276,23 @@ export default function WeeklyPlanner() {
         </div>
       </div>
 
+      {/* Horários reais de audiência online (Instagram) */}
+      {topHours && topHours.length > 0 && (
+        <div className="card p-4 flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 text-gray-700 shrink-0">
+            <Clock size={15} className="text-pink-500" />
+            <span className="text-xs font-semibold">Horários reais de audiência online:</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {topHours.map((h) => (
+              <span key={h.hour} className="text-xs font-medium px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 border border-pink-200">
+                {h.hour}h ({h.count} seguidores)
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div className="card p-12 flex flex-col items-center gap-4">
@@ -318,8 +354,9 @@ export default function WeeklyPlanner() {
               {plan.suggestions.map((s, idx) => (
                 <div key={idx} className="card border border-orange-100 bg-gradient-to-r from-orange-50/50 to-white p-4 space-y-2">
                   <div className="flex items-start gap-3">
-                    <div className="bg-orange-100 text-orange-600 rounded-lg px-2 py-1 text-[10px] font-bold shrink-0">
+                    <div className="bg-orange-100 text-orange-600 rounded-lg px-2 py-1 text-[10px] font-bold shrink-0 text-center">
                       {s.day}
+                      {s.time && <div className="text-pink-600">{s.time}</div>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
