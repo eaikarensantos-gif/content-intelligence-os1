@@ -1,9 +1,12 @@
 import { useState, useRef } from 'react'
-import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2, Bookmark, RefreshCw } from 'lucide-react'
+import { Lightbulb, Sparkles, Zap, Plus, X, Upload, MessageSquare, Loader2, Copy, Check, Compass, Minimize2, Bookmark, RefreshCw, Instagram, Send } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { LS_KEY } from './constants'
 import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../utils/aiJson'
 import { handleApiError } from '../../utils/apiError'
+import { getConnection } from '../../lib/instagramAuth'
+import { instagramFetchPosts, instagramFetchComments, instagramReplyComment } from '../../lib/aiService'
+import Modal from '../common/Modal'
 
 export default function CommentAnalyzer() {
   const [comments, setComments] = useState([])
@@ -16,6 +19,16 @@ export default function CommentAnalyzer() {
   const [copiedId, setCopiedId] = useState(null)
   const [shorteningId, setShorteningId] = useState(null)
   const [regeneratingId, setRegeneratingId] = useState(null)
+  const [analyzedComments, setAnalyzedComments] = useState([])
+  const connection = getConnection()
+  const [igModalOpen, setIgModalOpen] = useState(false)
+  const [igPosts, setIgPosts] = useState(null)
+  const [igPostsLoading, setIgPostsLoading] = useState(false)
+  const [igPostsError, setIgPostsError] = useState(null)
+  const [igCommentsLoadingFor, setIgCommentsLoadingFor] = useState(null)
+  const [publishingId, setPublishingId] = useState(null)
+  const [publishedId, setPublishedId] = useState(null)
+  const [publishError, setPublishError] = useState(null)
   const addIdea = useStore(s => s.addIdea)
   const brandVoice = useStore(s => s.brandVoice)
   const commentContexts = useStore(s => s.commentContexts)
@@ -110,6 +123,7 @@ export default function CommentAnalyzer() {
     if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
 
     if (pendingText) { setComments(allComments); setCommentText('') }
+    setAnalyzedComments(allComments)
     setAnalyzing(true)
     setError('')
     setSuggestions(null)
@@ -303,6 +317,64 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
 
   const removeComment = (id) => setComments(prev => prev.filter(c => c.id !== id))
 
+  const openIgPicker = () => {
+    setIgModalOpen(true)
+    if (!igPosts && connection) {
+      setIgPostsLoading(true)
+      setIgPostsError(null)
+      instagramFetchPosts(connection.accessToken, 12)
+        .then(({ posts }) => setIgPosts(posts))
+        .catch((e) => setIgPostsError(e.message))
+        .finally(() => setIgPostsLoading(false))
+    }
+  }
+
+  const pickIgPost = async (post) => {
+    setIgCommentsLoadingFor(post.id)
+    setIgPostsError(null)
+    try {
+      const igComments = await instagramFetchComments(connection.accessToken, post.id)
+      if (!igComments.length) {
+        setIgPostsError('Esse post não tem comentários ainda.')
+        return
+      }
+      setComments(prev => [
+        ...igComments.map(c => ({
+          id: `ig-${c.id}`,
+          text: c.text,
+          source: 'instagram',
+          username: c.username,
+          igCommentId: c.id,
+        })),
+        ...prev,
+      ])
+      setIgModalOpen(false)
+    } catch (e) {
+      setIgPostsError(e.message)
+    } finally {
+      setIgCommentsLoadingFor(null)
+    }
+  }
+
+  const publishReply = async (ci, si) => {
+    if (!connection) return
+    const original = analyzedComments[suggestions.replies[ci].comment_index - 1]
+    if (!original?.igCommentId) return
+    const replyText = suggestions.replies[ci].suggestions[si].reply
+    const replyId = `${ci}-${si}`
+    setPublishingId(replyId)
+    setPublishError(null)
+    try {
+      await instagramReplyComment(connection.accessToken, original.igCommentId, replyText)
+      setPublishedId(replyId)
+      setTimeout(() => setPublishedId(null), 3000)
+    } catch (e) {
+      setPublishError(e.message)
+    } finally {
+      setPublishingId(null)
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -391,6 +463,15 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
             >
               {analyzing ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
             </button>
+            {connection && (
+              <button
+                onClick={openIgPicker}
+                title="Puxar comentários reais de um post do Instagram"
+                className="shrink-0 w-9 h-9 self-end flex items-center justify-center border border-gray-200 rounded-xl text-gray-400 hover:text-pink-600 hover:border-pink-300 hover:bg-pink-50 transition-colors"
+              >
+                <Instagram size={15} />
+              </button>
+            )}
             <textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
@@ -436,8 +517,14 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {comments.map(c => (
                 <div key={c.id} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg group">
-                  <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
-                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">{c.text}</p>
+                  {c.source === 'instagram'
+                    ? <Instagram size={13} className="mt-0.5 shrink-0 text-pink-400" />
+                    : <MessageSquare size={13} className={`mt-0.5 shrink-0 ${c.source === 'image' ? 'text-indigo-400' : 'text-gray-400'}`} />
+                  }
+                  <p className="text-xs text-gray-700 flex-1 leading-relaxed">
+                    {c.username && <span className="font-medium text-pink-600">@{c.username} </span>}
+                    {c.text}
+                  </p>
                   <button
                     onClick={() => removeComment(c.id)}
                     className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
@@ -473,6 +560,12 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">{error}</div>
       )}
 
+      {publishError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+          Falha ao publicar no Instagram: {publishError}
+        </div>
+      )}
+
       {/* Results */}
       {suggestions && (
         <div className="space-y-4">
@@ -499,11 +592,13 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
                   <div className="space-y-2">
                     {(r.suggestions || []).map((s, si) => {
                       const replyId = `${ci}-${si}`
+                      const originalComment = analyzedComments[r.comment_index - 1]
+                      const canPublish = connection && originalComment?.igCommentId
                       return (
                         <div key={si} className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-1.5">
                           <div className="flex items-center justify-between gap-2">
                             {s.path && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{s.path}</span>}
-                            <div className="flex items-center gap-1 ml-auto">
+                            <div className="flex items-center gap-1 ml-auto flex-wrap justify-end">
                               <button
                                 onClick={() => regenerateReply(ci, si)}
                                 disabled={regeneratingId === replyId}
@@ -524,6 +619,20 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
                               >
                                 {copiedId === replyId ? <><Check size={11} /> Copiado</> : <><Copy size={11} /> Copiar</>}
                               </button>
+                              {canPublish && (
+                                <button
+                                  onClick={() => publishReply(ci, si)}
+                                  disabled={publishingId === replyId}
+                                  className="text-[11px] text-pink-600 hover:text-pink-700 font-medium flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg hover:bg-pink-100 disabled:opacity-50 transition-colors"
+                                >
+                                  {publishingId === replyId
+                                    ? <><Loader2 size={11} className="animate-spin" /> Publicando...</>
+                                    : publishedId === replyId
+                                      ? <><Check size={11} /> Publicado</>
+                                      : <><Send size={11} /> Publicar no Instagram</>
+                                  }
+                                </button>
+                              )}
                             </div>
                           </div>
                           <p className="text-xs text-gray-700 leading-relaxed">{s.reply}</p>
@@ -597,6 +706,42 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
           ))}
         </div>
       )}
+
+      {/* Instagram post picker */}
+      <Modal open={igModalOpen} onClose={() => setIgModalOpen(false)} title="Puxar comentários de um post">
+        {igPostsLoading && (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 size={22} className="animate-spin text-pink-400" />
+          </div>
+        )}
+        {igPostsError && <p className="text-xs text-red-500 mb-3">{igPostsError}</p>}
+        {igPosts && igPosts.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-6">Nenhum post encontrado nessa conta.</p>
+        )}
+        {igPosts && igPosts.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {igPosts.map((post) => (
+              <button
+                key={post.id}
+                onClick={() => pickIgPost(post)}
+                disabled={igCommentsLoadingFor === post.id}
+                className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative group border border-transparent hover:border-pink-300 transition-colors disabled:opacity-50"
+                title={post.caption?.slice(0, 80)}
+              >
+                {post.thumbnailUrl
+                  ? <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  : <div className="w-full h-full flex items-center justify-center text-gray-300"><Instagram size={20} /></div>
+                }
+                {igCommentsLoadingFor === post.id && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-white" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
