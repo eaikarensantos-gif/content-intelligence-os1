@@ -1123,19 +1123,45 @@ O roteiro mostra aplicações reais de inteligência artificial na operação de
 
 FORMATO: uma pessoa falando pra câmera, intercalada com demonstrações no celular. Duração falada entre 60 e 90 segundos (aproximadamente 150 a 230 palavras de narração, sem contar as indicações de gravação entre colchetes).
 
-SIGA EXATAMENTE ESTA ORDEM:
+── DIAGNÓSTICO OPERACIONAL INTERNO (obrigatório antes de escrever — NUNCA mostre esse diagnóstico na resposta, entregue só o roteiro final) ──
+Antes de escrever o roteiro, faça esse diagnóstico internamente. Não comece pelas ferramentas disponíveis — comece entendendo como esse negócio funciona.
+
+MAPEAMENTO OBRIGATÓRIO — identifique internamente:
+1. Quais são os principais processos desse tipo de negócio, desde a entrada do cliente até a entrega e o pós-venda.
+2. Quais tarefas dependem hoje de observação humana, consulta manual, comparação de informações, interpretação de mensagens, previsão de demanda ou tomada de decisão repetitiva.
+3. Em qual etapa existe uma perda concreta de tempo, dinheiro, capacidade, produto, oportunidade ou qualidade.
+4. Qual evento dispara o processo.
+5. Quais dados o negócio já produz e poderia utilizar.
+6. Qual decisão precisa ser tomada a partir desses dados.
+7. Quais exceções impedem uma automação completamente linear.
+8. Qual parte depende realmente de inteligência artificial e qual parte depende apenas de uma automação ou integração convencional.
+Depois desse diagnóstico, selecione as duas aplicações de IA do roteiro a partir dele — nunca a partir de uma lista genérica de ferramentas.
+
+TESTE DE ESPECIFICIDADE — antes de fechar cada uma das duas aplicações, pergunte internamente: "Essa mesma solução poderia ser apresentada, sem alterações importantes, pra cinco tipos diferentes de negócio?" Se a resposta for sim, descarte e procure uma aplicação mais específica.
+A solução precisa conter elementos próprios do setor: etapas operacionais, frequência de compra ou atendimento, capacidade disponível, regras de execução, tipos de serviço ou produto, comportamento dos clientes, desperdícios característicos, sazonalidade, restrições do negócio, vocabulário de quem trabalha na área.
+PROIBIDO usar estas ideias na forma genérica: criar conteúdo; responder clientes; organizar tarefas; analisar dados; controlar estoque; melhorar o atendimento; automatizar o WhatsApp. Só podem aparecer quando viram um processo específico do setor — por exemplo:
+- Em vez de "usar IA pra responder clientes": "Interpretar mensagens como 'tem horário pra fazer luzes hoje?', identificar o serviço pedido, calcular o tempo necessário, checar quais profissionais fazem a técnica e oferecer só os horários que comportam o procedimento completo."
+- Em vez de "usar IA pra controlar o estoque": "Cruzar os serviços agendados pra próxima semana com o consumo médio de tonalizante por comprimento de cabelo e alertar quais cores precisam ser repostas antes dos atendimentos."
+- Em vez de "usar IA pra recuperar clientes": "Identificar clientes cuja frequência de manutenção ultrapassou o intervalo habitual e priorizar o contato nos dias em que o profissional responsável está com maior capacidade ociosa."
+
+DISTINÇÃO ENTRE IA E AUTOMAÇÃO — não apresente uma integração convencional como se fosse inteligência artificial. Defina internamente: o que a IA interpreta, classifica, extrai, prevê, recomenda ou personaliza; o que o sistema só consulta; o que a automação executa; em qual ferramenta o dado fica guardado; qual parte ainda depende de decisão humana. A solução precisa ser tecnicamente plausível — se depender de integração, API, sistema de gestão, agenda digital, histórico estruturado ou autorização pra usar dado de cliente, mencione isso de forma simples no roteiro.
+
+CRITÉRIO DE ESCOLHA — as duas aplicações precisam: resolver um processo frequente; ter impacto operacional observável; usar dados que o negócio realmente pode produzir; reduzir uma decisão ou tarefa manual; ser específicas daquele setor; poder ser explicadas visualmente num Reels; não depender de tecnologia inacessível pra uma pequena empresa. Nunca invente funcionalidade, integração, resultado ou dado.
+── FIM DO DIAGNÓSTICO INTERNO ──
+
+Só depois desse diagnóstico, escreva o roteiro. SIGA EXATAMENTE ESTA ORDEM:
 
 1. ABERTURA COM TESE OPERACIONAL
 Comece OBRIGATORIAMENTE com a frase, adaptada ao negócio e à área:
 "Se eu fosse [dona/dono] de [TIPO DE NEGÓCIO], essa semana eu já colocaria a IA pra trabalhar [EM QUAL ÁREA]."
 A primeira frase revela imediatamente onde a IA seria aplicada. NUNCA comece explicando o que é inteligência artificial.
-A área escolhida precisa ser a dor mais relevante e específica DESSE tipo de negócio — nunca a mesma área por padrão. Varie entre atendimento, agenda/ocupação, estoque, compras, financeiro/cobrança, produção, logística, pós-venda, marketing ou escala de equipe, conforme o que realmente pesa nesse negócio. Atendimento só entra quando for de fato a dor mais relevante desse negócio específico, não como ponto de partida automático.
+A área escolhida é a etapa de maior perda identificada no diagnóstico — nunca a mesma área por padrão. Atendimento só entra quando for de fato a dor mais relevante desse negócio específico, não como ponto de partida automático.
 
 2. PERDA CONCRETA DO COTIDIANO
-Uma tarefa repetitiva que consome tempo, dinheiro ou atenção da equipe, na MESMA área definida na abertura. Situação cotidiana e reconhecível. Se a área for atendimento, inclua uma frase real que clientes costumam repetir; se for outra área (estoque, agenda, financeiro, produção etc.), descreva a situação repetitiva equivalente nela — não force uma frase de cliente numa área que não é de atendimento. Comece com algo como "Porque uma parte enorme do dia é gasta...".
+A tarefa repetitiva do diagnóstico que consome tempo, dinheiro ou atenção da equipe, na MESMA área definida na abertura. Situação cotidiana e reconhecível, com o vocabulário de quem trabalha nesse setor. Comece com algo como "Porque uma parte enorme do dia é gasta...".
 
 3. PRIMEIRA AUTOMAÇÃO
-Explique: quais informações seriam usadas; qual ferramenta ou integração executaria a tarefa; qual ação seria automatizada; o que deixaria de depender de trabalho manual. A solução precisa ser tecnicamente plausível — nunca invente funcionalidade, e nunca diga que uma planilha sozinha "dispara" ou "executa" uma automação (planilha guarda e organiza dado; quem dispara ação é uma integração, um chatbot ou um agente). Diferencie análise (ler e interpretar dado), integração (conectar sistemas) e disparo automático (agir sozinho sem toque humano) quando isso mudar o que está sendo descrito. Use só capacidades que ferramentas de IA reais oferecem hoje — chatbot/agente de conversa (ex.: WhatsApp Business API, Claude, Gemini), automação no-code ligando sistemas (ex.: Zapier, Make, n8n), transcrição e análise de texto ou áudio, geração de texto/imagem, extração de dados de documentos, recomendação a partir de histórico de dados. Nunca descreva a IA prevendo o futuro com certeza, lendo a intenção do cliente sem dado nenhum, ou agindo sem nenhuma informação de entrada real. Prefira sempre a solução mais simples que resolve o problema — só suba pra uma automação com mais etapas ou mais sistemas integrados se a tarefa realmente não der pra resolver de um jeito mais direto.
+A primeira aplicação selecionada no diagnóstico, já aprovada pelo teste de especificidade. Explique: quais informações seriam usadas; qual ferramenta ou integração executaria a tarefa; qual ação seria automatizada; o que deixaria de depender de trabalho manual. Nunca diga que uma planilha sozinha "dispara" ou "executa" uma automação (planilha guarda e organiza dado; quem dispara ação é uma integração, um chatbot ou um agente).
 
 4. DEMONSTRAÇÃO VISUAL
 Uma indicação de gravação entre colchetes (ex.: [MOSTRA AS MENSAGENS NO CELULAR], [MOSTRA A PLANILHA], [MOSTRA O FLUXO DA AUTOMAÇÃO], [MOSTRA O RESULTADO NA TELA]). Logo depois, explique o funcionamento numa frase no formato: "Quando [EVENTO], o sistema [AÇÃO] e, em seguida, [RESULTADO]."
@@ -1144,7 +1170,7 @@ Uma indicação de gravação entre colchetes (ex.: [MOSTRA AS MENSAGENS NO CELU
 Qual interrupção, tarefa repetitiva ou esforço manual deixa de existir — de forma concreta. NUNCA use "otimizar processos", "aumentar a produtividade" ou equivalentes vagos. Diga exatamente o que a pessoa não precisa mais fazer.
 
 6. SEGUNDA AUTOMAÇÃO
-Uma segunda aplicação, ligada a uma perda DIFERENTE da primeira. Priorize uma destas áreas: recuperar clientes; reduzir ociosidade; prever demanda; organizar estoque; diminuir desperdício; identificar atrasos; melhorar recorrência; analisar rentabilidade; priorizar atendimentos. Faça a transição com a frase: "O segundo passo seria..."
+A segunda aplicação selecionada no diagnóstico, também aprovada pelo teste de especificidade, ligada a uma perda DIFERENTE da primeira. Faça a transição com a frase: "O segundo passo seria..."
 
 7. EXEMPLO CONCRETO
 Uma situação com frequência, prazo, quantidade, comportamento ou condição específica, no formato: "Se [SITUAÇÃO OBSERVADA], o sistema [AÇÃO AUTOMÁTICA]." Precisa ajudar quem assiste a visualizar a automação funcionando de verdade nesse negócio.
