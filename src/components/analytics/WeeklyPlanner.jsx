@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   Sparkles, Loader2, Calendar, TrendingUp, Zap, AlertCircle,
-  ChevronRight, Trophy, Lightbulb, Clock, Target, Key, Check,
+  ChevronRight, Trophy, Lightbulb, Target, Key, Check,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
@@ -275,23 +275,6 @@ export default function WeeklyPlanner() {
           )}
         </div>
       </div>
-
-      {/* Horários reais de audiência online (Instagram) */}
-      {topHours && topHours.length > 0 && (
-        <div className="card p-4 flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-gray-700 shrink-0">
-            <Clock size={15} className="text-pink-500" />
-            <span className="text-xs font-semibold">Horários reais de audiência online:</span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {topHours.map((h) => (
-              <span key={h.hour} className="text-xs font-medium px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 border border-pink-200">
-                {h.hour}h ({h.count} seguidores)
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Loading */}
       {loading && (
