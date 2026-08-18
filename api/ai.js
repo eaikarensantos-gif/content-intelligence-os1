@@ -667,6 +667,47 @@ async function instagramFetchStories(accessToken) {
   return { stories, insightsAvailable }
 }
 
+// ─── Instagram — publicar post (imagem) ─────────────────────────────────────
+// Fluxo em dois passos da Content Publishing API: cria um container de mídia
+// a partir de uma image_url pública, depois publica esse container. A imagem
+// já precisa estar hospedada numa URL pública antes desta chamada — quem
+// resolve isso é o cliente (upload para o Supabase Storage).
+
+async function instagramPublishPost(accessToken, imageUrl, caption) {
+  const createRes = await fetch('https://graph.instagram.com/me/media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ image_url: imageUrl, caption: caption || '', access_token: accessToken }),
+  })
+  const createData = await createRes.json().catch(() => ({}))
+  if (!createRes.ok || !createData.id) {
+    throw new Error(createData.error?.message || 'Falha ao criar o container de mídia no Instagram.')
+  }
+
+  const publishRes = await fetch('https://graph.instagram.com/me/media_publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ creation_id: createData.id, access_token: accessToken }),
+  })
+  const publishData = await publishRes.json().catch(() => ({}))
+  if (!publishRes.ok || !publishData.id) {
+    throw new Error(publishData.error?.message || 'Falha ao publicar no Instagram.')
+  }
+
+  let permalink = null
+  try {
+    const permRes = await fetch(
+      `https://graph.instagram.com/${publishData.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`
+    )
+    const permData = await permRes.json().catch(() => ({}))
+    if (permRes.ok) permalink = permData.permalink || null
+  } catch {
+    // Permalink é só um extra pra UI — publicação já aconteceu, não falha por isso.
+  }
+
+  return { id: publishData.id, permalink }
+}
+
 // ─── Instagram — responder comentário ──────────────────────────────────────
 // Requer o escopo instagram_business_manage_comments (conexões feitas antes
 // desse escopo existir precisam reconectar antes de conseguir usar isso).
@@ -985,6 +1026,15 @@ export default async function handler(req, res) {
       if (!mediaId?.trim())      return res.status(400).json({ error: 'mediaId é obrigatório.' })
       const comments = await instagramFetchComments(accessToken, mediaId)
       return res.status(200).json({ comments })
+    }
+
+    // ── Instagram — publicar post (imagem já hospedada numa URL pública) ─────
+    if (action === 'instagram-publish-post') {
+      const { accessToken, imageUrl, caption } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      if (!imageUrl?.trim())    return res.status(400).json({ error: 'imageUrl é obrigatório — a imagem precisa estar hospedada numa URL pública.' })
+      const result = await instagramPublishPost(accessToken, imageUrl, caption || '')
+      return res.status(200).json(result)
     }
 
     if (action === 'instagram-reply-comment') {
