@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon, Instagram, Copy } from 'lucide-react'
+import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon, Instagram, Copy, Download } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
@@ -19,6 +19,18 @@ const LS_APIFY           = 'cio-apify-token'
 const LS_APIFY_ACTOR     = 'cio-apify-instagram-actor'
 const SUPABASE_URL_KEY   = 'supabase-url'
 const SUPABASE_KEY_KEY   = 'supabase-key'
+
+// Mesmas chaves persistidas pelo partialize() do useStore — o backup precisa
+// cobrir tudo que o usuário pode perder num reset de navegador/dispositivo.
+const BACKUP_KEYS = [
+  'clips', 'ideas', 'posts', 'metrics', 'insights', 'generatedIdeas',
+  'trendResults', 'clients', 'videoAnalyses', 'thoughtCaptures',
+  'commentContexts', 'tasks', 'ads', 'leads', 'archetypes',
+  'hybridArchetypes', 'favorites', 'viralReferences', 'pricingProducts',
+  'proposals', 'hiddenReportTags', 'posicionamento', 'creatorProfile',
+  'desafioHistory', 'brainItems', 'pinnedPages', 'audienceProfiles',
+  'audienceWeights', 'audienceCuts', 'brandVoice',
+]
 
 export default function SupabaseSettings() {
   const dbStatus    = useStore((s) => s.dbStatus)
@@ -51,6 +63,7 @@ export default function SupabaseSettings() {
   const [testing,  setTesting]  = useState(false)
   const [syncing,  setSyncing]  = useState(false)
   const [saved,    setSaved]    = useState(false)
+  const [backupDownloaded, setBackupDownloaded] = useState(false)
 
   const [igAppId,     setIgAppId]     = useState(() => getAppId())
   const [igAppSecret, setIgAppSecret] = useState(() => getAppSecret())
@@ -90,6 +103,23 @@ export default function SupabaseSettings() {
     setSyncing(true)
     await loadFromDB()
     setSyncing(false)
+  }
+
+  const handleExportBackup = () => {
+    const state = useStore.getState()
+    const data = {}
+    BACKUP_KEYS.forEach((key) => { data[key] = state[key] })
+
+    const backup = { exportedAt: new Date().toISOString(), data }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `content-intelligence-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    setBackupDownloaded(true)
+    setTimeout(() => setBackupDownloaded(false), 2000)
   }
 
   const handleSaveApiKeys = () => {
@@ -238,6 +268,17 @@ alter table user_data disable row level security;`}</pre>
         <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:underline">
           <ExternalLink size={11} /> Abrir Supabase Dashboard
         </a>
+      </div>
+
+      {/* ── Backup ─────────────────────────────────────────────────────────────── */}
+      <div className="card p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Download size={15} className="text-blue-500" /> Backup
+        </h2>
+        <p className="text-xs text-gray-500">Baixa um arquivo .json com todo o conteúdo (ideias, posts, métricas, tarefas e demais dados) para guardar como backup.</p>
+        <button onClick={handleExportBackup} className="btn-primary text-xs">
+          {backupDownloaded ? <><CheckCircle2 size={12} /> Baixado!</> : <><Download size={12} /> Baixar backup completo</>}
+        </button>
       </div>
 
       {/* ── API Keys ───────────────────────────────────────────────────────────── */}
