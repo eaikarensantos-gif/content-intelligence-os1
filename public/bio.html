@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Karen Santos</title>
+<meta name="robots" content="index, follow" />
+<style>
+  :root {
+    --bg-blush: #efd9cf;
+    --card-white: #ffffff;
+    --pill-bg: #f4e2d8;
+    --pill-border: #8a3d3d;
+    --pill-text: #5c2626;
+    --navy-dark: #101d3f;
+    --navy-mid: #16306b;
+    --cyan: #5fd0dc;
+    --cyan-text: #0d2b3a;
+    --text-dark: #241a16;
+    --text-muted: #6b5b53;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-blush);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-dark);
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 32px 0 64px;
+  }
+  .page {
+    width: 100%;
+    max-width: 454px;
+    padding: 0 16px;
+  }
+
+  /* Profile */
+  .profile { text-align: center; margin-bottom: 20px; }
+  .avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    background: linear-gradient(135deg, #c98a5e, #8a4a30);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 600;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .profile h1 { font-size: 20px; font-weight: 700; margin: 0 0 6px; }
+  .profile p { font-size: 14px; color: var(--text-muted); margin: 0 0 16px; }
+  .socials { display: flex; justify-content: center; gap: 22px; }
+  .socials a { color: var(--text-dark); display: inline-flex; }
+  .socials svg { width: 22px; height: 22px; }
+
+  /* White card */
+  .card {
+    background: var(--card-white);
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0ece9;
+  }
+
+  /* Course promo box */
+  .promo {
+    position: relative;
+    border-radius: 14px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--navy-mid) 0%, var(--navy-dark) 70%);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    overflow: hidden;
+    min-height: 150px;
+  }
+  .promo-left { flex: 1; min-width: 0; }
+  .promo-badge {
+    display: inline-block;
+    background: var(--cyan);
+    color: var(--cyan-text);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .promo-left p {
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 0 0 12px;
+  }
+  .promo-left p strong { font-weight: 700; }
+  .promo-cta {
+    display: inline-block;
+    background: var(--cyan);
+    color: var(--cyan-text);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 20px;
+    text-decoration: none;
+    margin-bottom: 12px;
+  }
+  .promo-logo { color: #fff; font-size: 12px; opacity: 0.85; }
+  .promo-logo span { font-weight: 400; opacity: 0.7; }
+  .promo-right {
+    position: relative;
+    width: 110px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #3a5aa8, #16306b);
+    display: flex;
+    align-items: flex-end;
+  }
+  .promo-right .caption {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    right: 6px;
+    color: #fff;
+    font-size: 9px;
+    line-height: 1.3;
+  }
+  .promo-right .caption strong { display: block; font-size: 10px; }
+  .play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .play-btn svg { width: 14px; height: 14px; fill: var(--navy-dark); }
+
+  .course-title { font-size: 16px; font-weight: 700; margin: 16px 0 8px; }
+  .course-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #4a3d37;
+    margin: 0;
+  }
+  .course-desc .more-text { display: none; }
+  .course-desc.expanded .more-text { display: inline; }
+  .course-desc.expanded .truncated { display: none; }
+  .toggle-more {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .toggle-more svg { width: 12px; height: 12px; transition: transform 0.2s; }
+  .toggle-more.open svg { transform: rotate(180deg); }
+
+  .btn-continue {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px;
+    border-radius: 30px;
+    text-decoration: none;
+    margin-top: 16px;
+  }
+
+  /* Pill link buttons */
+  .links { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .pill {
+    display: block;
+    text-align: center;
+    background: var(--pill-bg);
+    border: 1.5px solid var(--pill-border);
+    color: var(--pill-text);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px 16px;
+    border-radius: 12px;
+    text-decoration: none;
+  }
+  .pill.disabled {
+    opacity: 0.6;
+    cursor: default;
+    position: relative;
+  }
+  .pill .soon {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 2px;
+    opacity: 0.8;
+  }
+
+  /* Trusted brands card */
+  .trust-list { display: flex; flex-direction: column; }
+  .trust-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid #f0ece9;
+    text-decoration: none;
+    color: var(--text-dark);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .trust-item:last-child { border-bottom: none; }
+  .trust-item svg { width: 14px; height: 14px; color: #8a8078; flex-shrink: 0; }
+
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="profile">
+    <div class="avatar">KS</div>
+    <h1>Karen Santos</h1>
+    <p>Construindo Negócios e Carreiras em Tecnologia</p>
+    <div class="socials">
+      <a href="https://www.instagram.com/karensantosperfil/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="https://www.tiktok.com/@karensantosperfil" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 2h-3v13.2a2.8 2.8 0 1 1-2.3-2.76v-3.06A5.86 5.86 0 1 0 16.5 15V8.9a7.6 7.6 0 0 0 4.5 1.46V7.36A4.6 4.6 0 0 1 16.5 2z"/></svg>
+      </a>
+      <a href="mailto:karen@mawalab.com" aria-label="Email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/></svg>
+      </a>
+      <a href="https://www.linkedin.com/in/karensantosperfil/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm7 0h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.5 4.78 5.75V21h-4v-5.9c0-1.4-.03-3.2-1.95-3.2-1.95 0-2.25 1.5-2.25 3.1V21h-4V9z"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Curso: Do Projeto ao Negócio</h2>
+
+    <a class="promo" href="https://mkt.contabilizei.com.br/karen-santos" target="_blank" rel="noopener noreferrer">
+      <div class="promo-left">
+        <span class="promo-badge">Curso online 100% gratuito</span>
+        <p><strong>Da CLT ao PJ:</strong> entenda o que muda para profissionais de marketing e criação.</p>
+        <span class="promo-cta">INSCREVA-SE GRÁTIS</span>
+        <div class="promo-logo">Contabilizei<span>.mais</span></div>
+      </div>
+      <div class="promo-right">
+        <div class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="caption"><strong>Karen Santos</strong>Designer e empreendedora</div>
+      </div>
+    </a>
+
+    <div class="course-title">Curso: Do Projeto ao Negócio</div>
+    <p class="course-desc" id="courseDesc">
+      Disponível na Contabilizei Mais, <strong>Do Projeto ao Negócio</strong> é um curso voltado a profissionais de design, marketing e comunicação que trabalham, ou querem trabalhar, de forma autônoma
+      <span class="truncated">…</span>
+      <span class="more-text">, ajudando a entender a transição da CLT para PJ, precificação, posicionamento e os primeiros passos para estruturar o próprio negócio.</span>
+    </p>
+    <button class="toggle-more" id="toggleMore" onclick="
+      document.getElementById('courseDesc').classList.toggle('expanded');
+      this.classList.toggle('open');
+      this.firstChild.textContent = this.classList.contains('open') ? 'Mostrar menos' : 'Mostrar mais';
+    ">Mostrar mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+
+    <a class="btn-continue" href="https://mkt.contabilizei.com.br/karen-santos" target="_blank" rel="noopener noreferrer">Continuar</a>
+  </div>
+
+  <div class="links">
+    <a class="pill" href="mailto:karen@mawalab.com">🔥 Consultoria Estratégica para SaaS B2B</a>
+    <a class="pill" href="https://www.youtube.com/watch?v=yZw0V_oCSDM&t=1s" target="_blank" rel="noopener noreferrer">🏆 Minha Palestra no TEDx</a>
+    <a class="pill" href="https://www.forbes.com/sites/angelicamarideoliveira/2021/07/06/meet-the-entrepreneurs-ushering-black-women-into-ux-careers-in-brazil/" target="_blank" rel="noopener noreferrer">📰 Leia minha matéria na Forbes</a>
+    <span class="pill disabled">🌐 Parcerias de Marca & Publi<span class="soon">link em breve</span></span>
+    <a class="pill" href="https://www.linkedin.com/newsletters/6913493894244499456/?displayConfirmation=true" target="_blank" rel="noopener noreferrer">📖 Assine a Newsletter no LinkedIn</a>
+    <a class="pill" href="https://open.spotify.com/playlist/3nyg9ORLG9w8UBqDqQ17fr?si=6650f345f05842fc&nd=1&dlsi=611a88a689004d31" target="_blank" rel="noopener noreferrer">🎙️ Ouça minhas entrevistas em Podcasts</a>
+  </div>
+
+  <div class="card">
+    <h2>🤝 Marcas e Ferramentas que Confio</h2>
+    <div class="trust-list">
+      <a class="trust-item" href="https://www.samsung.com/br/" target="_blank" rel="noopener noreferrer">
+        Samsung Brasil | Smartphones & Tablets | TV & Áudio
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <footer>Karen Santos</footer>
+</div>
+</body>
+</html>
