@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import useStore from "../../store/useStore";
+import { confirmDialog } from "../../store/useUIStore";
 
 /* ============================================================
    DESAFIO DE FORMATO — Content Intelligence OS
@@ -344,8 +345,8 @@ export default function DesafioSorteador() {
             <div className="ds-hist-title">Histórico</div>
             <button
               className="ds-hist-clear"
-              onClick={() => {
-                if (window.confirm("Limpar todo o histórico de desafios?")) {
+              onClick={async () => {
+                if (await confirmDialog({ message: "Limpar todo o histórico de desafios?", confirmLabel: "Limpar", danger: true })) {
                   clearDesafioHistory();
                 }
               }}

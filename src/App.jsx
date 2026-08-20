@@ -7,6 +7,8 @@ import Header from './components/layout/Header'
 import FavoritesDrawer from './components/favorites/FavoritesPanel'
 import FloatingActions from './components/global/FloatingActions'
 import CommandPalette from './components/common/CommandPalette'
+import ToastHost from './components/common/ToastHost'
+import ConfirmHost from './components/common/ConfirmHost'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
@@ -125,7 +127,10 @@ export default function App() {
   }, [])
 
   return (
-    <LoginGate>
+    <>
+      <ToastHost />
+      <ConfirmHost />
+      <LoginGate>
       <BrowserRouter>
         <FavoritesDrawer />
         <FloatingActions />
@@ -172,6 +177,7 @@ export default function App() {
           </Suspense>
         </Layout>
       </BrowserRouter>
-    </LoginGate>
+      </LoginGate>
+    </>
   )
 }

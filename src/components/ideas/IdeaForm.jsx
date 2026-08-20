@@ -6,6 +6,7 @@ import ScriptCoherenceFixer from './ScriptCoherenceFixer'
 import FactFinder from './FactFinder'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
+import { toast } from '../../store/useUIStore'
 import { youtubeSearch } from '../../lib/aiService'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
@@ -354,8 +355,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateTitle = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
-    if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
+    if (!apiKey) { toast.error('Configure sua API key do Gemini primeiro.'); return }
+    if (!form.description.trim() && !form.topic.trim()) { toast.error('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
     setGeneratingTitle(true); setTitleSuggestions([])
     try {
       const raw = await generateWithAI(apiKey, 'title', form, voiceCtx)
@@ -363,8 +364,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
       const match = clean.match(/\[[\s\S]*\]/)
       const parsed = JSON.parse(match ? match[0] : clean)
       if (Array.isArray(parsed) && parsed.length > 0) setTitleSuggestions(parsed.filter(Boolean))
-      else alert('Não foi possível gerar títulos. Tente novamente.')
-    } catch (err) { alert(err.message || 'Erro ao gerar títulos. Tente novamente.') }
+      else toast.error('Não foi possível gerar títulos. Tente novamente.')
+    } catch (err) { toast.error(err.message || 'Erro ao gerar títulos. Tente novamente.') }
     setGeneratingTitle(false)
   }
 
@@ -442,8 +443,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
   const handleGenerateHook = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
-    if (!form.title.trim()) { alert('Preencha o título antes de gerar o gancho.'); return }
+    if (!apiKey) { toast.error('Configure sua API key do Gemini primeiro.'); return }
+    if (!form.title.trim()) { toast.error('Preencha o título antes de gerar o gancho.'); return }
     setGeneratingHook(true)
     try {
       const hook = await generateWithAI(apiKey, 'hook', form, voiceCtx)
@@ -451,26 +452,26 @@ Responda EXCLUSIVAMENTE com JSON válido:
         set('description', hook.trim() + (form.description.trim() ? '\n\n' + form.description.trim() : ''))
         setTimeout(() => autoResizeDesc(descRef.current), 50)
       }
-    } catch (err) { alert(err.message || 'Erro ao gerar gancho. Tente novamente.') }
+    } catch (err) { toast.error(err.message || 'Erro ao gerar gancho. Tente novamente.') }
     setGeneratingHook(false)
   }
 
   const handleGenerateScript = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
-    if (!form.title.trim()) { alert('Preencha o título antes de gerar o roteiro.'); return }
+    if (!apiKey) { toast.error('Configure sua API key do Gemini primeiro.'); return }
+    if (!form.title.trim()) { toast.error('Preencha o título antes de gerar o roteiro.'); return }
     setGeneratingScript(true)
     try {
       const script = await generateWithAI(apiKey, 'script', form, voiceCtx)
       if (script.trim()) set('script', script.trim())
-    } catch (err) { alert(err.message || 'Erro ao gerar roteiro. Tente novamente.') }
+    } catch (err) { toast.error(err.message || 'Erro ao gerar roteiro. Tente novamente.') }
     setGeneratingScript(false)
   }
 
   const handleGenerateAI = async (type) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
-    if (!form.title.trim()) { alert('Preencha o título antes de gerar.'); return }
+    if (!apiKey) { toast.error('Configure sua API key do Gemini primeiro.'); return }
+    if (!form.title.trim()) { toast.error('Preencha o título antes de gerar.'); return }
     const setter = type === 'caption' ? setGeneratingCaption : setGeneratingCta
     setter(true)
     try {
@@ -492,13 +493,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
         set('caption', result)
       }
     } catch (err) {
-      alert(err.message || (type === 'cta' ? 'Erro ao gerar CTAs. Tente novamente.' : 'Erro ao gerar legenda. Tente novamente.'))
+      toast.error(err.message || (type === 'cta' ? 'Erro ao gerar CTAs. Tente novamente.' : 'Erro ao gerar legenda. Tente novamente.'))
     }
     setter(false)
   }
 
   const handleSearchRefs = async () => {
-    if (!form.title.trim()) { alert('Preencha o título antes de buscar referências.'); return }
+    if (!form.title.trim()) { toast.error('Preencha o título antes de buscar referências.'); return }
     setSearchingRefs(true)
     setRefsSearchAttempted(true)
     setRefResults([])
@@ -510,14 +511,14 @@ Responda EXCLUSIVAMENTE com JSON válido:
         setRefResults(results.slice(0, 5))
       } else {
         const apiKey = localStorage.getItem(LS_KEY)
-        if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key Gemini para buscar referências.'); setSearchingRefs(false); return }
+        if (!apiKey) { toast.error('Configure a YouTube API Key (em Configurações) ou a API Key Gemini para buscar referências.'); setSearchingRefs(false); return }
         const raw = await generateWithAI(apiKey, 'refQueries', form, voiceCtx)
         const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
         const match = clean.match(/\[[\s\S]*\]/)
         const parsed = JSON.parse(match ? match[0] : clean)
         if (Array.isArray(parsed)) setRefQueries(parsed.filter(Boolean))
       }
-    } catch (err) { alert(err.message || 'Erro ao buscar referências. Tente novamente.') }
+    } catch (err) { toast.error(err.message || 'Erro ao buscar referências. Tente novamente.') }
     setSearchingRefs(false)
   }
 

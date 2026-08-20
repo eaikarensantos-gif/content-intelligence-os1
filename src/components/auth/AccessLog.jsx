@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Shield, Trash2, ChevronDown, ChevronUp, CheckCircle, XCircle, Monitor, Globe, Clock, Mail, RefreshCw } from 'lucide-react'
 import { getAccessAttempts, clearAccessAttempts } from './LoginGate'
+import { confirmDialog } from '../../store/useUIStore'
 
 export default function AccessLog() {
   const [attempts, setAttempts] = useState([])
@@ -13,8 +14,8 @@ export default function AccessLog() {
 
   const refresh = () => setAttempts(getAccessAttempts().reverse())
 
-  const handleClear = () => {
-    if (confirm('Limpar todo o registro de tentativas de acesso?')) {
+  const handleClear = async () => {
+    if (await confirmDialog({ message: 'Limpar todo o registro de tentativas de acesso?', confirmLabel: 'Limpar', danger: true })) {
       clearAccessAttempts()
       setAttempts([])
     }
