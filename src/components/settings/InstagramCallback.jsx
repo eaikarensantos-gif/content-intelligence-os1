@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, XCircle } from 'lucide-react'
 import { instagramOAuthConnect } from '../../lib/aiService'
-import { getAppId, getAppSecret, getRedirectUri, consumeState, saveConnection } from '../../lib/instagramAuth'
+import { getAppId, getAppSecret, getRedirectUri, consumeState, saveConnection, syncConnectionToServer } from '../../lib/instagramAuth'
 
 export default function InstagramCallback() {
   const navigate = useNavigate()
@@ -34,6 +34,14 @@ export default function InstagramCallback() {
           return
         }
         saveConnection(data)
+        // Ponte pro webhook (Fase 1 da automação de DM) — não bloqueia o fluxo
+        // principal de conexão do Instagram se falhar.
+        syncConnectionToServer({
+          accessToken: data.accessToken,
+          expiresIn: data.expiresIn,
+          account: data.accounts[0],
+          appSecret,
+        }).catch((e) => console.warn('[InstagramCallback] falha ao sincronizar conexão pro webhook:', e.message))
         navigate('/settings?instagram=connected', { replace: true })
       })
       .catch((e) => setError(e.message))
