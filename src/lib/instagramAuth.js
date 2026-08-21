@@ -3,12 +3,14 @@
 // Instagram" e a "Chave secreta do app do Instagram" do caso de uso "API do
 // Instagram", não as credenciais do App do Facebook).
 
+import { getSupabase } from './supabase'
+
 const LS_APP_ID     = 'cio-ig-app-id'
 const LS_APP_SECRET = 'cio-ig-app-secret'
 const LS_CONNECTION = 'cio-ig-connection'
 const SS_STATE       = 'cio-ig-oauth-state'
 
-const SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments'
+const SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments,instagram_business_manage_messages'
 
 export function getAppId()     { return localStorage.getItem(LS_APP_ID) || '' }
 export function getAppSecret() { return localStorage.getItem(LS_APP_SECRET) || '' }
@@ -65,4 +67,24 @@ export function consumeState(receivedState) {
   const expected = sessionStorage.getItem(SS_STATE)
   sessionStorage.removeItem(SS_STATE)
   return !!expected && expected === receivedState
+}
+
+// Ponte pro webhook (que roda no servidor, sem acesso ao localStorage do
+// navegador): grava o token de acesso e o App Secret na tabela ig_connection
+// do Supabase logo após o OAuth. O webhook (api/instagramWebhook.js) lê essa
+// mesma linha via SUPABASE_SERVICE_ROLE_KEY.
+export async function syncConnectionToServer({ accessToken, expiresIn, account, appSecret }) {
+  const db = getSupabase()
+  if (!db) throw new Error('Supabase não configurado — configure em Configurações antes de conectar o Instagram.')
+
+  const { error } = await db.from('ig_connection').upsert({
+    id: 'default',
+    ig_user_id: account?.id || null,
+    ig_username: account?.username || null,
+    access_token: accessToken,
+    app_secret: appSecret,
+    expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) throw new Error(error.message)
 }
