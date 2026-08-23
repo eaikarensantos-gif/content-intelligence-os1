@@ -82,7 +82,7 @@ export const TEMAS_CARROSSEL = [
     ],
   },
   {
-    categoria: 'IA para criativos',
+    categoria: 'IA para profissionais criativos',
     temas: [
       'O criativo que usou IA e perdeu a própria voz no processo',
       'Onde a IA acelera a produção e onde ela mata o acaso que fazia o trabalho funcionar',
