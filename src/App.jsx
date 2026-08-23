@@ -165,7 +165,7 @@ export default function App() {
             <Route path="/pdf-studio" element={<div className="p-0 animate-fade-in"><PDFContentGenerator /></div>} />
             <Route path="/community" element={<CommunityStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
-            <Route path="/desafio" element={<div className="p-6 animate-fade-in"><DesafioSorteador /></div>} />
+            <Route path="/desafio" element={<DesafioSorteador />} />
             {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

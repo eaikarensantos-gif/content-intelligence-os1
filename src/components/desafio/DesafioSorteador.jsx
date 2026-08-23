@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Dices, Lock, Unlock, RefreshCw, Copy, Check, Trash2, Zap } from "lucide-react";
 import useStore from "../../store/useStore";
 
 /* ============================================================
@@ -118,6 +119,46 @@ function comboKey(subtema, formatoId) {
   return `${subtema}::${formatoId}`;
 }
 
+const AUTO_CONFIRM_SECONDS = 5;
+
+function Eixo({ label, valor, extra, locked, rolling, onToggleLock }) {
+  return (
+    <div className={`p-4 flex items-start justify-between gap-3 transition-opacity duration-300 ${rolling ? "opacity-30" : ""}`}>
+      <div className="min-w-0">
+        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
+        <p className="text-base font-semibold text-gray-900 mt-1 leading-snug">{valor || "—"}</p>
+        {extra && <p className="text-xs text-gray-400 mt-0.5">{extra}</p>}
+      </div>
+      <button
+        onClick={onToggleLock}
+        title={locked ? "Destravar eixo" : "Travar eixo no próximo sorteio"}
+        className={`shrink-0 flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
+          locked
+            ? "bg-orange-50 border-orange-200 text-orange-700"
+            : "border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600"
+        }`}
+      >
+        {locked ? <Lock size={11} /> : <Unlock size={11} />} {locked ? "travado" : "travar"}
+      </button>
+    </div>
+  );
+}
+
+function HistItem({ item, index }) {
+  return (
+    <div className="p-3 flex items-start gap-3">
+      <span className="text-[10px] text-gray-300 font-mono mt-0.5 shrink-0">{String(index).padStart(2, "0")}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-gray-800 leading-snug">{item.subtema}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{item.formato} · {item.restricao} · {item.data}</p>
+      </div>
+      {item.foraDaZona && (
+        <span className="chip bg-violet-50 text-violet-600 border border-violet-200 text-[10px] shrink-0">fora da zona</span>
+      )}
+    </div>
+  );
+}
+
 export default function DesafioSorteador() {
   // Persistência via store global (zustand + persist + sync Supabase)
   const history = useStore((s) => s.desafioHistory);
@@ -128,6 +169,7 @@ export default function DesafioSorteador() {
   const [locks, setLocks] = useState({ subtema: false, formato: false, restricao: false });
   const [copiado, setCopiado] = useState(false);
   const [rolling, setRolling] = useState(false);
+  const [countdown, setCountdown] = useState(null);
 
   const usadas = useMemo(
     () => new Set(history.map((h) => comboKey(h.subtema, h.formatoId))),
@@ -135,6 +177,26 @@ export default function DesafioSorteador() {
   );
 
   const foraDaZona = history.length > 0 && (history.length + 1) % 3 === 0;
+
+  const confirmar = useCallback(
+    (desafio) => {
+      addDesafio(desafio);
+      setLocks({ subtema: false, formato: false, restricao: false });
+    },
+    [addDesafio]
+  );
+
+  // Contagem regressiva de 5s: ao chegar em 0, registra o desafio atual no histórico.
+  useEffect(() => {
+    if (countdown === null) return undefined;
+    if (countdown === 0) {
+      confirmar(atual);
+      setCountdown(null);
+      return undefined;
+    }
+    const id = setTimeout(() => setCountdown((c) => (c === null ? c : c - 1)), 1000);
+    return () => clearTimeout(id);
+  }, [countdown, atual, confirmar]);
 
   const sortear = useCallback(() => {
     const rng = Math.random;
@@ -200,18 +262,14 @@ export default function DesafioSorteador() {
 
     if (!novo) return; // esgotou combinações válidas
 
+    setCountdown(null);
     setRolling(true);
     setTimeout(() => {
       setAtual(novo);
       setRolling(false);
+      setCountdown(AUTO_CONFIRM_SECONDS);
     }, 350);
   }, [history, atual, locks, usadas, foraDaZona]);
-
-  const confirmar = () => {
-    if (!atual) return;
-    addDesafio(atual);
-    setLocks({ subtema: false, formato: false, restricao: false });
-  };
 
   const jaConfirmado =
     atual && usadas.has(comboKey(atual.subtema, atual.formatoId));
@@ -234,137 +292,108 @@ export default function DesafioSorteador() {
   const toggleLock = (eixo) =>
     setLocks((l) => ({ ...l, [eixo]: !l[eixo] }));
 
-  const Eixo = ({ label, valor, eixo, extra }) => (
-    <div className={`ds-eixo ${rolling ? "ds-roll" : ""}`}>
-      <div className="ds-eixo-head">
-        <span className="ds-eixo-label">{label}</span>
-        <button
-          className={`ds-lock ${locks[eixo] ? "ds-lock-on" : ""}`}
-          onClick={() => toggleLock(eixo)}
-          title={locks[eixo] ? "Destravar eixo" : "Travar eixo no próximo sorteio"}
-        >
-          {locks[eixo] ? "travado" : "travar"}
-        </button>
-      </div>
-      <div className="ds-eixo-valor">{valor || "—"}</div>
-      {extra && <div className="ds-eixo-extra">{extra}</div>}
-    </div>
-  );
-
   return (
-    <div className="ds-root">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=Archivo+Expanded:wght@600;700&display=swap');
-        .ds-root {
-          --ink: #16161a;
-          --paper: #ffffff;
-          --line: #e4e4e2;
-          --mute: #8a8a86;
-          --sinal: #2743f0;
-          font-family: 'Archivo', system-ui, sans-serif;
-          background: var(--paper);
-          color: var(--ink);
-          max-width: 640px;
-          margin: 0 auto;
-          padding: 32px 20px 48px;
-          font-variant-numeric: tabular-nums;
-        }
-        .ds-top { display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--ink); padding-bottom:12px; }
-        .ds-title { font-family:'Archivo', sans-serif; font-stretch: 125%; font-weight:800; font-size:20px; letter-spacing:-0.01em; text-transform:uppercase; }
-        .ds-count { font-size:13px; color:var(--mute); }
-        .ds-alerta { margin-top:16px; font-size:13px; padding:10px 12px; border:1px solid var(--sinal); color:var(--sinal); }
-        .ds-eixos { margin-top:20px; display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); }
-        .ds-eixo { background:var(--paper); padding:16px; transition:opacity .3s; }
-        .ds-roll { opacity:.25; }
-        .ds-eixo-head { display:flex; justify-content:space-between; align-items:center; }
-        .ds-eixo-label { font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--mute); }
-        .ds-lock { font-family:inherit; font-size:11px; text-transform:uppercase; letter-spacing:.08em; background:none; border:1px solid var(--line); color:var(--mute); padding:3px 8px; cursor:pointer; }
-        .ds-lock-on { border-color:var(--ink); color:var(--ink); }
-        .ds-lock:focus-visible, .ds-btn:focus-visible { outline:2px solid var(--sinal); outline-offset:2px; }
-        .ds-eixo-valor { margin-top:8px; font-size:19px; font-weight:600; line-height:1.25; letter-spacing:-0.01em; }
-        .ds-eixo-extra { margin-top:4px; font-size:13px; color:var(--mute); }
-        .ds-acoes { margin-top:20px; display:flex; gap:8px; flex-wrap:wrap; }
-        .ds-btn { font-family:inherit; font-size:14px; font-weight:600; padding:12px 18px; cursor:pointer; border:1px solid var(--ink); background:var(--ink); color:var(--paper); flex:1; min-width:140px; }
-        .ds-btn:disabled { opacity:.35; cursor:default; }
-        .ds-btn-ghost { background:var(--paper); color:var(--ink); }
-        .ds-hist { margin-top:36px; }
-        .ds-hist-head { display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid var(--line); padding-bottom:8px; }
-        .ds-hist-title { font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--mute); }
-        .ds-hist-clear { font-family:inherit; font-size:11px; text-transform:uppercase; letter-spacing:.08em; background:none; border:none; color:var(--mute); cursor:pointer; padding:0; }
-        .ds-hist-clear:hover { color:var(--ink); }
-        .ds-hist-item { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); font-size:14px; align-items:baseline; }
-        .ds-hist-n { color:var(--mute); font-size:12px; min-width:24px; }
-        .ds-hist-sub { font-weight:600; }
-        .ds-hist-meta { color:var(--mute); font-size:13px; }
-        .ds-fz { color:var(--sinal); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
-        @media (prefers-reduced-motion: reduce) { .ds-eixo { transition:none; } }
-      `}</style>
-
-      <div className="ds-top">
-        <div className="ds-title">Desafio de formato</div>
-        <div className="ds-count">{history.length} feitos</div>
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 animate-fade-in">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border border-orange-200 p-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 rounded-lg bg-amber-100">
+                <Dices size={16} className="text-amber-500" />
+              </div>
+              <h2 className="text-base font-bold text-gray-900">Desafio de Formato</h2>
+            </div>
+            <p className="text-sm text-gray-500 max-w-lg">
+              Sorteia subtema, formato e restrição pra te tirar da zona de conforto. Trave um eixo se quiser mantê-lo no próximo sorteio.
+            </p>
+          </div>
+          <span className="chip bg-white border border-orange-200 text-orange-700 text-xs shrink-0">{history.length} feitos</span>
+        </div>
       </div>
 
       {foraDaZona && (
-        <div className="ds-alerta">
-          Sorteio fora da zona: vídeo obrigatório com pilar fora de IA & Tech.
+        <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs text-violet-700 font-medium">
+          <Zap size={14} className="shrink-0" /> Sorteio fora da zona: vídeo obrigatório com pilar fora de IA &amp; Tech.
         </div>
       )}
 
-      <div className="ds-eixos">
+      {/* Eixos */}
+      <div className="card divide-y divide-gray-100">
         <Eixo
           label="Subtema"
-          eixo="subtema"
           valor={atual?.subtema}
           extra={atual?.pilar}
+          locked={locks.subtema}
+          rolling={rolling}
+          onToggleLock={() => toggleLock("subtema")}
         />
-        <Eixo label="Formato" eixo="formato" valor={atual?.formato} />
-        <Eixo label="Restrição" eixo="restricao" valor={atual?.restricao} />
+        <Eixo
+          label="Formato"
+          valor={atual?.formato}
+          locked={locks.formato}
+          rolling={rolling}
+          onToggleLock={() => toggleLock("formato")}
+        />
+        <Eixo
+          label="Restrição"
+          valor={atual?.restricao}
+          locked={locks.restricao}
+          rolling={rolling}
+          onToggleLock={() => toggleLock("restricao")}
+        />
       </div>
 
-      <div className="ds-acoes">
-        <button className="ds-btn ds-btn-ghost" onClick={sortear}>
-          {atual ? "Re-sortear" : "Sortear"}
+      {/* Auto-confirm countdown */}
+      {countdown !== null && (
+        <div className="card p-4 flex items-center gap-3 border-orange-200 bg-orange-50/50">
+          <div className="w-8 h-8 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin shrink-0" />
+          <p className="text-sm text-gray-700">
+            Registrando no histórico em <span className="font-semibold text-orange-600">{countdown}s</span>... gere outra ideia pra cancelar.
+          </p>
+        </div>
+      )}
+      {atual && jaConfirmado && countdown === null && (
+        <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium px-1">
+          <Check size={13} /> Registrado no histórico
+        </div>
+      )}
+
+      {/* Ações */}
+      <div className="flex gap-2 flex-wrap">
+        <button onClick={sortear} className="btn-primary">
+          {rolling ? <><RefreshCw size={14} className="animate-spin" /> Sorteando...</> : <><Dices size={14} /> Gerar nova ideia</>}
         </button>
         <button
-          className="ds-btn ds-btn-ghost"
           onClick={copiarBriefing}
           disabled={!atual}
+          className="btn-secondary disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {copiado ? "Copiado" : "Copiar briefing"}
-        </button>
-        <button className="ds-btn" onClick={confirmar} disabled={!atual || jaConfirmado}>
-          {jaConfirmado ? "Registrado" : "Aceitar desafio"}
+          {copiado ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar briefing</>}
         </button>
       </div>
 
+      {/* Histórico */}
       {history.length > 0 && (
-        <div className="ds-hist">
-          <div className="ds-hist-head">
-            <div className="ds-hist-title">Histórico</div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Histórico</span>
             <button
-              className="ds-hist-clear"
               onClick={() => {
                 if (window.confirm("Limpar todo o histórico de desafios?")) {
                   clearDesafioHistory();
                 }
               }}
+              className="btn-ghost text-xs"
             >
-              limpar
+              <Trash2 size={12} /> Limpar
             </button>
           </div>
-          {[...history].reverse().map((h, i) => (
-            <div className="ds-hist-item" key={`${h.subtema}-${h.formatoId}`}>
-              <span className="ds-hist-n">{String(history.length - i).padStart(2, "0")}</span>
-              <span>
-                <span className="ds-hist-sub">{h.subtema}</span>{" "}
-                <span className="ds-hist-meta">
-                  · {h.formato} · {h.restricao} · {h.data}
-                </span>{" "}
-                {h.foraDaZona && <span className="ds-fz">fora da zona</span>}
-              </span>
-            </div>
-          ))}
+          <div className="card divide-y divide-gray-100">
+            {[...history].reverse().map((h, i) => (
+              <HistItem key={`${h.subtema}-${h.formatoId}`} item={h} index={history.length - i} />
+            ))}
+          </div>
         </div>
       )}
     </div>
