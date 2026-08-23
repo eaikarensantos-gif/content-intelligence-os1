@@ -26,7 +26,7 @@ const CATEGORIAS_IA = new Set([
   "IA aplicada para pequenos negócios",
   "IA para negócios digitais",
   "IA para negócios físicos",
-  "IA para criativos",
+  "IA para profissionais criativos",
   "Temas Polêmicos — IA e mercado de trabalho",
   "IA no comportamento humano",
 ]);
