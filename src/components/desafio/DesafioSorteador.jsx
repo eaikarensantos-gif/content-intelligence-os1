@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Dices, Lock, Unlock, RefreshCw, Copy, Check, Trash2, Zap } from "lucide-react";
 import useStore from "../../store/useStore";
+import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from "../../data/temasCarrossel";
 
 /* ============================================================
    DESAFIO DE FORMATO — Content Intelligence OS
@@ -9,56 +10,36 @@ import useStore from "../../store/useStore";
    - Nunca repete a mesma combinação subtema+formato.
    - Mantém um eixo do sorteio anterior e troca o outro (alternando).
    - A cada 3 sorteios, força combinação fora da zona:
-     formato de vídeo com pilar que não seja IA & Tech.
+     formato de vídeo com pilar que não seja de IA.
    - Eixos podem ser travados individualmente antes de re-sortear.
+   PILARES: derivados do Banco de Temas compartilhado (temasCarrossel.js)
+   em vez de uma lista própria — mesma fonte usada pelo Protocolo de
+   Carrossel e pelo Captura de Pensamento, pra não divergir com o tempo.
    PERSISTÊNCIA: o histórico vive no store global (zustand + persist),
    junto com o restante dos dados do Content OS.
    ============================================================ */
 
-const PILARES = [
-  {
-    id: "carreira",
-    nome: "Carreira & Maturidade",
-    peso: 40,
-    subtemas: [
-      "Decisão que você adiou e o custo disso",
-      "Comportamento que o mercado premia mas não fala",
-      "O que senioridade não resolve",
-      "Erro seu com leitura atual",
-    ],
-  },
-  {
-    id: "decisao",
-    nome: "Decisão & Estratégia",
-    peso: 25,
-    subtemas: [
-      "Critério explícito pra uma escolha comum",
-      "Decisão pública de empresa analisada",
-      "Trade-off que ninguém quantifica",
-      "Quando o dado contradiz a intuição",
-    ],
-  },
-  {
-    id: "ia",
-    nome: "IA & Tech",
-    peso: 25,
-    subtemas: [
-      "Ferramenta testada com resultado real",
-      "Hype desmontado com lógica causal",
-      "Limite técnico que você encontrou na prática",
-      "O que mudou no seu workflow esse mês",
-    ],
-  },
-  {
-    id: "humor",
-    nome: "Humor / Naomi",
-    peso: 10,
-    subtemas: [
-      "Naomi RH avalia situação corporativa real",
-      "Absurdo do mercado tratado com seriedade fingida",
-    ],
-  },
-];
+// Categorias do Banco de Temas cujo assunto é especificamente IA (usado pra
+// forçar combinações "fora da zona" com pilares não relacionados a IA).
+const CATEGORIAS_IA = new Set([
+  "Desmonte de hype",
+  "IA aplicada para pequenos negócios",
+  "IA para negócios digitais",
+  "IA para negócios físicos",
+  "IA para criativos",
+  "Temas Polêmicos — IA e mercado de trabalho",
+  "IA no comportamento humano",
+]);
+
+const NAOMI_TEMAS = PERSONAL_TEMAS_SUGESTOES.find((c) => c.categoria === "Naomi");
+
+const PILARES = [...TEMAS_CARROSSEL, ...(NAOMI_TEMAS ? [NAOMI_TEMAS] : [])].map((c) => ({
+  id: c.categoria,
+  nome: c.categoria,
+  peso: c.temas.length,
+  ia: CATEGORIAS_IA.has(c.categoria),
+  subtemas: c.temas,
+}));
 
 const FORMATOS = [
   { id: "car-info", nome: "Carrossel informativo", video: false },
@@ -213,7 +194,7 @@ export default function DesafioSorteador() {
         pilar = PILARES.find((p) => p.nome === atual.pilar);
         subtema = atual.subtema;
       } else if (foraDaZona) {
-        const naoIA = PILARES.filter((p) => p.id !== "ia");
+        const naoIA = PILARES.filter((p) => !p.ia);
         pilar = naoIA[Math.floor(rng() * naoIA.length)];
         subtema = pilar.subtemas[Math.floor(rng() * pilar.subtemas.length)];
       } else {
@@ -314,7 +295,7 @@ export default function DesafioSorteador() {
 
       {foraDaZona && (
         <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs text-violet-700 font-medium">
-          <Zap size={14} className="shrink-0" /> Sorteio fora da zona: vídeo obrigatório com pilar fora de IA &amp; Tech.
+          <Zap size={14} className="shrink-0" /> Sorteio fora da zona: vídeo obrigatório com pilar fora de IA.
         </div>
       )}
 
