@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Dices, Lock, Unlock, RefreshCw, Copy, Check, Trash2, Zap } from "lucide-react";
 import useStore from "../../store/useStore";
 import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from "../../data/temasCarrossel";
@@ -100,8 +100,6 @@ function comboKey(subtema, formatoId) {
   return `${subtema}::${formatoId}`;
 }
 
-const AUTO_CONFIRM_SECONDS = 5;
-
 function Eixo({ label, valor, extra, locked, rolling, onToggleLock }) {
   return (
     <div className={`p-4 flex items-start justify-between gap-3 transition-opacity duration-300 ${rolling ? "opacity-30" : ""}`}>
@@ -150,7 +148,6 @@ export default function DesafioSorteador() {
   const [locks, setLocks] = useState({ subtema: false, formato: false, restricao: false });
   const [copiado, setCopiado] = useState(false);
   const [rolling, setRolling] = useState(false);
-  const [countdown, setCountdown] = useState(null);
 
   const usadas = useMemo(
     () => new Set(history.map((h) => comboKey(h.subtema, h.formatoId))),
@@ -158,26 +155,6 @@ export default function DesafioSorteador() {
   );
 
   const foraDaZona = history.length > 0 && (history.length + 1) % 3 === 0;
-
-  const confirmar = useCallback(
-    (desafio) => {
-      addDesafio(desafio);
-      setLocks({ subtema: false, formato: false, restricao: false });
-    },
-    [addDesafio]
-  );
-
-  // Contagem regressiva de 5s: ao chegar em 0, registra o desafio atual no histórico.
-  useEffect(() => {
-    if (countdown === null) return undefined;
-    if (countdown === 0) {
-      confirmar(atual);
-      setCountdown(null);
-      return undefined;
-    }
-    const id = setTimeout(() => setCountdown((c) => (c === null ? c : c - 1)), 1000);
-    return () => clearTimeout(id);
-  }, [countdown, atual, confirmar]);
 
   const sortear = useCallback(() => {
     const rng = Math.random;
@@ -243,14 +220,18 @@ export default function DesafioSorteador() {
 
     if (!novo) return; // esgotou combinações válidas
 
-    setCountdown(null);
     setRolling(true);
     setTimeout(() => {
       setAtual(novo);
       setRolling(false);
-      setCountdown(AUTO_CONFIRM_SECONDS);
     }, 350);
   }, [history, atual, locks, usadas, foraDaZona]);
+
+  const confirmar = () => {
+    if (!atual) return;
+    addDesafio(atual);
+    setLocks({ subtema: false, formato: false, restricao: false });
+  };
 
   const jaConfirmado =
     atual && usadas.has(comboKey(atual.subtema, atual.formatoId));
@@ -325,21 +306,6 @@ export default function DesafioSorteador() {
         />
       </div>
 
-      {/* Auto-confirm countdown */}
-      {countdown !== null && (
-        <div className="card p-4 flex items-center gap-3 border-orange-200 bg-orange-50/50">
-          <div className="w-8 h-8 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin shrink-0" />
-          <p className="text-sm text-gray-700">
-            Registrando no histórico em <span className="font-semibold text-orange-600">{countdown}s</span>... gere outra ideia pra cancelar.
-          </p>
-        </div>
-      )}
-      {atual && jaConfirmado && countdown === null && (
-        <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium px-1">
-          <Check size={13} /> Registrado no histórico
-        </div>
-      )}
-
       {/* Ações */}
       <div className="flex gap-2 flex-wrap">
         <button onClick={sortear} className="btn-primary">
@@ -351,6 +317,13 @@ export default function DesafioSorteador() {
           className="btn-secondary disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {copiado ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar briefing</>}
+        </button>
+        <button
+          onClick={confirmar}
+          disabled={!atual || jaConfirmado}
+          className="btn-ghost text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {jaConfirmado ? <><Check size={13} /> Registrado</> : "Aceitar desafio"}
         </button>
       </div>
 
