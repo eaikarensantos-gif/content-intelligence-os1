@@ -241,6 +241,8 @@ export default function ViralReferences() {
     })
   }
 
+  const topicLabelByQuery = useMemo(() => new Map(topics.map((t) => [t.query, t.label])), [topics])
+
   const savedSourceIds = useMemo(() => new Set(viralReferences.map((r) => r.sourceId)), [viralReferences])
 
   const platformsToSearch = useMemo(
@@ -255,10 +257,11 @@ export default function ViralReferences() {
     try {
       const tasks = []
       for (const topic of selectedTopics) {
+        const label = topicLabelByQuery.get(topic) || topic
         for (const platform of platformsToSearch) {
           tasks.push(
             platform.run(topic)
-              .then((raw) => raw.map((v) => normalizeResult(v, topic, topic)))
+              .then((raw) => raw.map((v) => normalizeResult(v, label, topic)))
               .catch(() => [])
           )
         }
@@ -288,7 +291,7 @@ export default function ViralReferences() {
     try {
       const voiceContext = buildVoiceContext(brandVoice, dislikedContent, bannedWords, posicionamento)
       const system = withManualOperacional(ANTI_AI_FILTER)
-      const prompt = buildViralAnalysisPrompt({ video, topic: video.query, voiceContext })
+      const prompt = buildViralAnalysisPrompt({ video, topic: video.category, voiceContext })
       const result = await callClaude(apiKey, system, prompt)
       addViralReference({
         sourceId: video.id,
