@@ -12,6 +12,8 @@
 
 import { detectCliches, detectBannedWords } from './clicheDetector'
 import { lintText } from '../utils/brandLinter'
+import { ANTI_AI_FILTER } from './antiAIFilter'
+import { withManualOperacional } from './manualOperacional'
 
 /** Campos de texto do resultado que precisam passar pela varredura. */
 export const SWEPT_FIELDS = ['content', 'caption', 'title', 'title_options', 'hook_alternatives']
@@ -287,4 +289,103 @@ export function blockingFindings(findings) {
 /** Total de ocorrências bloqueantes, para o relatório na interface. */
 export function countBlocks(findings) {
   return findings.reduce((n, f) => n + f.blocks.length, 0)
+}
+
+// ─── Reescrita automática (extraído do Studio Livre / UnifiedCreator) ─────────
+// Mesma lógica de correção usada na aba "Criar" — reaproveitada aqui pra
+// qualquer módulo que gere texto e precise reescrever o que a varredura
+// bloqueou, em vez de só sinalizar.
+
+/** Reescreve um texto corrido (content, caption, legenda) sem os padrões apontados. */
+export async function rewriteWithoutCliches(apiKey, text, hits) {
+  const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
+  const res = await fetch('/api/ai?action=gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-5',
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
+      max_tokens: 4000,
+      system: withManualOperacional(ANTI_AI_FILTER),
+      messages: [{
+        role: 'user',
+        content: `O texto abaixo saiu com padrões proibidos pelo filtro de autenticidade. Reescreva SOMENTE os trechos apontados, em declaração direta (sujeito + verbo + complemento, sem negação prévia, sem contraste corretivo, sem pergunta retórica no fechamento — fechamento é conclusão prática, dado ou observação seca). Mantenha todo o resto idêntico: estrutura, quebras de linha, indicações. Retorne APENAS o texto completo corrigido, sem comentários.\n\nPADRÕES ENCONTRADOS:\n${list}\n\nTEXTO:\n${text}`,
+      }],
+    }),
+  })
+  if (!res.ok) throw new Error(`Erro ${res.status}`)
+  const data = await res.json()
+  return data.content?.find(b => b.type === 'text')?.text?.trim() || text
+}
+
+/* Reescrita em lote das linhas curtas — título, opções de título e ganchos.
+   São o slide 1 do carrossel e a primeira frase do reel, e precisam do mesmo
+   filtro. */
+export async function rewriteShortLines(apiKey, entries) {
+  const list = entries.map((e, i) =>
+    `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}`
+  ).join('\n')
+
+  const res = await fetch('/api/ai?action=gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-5',
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
+      max_tokens: 1500,
+      system: withManualOperacional(ANTI_AI_FILTER),
+      messages: [{
+        role: 'user',
+        content: `As linhas abaixo saíram com padrões proibidos pelo filtro de autenticidade. Reescreva cada uma em declaração direta, mantendo o mesmo assunto e o mesmo comprimento aproximado. Sem contraste corretivo, sem promessa de revelação, sem pergunta retórica, sem frase de efeito genérica. Seja concreto: cena, número ou consequência real.\n\n${list}\n\nResponda APENAS com um array JSON de ${entries.length} strings, na mesma ordem, sem markdown.`,
+      }],
+    }),
+  })
+  if (!res.ok) throw new Error(`Erro ${res.status}`)
+  const data = await res.json()
+  const raw = data.content?.find(b => b.type === 'text')?.text || ''
+  const match = raw.match(/\[[\s\S]*\]/)
+  if (!match) throw new Error('Resposta inválida')
+  const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
+  if (!Array.isArray(parsed) || parsed.length !== entries.length) throw new Error('Tamanho inesperado')
+  return parsed.map((s, i) => (typeof s === 'string' && s.trim() ? s.trim() : entries[i].text))
+}
+
+/**
+ * Varredura + correção completa de um resultado com forma aninhada (caminhos
+ * de texto arbitrários, via `entriesFn`). Reescreve o que a varredura bloquear
+ * e confere de novo — a reescrita também é probabilística e pode reintroduzir
+ * o padrão. Até 2 passadas; o que sobrar vai para `remaining` em vez de sumir
+ * em silêncio.
+ */
+export async function sweepAndFixPaths(apiKey, obj, entriesFn, bannedWords = []) {
+  const MAX_PASSES = 2
+  let fixed = 0
+
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    const findings = blockingFindings(sweepPaths(obj, entriesFn(obj), bannedWords))
+    if (!findings.length) break
+
+    const longOnes = findings.filter((f) => !f.short)
+    const shortOnes = findings.filter((f) => f.short)
+
+    for (const f of longOnes) {
+      const rewritten = await rewriteWithoutCliches(apiKey, f.text, f.blocks)
+      if (rewritten && rewritten !== f.text) { setByPath(obj, f.path, rewritten); fixed += f.blocks.length }
+    }
+
+    if (shortOnes.length) {
+      const rewritten = await rewriteShortLines(apiKey, shortOnes)
+      shortOnes.forEach((f, i) => {
+        const value = rewritten[i]
+        if (!value || value === f.text) return
+        setByPath(obj, f.path, value)
+        fixed += f.blocks.length
+      })
+    }
+  }
+
+  const findings = sweepPaths(obj, entriesFn(obj), bannedWords)
+  return { fixed, remaining: blockingFindings(findings), warns: findings.flatMap((f) => f.warns) }
 }

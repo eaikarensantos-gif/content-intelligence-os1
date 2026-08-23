@@ -1,0 +1,183 @@
+// Estruturas de referência para o Gerador de Prompt (aba Criar).
+// As 100 fórmulas de título e os estilos de linguagem vêm do material de
+// referência da Karen ("100 Títulos Poderosos", @jessmedolla) — são usadas
+// como INSPIRAÇÃO ESTRUTURAL (o "formato" do gancho: curiosidade, urgência,
+// autoridade...), nunca copiadas literalmente. A geração final sempre passa
+// pelo filtro anti-clichê (antiAIFilter + clicheSweep) antes de chegar na
+// tela, porque boa parte dessas fórmulas usa tom de clickbait/urgência que o
+// Manual Operacional da Karen proíbe (extremismo, "NUNCA", pergunta retórica
+// de fechamento, promessa de revelação).
+
+export const TITULO_CATEGORIES = [
+  {
+    id: 'curiosidade',
+    label: 'Despertar Curiosidade',
+    formulas: [
+      '"O segredo por trás de [produto/serviço] que ninguém quer que você saiba!"',
+      '"Você está pronto para descobrir a verdade sobre [assunto]?"',
+      '"Ninguém fala sobre [tópico], mas você precisa saber disso agora!"',
+      '"A verdade por trás de [estratégia/técnica] que vai te surpreender!"',
+      '"O que NUNCA te contaram sobre [nicho/produto]."',
+      '"Já ouviu falar de [tópico]? Aqui está o que você precisa saber!"',
+      '"O que acontece quando você [ação] de maneira errada?"',
+      '"Como você pode [ação], mesmo que todos te digam o contrário."',
+      '"Você está cometendo esse erro ao [ação]? Descubra agora!"',
+      '"Essa é a principal razão pela qual [produto/serviço] não está funcionando para você."',
+    ],
+  },
+  {
+    id: 'urgencia',
+    label: 'Gerar Urgência',
+    formulas: [
+      '"Pare de [ação] agora antes que seja tarde demais!"',
+      '"Você está perdendo dinheiro ao não [ação]!"',
+      '"Última chance de [ação] antes que [consequência] aconteça!"',
+      '"Se você não agir agora, vai se arrepender depois."',
+      '"Não espere mais para [ação]!"',
+      '"Ainda não está [ação]? Você está ficando para trás!"',
+      '"Esse é o melhor momento para [ação], e aqui está o porquê."',
+      '"Saiba como [ação] pode mudar tudo para você agora!"',
+      '"Você sabia que pode [resultado] em apenas [tempo]?"',
+      '"Oportunidade limitada: Como [ação] pode transformar seu [nicho]."',
+    ],
+  },
+  {
+    id: 'beneficios',
+    label: 'Destacar Benefícios',
+    formulas: [
+      '"Como [produto/serviço] vai mudar sua vida em [tempo]!"',
+      '"Descubra os 3 principais benefícios de [produto/serviço]."',
+      '"Você sabia que pode [resultado] com [produto/serviço]?"',
+      '"Como [ação] pode te ajudar a [resultado] em tempo recorde!"',
+      '"Os benefícios invisíveis de [produto/serviço] que ninguém te contou!"',
+      '"Transforme sua maneira de [ação] com este simples truque."',
+      '"Por que [ação] é o segredo para [resultado]?"',
+      '"Os 5 maiores benefícios de usar [produto/serviço] agora!"',
+      '"Você pode alcançar [resultado] mais rápido com [produto/serviço]."',
+      '"Os resultados reais de quem começou a [ação] com [produto/serviço]."',
+    ],
+  },
+  {
+    id: 'transformacao',
+    label: 'Destacar Transformação',
+    formulas: [
+      '"Como eu transformei [problema] em [solução] usando [produto/serviço]."',
+      '"Antes e depois de [produto/serviço]: Veja a diferença!"',
+      '"A transformação completa de [problema] em [solução] com apenas [ação]."',
+      '"Descubra como [produto/serviço] pode transformar seu [nicho]."',
+      '"De [situação atual] para [situação desejada]: A transformação é real!"',
+      '"Como [produto/serviço] mudou tudo para mim e pode mudar para você também."',
+      '"A verdadeira mudança começa com [ação]."',
+      '"Veja como [produto/serviço] fez uma diferença gigante no meu [nicho]."',
+      '"Transforme completamente sua maneira de [ação] com [produto/serviço]."',
+      '"Você está pronto para transformar seu [nicho] com [ação]?"',
+    ],
+  },
+  {
+    id: 'dor',
+    label: 'Tocar na Dor do Cliente',
+    formulas: [
+      '"Você também está frustrado com [problema]? Aqui está a solução!"',
+      '"Lutando para [resultado]? Este é o caminho para a solução."',
+      '"Se você está cansado de [problema], talvez seja hora de tentar [ação]."',
+      '"Você está preso em [situação]? Aqui está como mudar isso."',
+      '"Cansado de [problema]? Veja como [ação] pode ajudar."',
+      '"Você está sofrendo com [problema]? Veja o que você pode fazer agora."',
+      '"Pare de [ação negativa] e comece a [ação positiva] agora mesmo!"',
+      '"Você está lutando com [problema]? Este é o primeiro passo para a solução."',
+      '"Se [problema] está te afetando, aqui está a maneira de resolver."',
+      '"Você também sente que está [problema]? Aqui está o que pode mudar tudo."',
+    ],
+  },
+  {
+    id: 'autoridade',
+    label: 'Criar Autoridade',
+    formulas: [
+      '"O método que só os especialistas conhecem sobre [ação]."',
+      '"O segredo que os profissionais usam para [resultado]."',
+      '"Você sabia que os maiores especialistas em [nicho] fazem isso?"',
+      '"Aqui está o que todos os líderes de [nicho] têm em comum."',
+      '"Aprenda o que os melhores em [nicho] estão fazendo agora mesmo."',
+      '"O que diferencia os especialistas de sucesso em [nicho] dos amadores."',
+      '"Quer ser uma autoridade em [nicho]? Comece por aqui."',
+      '"O segredo dos top 1% de [nicho] para alcançar o sucesso."',
+      '"Descubra o que os grandes nomes em [nicho] estão fazendo agora."',
+      '"A única coisa que separa os especialistas de [nicho] do resto."',
+    ],
+  },
+  {
+    id: 'solucao',
+    label: 'Oferecer uma Solução',
+    formulas: [
+      '"Se você quer [resultado], aqui está o caminho."',
+      '"Pare de perder tempo com [problema] e comece a [ação]."',
+      '"Aqui está como [ação] pode resolver seu problema de [nicho]."',
+      '"A solução definitiva para quem está lutando com [problema]."',
+      '"Aqui está como [produto/serviço] pode resolver [problema]."',
+      '"Você está à procura de uma solução para [problema]? Descubra como [produto/serviço] pode ajudar."',
+      '"A resposta que você estava buscando para [problema]."',
+      '"Acabe de vez com [problema] usando [ação]."',
+      '"Está lutando com [problema]? Aqui está o que você precisa fazer."',
+      '"Soluções práticas para [problema] que você pode aplicar hoje."',
+    ],
+  },
+  {
+    id: 'acao',
+    label: 'Inspirar Ação',
+    formulas: [
+      '"Está pronto para [resultado]? Aqui está como começar!"',
+      '"Dê o primeiro passo para [resultado] hoje mesmo."',
+      '"Não espere mais! Comece a [ação] agora."',
+      '"Se você quer [resultado], o melhor momento para começar é agora!"',
+      '"A única coisa que está te impedindo de [resultado] é não [ação]."',
+      '"Você está mais perto de [resultado] do que imagina. Comece agora!"',
+      '"Pare de adiar seu [resultado] e comece a [ação] hoje mesmo!"',
+      '"O primeiro passo para [resultado] começa aqui."',
+      '"Está pronto para finalmente [resultado]? Veja como começar."',
+      '"Sua jornada para [resultado] começa com [ação]."',
+    ],
+  },
+  {
+    id: 'objecoes',
+    label: 'Quebrar Objeções',
+    formulas: [
+      '"Você acha que [ação] é difícil? Veja como é mais fácil do que você pensa."',
+      '"Você acha que não consegue [resultado]? Aqui está o que pode mudar isso."',
+      '"Muita gente pensa que [ação] é complicado, mas não precisa ser."',
+      '"Já tentou [ação] antes e não conseguiu? Aqui está o que pode mudar isso."',
+      '"Você acha que precisa de muito para [resultado]? Pense novamente!"',
+      '"Aqui está como [produto/serviço] vai te ajudar a superar [problema]."',
+      '"Você acha que não tem tempo para [ação]? Aqui está a solução."',
+      '"Acha que é impossível [resultado]? Aqui está o que pode mudar sua opinião."',
+      '"Você está achando que [ação] não funciona? Veja como fazer da maneira certa."',
+      '"Se você acha que [problema] não tem solução, aqui está algo que pode mudar sua mente."',
+    ],
+  },
+  {
+    id: 'exclusividade',
+    label: 'Promover Exclusividade',
+    formulas: [
+      '"Poucas pessoas sabem disso, mas aqui está como [ação] realmente funciona."',
+      '"Essa é a oportunidade que poucos têm de [resultado]."',
+      '"Você está entre os poucos que podem [resultado] com [produto/serviço]."',
+      '"Apenas algumas pessoas conhecem esse segredo sobre [nicho]."',
+      '"Exclusivo: Descubra como [ação] pode te levar ao próximo nível."',
+      '"Poucas pessoas estão falando sobre [tópico], mas você está no lugar certo!"',
+      '"Esse método exclusivo vai te ajudar a [resultado] mais rápido."',
+      '"Somente para quem está realmente pronto para [ação]."',
+      '"Você faz parte do pequeno grupo que vai descobrir como [ação] pode mudar seu [nicho]."',
+      '"Exclusivo para você: Como [ação] pode transformar tudo em [tempo]."',
+    ],
+  },
+]
+
+// Estilos de linguagem para variação de legenda (template "Prompt Linguagem").
+export const LANGUAGE_STYLES = [
+  { id: 'adulto_cansado', label: 'Adulto cansado' },
+  { id: 'curral', label: 'Curral' },
+  { id: 'aconchegante', label: 'Aconchegante' },
+  { id: 'manifesto_suave', label: 'Manifesto suave' },
+  { id: 'sensorial', label: 'Sensorial' },
+  { id: 'eu_interior', label: 'Eu interior' },
+  { id: 'doce_domestica', label: 'Doce-doméstica' },
+]

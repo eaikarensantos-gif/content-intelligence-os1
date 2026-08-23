@@ -4,8 +4,11 @@ import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { detectCliches } from '../../lib/clicheDetector'
 import {
-  sweepResult, sweepPaths, setByPath, carouselTextPaths, engagementTextPaths, hookListPaths,
+  sweepResult, carouselTextPaths, engagementTextPaths, hookListPaths,
   blockingFindings, countBlocks, SHORT_FIELDS,
+  rewriteWithoutCliches as rewriteWithoutClichesBase,
+  rewriteShortLines as rewriteShortLinesBase,
+  sweepAndFixPaths as sweepAndFixPathsBase,
 } from '../../lib/clicheSweep'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
@@ -1491,61 +1494,12 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   /* ── Reescrita corretiva anti-clichê ──
      O filtro no prompt é probabilístico: o modelo às vezes emite a estrutura
      proibida mesmo assim. Quando a varredura determinística encontra um bloco,
-     esta chamada reescreve só os trechos apontados antes de mostrar na tela. */
-  const rewriteWithoutCliches = async (text, hits) => {
-    const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
-    const res = await fetch('/api/ai?action=gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        thinking: { type: 'adaptive' },
-        output_config: { effort: 'medium' },
-        max_tokens: 4000,
-        system: withManualOperacional(ANTI_AI_FILTER),
-        messages: [{
-          role: 'user',
-          content: `O texto abaixo saiu com padrões proibidos pelo filtro de autenticidade. Reescreva SOMENTE os trechos apontados, em declaração direta (sujeito + verbo + complemento, sem negação prévia, sem contraste corretivo, sem pergunta retórica no fechamento — fechamento é conclusão prática, dado ou observação seca). Mantenha todo o resto idêntico: estrutura, quebras de linha, indicações. Retorne APENAS o texto completo corrigido, sem comentários.\n\nPADRÕES ENCONTRADOS:\n${list}\n\nTEXTO:\n${text}`,
-        }],
-      }),
-    })
-    if (!res.ok) throw new Error(`Erro ${res.status}`)
-    const data = await res.json()
-    return data.content?.find(b => b.type === 'text')?.text?.trim() || text
-  }
+     esta chamada reescreve só os trechos apontados antes de mostrar na tela.
+     Lógica em lib/clicheSweep.js — reaproveitada pelo Gerador de Prompt. */
+  const rewriteWithoutCliches = (text, hits) => rewriteWithoutClichesBase(apiKey, text, hits)
 
-  /* Reescrita em lote das linhas curtas — título, opções de título e ganchos.
-     São o slide 1 do carrossel e a primeira frase do reel, e até agora saíam
-     da geração sem passar por nenhum filtro. */
-  const rewriteShortLines = async (entries) => {
-    const list = entries.map((e, i) =>
-      `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}`
-    ).join('\n')
-
-    const res = await fetch('/api/ai?action=gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        thinking: { type: 'adaptive' },
-        output_config: { effort: 'medium' },
-        max_tokens: 1500,
-        system: withManualOperacional(ANTI_AI_FILTER),
-        messages: [{
-          role: 'user',
-          content: `As linhas abaixo saíram com padrões proibidos pelo filtro de autenticidade. Reescreva cada uma em declaração direta, mantendo o mesmo assunto e o mesmo comprimento aproximado. Sem contraste corretivo, sem promessa de revelação, sem pergunta retórica, sem frase de efeito genérica. Seja concreto: cena, número ou consequência real.\n\n${list}\n\nResponda APENAS com um array JSON de ${entries.length} strings, na mesma ordem, sem markdown.`,
-        }],
-      }),
-    })
-    if (!res.ok) throw new Error(`Erro ${res.status}`)
-    const data = await res.json()
-    const raw = data.content?.find(b => b.type === 'text')?.text || ''
-    const match = raw.match(/\[[\s\S]*\]/)
-    if (!match) throw new Error('Resposta inválida')
-    const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-    if (!Array.isArray(parsed) || parsed.length !== entries.length) throw new Error('Tamanho inesperado')
-    return parsed.map((s, i) => (typeof s === 'string' && s.trim() ? s.trim() : entries[i].text))
-  }
+  /* Reescrita em lote das linhas curtas — título, opções de título e ganchos. */
+  const rewriteShortLines = (entries) => rewriteShortLinesBase(apiKey, entries)
 
   /* Varredura completa do resultado: content, caption, título, opções de título
      e ganchos. Reescreve o que estiver bloqueado e confere de novo — a reescrita
@@ -1584,37 +1538,9 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   }
 
   /* Mesma correção verificada, para resultados com forma aninhada — o carrossel
-     do Protocolo tem três versões de slides, e cada slide é uma unidade. */
-  const sweepAndFixPaths = async (obj, entriesFn) => {
-    const MAX_PASSES = 2
-    let fixed = 0
-
-    for (let pass = 0; pass < MAX_PASSES; pass++) {
-      const findings = blockingFindings(sweepPaths(obj, entriesFn(obj), bannedWords))
-      if (!findings.length) break
-
-      const longOnes = findings.filter((f) => !f.short)
-      const shortOnes = findings.filter((f) => f.short)
-
-      for (const f of longOnes) {
-        const rewritten = await rewriteWithoutCliches(f.text, f.blocks)
-        if (rewritten && rewritten !== f.text) { setByPath(obj, f.path, rewritten); fixed += f.blocks.length }
-      }
-
-      if (shortOnes.length) {
-        const rewritten = await rewriteShortLines(shortOnes)
-        shortOnes.forEach((f, i) => {
-          const value = rewritten[i]
-          if (!value || value === f.text) return
-          setByPath(obj, f.path, value)
-          fixed += f.blocks.length
-        })
-      }
-    }
-
-    const findings = sweepPaths(obj, entriesFn(obj), bannedWords)
-    return { fixed, remaining: blockingFindings(findings), warns: findings.flatMap((f) => f.warns) }
-  }
+     do Protocolo tem três versões de slides, e cada slide é uma unidade.
+     Lógica em lib/clicheSweep.js — reaproveitada pelo Gerador de Prompt. */
+  const sweepAndFixPaths = (obj, entriesFn) => sweepAndFixPathsBase(apiKey, obj, entriesFn, bannedWords)
 
   /* ── Gerar conteúdo ── */
   const generate = async (overrides = {}) => {
