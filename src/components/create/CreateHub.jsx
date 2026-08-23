@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader2 } from 'lucide-react'
+import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader2, Terminal } from 'lucide-react'
 import clsx from 'clsx'
 import UnifiedCreator from './UnifiedCreator'
 
@@ -10,6 +10,7 @@ const TextStudio = lazy(() => import('../text/TextStudio'))
 const BriefingStudio = lazy(() => import('../brand/BriefingStudio'))
 const WeeklyPlanner = lazy(() => import('../analytics/WeeklyPlanner'))
 const InstagramPublisher = lazy(() => import('../instagram/InstagramPublisher'))
+const PromptGenerator = lazy(() => import('../promptgen/PromptGenerator'))
 
 // Cada ferramenta mantém a identidade visual (ícone/cor) já usada no seu
 // próprio cabeçalho, pra reconhecimento consistente entre a aba e o conteúdo.
@@ -18,6 +19,7 @@ const TOOLS = [
   { id: 'thoughts', label: 'Captura de Pensamento', desc: 'Um pensamento → 7 formatos de uma vez', icon: Brain, accent: 'indigo' },
   { id: 'generate', label: 'Explorador de Ideias', desc: 'Ideias com estrutura narrativa e controle criativo', icon: Sparkles, accent: 'amber' },
   { id: 'text', label: 'Adaptador Multi-plataforma', desc: 'Um texto → versões para cada rede', icon: Wand2, accent: 'violet' },
+  { id: 'promptgen', label: 'Gerador de Prompt', desc: 'Ganchos, copy, hashtags e títulos', icon: Terminal, accent: 'emerald' },
   { id: 'briefing', label: 'Briefing Studio', desc: 'PDF/briefing → roteiros estratégicos', icon: Megaphone, accent: 'red' },
   { id: 'planner', label: 'Planejador Semanal', desc: 'Plano de conteúdo baseado em dados reais', icon: Calendar, accent: 'pink' },
   { id: 'publish', label: 'Publicar no Instagram', desc: 'Envia o post direto pra sua conta conectada', icon: Instagram, accent: 'rose' },
@@ -33,6 +35,7 @@ const ACCENT = {
   red:    { active: 'bg-red-50 border-red-300 text-red-700', icon: 'text-red-500' },
   pink:   { active: 'bg-pink-50 border-pink-300 text-pink-700', icon: 'text-pink-500' },
   rose:   { active: 'bg-rose-50 border-rose-300 text-rose-700', icon: 'text-rose-500' },
+  emerald: { active: 'bg-emerald-50 border-emerald-300 text-emerald-700', icon: 'text-emerald-500' },
 }
 
 function ToolLoader() {
@@ -63,7 +66,7 @@ export default function CreateHub({ persona = 'trabalho' }) {
     <div className="flex flex-col h-full">
       <div className="shrink-0 bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-7 sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-8 sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 sm:mx-0 sm:px-0">
             {TOOLS.map((t) => {
               const Icon = t.icon
               const a = ACCENT[t.accent]
@@ -108,6 +111,11 @@ export default function CreateHub({ persona = 'trabalho' }) {
         {visited.has('text') && (
           <div className="h-full" hidden={active !== 'text'}>
             <Suspense fallback={<ToolLoader />}><TextStudio /></Suspense>
+          </div>
+        )}
+        {visited.has('promptgen') && (
+          <div className="h-full overflow-y-auto" hidden={active !== 'promptgen'}>
+            <Suspense fallback={<ToolLoader />}><PromptGenerator /></Suspense>
           </div>
         )}
         {visited.has('briefing') && (

@@ -60,13 +60,23 @@ ${daySummary}
 
 ═══ TOTAL: ${allPosts.length} posts no período ═══
 ${topHours ? `\n═══ HORÁRIOS REAIS EM QUE A AUDIÊNCIA ESTÁ ONLINE (dado do Instagram, não estimativa) ═══\n${topHours.map(h => `- ${h.hour}h: ${h.count} seguidores online`).join('\n')}\n` : ''}
+═══ ESTRUTURA DE ROTAÇÃO DE FORMATOS (referência — adapte ao que os dados mostrarem, não precisa seguir esta ordem) ═══
+- Vídeo normal/demonstração: 5-7 seg — objetivo: alcance, compartilhamentos e salvos
+- Vídeo denso/informativo: 20+ seg — objetivo: passar informação completa
+- Vídeo de venda direta do produto/serviço: 5-7 seg — objetivo: vender e fechar clientes
+- Vídeo resolvendo problema do nicho (ex.: dicas, checklist): ~7 seg — objetivo: salvamentos e autoridade, com CTA pra legenda
+- Vídeo de trend do nicho: duração variável — objetivo: alcance e engajamento
+- Vídeo reaproveitando conteúdo existente: duração variável — objetivo: otimizar produção
+- Vídeo opcional: duração e objetivo livres, conforme a necessidade da semana
+
 REGRAS:
 1. Baseie CADA sugestão em dados concretos dos top posts
 2. Indique o MELHOR DIA e FORMATO para cada post baseado nos dados
 3. Explique POR QUÊ aquele tema/formato vai funcionar (cite números)
 4. Sugira de 5 a 7 posts para a semana
 5. Inclua variações dos temas que mais performaram + 1-2 temas novos para testar
-${topHours ? '6. Pra cada sugestão, indique também um HORÁRIO baseado nos horários reais de audiência online listados acima (não invente outro horário).' : ''}
+6. Pra cada sugestão, preencha "duracao" e "objetivo" usando a estrutura de rotação de formatos acima como referência
+${topHours ? '7. Pra cada sugestão, indique também um HORÁRIO baseado nos horários reais de audiência online listados acima (não invente outro horário).' : ''}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -83,6 +93,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
       "title": "Título curto do post sugerido",
       "format": "Reel|Carrossel|Story|Post estático",
       "theme": "Tema baseado nos dados",
+      "duracao": "Duração sugerida do vídeo, ex: 5-7 seg",
+      "objetivo": "O que esse vídeo deve alcançar, ex: vender e fechar clientes",
       "why": "Por que vai funcionar (com números do período)",
       "reference_post": "Qual top post inspirou esta sugestão",
       "priority": "high|medium|low"
@@ -350,6 +362,12 @@ export default function WeeklyPlanner() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-600"><span className="font-medium text-gray-700">Tema:</span> {s.theme}</p>
+                      {(s.duracao || s.objetivo) && (
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                          {s.duracao && <p className="text-xs text-gray-600"><span className="font-medium text-gray-700">Duração:</span> {s.duracao}</p>}
+                          {s.objetivo && <p className="text-xs text-gray-600"><span className="font-medium text-gray-700">Objetivo:</span> {s.objetivo}</p>}
+                        </div>
+                      )}
                       <p className="text-xs text-gray-600 mt-1"><span className="font-medium text-orange-700">Por quê:</span> {s.why}</p>
                       {s.reference_post && (
                         <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
