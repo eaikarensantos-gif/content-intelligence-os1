@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { GAVETA_IDEAS } from '../../data/gavetaIdeas'
+import { FRASES_IMPACTO_PROFISSIONAL, FRASES_IMPACTO_PESSOAL } from '../../data/frasesImpacto'
 import IdeaForm from './IdeaForm'
 import RepositioningTest from './RepositioningTest'
 import ViralReferences from './ViralReferences'
@@ -1589,6 +1590,8 @@ export default function IdeasHub() {
   const pilares              = useStore((s) => s.posicionamento.pilares)
   const hasGaveta = ideas.some((i) => (i.tags || []).includes('gaveta-21dias'))
   const handleImportGaveta = () => importIdeas(GAVETA_IDEAS)
+  const hasFrasesImpacto = ideas.some((i) => (i.tags || []).includes('frase-7s'))
+  const handleImportFrasesImpacto = () => importIdeas([...FRASES_IMPACTO_PROFISSIONAL, ...FRASES_IMPACTO_PESSOAL])
 
   const [tab, setTab]                       = useState('calendar')
   const [formOpen, setFormOpen]             = useState(false)
@@ -1706,6 +1709,15 @@ export default function IdeasHub() {
               className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 border-orange-300 text-orange-700 hover:bg-orange-50"
             >
               <FileText size={14} /> <span className="hidden sm:inline">Gaveta 21d</span>
+            </button>
+          )}
+          {!hasFrasesImpacto && (
+            <button
+              onClick={handleImportFrasesImpacto}
+              title="Importar Banco de Frases de Impacto — teste de alcance"
+              className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 border-orange-300 text-orange-700 hover:bg-orange-50"
+            >
+              <FlaskConical size={14} /> <span className="hidden sm:inline">Frases 7s</span>
             </button>
           )}
           {ideas.length > 0 && (
