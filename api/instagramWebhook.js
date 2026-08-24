@@ -108,7 +108,11 @@ export default async function handler(req, res) {
     return res.status(500).end()
   }
 
-  const { data: connection } = await db.from('ig_connection').select('*').eq('id', 'default').maybeSingle()
+  const { data: connection, error: connectionError } = await db.from('ig_connection').select('*').eq('id', 'default').maybeSingle()
+  if (connectionError) {
+    console.error('[instagramWebhook] erro ao consultar ig_connection:', connectionError.message)
+    return res.status(500).end()
+  }
   if (!connection?.app_secret) {
     console.error('[instagramWebhook] sem ig_connection salva — conecte o Instagram em Configurações primeiro.')
     return res.status(200).end() // 200 pra Meta não ficar reentregando; o problema é de config, não do evento
