@@ -85,6 +85,16 @@ async function applyFlowActions(db, accessToken, recipient, contact, actions) {
   return { contact: currentContact }
 }
 
+// Resposta privada a um comentário (recipient.comment_id) não abre a janela
+// normal de 24h de mensageria — confirmado com um evento real (24/08/2026):
+// uma DM comum enviada minutos depois pro mesmo contato voltou com "message
+// is sent outside of allowed window". Então um fluxo iniciado por comentário
+// ou menção só pode ter certeza de entregar a primeira mensagem; um nó de
+// delay tentando continuar depois vai falhar. Perguntas (quick_reply/
+// collect_input) continuam válidas, porque a resposta do próprio contato é
+// uma mensagem de verdade que abre a janela.
+const STARTED_VIA_WITHOUT_MESSAGING_WINDOW = new Set(['comment', 'mention'])
+
 // Executa um passo do fluxo (computeStep) e persiste o resultado: aplica as
 // ações, atualiza ig_flow_runs, e — se o passo terminou num nó de delay —
 // enfileira a continuação em ig_flow_queue pro processador (api/processQueue.js)
@@ -93,18 +103,23 @@ export async function runFlowStep(db, connection, flow, flowRun, contact, input,
   const step = computeStep(flow, flowRun, input)
   const { contact: updatedContact } = await applyFlowActions(db, connection.access_token, recipient, contact, step.actions)
 
-  const { error: updErr } = await db
-    .from('ig_flow_runs')
-    .update({
-      current_node_id: step.currentNodeId,
-      status: step.status,
-      context: step.context,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', flowRun.id)
+  const blockedByMessagingWindow =
+    step.status === 'running' && step.delaySeconds != null && STARTED_VIA_WITHOUT_MESSAGING_WINDOW.has(flowRun.started_via)
+
+  const patch = blockedByMessagingWindow
+    ? {
+        status: 'failed',
+        error_message:
+          'Fluxo iniciado por comentário/menção não pode continuar depois de um delay: a resposta privada não abre a janela de 24h de mensageria da Meta.',
+        context: step.context,
+        updated_at: new Date().toISOString(),
+      }
+    : { current_node_id: step.currentNodeId, status: step.status, context: step.context, updated_at: new Date().toISOString() }
+
+  const { error: updErr } = await db.from('ig_flow_runs').update(patch).eq('id', flowRun.id)
   if (updErr) throw new Error(updErr.message)
 
-  if (step.status === 'running' && step.delaySeconds != null) {
+  if (step.status === 'running' && step.delaySeconds != null && !blockedByMessagingWindow) {
     const { error: qErr } = await db.from('ig_flow_queue').insert({
       flow_run_id: flowRun.id,
       node_id: step.currentNodeId,
@@ -113,5 +128,5 @@ export async function runFlowStep(db, connection, flow, flowRun, contact, input,
     if (qErr) throw new Error(qErr.message)
   }
 
-  return { step, contact: updatedContact }
+  return { step, contact: updatedContact, blockedByMessagingWindow }
 }
