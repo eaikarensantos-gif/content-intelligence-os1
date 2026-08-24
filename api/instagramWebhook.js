@@ -1,12 +1,18 @@
-// Webhook do Instagram — Fase 1 (captura e resposta).
+// Webhook do Instagram — Fase 1 + Fase 2.
 //
 // GET  → verificação do webhook (hub.mode/hub.verify_token/hub.challenge).
-// POST → recebe o evento, verifica assinatura, deduplica, casa contra as
-//         regras ativas em ig_trigger_rules e responde via DM. Processa
-//         de forma síncrona (volume baixo confirmado, ~500 contatos/mês);
-//         a fila assíncrona com retry/DLQ é escopo da Fase 2. Cada evento é
-//         gravado em ig_events ANTES do envio, então mesmo se o envio falhar
-//         o evento não se perde.
+// POST → recebe o evento, verifica assinatura, deduplica, e:
+//   - se a regra que bateu tem response_text simples (Fase 1) → envia direto.
+//   - se a regra tem flow_id (Fase 2) → inicia um ig_flow_run e executa o
+//     primeiro passo na hora (resposta instantânea).
+//   - se o remetente já tem um ig_flow_run esperando resposta (status
+//     'waiting_input') → a mensagem alimenta o fluxo em vez de casar contra
+//     as regras de gatilho.
+// Continuações depois de um nó de delay são responsabilidade do
+// api/processQueue.js (chamado por GitHub Actions a cada poucos minutos).
+//
+// Cada evento é gravado em ig_events ANTES de qualquer envio, então mesmo se
+// o envio falhar o evento não se perde.
 //
 // Variáveis de ambiente necessárias na Vercel:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — mesmo projeto configurado em
@@ -14,10 +20,10 @@
 //   INSTAGRAM_WEBHOOK_VERIFY_TOKEN — string arbitrária escolhida por você,
 //     cadastrada também na config do webhook no painel da Meta.
 
-import { createClient } from '@supabase/supabase-js'
 import { verifyWebhookSignature } from '../src/lib/dmSignature.js'
 import { parseWebhookPayload } from '../src/lib/dmWebhookEvents.js'
 import { findMatchingRule } from '../src/lib/dmTriggerMatcher.js'
+import { getSupabaseServer, sendInstagramMessage, upsertContact, runFlowStep } from '../src/lib/dmServer.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -27,54 +33,31 @@ async function readRawBody(req) {
   return Buffer.concat(chunks)
 }
 
-function getSupabaseServer() {
-  const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY não configurados na Vercel.')
-  return createClient(url, key)
+function recipientForNewEvent(event) {
+  return event.type === 'comment' || event.type === 'mention' ? { comment_id: event.commentId } : { id: event.senderId }
 }
 
-// Envio via API do Instagram (graph.instagram.com), mesmo host e mesmo
-// estilo de request (form-urlencoded) já usado em api/ai.js.
-//
-// Confirmado contra um evento real em produção: comentário → recipient com
-// comment_id → DM entregue, message_id retornado pela API (24/08/2026).
-async function sendInstagramMessage(accessToken, recipient, text) {
-  const res = await fetch('https://graph.instagram.com/me/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      recipient: JSON.stringify(recipient),
-      message: JSON.stringify({ text }),
-      access_token: accessToken,
-    }),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error?.message || `Falha ao enviar mensagem no Instagram (${res.status}).`)
-  return data
-}
+async function startFlow(db, connection, flowId, contact, event) {
+  const { data: flow, error: flowErr } = await db.from('ig_flows').select('*').eq('id', flowId).maybeSingle()
+  if (flowErr) throw new Error(flowErr.message)
+  if (!flow) throw new Error(`Fluxo ${flowId} não encontrado.`)
 
-async function upsertContact(db, igScopedId, username, tagToApply) {
-  const { data: existing } = await db.from('ig_contacts').select('*').eq('ig_scoped_id', igScopedId).maybeSingle()
-  const tags = new Set(existing?.tags || [])
-  if (tagToApply) tags.add(tagToApply)
-
-  const { data: contact, error } = await db
-    .from('ig_contacts')
-    .upsert(
-      {
-        ig_scoped_id: igScopedId,
-        ig_username: username || existing?.ig_username || null,
-        tags: Array.from(tags),
-        last_interaction_at: new Date().toISOString(),
-      },
-      { onConflict: 'ig_scoped_id' }
-    )
+  const { data: flowRun, error: createErr } = await db
+    .from('ig_flow_runs')
+    .insert({ contact_id: contact.id, flow_id: flow.id, current_node_id: flow.definition?.start_node, status: 'running', context: {} })
     .select()
     .maybeSingle()
+  if (createErr) throw new Error(createErr.message)
 
-  if (error) throw new Error(error.message)
-  return { contact, isFirstContact: !existing }
+  return runFlowStep(db, connection, flow, flowRun, contact, null, recipientForNewEvent(event))
+}
+
+async function resumeFlow(db, connection, flowRun, contact, event) {
+  const { data: flow, error: flowErr } = await db.from('ig_flows').select('*').eq('id', flowRun.flow_id).maybeSingle()
+  if (flowErr) throw new Error(flowErr.message)
+  if (!flow) throw new Error(`Fluxo ${flowRun.flow_id} não encontrado.`)
+
+  return runFlowStep(db, connection, flow, flowRun, contact, { text: event.text }, { id: event.senderId })
 }
 
 export default async function handler(req, res) {
@@ -143,48 +126,69 @@ export default async function handler(req, res) {
       continue
     }
 
-    let rule = findMatchingRule(rules || [], event)
-
-    if (rule?.match_mode === 'first_message' && event.senderId) {
-      const { data: existingContact } = await db.from('ig_contacts').select('id').eq('ig_scoped_id', event.senderId).maybeSingle()
-      if (existingContact) rule = null // já é contato conhecido, não é a primeira mensagem
-    }
-
-    if (!rule) {
-      await db.from('ig_events').update({ status: 'skipped', processed_at: new Date().toISOString() }).eq('id', inserted.id)
-      continue
-    }
-
     try {
       const igScopedId = event.senderId
-      const { contact } = igScopedId ? await upsertContact(db, igScopedId, event.fromUsername, rule.tag_to_apply) : { contact: null }
+      let contact = null
 
-      const recipient = event.type === 'comment' || event.type === 'mention' ? { comment_id: event.commentId } : { id: igScopedId }
-      const sendResult = await sendInstagramMessage(connection.access_token, recipient, rule.response_text)
+      if (igScopedId) {
+        const { data: existingContact, error: contactErr } = await db.from('ig_contacts').select('*').eq('ig_scoped_id', igScopedId).maybeSingle()
+        if (contactErr) throw new Error(contactErr.message)
+        contact = existingContact
+      }
 
-      await db.from('ig_dm_log').insert({
-        contact_id: contact?.id || null,
-        event_id: inserted.id,
-        rule_id: rule.id,
-        message_text: rule.response_text,
-        send_result: sendResult,
-        status: 'sent',
-      })
+      let activeFlowRun = null
+      if (contact && event.type === 'message') {
+        const { data: waitingRun, error: runErr } = await db
+          .from('ig_flow_runs')
+          .select('*')
+          .eq('contact_id', contact.id)
+          .eq('status', 'waiting_input')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (runErr) throw new Error(runErr.message)
+        activeFlowRun = waitingRun
+      }
+
+      if (activeFlowRun) {
+        await resumeFlow(db, connection, activeFlowRun, contact, event)
+        await db.from('ig_events').update({ status: 'sent', processed_at: new Date().toISOString() }).eq('id', inserted.id)
+        continue
+      }
+
+      let rule = findMatchingRule(rules || [], event)
+
+      if (rule?.match_mode === 'first_message' && contact) rule = null // já é contato conhecido, não é a primeira mensagem
+
+      if (!rule) {
+        await db.from('ig_events').update({ status: 'skipped', processed_at: new Date().toISOString() }).eq('id', inserted.id)
+        continue
+      }
+
+      const { contact: upsertedContact } = igScopedId ? await upsertContact(db, igScopedId, event.fromUsername, rule.tag_to_apply) : { contact: null }
+
+      if (rule.flow_id) {
+        await startFlow(db, connection, rule.flow_id, upsertedContact, event)
+      } else {
+        const sendResult = await sendInstagramMessage(connection.access_token, recipientForNewEvent(event), rule.response_text)
+        await db.from('ig_dm_log').insert({
+          contact_id: upsertedContact?.id || null,
+          event_id: inserted.id,
+          rule_id: rule.id,
+          message_text: rule.response_text,
+          send_result: sendResult,
+          status: 'sent',
+        })
+      }
+
       await db
         .from('ig_events')
         .update({ status: 'sent', matched_rule_id: rule.id, processed_at: new Date().toISOString() })
         .eq('id', inserted.id)
     } catch (err) {
-      await db.from('ig_dm_log').insert({
-        event_id: inserted.id,
-        rule_id: rule.id,
-        message_text: rule.response_text,
-        status: 'failed',
-        send_result: { error: err.message },
-      })
       await db
         .from('ig_events')
-        .update({ status: 'error', error_message: err.message, matched_rule_id: rule.id, processed_at: new Date().toISOString() })
+        .update({ status: 'error', error_message: err.message, processed_at: new Date().toISOString() })
         .eq('id', inserted.id)
       console.error('[instagramWebhook] erro ao processar evento:', err.message)
     }
