@@ -37,15 +37,8 @@ function getSupabaseServer() {
 // Envio via API do Instagram (graph.instagram.com), mesmo host e mesmo
 // estilo de request (form-urlencoded) já usado em api/ai.js.
 //
-// NÃO CONFIRMADO NA DOCUMENTAÇÃO OFICIAL: developers.facebook.com está
-// bloqueado neste ambiente e não deu pra verificar o endpoint exato de envio
-// de mensagem / resposta privada a comentário. O formato abaixo segue o
-// padrão do Messenger Platform (recipient.comment_id / recipient.id), que a
-// API do Instagram com Login do Instagram tende a espelhar — mas isso
-// precisa ser validado com um evento real (critério de aceite, seção 8)
-// antes de considerar a Fase 1 pronta. Marca também não confirmado: se o
-// escopo instagram_business_manage_messages exige revisão de app da Meta
-// pra funcionar fora de contas de teste (ver seção 9 do escopo).
+// Confirmado contra um evento real em produção: comentário → recipient com
+// comment_id → DM entregue, message_id retornado pela API (24/08/2026).
 async function sendInstagramMessage(accessToken, recipient, text) {
   const res = await fetch('https://graph.instagram.com/me/messages', {
     method: 'POST',
