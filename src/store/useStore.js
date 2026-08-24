@@ -58,6 +58,20 @@ function hasBrandVoiceContent(b) {
   return Boolean(b?.prompt?.trim() || (b?.calibration && Object.keys(b.calibration).length))
 }
 
+/**
+ * Mesma lógica de hasPositioningContent, mas para listas (ideas, posts, etc):
+ * merge por id em vez de substituir a lista inteira. Um card criado no Hub
+ * ainda não sincronizado (auto-save debounced em 2.5s) some se um
+ * loadFromDB() rodar antes disso e apagar o item local só porque ele não
+ * está na cópia do Supabase.
+ */
+export function mergeById(dbList, localList) {
+  if (!dbList?.length) return localList
+  const dbIds = new Set(dbList.map((item) => item.id))
+  const localOnly = (localList || []).filter((item) => !dbIds.has(item.id))
+  return [...dbList, ...localOnly]
+}
+
 const useStore = create(
   persist(
     (set, get) => ({
@@ -627,23 +641,24 @@ const useStore = create(
         try {
           const data = await dbLoadAll()
           if (!data) { set({ dbStatus: 'idle' }); return false }
+          const local = get()
           set({
-            ...(data.ideas?.length        ? { ideas: data.ideas }               : {}),
-            ...(data.posts?.length        ? { posts: data.posts }               : {}),
-            ...(data.metrics?.length      ? { metrics: data.metrics }           : {}),
-            ...(data.clients?.length      ? { clients: data.clients }           : {}),
-            ...(data.tasks?.length        ? { tasks: data.tasks }               : {}),
-            ...(data.ads?.length          ? { ads: data.ads }                   : {}),
-            ...(data.leads?.length        ? { leads: data.leads }               : {}),
-            ...(data.favorites?.length    ? { favorites: data.favorites }       : {}),
-            ...(data.archetypes?.length   ? { archetypes: data.archetypes }     : {}),
-            ...(data.hybridArchetypes?.length ? { hybridArchetypes: data.hybridArchetypes } : {}),
-            ...(data.viralReferences?.length  ? { viralReferences: data.viralReferences }  : {}),
-            ...(data.thoughtCaptures?.length  ? { thoughtCaptures: data.thoughtCaptures }   : {}),
-            ...(data.commentContexts?.length  ? { commentContexts: data.commentContexts }   : {}),
-            ...(data.videoAnalyses?.length    ? { videoAnalyses: data.videoAnalyses }       : {}),
+            ideas:             mergeById(data.ideas, local.ideas),
+            posts:             mergeById(data.posts, local.posts),
+            metrics:           mergeById(data.metrics, local.metrics),
+            clients:           mergeById(data.clients, local.clients),
+            tasks:             mergeById(data.tasks, local.tasks),
+            ads:               mergeById(data.ads, local.ads),
+            leads:             mergeById(data.leads, local.leads),
+            favorites:         mergeById(data.favorites, local.favorites),
+            archetypes:        mergeById(data.archetypes, local.archetypes),
+            hybridArchetypes:  mergeById(data.hybridArchetypes, local.hybridArchetypes),
+            viralReferences:   mergeById(data.viralReferences, local.viralReferences),
+            thoughtCaptures:   mergeById(data.thoughtCaptures, local.thoughtCaptures),
+            commentContexts:   mergeById(data.commentContexts, local.commentContexts),
+            videoAnalyses:     mergeById(data.videoAnalyses, local.videoAnalyses),
+            proposals:         mergeById(data.proposals, local.proposals),
             ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
-            ...(data.proposals?.length        ? { proposals: data.proposals }               : {}),
             ...(hasPositioningContent(data.posicionamento) ? { posicionamento: data.posicionamento } : {}),
             ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
             ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
