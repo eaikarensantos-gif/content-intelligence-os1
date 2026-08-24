@@ -44,7 +44,14 @@ async function startFlow(db, connection, flowId, contact, event) {
 
   const { data: flowRun, error: createErr } = await db
     .from('ig_flow_runs')
-    .insert({ contact_id: contact.id, flow_id: flow.id, current_node_id: flow.definition?.start_node, status: 'running', context: {} })
+    .insert({
+      contact_id: contact.id,
+      flow_id: flow.id,
+      current_node_id: flow.definition?.start_node,
+      status: 'running',
+      context: {},
+      started_via: event.type,
+    })
     .select()
     .maybeSingle()
   if (createErr) throw new Error(createErr.message)
