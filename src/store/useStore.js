@@ -658,7 +658,7 @@ const useStore = create(
             commentContexts:   mergeById(data.commentContexts, local.commentContexts),
             videoAnalyses:     mergeById(data.videoAnalyses, local.videoAnalyses),
             proposals:         mergeById(data.proposals, local.proposals),
-            ...(data.pricingProducts?.length  ? { pricingProducts: data.pricingProducts }   : {}),
+            pricingProducts:   mergeById(data.pricingProducts, local.pricingProducts),
             ...(hasPositioningContent(data.posicionamento) ? { posicionamento: data.posicionamento } : {}),
             ...(data.hiddenReportTags?.length ? { hiddenReportTags: data.hiddenReportTags } : {}),
             ...(data.creatorProfile && Object.keys(data.creatorProfile).length ? { creatorProfile: data.creatorProfile } : {}),
