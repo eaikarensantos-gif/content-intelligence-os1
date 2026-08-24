@@ -1,0 +1,16 @@
+name: Process DM automation queue
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call processQueue endpoint
+        run: |
+          curl -sS -X POST "https://content-intelligence-os1.vercel.app/api/processQueue" \
+            -H "x-process-queue-secret: ${{ secrets.PROCESS_QUEUE_SECRET }}" \
+            --fail
