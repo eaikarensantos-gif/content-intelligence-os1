@@ -2566,12 +2566,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
 Responda EXCLUSIVAMENTE com JSON: [{"tema": "...", "categoria": "..."}]
 Regras:
 ${isPessoal
-    ? `- Cachorra, pet, buldogue, bicho → "Naomi"
-- Casa, decoração, cozinha, faxina, rotina doméstica → "Casa & Rotina"
-- Fé, terreiro, candomblé jejê, vodum, búzios, ancestralidade, gratidão, espiritualidade → "Fé"
-- Compras, achados, resenhas de produto, unboxing → "Comprinhas & Achados"
-- Livros, séries, viagens, comida, música, treino, hobbies → "Hobbies & Gostos"
-- Sentimentos, manias, memórias, família, cenas banais do dia → "Vida"`
+    ? `- Naomi, cachorra, pet, bulldog, passeio, veterinário → "Vida com Naomi"
+- Casa, decoração, cozinha, faxina, rotina doméstica → "A vida dentro de casa"
+- Fé, terreiro, candomblé jejê, vodum, búzios, ancestralidade, gratidão, espiritualidade → "Fé na vida real"
+- Compras, achados, resenhas de produto, unboxing → "Achados que valem a pena"
+- Livros, séries, viagens, comida, música, treino, hobbies → "Meu repertório particular"
+- Sentimentos, manias, memórias, família, cenas banais da vida adulta → "Ser adulta é isso?"`
     : `O público é founder (núcleo, ticket alto) e profissional de tecnologia em topo de funil — não é dono de negócio pequeno cuidando do próprio backoffice, e não é profissional em busca de promoção.
 - Raça, ancestralidade, representatividade, autoridade sem performar o que não é seu, o peso de decidir por outras pessoas → "Camada humana"
 - O processo por trás de uma decisão: a pergunta antes da proposta, o rascunho antes do slide, a reunião onde a decisão foi tomada → "Bastidor de estrategista"
@@ -2635,7 +2635,13 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
     setTimeout(() => setReclassifyResult(null), 6000)
   }
 
-  const removeTheme = (id) => setSavedThemes(prev => prev.filter(t => t.id !== id))
+  const removeTheme = (id) => setSavedThemes(prev => {
+    const removed = prev.find(t => t.id === id)
+    if (isPessoal && removed?.tema) {
+      setDismissedPersonalSuggestions(current => current.includes(removed.tema) ? current : [...current, removed.tema])
+    }
+    return prev.filter(t => t.id !== id)
+  })
 
   const addThemeFromSuggestion = (tema, categoria) => {
     const existing = new Set(savedThemes.map(s => s.tema))
@@ -2648,7 +2654,7 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
     if (!apiKey) { setExpandThemesError('Configure sua API key em Configurações'); return }
     const categoria = bankOpenCategory
     const temasNaCategoria = categoria ? savedThemes.filter(t => t.categoria === categoria) : savedThemes
-    if (!categoria && savedThemes.length === 0) return
+    if (!isPessoal && !categoria && savedThemes.length === 0) return
     setExpandingThemes(true)
     setExpandThemesError(null)
     try {
@@ -2656,7 +2662,12 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
       // que sobraram do posicionamento antigo não podem servir de exemplo: se o
       // modelo vê "pedir aumento" como exemplo da categoria, gera mais rotina de
       // CLT. Eles vão como contraexemplo.
-      const base = categoria ? temasNaCategoria : savedThemes
+      const sugestoesBase = isPessoal
+        ? PERSONAL_TEMAS_SUGESTOES
+          .filter(grupo => !categoria || grupo.categoria === categoria)
+          .flatMap(grupo => grupo.temas.map(tema => ({ tema, categoria: grupo.categoria })))
+        : []
+      const base = categoria ? [...temasNaCategoria, ...sugestoesBase] : [...savedThemes, ...sugestoesBase]
       const noPosicionamento = isPessoal ? base : base.filter(t => !isCltFramed(t.tema))
       const foraDoPosicionamento = isPessoal ? [] : base.filter(t => isCltFramed(t.tema))
 
@@ -2676,7 +2687,17 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
           output_config: { effort: 'medium' },
           max_tokens: 1500,
           messages: [{ role: 'user', content: `${isPessoal
-            ? `Você sugere temas de conteúdo PESSOAL para uma criadora brasileira que compartilha a vida fora do trabalho: a casa, a cachorra Naomi (buldogue francês), a fé, comprinhas e achados, hobbies e cenas banais do cotidiano que geram conexão. PROIBIDO: qualquer tema de carreira, tecnologia, produtividade ou mundo corporativo. O banal específico vale mais que o grandioso.`
+            ? `Você sugere MICROTemas de conteúdo PESSOAL para Karen Santos, que compartilha a vida fora do trabalho: casa, a bulldog Naomi, fé, achados, repertório e vida adulta. O objetivo é conexão sem exposição. PROIBIDO: carreira, tecnologia, produtividade, mundo corporativo, conselho genérico ou moral da história.
+
+Categorias disponíveis — use exatamente estes nomes:
+- "Vida com Naomi": comportamentos reais da bulldog, rotina, manias, passeios e a dinâmica entre as duas. Naomi é cachorra, nunca criança ou pessoa.
+- "A vida dentro de casa": rotina doméstica, casa vivida, comida, organização possível, objetos e pequenos rituais.
+- "Fé na vida real": terreiro, vodum, búzios, espera, dúvida, gratidão e espiritualidade sem pregação.
+- "Achados que valem a pena": compras usadas de verdade, arrependimentos, custo-benefício e consumo consciente.
+- "Meu repertório particular": livros, séries, música, comida, gostos inesperados, referências e hobbies.
+- "Ser adulta é isso?": amizades, descanso, limites, mudanças de gosto, contradições e cenas da vida adulta.
+
+Cada microtema deve ser um recorte pequeno e concreto que possa virar uma cena ou história. O banal específico vale mais que o grandioso.`
             : `Você é estrategista de conteúdo para Karen Santos. ${WORK_NICHE}
 
 O leitor é founder ou profissional sênior que já decide ou está perto de decidir — não é alguém aguardando aprovação de cima.
@@ -2687,7 +2708,7 @@ O que a categoria "${categoria}" quer dizer: ${WORK_CATEGORY_BRIEF[categoria]}` 
 
 ${contextoCategoria}
 
-Gere 5 novos temas ${categoria ? `para a categoria "${categoria}"` : 'relacionados'} — específicos, concretos, com potencial de identificação. Não repita existentes. Sem linguagem de coach. Cada tema: situação real ou observação concreta. Máx 8 palavras. Inclua a temperatura de cada um.
+Gere 5 novos ${isPessoal ? 'microtemas' : 'temas'} ${categoria ? `para a categoria "${categoria}"` : isPessoal ? 'distribuídos entre as categorias disponíveis' : 'relacionados'} — específicos, concretos e diferentes de tudo que já existe. Não repita, não parafraseie e não use linguagem de coach. ${isPessoal ? 'Máximo 12 palavras.' : 'Máximo 8 palavras.'} Inclua a categoria e a temperatura de cada um.
 
 Temperatura:
 - quente: alto potencial viral agora, forte identificação
@@ -2695,7 +2716,7 @@ Temperatura:
 - frio: evergreen, menos imediato
 
 Responda EXCLUSIVAMENTE com JSON válido:
-{"temas": [{"tema": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
+{"temas": [{"tema": "...", "categoria": "...", "temperatura": "quente|morno|frio", "motivo": "1 frase direta"}]}` }],
         }),
       })
       if (!res.ok) {
@@ -2708,13 +2729,17 @@ Responda EXCLUSIVAMENTE com JSON válido:
       const match = text.match(/\{[\s\S]*\}/)
       if (!match) throw new Error('Resposta inválida da IA')
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-      const existing = new Set(savedThemes.map(t => t.tema))
+      const existing = new Set([
+        ...savedThemes.map(t => t.tema),
+        ...(isPessoal ? PERSONAL_TEMAS_SUGESTOES.flatMap(grupo => grupo.temas) : []),
+        ...(isPessoal ? dismissedPersonalSuggestions : []),
+      ])
       const novos = (parsed.temas || [])
         .filter(t => !existing.has(t.tema))
         .map(t => ({
           id: Date.now() + Math.random(),
           tema: t.tema, temperatura: t.temperatura || null, motivo: t.motivo || null,
-          categoria: categoria || categorizeTheme(t.tema),
+          categoria: categoria || (isPessoal && PERSONAL_CATEGORIES.includes(t.categoria) ? t.categoria : categorizeTheme(t.tema)),
           fonte: 'ia', criadoEm: new Date().toISOString().slice(0, 10),
         }))
       if (novos.length === 0) throw new Error('A IA não retornou temas novos. Tente de novo.')
@@ -2801,8 +2826,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 {categorizingThemes ? <><Loader2 size={11} className="animate-spin" /> Classificando...</> : '+ Adicionar'}
               </button>
               <button
-                onClick={isPessoal ? () => setShowPersonalSuggestions(true) : expandThemes}
-                disabled={!isPessoal && (expandingThemes || (!bankOpenCategory && savedThemes.length === 0))}
+                onClick={isPessoal ? () => { setShowPersonalSuggestions(true); expandThemes() } : expandThemes}
+                disabled={expandingThemes || (!isPessoal && !bankOpenCategory && savedThemes.length === 0)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
               >
                 {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
