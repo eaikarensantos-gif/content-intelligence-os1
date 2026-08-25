@@ -1461,6 +1461,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   })
   const [newThemeInput, setNewThemeInput] = useState('')
   const [showThemesPanel, setShowThemesPanel] = useState(true)
+  const [showPersonalSuggestions, setShowPersonalSuggestions] = useState(false)
   const [expandingThemes, setExpandingThemes] = useState(false)
   const [expandThemesError, setExpandThemesError] = useState(null)
   const [categorizingThemes, setCategorizingThemes] = useState(false)
@@ -2638,12 +2639,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 {categorizingThemes ? <><Loader2 size={11} className="animate-spin" /> Classificando...</> : '+ Adicionar'}
               </button>
               <button
-                onClick={expandThemes}
-                disabled={expandingThemes || (!bankOpenCategory && savedThemes.length === 0)}
+                onClick={isPessoal ? () => setShowPersonalSuggestions(true) : expandThemes}
+                disabled={!isPessoal && (expandingThemes || (!bankOpenCategory && savedThemes.length === 0))}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-200 transition-colors disabled:opacity-40 shrink-0"
               >
                 {expandingThemes ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                {bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
+                {isPessoal ? 'Gerar microtemas' : bankOpenCategory ? `Expandir ${bankOpenCategory}` : 'Expandir com IA'}
               </button>
               {savedThemes.length > 0 && (
                 <button
@@ -2670,6 +2671,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
               <div className="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-[11px] text-red-600">
                 {expandThemesError}
               </div>
+            )}
+
+            {isPessoal && !showPersonalSuggestions && (
+              <p className="mx-4 mt-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-100 text-[11px] text-rose-600">
+                Os microtemas sugeridos ficam ocultos até você clicar em Gerar microtemas.
+              </p>
             )}
 
             {!isPessoal && (() => {
@@ -2712,7 +2719,9 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 const isOpen = bankOpenCategory === categoria
                 const savedInCat = savedThemes.filter(s => s.categoria === categoria)
                 const savedSet = new Set(savedThemes.map(s => s.tema))
-                const sugestoesNaoSalvas = sugestoes.filter(t => !savedSet.has(t))
+                const sugestoesNaoSalvas = isPessoal && !showPersonalSuggestions
+                  ? []
+                  : sugestoes.filter(t => !savedSet.has(t))
                 const totalCount = savedInCat.length
                 return (
                   <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -2784,7 +2793,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                           </button>
                         ))}
 
-                        {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (
+                        {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (!isPessoal || showPersonalSuggestions) && (
                           <p className="text-[11px] text-gray-300 text-center py-2">Todos adicionados</p>
                         )}
                       </div>
