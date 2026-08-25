@@ -13,10 +13,10 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
-import { TEMAS_CARROSSEL } from '../../data/temasCarrossel'
+import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from '../../data/temasCarrossel'
 
 // ─── Claude call ─────────────────────────────────────────────────────────────
-async function captureThought(apiKey, { thought, niche, tone, voiceContext, regenInstruction }) {
+async function captureThought(apiKey, { thought, niche, tone, persona, voiceContext, regenInstruction }) {
   const toneInstruction = {
     reflexivo:   'Tom suave, introspectivo e pessoal.',
     provocador:  'Tom que questiona o status quo, que incomoda no bom sentido.',
@@ -25,6 +25,19 @@ async function captureThought(apiKey, { thought, niche, tone, voiceContext, rege
     humor:       'Tom leve, espirituoso e com sacadas inteligentes — humor que conecta sem forçar.',
   }[tone] || ''
 
+  const personaInstruction = persona === 'personal'
+    ? `MODO PESSOAL — DO LADO DE CÁ:
+- Karen escreve como pessoa física, não como consultora, mentora ou especialista.
+- O objetivo é conexão, identificação, humor, afeto ou reflexão cotidiana. Não é autoridade.
+- Escreva em primeira pessoa e parta de uma cena, gesto, objeto, rotina ou memória concreta.
+- Não transforme o pensamento em lição profissional, exercício, conselho ou conteúdo de produtividade.
+- Naomi é a bulldog francesa de Karen. Só a inclua quando o pensamento mencionar Naomi, cachorro, bulldog ou pet; nunca trate Naomi como criança ou pessoa.
+- Não invente fatos pessoais. Quando faltar um detalhe indispensável, use [Karen: conte aqui o detalhe real].
+- Termine com observação, imagem, humor seco ou pergunta natural, sem moral da história.`
+    : `MODO PROFISSIONAL:
+- Preserve a voz analítica, crítica, direta e empática de Karen.
+- Desenvolva a implicação profissional ou estratégica do pensamento sem recorrer a jargão corporativo vazio.`
+
   const prompt = `Você é um ghostwriter especialista em conteúdo autêntico para criadores digitais brasileiros. Você conhece profundamente o que performa bem em cada plataforma. Seu estilo é observacional, reflexivo e humano — como alguém que realmente pensa antes de escrever.
 
 O criador teve este pensamento bruto:
@@ -32,6 +45,7 @@ O criador teve este pensamento bruto:
 
 ${niche ? `Contexto / nicho: ${niche}` : ''}
 ${toneInstruction}
+${personaInstruction}
 
 Transforme este pensamento num post reflexivo completo e bem desenvolvido.
 
@@ -298,6 +312,7 @@ export default function ThoughtCapture() {
   const [niche, setNiche] = useState('')
   const [tone, setTone] = useState('reflexivo')
   const [showThemeBank, setShowThemeBank] = useState(false)
+  const [themeBankPersona, setThemeBankPersona] = useState('professional')
   const [themeBankOpenCategory, setThemeBankOpenCategory] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadPhase, setLoadPhase] = useState(0)
@@ -328,12 +343,12 @@ export default function ThoughtCapture() {
     setError(''); setLoading(true); setResult(null); setSavedFormats(new Set()); setCurrentThought(thought)
     startPhases()
     try {
-      const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords, posicionamento)
+      const voiceCtx = buildVoiceContext(themeBankPersona === 'personal' ? null : brandVoice, dislikedContent, bannedWords, themeBankPersona === 'personal' ? null : posicionamento)
       const regenInstr = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
-      const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone, voiceContext: voiceCtx, regenInstruction: regenInstr })
+      const data = await captureThought(apiKey, { thought: thought.trim(), niche, tone, persona: themeBankPersona, voiceContext: voiceCtx, regenInstruction: regenInstr })
       setResult(data)
       setRegenAttempt(c => c + 1)
-      addThoughtCapture({ thought: thought.trim(), niche, tone, result: data })
+      addThoughtCapture({ thought: thought.trim(), niche, tone, persona: themeBankPersona, result: data })
       // Auto-save draft to Hub
       if (data.save_as_idea) {
         addIdea({
@@ -354,7 +369,7 @@ export default function ThoughtCapture() {
   }
 
   const handleLoadCapture = (capture) => {
-    setThought(capture.thought); setNiche(capture.niche || ''); setTone(capture.tone || 'reflexivo')
+    setThought(capture.thought); setNiche(capture.niche || ''); setTone(capture.tone || 'reflexivo'); setThemeBankPersona(capture.persona || 'professional')
     setResult(capture.result); setCurrentThought(capture.thought); setSavedFormats(new Set())
   }
 
@@ -454,9 +469,33 @@ export default function ThoughtCapture() {
               {showThemeBank ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </button>
             {showThemeBank && (
-              <div className="border border-gray-200 rounded-xl max-h-56 overflow-y-auto divide-y divide-gray-100">
-                {TEMAS_CARROSSEL.map(({ categoria, temas }) => {
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="grid grid-cols-2 gap-1 p-1.5 bg-gray-50 border-b border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => { setThemeBankPersona('professional'); setThemeBankOpenCategory(null) }}
+                    className={`py-1.5 rounded-lg text-[10px] font-semibold transition-all ${themeBankPersona === 'professional' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    Profissional
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setThemeBankPersona('personal'); setThemeBankOpenCategory(null) }}
+                    className={`py-1.5 rounded-lg text-[10px] font-semibold transition-all ${themeBankPersona === 'personal' ? 'bg-white text-rose-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    Pessoal · Do lado de cá
+                  </button>
+                </div>
+                <div className="max-h-52 overflow-y-auto divide-y divide-gray-100">
+                {(themeBankPersona === 'personal' ? PERSONAL_TEMAS_SUGESTOES : TEMAS_CARROSSEL).map(({ categoria, temas }) => {
                   const isCatOpen = themeBankOpenCategory === categoria
+                  let visibleThemes = temas
+                  if (themeBankPersona === 'personal') {
+                    try {
+                      const dismissed = JSON.parse(localStorage.getItem('cio-dismissed-personal-microthemes') || '[]')
+                      if (Array.isArray(dismissed)) visibleThemes = temas.filter(tema => !dismissed.includes(tema))
+                    } catch { /* usa todos */ }
+                  }
                   return (
                     <div key={categoria}>
                       <button
@@ -469,7 +508,7 @@ export default function ThoughtCapture() {
                       </button>
                       {isCatOpen && (
                         <div className="px-2 py-1.5 space-y-0.5 bg-white">
-                          {temas.map(tema => (
+                          {visibleThemes.map(tema => (
                             <button
                               key={tema}
                               type="button"
@@ -484,6 +523,7 @@ export default function ThoughtCapture() {
                     </div>
                   )
                 })}
+                </div>
               </div>
             )}
           </div>
