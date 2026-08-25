@@ -100,6 +100,9 @@ CTA:
 
 PRINCÍPIO EDITORIAL: Naomi cria conexão, humor e afeto sem ser humanizada de forma açucarada. O charme está na personalidade real dela e na dinâmica entre as duas.`
 
+const isNaomiTheme = (tema = '') =>
+  /\bnaomi\b|\bbulldog\b|\bbuldogue\b|\bcachorr(?:a|o|inha|inho)?\b|\bpet\b/i.test(tema)
+
 const PERSONAL_SPECIFICITY_RULES = `
 REGRA DE ESPECIFICIDADE — VALE PARA TODOS OS FORMATOS PESSOAIS:
 - Escreva em primeira pessoa. Evite "a gente" como sujeito genérico.
@@ -109,6 +112,7 @@ REGRA DE ESPECIFICIDADE — VALE PARA TODOS OS FORMATOS PESSOAIS:
 - Não invente acontecimentos dramáticos, falas ou sentimentos. Use somente o que o tema informa e os fatos presentes neste guia.
 - Se faltar um detalhe pessoal indispensável, escreva [Karen: conte aqui o detalhe real] em vez de fabricar.
 - Não transforme a cena em lição, exercício, conselho, produtividade ou conteúdo profissional.
+- Só inclua Naomi quando o tema ou os detalhes fornecidos mencionarem Naomi, bulldog, cachorro ou pet. Ela nunca entra como enfeite em temas de casa, fé, compras, repertório ou vida adulta.
 - O final deve ser uma observação, uma imagem, uma pergunta natural ou humor seco. Nunca um resumo moral.
 - Antes de entregar, teste: isto parece uma lembrança ou observação da Karen, ou um texto que serviria para qualquer pessoa? Se servir para qualquer pessoa, reescreva.`
 
@@ -133,7 +137,6 @@ FORMATOS EDITORIAIS RECORRENTES:
 - Testado na vida real; Cena de uma vida comum; Não tenho uma conclusão; Karen recomenda.
 - Eu achava que seria diferente; Coisas que estou aprendendo devagar.
 
-${NAOMI_EDITORIAL_GUIDE}
 ${PERSONAL_SPECIFICITY_RULES}
 
 RECONHECIMENTO AUTOMÁTICO DE CONTEXTO:
@@ -488,7 +491,7 @@ CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito
 const buildHookSystem = (isPessoal) => `Você gera hooks de abertura para reels de Karen Santos.
 
 ${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.\n${PERSONAL_SPECIFICITY_RULES}`
     : `Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. ${WORK_NICHE}`}
 
 REGRA CENTRAL:
@@ -556,6 +559,7 @@ const HOOK_FORMULAS = [
 const buildHookPrompt = (tema, roteiro, isPessoal) => `
 TEMA DO REELS: ${tema}
 ${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
+${isPessoal && isNaomiTheme(tema) ? NAOMI_EDITORIAL_GUIDE : ''}
 
 FÓRMULAS DE GANCHO DE REFERÊNCIA — use como molde de PADRÃO SINTÁTICO, nunca copie a frase literal nem o exemplo. Preencha cada colchete com algo específico do tema acima, não genérico:
 ${HOOK_FORMULAS.map(h => `- "${h.formula}" (ex.: "${h.exemplo}")`).join('\n')}
@@ -645,7 +649,7 @@ ${ideia ? `RECORTE INFORMADO POR KAREN: ${ideia}` : ''}
 ${texto ? `DETALHES REAIS INFORMADOS POR KAREN:\n${texto}` : ''}
 
 ${PERSONAL_SPECIFICITY_RULES}
-${NAOMI_EDITORIAL_GUIDE}
+${isNaomiTheme(`${tema} ${ideia || ''} ${texto || ''}`) ? NAOMI_EDITORIAL_GUIDE : ''}
 
 O roteiro principal deve ter entre 30 e 45 segundos e seguir:
 1. Gancho na tela que já entra na cena.
@@ -676,7 +680,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
 /* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
 const buildCarouselSystem = (isPessoal) => `Você é um gerador de carrossel para Karen Santos. ${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.\n${PERSONAL_SPECIFICITY_RULES}`
     : `Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. ${WORK_NICHE}`}
 Seu trabalho não é criar conteúdo bonito. É criar conteúdo que faz a pessoa escrever mais de uma linha nos comentários.
 
@@ -872,16 +876,30 @@ ${ideia ? `RECORTE INFORMADO POR KAREN: ${ideia}` : ''}
 ${texto ? `DETALHES REAIS INFORMADOS POR KAREN:\n${texto}` : ''}
 
 ${PERSONAL_SPECIFICITY_RULES}
-${NAOMI_EDITORIAL_GUIDE}
+${isNaomiTheme(`${tema} ${ideia || ''} ${texto || ''}`) ? NAOMI_EDITORIAL_GUIDE : ''}
 
 Este não é um carrossel educativo. É uma micro-história em primeira pessoa.
 
-ESTRUTURA DOS 5 SLIDES:
-1. Gancho concreto que já entra na cena.
-2. O primeiro comportamento, gesto ou detalhe observável.
-3. A cena avança com outro detalhe específico.
-4. Minha reação ou a pequena contradição da situação.
-5. Fechamento com imagem, constatação ou humor seco. Sem lição.
+ESTRUTURA DOS 7 SLIDES:
+1. Gancho concreto que apresenta a mudança ou tensão sem explicar tudo.
+2. Como era antes, com um comportamento real e observável.
+3. O custo cotidiano desse jeito antigo, sem dramatização.
+4. A primeira mudança pequena e concreta.
+5. Outra concessão, atalho ou detalhe que tornou a rotina possível.
+6. O que mudou na minha relação com essa situação.
+7. Fechamento com imagem, constatação ou humor seco. Sem lição.
+
+PROFUNDIDADE: o slide 1 pode ter uma frase. Os slides 2 a 6 devem ter de 20 a 45 palavras, em uma a três frases curtas. O slide 7 fecha em até 30 palavras. Não reduza cada slide a uma frase telegráfica quando a cena precisar de contexto.
+
+REFERÊNCIA DE QUALIDADE E DENSIDADE — para o tema "O que mudei para deixar a rotina mais leve":
+1. "Eu não organizei melhor a minha rotina. Eu parei de exigir tanto dela."
+2. "Antes, um dia bom precisava começar cedo, render bastante e terminar com a casa minimamente organizada. Era muita coisa precisando dar certo para eu considerar o dia bom."
+3. "Então comecei a diminuir o tamanho das promessas. Em vez de arrumar a casa, escolher um canto. Em vez de cozinhar, resolver a próxima refeição."
+4. "Também parei de transformar todo atalho em culpa. Comida montada alimenta. Roupa limpa ainda no varal continua limpa."
+5. "A maior mudança foi parar de usar a casa para medir minha competência. Tem dia em que ela funciona. Tem dia em que apenas nos abriga."
+6. "Hoje, quando preciso escolher entre deixar tudo em ordem e terminar o dia com alguma energia, nem sempre escolho a ordem."
+7. "Minha rotina ficou mais leve quando parei de pedir que todos os dias parecessem bem administrados. Alguns dias só precisam terminar."
+Use esta referência como padrão de progressão, oralidade e densidade. Não copie seus fatos para temas diferentes e não introduza Naomi, trabalho ou qualquer personagem que o tema não mencionar.
 
 Crie três tratamentos da mesma micro-história:
 - Principal: cotidiano e direto.
@@ -894,31 +912,37 @@ Responda EXCLUSIVAMENTE com JSON válido:
 {
   "versao_principal": {
     "slides": [
-      { "numero": 1, "texto": "gancho dentro da cena" },
-      { "numero": 2, "texto": "primeiro detalhe observável" },
-      { "numero": 3, "texto": "a cena avança" },
-      { "numero": 4, "texto": "minha reação ou contradição" },
-      { "numero": 5, "texto": "fechamento sem moral" }
+      { "numero": 1, "texto": "gancho concreto" },
+      { "numero": 2, "texto": "como era antes" },
+      { "numero": 3, "texto": "o custo cotidiano" },
+      { "numero": 4, "texto": "a primeira mudança concreta" },
+      { "numero": 5, "texto": "outra concessão ou detalhe" },
+      { "numero": 6, "texto": "o que mudou na minha relação com isso" },
+      { "numero": 7, "texto": "fechamento sem moral" }
     ],
     "pergunta_final": "pergunta natural ou string vazia"
   },
   "variacao_emocional": {
     "slides": [
       { "numero": 1, "texto": "gancho afetivo" },
-      { "numero": 2, "texto": "detalhe observável" },
-      { "numero": 3, "texto": "a cena avança" },
-      { "numero": 4, "texto": "minha reação contida" },
-      { "numero": 5, "texto": "fechamento afetivo sem moral" }
+      { "numero": 2, "texto": "como era antes" },
+      { "numero": 3, "texto": "o custo cotidiano" },
+      { "numero": 4, "texto": "a primeira mudança" },
+      { "numero": 5, "texto": "outra concessão ou detalhe" },
+      { "numero": 6, "texto": "minha reação contida" },
+      { "numero": 7, "texto": "fechamento afetivo sem moral" }
     ],
     "pergunta_final": "pergunta natural ou string vazia"
   },
   "variacao_provocativa": {
     "slides": [
       { "numero": 1, "texto": "gancho com humor seco" },
-      { "numero": 2, "texto": "detalhe observável" },
-      { "numero": 3, "texto": "a cena avança" },
-      { "numero": 4, "texto": "minha reação autoirônica" },
-      { "numero": 5, "texto": "punchline sem moral" }
+      { "numero": 2, "texto": "como era antes" },
+      { "numero": 3, "texto": "o custo cotidiano" },
+      { "numero": 4, "texto": "a primeira mudança" },
+      { "numero": 5, "texto": "outra concessão ou detalhe" },
+      { "numero": 6, "texto": "minha reação autoirônica" },
+      { "numero": 7, "texto": "punchline sem moral" }
     ],
     "pergunta_final": "pergunta natural ou string vazia"
   },
@@ -941,7 +965,7 @@ const buildStoriesSystem = (isPessoal) => `— IDENTIDADE —
 Você é um gerador de roteiros de stories para Instagram.
 
 ${isPessoal
-    ? `A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
+    ? `A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, fé, compras, gostos, vida adulta e, quando o tema pedir, a bulldog Naomi. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.\n${PERSONAL_SPECIFICITY_RULES}`
     : 'A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.'}
 
 
@@ -1710,6 +1734,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     const selectedFormat = overrides.format || format
 
     const prompt = `${isPessoal ? PERSONAL_MASTER_PROMPT : MASTER_PROMPT}
+${isPessoal && isNaomiTheme(text) ? NAOMI_EDITORIAL_GUIDE : ''}
 ${voiceCtx}
 ${regenInstr}
 
@@ -2104,8 +2129,9 @@ ${revText.trim()}`
 
 Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 ${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, fé, compras, gostos, vida adulta e, quando o tema pedir, a bulldog Naomi. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.\n${PERSONAL_SPECIFICITY_RULES}`
     : WORK_NICHE}
+${isPessoal && isNaomiTheme(tema) ? NAOMI_EDITORIAL_GUIDE : ''}
 
 PRINCÍPIO CENTRAL:
 O hook não pode ser conceito. Tem que ser situação + comportamento.
@@ -2413,7 +2439,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     try {
       const structuresMap = isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES
       const estrutura = structuresMap[strEstrutura] || structuresMap.observacao
-      const systemPrompt = buildStoriesSystem(isPessoal)
+      const systemPrompt = `${buildStoriesSystem(isPessoal)}${isPessoal && isNaomiTheme(strTema) ? `\n${NAOMI_EDITORIAL_GUIDE}` : ''}`
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
       const res = await fetch('/api/ai?action=gemini', {
@@ -3892,7 +3918,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               })()}
 
               {/* Exercício Prático + Pergunta Final agrupados */}
-              {(carResult.exercicio_pratico || (() => {
+              {((!isPessoal && carResult.exercicio_pratico) || (() => {
                 const active = [
                   carResult.versao_principal,
                   carResult.variacao_emocional,
@@ -3901,7 +3927,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 return active?.pergunta_final
               })()) && (
                 <div className="rounded-2xl border border-orange-100 overflow-hidden bg-white">
-                  {carResult.exercicio_pratico && (
+                  {!isPessoal && carResult.exercicio_pratico && (
                     <div className="px-4 py-3 group">
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
@@ -3941,7 +3967,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               )}
 
               {/* CTA Fechado — só exibe se não repetir a pergunta final da versão ativa */}
-              {carResult.cta_fechado && !isNearDuplicateText(
+              {!isPessoal && carResult.cta_fechado && !isNearDuplicateText(
                 carResult.cta_fechado,
                 (carResult.versao_principal && carActiveVersion === 'principal' && carResult.versao_principal.pergunta_final)
                   || (carResult.variacao_emocional && carActiveVersion === 'emocional' && carResult.variacao_emocional.pergunta_final)
