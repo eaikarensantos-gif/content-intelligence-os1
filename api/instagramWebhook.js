@@ -23,7 +23,7 @@
 import { verifyWebhookSignature } from '../src/lib/dmSignature.js'
 import { parseWebhookPayload } from '../src/lib/dmWebhookEvents.js'
 import { findMatchingRule } from '../src/lib/dmTriggerMatcher.js'
-import { getSupabaseServer, sendInstagramMessage, upsertContact, markInboundMessage, runFlowStep } from '../src/lib/dmServer.js'
+import { getSupabaseServer, sendInstagramMessage, replyToComment, upsertContact, markInboundMessage, runFlowStep } from '../src/lib/dmServer.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -190,6 +190,16 @@ export default async function handler(req, res) {
           send_result: sendResult,
           status: 'sent',
         })
+      }
+
+      // Resposta pública no comentário (opcional, separada da DM) — falha aqui
+      // não desfaz o "sent" do evento, porque a DM já foi entregue.
+      if (rule.comment_reply_text && (event.type === 'comment' || event.type === 'mention') && event.commentId) {
+        try {
+          await replyToComment(connection.access_token, event.commentId, rule.comment_reply_text)
+        } catch (err) {
+          console.error('[instagramWebhook] erro ao responder o comentário publicamente:', err.message)
+        }
       }
 
       await db
