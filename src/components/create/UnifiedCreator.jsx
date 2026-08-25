@@ -99,28 +99,6 @@ NUNCA FAZER:
 
 /* ── Categorias do Banco de Temas pessoal ── */
 
-/* ── Temas iniciais do Banco de Temas pessoal ── */
-const PERSONAL_SEED_THEMES = [
-  { tema: 'A Naomi decidiu que o sofá é dela', categoria: 'Vida com Naomi' },
-  { tema: 'O suspiro dramático da Naomi quando ela quer atenção', categoria: 'Vida com Naomi' },
-  { tema: 'Passeio com buldogue no calor de 35 graus', categoria: 'Vida com Naomi' },
-  { tema: 'A planta que eu me recuso a deixar morrer', categoria: 'A vida dentro de casa' },
-  { tema: 'Meu domingo começa na feira', categoria: 'A vida dentro de casa' },
-  { tema: 'Coisas que parei de tentar fazer perfeitamente', categoria: 'A vida dentro de casa' },
-  { tema: 'O jogo de búzios que eu não esperava ouvir', categoria: 'Fé na vida real' },
-  { tema: 'Preparar a roupa branca de sexta pro terreiro', categoria: 'Fé na vida real' },
-  { tema: 'O que a fé não resolve, mas ajuda a atravessar', categoria: 'Fé na vida real' },
-  { tema: 'A comprinha de R$30 que eu uso todo dia', categoria: 'Achados que valem a pena' },
-  { tema: 'O achado da Shopee que superou o hype', categoria: 'Achados que valem a pena' },
-  { tema: 'A compra cara que me arrependi caladinha', categoria: 'Achados que valem a pena' },
-  { tema: 'O livro que eu abandonei sem culpa', categoria: 'Meu repertório particular' },
-  { tema: 'Coisas que eu gosto e ninguém imagina', categoria: 'Meu repertório particular' },
-  { tema: 'A série que eu assisto pela terceira vez', categoria: 'Meu repertório particular' },
-  { tema: 'O alívio de um compromisso cancelado', categoria: 'Ser adulta é isso?' },
-  { tema: 'A mania que eu herdei da minha mãe', categoria: 'Ser adulta é isso?' },
-  { tema: 'O elogio que eu não soube receber', categoria: 'Ser adulta é isso?' },
-]
-
 /* ── Formatos ── */
 const FORMATS = [
   { id: 'reels', label: 'Reels', icon: Video, desc: '30-60s roteiro com cenas', color: 'from-purple-500 to-pink-500' },
@@ -1415,6 +1393,14 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [savedThemes, setSavedThemes] = useState(() => {
     try {
       let raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
+      // A identidade "Do lado de cá" substituiu integralmente o banco pessoal
+      // anterior. Limpa uma única vez os temas antigos já persistidos no navegador;
+      // depois disso, tudo que Karen adicionar volta a ser preservado normalmente.
+      if (isPessoal && localStorage.getItem('cio-pessoal-microthemes-version') !== '1') {
+        raw = []
+        localStorage.removeItem(themesKey)
+        localStorage.setItem('cio-pessoal-microthemes-version', '1')
+      }
       if (raw.length > 0 && typeof raw[0] === 'string') {
         raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Ser adulta é isso?' : 'Critério de decisão', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       } else {
@@ -1431,12 +1417,6 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
       raw = isPessoal
         ? raw.filter(t => PERSONAL_CATEGORIES.includes(t.categoria))
         : raw.filter(t => !PERSONAL_CATEGORIES.includes(t.categoria))
-      // Banco pessoal vazio nasce semeado com temas de vida
-      if (raw.length === 0 && isPessoal) {
-        return PERSONAL_SEED_THEMES.map((t, i) => ({
-          id: Date.now() + i, ...t, fonte: 'seed', criadoEm: new Date().toISOString().slice(0, 10),
-        }))
-      }
       return raw
     } catch { return [] }
   })
@@ -2587,7 +2567,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         >
           <div className="flex items-center gap-2">
             <Layers size={14} className="text-orange-500" />
-            <span className="text-xs font-semibold text-gray-700">Banco de Temas</span>
+            <span className="text-xs font-semibold text-gray-700">{isPessoal ? 'Banco de Microtemas' : 'Banco de Temas'}</span>
             {savedThemes.length > 0 && (
               <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
                 {savedThemes.length}
@@ -2608,7 +2588,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 value={newThemeInput}
                 onChange={e => setNewThemeInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addTheme()}
-                placeholder="Adicione temas separados por vírgula..."
+                placeholder={isPessoal ? 'Adicione microtemas separados por vírgula...' : 'Adicione temas separados por vírgula...'}
                 className="input text-xs flex-1 py-1.5"
               />
               <button
@@ -2713,6 +2693,11 @@ Responda EXCLUSIVAMENTE com JSON válido:
                     {isOpen && (
                       <div className="bg-white px-3 py-2 space-y-1">
                         {/* Temas salvos nesta categoria */}
+                        {isPessoal && savedInCat.length > 0 && (
+                          <p className="px-2.5 pt-1 pb-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-400">
+                            Seus temas
+                          </p>
+                        )}
                         {savedInCat.map(item => (
                           <div key={item.id} className="flex items-center gap-1.5 group">
                             <button
@@ -2744,6 +2729,11 @@ Responda EXCLUSIVAMENTE com JSON válido:
                         )}
 
                         {/* Sugestões não salvas */}
+                        {isPessoal && sugestoesNaoSalvas.length > 0 && (
+                          <p className="px-2.5 pt-1 pb-0.5 text-[9px] font-semibold uppercase tracking-wide text-rose-400">
+                            Sugestões do Studio · clique para adicionar
+                          </p>
+                        )}
                         {sugestoesNaoSalvas.map(tema => (
                           <button
                             key={tema}
