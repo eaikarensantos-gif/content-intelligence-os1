@@ -31,6 +31,7 @@ const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettin
 const InstagramCallback = lazy(() => import('./components/settings/InstagramCallback'))
 const InstagramStudio = lazy(() => import('./components/instagram/InstagramStudio'))
 const DmFlows = lazy(() => import('./components/instagram/DmFlows'))
+const DmTriggerRules = lazy(() => import('./components/instagram/DmTriggerRules'))
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
 const ReportsPage = lazy(() => import('./components/reports/ReportsPage'))
 const BrandVoiceSetup = lazy(() => import('./components/brand/BrandVoiceSetup'))
@@ -160,6 +161,7 @@ export default function App() {
             <Route path="/instagram-callback" element={<InstagramCallback />} />
             <Route path="/instagram" element={<InstagramStudio />} />
             <Route path="/dm-flows" element={<DmFlows />} />
+            <Route path="/dm-rules" element={<DmTriggerRules />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
             <Route path="/naomi" element={<NaomiStudio />} />
             <Route path="/clipper" element={<WebClipper />} />
