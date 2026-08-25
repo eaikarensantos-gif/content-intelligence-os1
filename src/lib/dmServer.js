@@ -29,29 +29,35 @@ export async function sendInstagramMessage(accessToken, recipient, text) {
   return data
 }
 
-export async function upsertContact(db, igScopedId, username, tagToApply) {
+// isInboundMessage marca last_inbound_message_at — só passe true pra eventos
+// message/story_reply de verdade (não comment/mention, que não abrem a
+// janela de 24h — ver dmContacts.js e a migração 0003/0004). O broadcast
+// (Fase 4) usa essa coluna, separada de last_interaction_at, pra nunca
+// tentar mandar mensagem fora da janela.
+export async function upsertContact(db, igScopedId, username, tagToApply, isInboundMessage = false) {
   const { data: existing, error: selErr } = await db.from('ig_contacts').select('*').eq('ig_scoped_id', igScopedId).maybeSingle()
   if (selErr) throw new Error(selErr.message)
 
   const tags = new Set(existing?.tags || [])
   if (tagToApply) tags.add(tagToApply)
 
-  const { data: contact, error } = await db
-    .from('ig_contacts')
-    .upsert(
-      {
-        ig_scoped_id: igScopedId,
-        ig_username: username || existing?.ig_username || null,
-        tags: Array.from(tags),
-        last_interaction_at: new Date().toISOString(),
-      },
-      { onConflict: 'ig_scoped_id' }
-    )
-    .select()
-    .maybeSingle()
+  const patch = {
+    ig_scoped_id: igScopedId,
+    ig_username: username || existing?.ig_username || null,
+    tags: Array.from(tags),
+    last_interaction_at: new Date().toISOString(),
+  }
+  if (isInboundMessage) patch.last_inbound_message_at = new Date().toISOString()
+
+  const { data: contact, error } = await db.from('ig_contacts').upsert(patch, { onConflict: 'ig_scoped_id' }).select().maybeSingle()
 
   if (error) throw new Error(error.message)
   return { contact, isFirstContact: !existing }
+}
+
+export async function markInboundMessage(db, contactId) {
+  const { error } = await db.from('ig_contacts').update({ last_inbound_message_at: new Date().toISOString() }).eq('id', contactId)
+  if (error) throw new Error(error.message)
 }
 
 // Aplica a lista de actions que computeStep() (dmFlowEngine.js) devolveu:

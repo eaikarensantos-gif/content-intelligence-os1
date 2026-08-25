@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { monthStartISO, contactsToCsv } from './dmContacts'
+import { monthStartISO, contactsToCsv, isWithinMessagingWindow } from './dmContacts'
 
 describe('monthStartISO', () => {
   it('retorna o início do mês corrente em UTC', () => {
@@ -44,5 +44,29 @@ describe('contactsToCsv', () => {
 
   it('retorna só o cabeçalho pra lista vazia', () => {
     expect(contactsToCsv([])).toBe('ig_scoped_id,ig_username,tags,fields,last_interaction_at,created_at')
+  })
+})
+
+describe('isWithinMessagingWindow', () => {
+  const now = new Date('2026-08-24T18:00:00.000Z')
+
+  it('true quando a última mensagem foi há poucas horas', () => {
+    expect(isWithinMessagingWindow('2026-08-24T10:00:00.000Z', now)).toBe(true)
+  })
+
+  it('false quando nunca mandou mensagem (null)', () => {
+    expect(isWithinMessagingWindow(null, now)).toBe(false)
+  })
+
+  it('false quando já passou de 24h', () => {
+    expect(isWithinMessagingWindow('2026-08-23T17:00:00.000Z', now)).toBe(false)
+  })
+
+  it('true bem no limite (23h59)', () => {
+    expect(isWithinMessagingWindow('2026-08-23T18:01:00.000Z', now)).toBe(true)
+  })
+
+  it('false pra uma data no futuro (relógio dessincronizado)', () => {
+    expect(isWithinMessagingWindow('2026-08-25T00:00:00.000Z', now)).toBe(false)
   })
 })
