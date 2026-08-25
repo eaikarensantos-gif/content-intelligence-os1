@@ -26,6 +26,7 @@ const EMPTY_RULE = {
   response_text: '',
   tag_to_apply: '',
   flow_id: '',
+  comment_reply_text: '',
 }
 
 export default function DmTriggerRules() {
@@ -72,6 +73,7 @@ export default function DmTriggerRules() {
             response_text: rule.response_text || '',
             tag_to_apply: rule.tag_to_apply || '',
             flow_id: rule.flow_id || '',
+            comment_reply_text: rule.comment_reply_text || '',
           }
         : EMPTY_RULE
     )
@@ -104,6 +106,7 @@ export default function DmTriggerRules() {
       response_text: responseType === 'message' ? form.response_text.trim() : '',
       tag_to_apply: form.tag_to_apply.trim() || null,
       flow_id: responseType === 'flow' ? form.flow_id : null,
+      comment_reply_text: form.comment_reply_text.trim() || null,
     }
 
     const { data, error } = selectedId
@@ -228,6 +231,19 @@ export default function DmTriggerRules() {
             <label className="label">Tag aplicada ao contato (opcional)</label>
             <input className="input" value={form.tag_to_apply} onChange={(e) => setField('tag_to_apply', e.target.value)} placeholder="Ex: lead-lancamento" />
           </div>
+
+          {(form.event_type === 'comment' || form.event_type === 'mention') && (
+            <div>
+              <label className="label">Resposta pública no comentário (opcional)</label>
+              <input
+                className="input"
+                value={form.comment_reply_text}
+                onChange={(e) => setField('comment_reply_text', e.target.value)}
+                placeholder="Ex: Te mandei uma DM! 📩"
+              />
+              <p className="text-xs text-gray-400 mt-1">Vai junto com a DM, mas fica visível embaixo do comentário — diferente da mensagem privada.</p>
+            </div>
+          )}
 
           <div className="border-t border-gray-100 pt-4">
             <label className="label">O que fazer quando bater</label>

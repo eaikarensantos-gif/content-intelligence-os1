@@ -29,6 +29,20 @@ export async function sendInstagramMessage(accessToken, recipient, text) {
   return data
 }
 
+// Resposta pública no comentário (visível pra todo mundo, diferente da DM
+// privada). Mesmo endpoint já usado em api/ai.js (instagramReplyToComment)
+// pra resposta manual — reaproveitado aqui pra resposta automática.
+export async function replyToComment(accessToken, commentId, message) {
+  const res = await fetch(`https://graph.instagram.com/${commentId}/replies`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ message, access_token: accessToken }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error?.message || `Falha ao publicar resposta no comentário (${res.status}).`)
+  return data
+}
+
 // isInboundMessage marca last_inbound_message_at — só passe true pra eventos
 // message/story_reply de verdade (não comment/mention, que não abrem a
 // janela de 24h — ver dmContacts.js e a migração 0003/0004). O broadcast
