@@ -100,6 +100,18 @@ CTA:
 
 PRINCÍPIO EDITORIAL: Naomi cria conexão, humor e afeto sem ser humanizada de forma açucarada. O charme está na personalidade real dela e na dinâmica entre as duas.`
 
+const PERSONAL_SPECIFICITY_RULES = `
+REGRA DE ESPECIFICIDADE — VALE PARA TODOS OS FORMATOS PESSOAIS:
+- Escreva em primeira pessoa. Evite "a gente" como sujeito genérico.
+- Comece dentro de uma cena pequena e visível. Não comece explicando um conceito.
+- Cada bloco precisa conter comportamento, objeto, fala, gesto, lugar ou momento observável.
+- Proibido usar abstrações para preencher espaço: "buscar controle", "rotina perfeita", "frustração acumulada", "a vida acontece", "no fim das contas".
+- Não invente acontecimentos dramáticos, falas ou sentimentos. Use somente o que o tema informa e os fatos presentes neste guia.
+- Se faltar um detalhe pessoal indispensável, escreva [Karen: conte aqui o detalhe real] em vez de fabricar.
+- Não transforme a cena em lição, exercício, conselho, produtividade ou conteúdo profissional.
+- O final deve ser uma observação, uma imagem, uma pergunta natural ou humor seco. Nunca um resumo moral.
+- Antes de entregar, teste: isto parece uma lembrança ou observação da Karen, ou um texto que serviria para qualquer pessoa? Se servir para qualquer pessoa, reescreva.`
+
 /* ── Master Prompt Pessoal (Studio Pessoal — vida fora do trabalho) ── */
 const PERSONAL_MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo PESSOAL para Karen Santos (@karensantosperfil).
 Neste modo Karen NÃO é a consultora tech nem a mentora de carreira. Aqui ela é a pessoa fora do trabalho: a casa, a Naomi (buldogue francês), a fé, as comprinhas, os hobbies, as coisas banais do dia que a tornam humana.
@@ -122,6 +134,7 @@ FORMATOS EDITORIAIS RECORRENTES:
 - Eu achava que seria diferente; Coisas que estou aprendendo devagar.
 
 ${NAOMI_EDITORIAL_GUIDE}
+${PERSONAL_SPECIFICITY_RULES}
 
 RECONHECIMENTO AUTOMÁTICO DE CONTEXTO:
 - Momento íntimo, fé, sentimento, algo não resolvido → Tom Diário
@@ -475,7 +488,7 @@ CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito
 const buildHookSystem = (isPessoal) => `Você gera hooks de abertura para reels de Karen Santos.
 
 ${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}`
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
     : `Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. ${WORK_NICHE}`}
 
 REGRA CENTRAL:
@@ -624,9 +637,46 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
+const buildPersonalReelsPrompt = ({ tema, ideia, texto }) => `
+Crie um Reel pessoal para Karen Santos.
+
+TEMA: ${tema}
+${ideia ? `RECORTE INFORMADO POR KAREN: ${ideia}` : ''}
+${texto ? `DETALHES REAIS INFORMADOS POR KAREN:\n${texto}` : ''}
+
+${PERSONAL_SPECIFICITY_RULES}
+${NAOMI_EDITORIAL_GUIDE}
+
+O roteiro principal deve ter entre 30 e 45 segundos e seguir:
+1. Gancho na tela que já entra na cena.
+2. Situação concreta em primeira pessoa.
+3. Dois ou três comportamentos observáveis em progressão.
+4. Minha reação, sem explicar demais.
+5. Fechamento com imagem concreta ou humor seco.
+
+Não crie exercício prático. Não tente ensinar. Não use linguagem de análise, controle, produtividade ou desenvolvimento pessoal. A variação emocional deve ser mais afetiva, não melodramática. A variação de humor seco deve observar a mesma cena por outro ângulo, sem crueldade.
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "versao_principal": "roteiro completo com GANCHO NA TELA e falas, usando \\n para quebras",
+  "variacao_emocional": "versão mais afetiva e contida da mesma cena",
+  "variacao_provocativa": "versão com humor mais seco da mesma cena",
+  "pergunta_final": "pergunta curta e natural, ou string vazia se não combinar",
+  "exercicio_pratico": "",
+  "respostas_sugeridas": ["resposta natural 1", "resposta natural 2"],
+  "nota_estrategica": "qual detalhe concreto impede o roteiro de ser genérico",
+  "validacao": {
+    "parece_real": true,
+    "sem_frases_prontas": true,
+    "sem_excesso_explicacao": true,
+    "espaco_aberto": true,
+    "exercicio_acessa_memoria": true
+  }
+}`
+
 /* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
 const buildCarouselSystem = (isPessoal) => `Você é um gerador de carrossel para Karen Santos. ${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.\n${NAOMI_EDITORIAL_GUIDE}`
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
     : `Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. ${WORK_NICHE}`}
 Seu trabalho não é criar conteúdo bonito. É criar conteúdo que faz a pessoa escrever mais de uma linha nos comentários.
 
@@ -814,13 +864,84 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
+const buildPersonalCarouselPrompt = ({ tema, ideia, texto }) => `
+Crie um carrossel pessoal para Karen Santos.
+
+TEMA: ${tema}
+${ideia ? `RECORTE INFORMADO POR KAREN: ${ideia}` : ''}
+${texto ? `DETALHES REAIS INFORMADOS POR KAREN:\n${texto}` : ''}
+
+${PERSONAL_SPECIFICITY_RULES}
+${NAOMI_EDITORIAL_GUIDE}
+
+Este não é um carrossel educativo. É uma micro-história em primeira pessoa.
+
+ESTRUTURA DOS 5 SLIDES:
+1. Gancho concreto que já entra na cena.
+2. O primeiro comportamento, gesto ou detalhe observável.
+3. A cena avança com outro detalhe específico.
+4. Minha reação ou a pequena contradição da situação.
+5. Fechamento com imagem, constatação ou humor seco. Sem lição.
+
+Crie três tratamentos da mesma micro-história:
+- Principal: cotidiano e direto.
+- Afetivo: mais próximo e contido, sem sentimentalismo fabricado.
+- Humor seco: mais engraçado, sem transformar a personagem em caricatura.
+
+PROIBIDO: "a gente", conceitos abstratos, exercício prático, conselho, transformação, cronograma perfeito, tentativa de controle, frustração acumulada ou qualquer detalhe inventado não sustentado pelo tema. Se um fato real fizer falta, use [Karen: conte aqui o detalhe real].
+
+Responda EXCLUSIVAMENTE com JSON válido:
+{
+  "versao_principal": {
+    "slides": [
+      { "numero": 1, "texto": "gancho dentro da cena" },
+      { "numero": 2, "texto": "primeiro detalhe observável" },
+      { "numero": 3, "texto": "a cena avança" },
+      { "numero": 4, "texto": "minha reação ou contradição" },
+      { "numero": 5, "texto": "fechamento sem moral" }
+    ],
+    "pergunta_final": "pergunta natural ou string vazia"
+  },
+  "variacao_emocional": {
+    "slides": [
+      { "numero": 1, "texto": "gancho afetivo" },
+      { "numero": 2, "texto": "detalhe observável" },
+      { "numero": 3, "texto": "a cena avança" },
+      { "numero": 4, "texto": "minha reação contida" },
+      { "numero": 5, "texto": "fechamento afetivo sem moral" }
+    ],
+    "pergunta_final": "pergunta natural ou string vazia"
+  },
+  "variacao_provocativa": {
+    "slides": [
+      { "numero": 1, "texto": "gancho com humor seco" },
+      { "numero": 2, "texto": "detalhe observável" },
+      { "numero": 3, "texto": "a cena avança" },
+      { "numero": 4, "texto": "minha reação autoirônica" },
+      { "numero": 5, "texto": "punchline sem moral" }
+    ],
+    "pergunta_final": "pergunta natural ou string vazia"
+  },
+  "legenda": "legenda curta em primeira pessoa, sem resumir os slides",
+  "exercicio_pratico": "",
+  "cta_fechado": "",
+  "comentarios": [],
+  "validacao": {
+    "deixa_espaco": true,
+    "nao_parece_coach": true,
+    "so_karen_diria": true,
+    "exercicio_acessa_memoria": true,
+    "perguntas_diferentes": true
+  }
+}`
+
 /* ── Protocolo de Stories ── */
 const buildStoriesSystem = (isPessoal) => `— IDENTIDADE —
 
 Você é um gerador de roteiros de stories para Instagram.
 
 ${isPessoal
-    ? `A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}`
+    ? `A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
     : 'A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.'}
 
 
@@ -1877,8 +1998,10 @@ ${revText.trim()}`
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
-          messages: [{ role: 'user', content: buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          messages: [{ role: 'user', content: isPessoal
+            ? buildPersonalReelsPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto })
+            : buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
         }),
       })
       if (!res.ok) {
@@ -1981,7 +2104,7 @@ ${revText.trim()}`
 
 Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 ${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.\n${NAOMI_EDITORIAL_GUIDE}`
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.\n${NAOMI_EDITORIAL_GUIDE}\n${PERSONAL_SPECIFICITY_RULES}`
     : WORK_NICHE}
 
 PRINCÍPIO CENTRAL:
@@ -2058,7 +2181,9 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           output_config: { effort: 'medium' },
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
-          messages: [{ role: 'user', content: buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: !isPessoal && carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
+          messages: [{ role: 'user', content: isPessoal
+            ? buildPersonalCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto })
+            : buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
         }),
       })
       if (!res.ok) {
@@ -3285,7 +3410,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
 
               {/* Pergunta Final */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg shadow-orange-200">
+              {engResult.pergunta_final && <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg shadow-orange-200">
                 <div className="relative z-10">
                   <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
                     <Quote size={10} /> Pergunta Final (use literalmente)
@@ -3297,7 +3422,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   </button>
                 </div>
                 <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
-              </div>
+              </div>}
 
               {/* Exercício Prático */}
               {engResult.exercicio_pratico && (
@@ -3319,8 +3444,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
               {/* Variações */}
               <div className="space-y-2">
                 {[
-                  { key: 'variacao_emocional',    label: 'Variação Emocional',    color: 'rose',   dot: 'bg-rose-500',   show: engShowEmocional,    toggle: () => setEngShowEmocional(v => !v) },
-                  { key: 'variacao_provocativa',   label: 'Variação Provocativa',  color: 'indigo', dot: 'bg-indigo-500', show: engShowProvocativo,   toggle: () => setEngShowProvocativo(v => !v) },
+                  { key: 'variacao_emocional',    label: isPessoal ? 'Variação Afetiva' : 'Variação Emocional',    color: 'rose',   dot: 'bg-rose-500',   show: engShowEmocional,    toggle: () => setEngShowEmocional(v => !v) },
+                  { key: 'variacao_provocativa',   label: isPessoal ? 'Variação com Humor Seco' : 'Variação Provocativa',  color: 'indigo', dot: 'bg-indigo-500', show: engShowProvocativo,   toggle: () => setEngShowProvocativo(v => !v) },
                 ].map(({ key, label, color, dot, show, toggle }) => (
                   <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                     <button onClick={toggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
@@ -3712,8 +3837,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
               {(() => {
                 const versions = [
                   { key: 'principal',   label: 'Principal',   data: carResult.versao_principal },
-                  { key: 'emocional',   label: 'Emocional',   data: carResult.variacao_emocional },
-                  { key: 'provocativa', label: 'Provocativa', data: carResult.variacao_provocativa },
+                  { key: 'emocional',   label: isPessoal ? 'Afetiva' : 'Emocional',   data: carResult.variacao_emocional },
+                  { key: 'provocativa', label: isPessoal ? 'Humor seco' : 'Provocativa', data: carResult.variacao_provocativa },
                 ]
                 const active = versions.find(v => v.key === carActiveVersion) || versions[0]
                 return (
