@@ -27,3 +27,17 @@ export function contactsToCsv(contacts) {
   )
   return [header, ...rows].join('\n')
 }
+
+// Fase 4 (broadcast) — a Meta só entrega mensagem de fora da janela normal
+// de 24h com tags especiais (uso restrito, não cobre broadcast automatizado)
+// ou mensagem paga com revisão própria. Confirmado nesta sessão com um
+// evento real: resposta a comentário NÃO conta como abrir a janela — só uma
+// mensagem/story_reply de verdade do contato conta, por isso o broadcast
+// usa last_inbound_message_at (não last_interaction_at) pra essa checagem.
+const MESSAGING_WINDOW_HOURS = 24
+
+export function isWithinMessagingWindow(lastInboundMessageAt, now = new Date()) {
+  if (!lastInboundMessageAt) return false
+  const elapsedMs = now.getTime() - new Date(lastInboundMessageAt).getTime()
+  return elapsedMs >= 0 && elapsedMs < MESSAGING_WINDOW_HOURS * 60 * 60 * 1000
+}

@@ -23,7 +23,7 @@
 import { verifyWebhookSignature } from '../src/lib/dmSignature.js'
 import { parseWebhookPayload } from '../src/lib/dmWebhookEvents.js'
 import { findMatchingRule } from '../src/lib/dmTriggerMatcher.js'
-import { getSupabaseServer, sendInstagramMessage, upsertContact, runFlowStep } from '../src/lib/dmServer.js'
+import { getSupabaseServer, sendInstagramMessage, upsertContact, markInboundMessage, runFlowStep } from '../src/lib/dmServer.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -158,6 +158,7 @@ export default async function handler(req, res) {
       }
 
       if (activeFlowRun) {
+        await markInboundMessage(db, contact.id)
         await resumeFlow(db, connection, activeFlowRun, contact, event)
         await db.from('ig_events').update({ status: 'sent', processed_at: new Date().toISOString() }).eq('id', inserted.id)
         continue
@@ -172,7 +173,10 @@ export default async function handler(req, res) {
         continue
       }
 
-      const { contact: upsertedContact } = igScopedId ? await upsertContact(db, igScopedId, event.fromUsername, rule.tag_to_apply) : { contact: null }
+      const isInboundMessage = event.type === 'message' || event.type === 'story_reply'
+      const { contact: upsertedContact } = igScopedId
+        ? await upsertContact(db, igScopedId, event.fromUsername, rule.tag_to_apply, isInboundMessage)
+        : { contact: null }
 
       if (rule.flow_id) {
         await startFlow(db, connection, rule.flow_id, upsertedContact, event)
