@@ -38,6 +38,7 @@ const NAV_GROUPS = [
       { to: '/trends', icon: Radar, label: 'Creator Insights' },
       { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
       { to: '/dm-flows', icon: Workflow, label: 'Fluxos de DM' },
+      { to: '/dm-rules', icon: Zap, label: 'Regras de Gatilho' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
     ],
