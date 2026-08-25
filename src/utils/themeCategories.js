@@ -18,7 +18,26 @@
 
 export const WORK_CATEGORIES = ['Critério de decisão', 'Desmonte de hype', 'Bastidor de estrategista', 'Camada humana']
 
-export const PERSONAL_CATEGORIES = ['Naomi', 'Casa & Rotina', 'Fé', 'Comprinhas & Achados', 'Hobbies & Gostos', 'Vida']
+export const PERSONAL_CATEGORIES = [
+  'Vida com Naomi',
+  'A vida dentro de casa',
+  'Fé na vida real',
+  'Achados que valem a pena',
+  'Meu repertório particular',
+  'Ser adulta é isso?',
+]
+
+export const PERSONAL_CATEGORY_MIGRATION = {
+  'Naomi': 'Vida com Naomi',
+  'Casa & Rotina': 'A vida dentro de casa',
+  'Fé': 'Fé na vida real',
+  'Comprinhas & Achados': 'Achados que valem a pena',
+  'Hobbies & Gostos': 'Meu repertório particular',
+  'Vida': 'Ser adulta é isso?',
+}
+
+export const migratePersonalCategory = (categoria) =>
+  PERSONAL_CATEGORY_MIGRATION[categoria] || categoria
 
 /** Temas já salvos com categorias de qualquer posicionamento anterior mudam de gaveta, não somem. */
 export const WORK_CATEGORY_MIGRATION = {
@@ -123,25 +142,25 @@ export function categorizePersonalTheme(tema) {
   const tk = tokenize(t)
 
   if (hasWord(tk, 'naomi', 'pet', 'pets', 'cachorro', 'cachorra', 'cadela', 'buldogue', 'bulldog', 'ração', 'racao')
-    || hasStem(tk, 'veterinári', 'veterinari')) return 'Naomi'
+    || hasStem(tk, 'veterinári', 'veterinari')) return 'Vida com Naomi'
 
   if (hasWord(tk, 'casa', 'cozinha', 'planta', 'plantas', 'apartamento', 'reforma', 'faxina', 'limpeza', 'rotina', 'casinha')
-    || hasStem(tk, 'decora', 'arruma')) return 'Casa & Rotina'
+    || hasStem(tk, 'decora', 'arruma')) return 'A vida dentro de casa'
 
   if (hasWord(tk, 'fé', 'fe', 'deus', 'terreiro', 'orixá', 'orixa', 'orixás', 'vodum', 'voduns', 'jeje',
     'búzios', 'buzios', 'axé', 'axe', 'ancestralidade', 'gratidão', 'gratidao', 'espiritualidade')
     || hasStem(tk, 'candombl', 'ora')
-    || hasPhrase(t, 'povo de santo', 'obrigação de santo')) return 'Fé'
+    || hasPhrase(t, 'povo de santo', 'obrigação de santo')) return 'Fé na vida real'
 
   if (hasWord(tk, 'compra', 'compras', 'comprei', 'comprinha', 'comprinhas', 'achado', 'achados',
     'shopee', 'amazon', 'resenha', 'make', 'skincare', 'roupa', 'roupas', 'look', 'unboxing', 'casaco')
-    || hasStem(tk, 'comprar')) return 'Comprinhas & Achados'
+    || hasStem(tk, 'comprar')) return 'Achados que valem a pena'
 
   if (hasWord(tk, 'livro', 'livros', 'série', 'serie', 'séries', 'series', 'filme', 'filmes', 'viagem', 'viagens',
     'restaurante', 'café', 'cafe', 'música', 'musica', 'treino', 'corrida', 'hobby', 'hobbies', 'receita', 'petisco', 'petiscos'))
-    return 'Hobbies & Gostos'
+    return 'Meu repertório particular'
 
-  return 'Vida'
+  return 'Ser adulta é isso?'
 }
 
 export const categorizeTheme = (tema, isPessoal) =>

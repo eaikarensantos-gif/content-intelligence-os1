@@ -26,7 +26,8 @@ import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from '../../data/temasCarro
 import { checkCoherence } from '../../lib/coherenceCheck'
 import { lintText } from '../../utils/brandLinter'
 import {
-  WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, categorizeTheme as classifyTheme,
+  WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, migratePersonalCategory,
+  categorizeTheme as classifyTheme,
   WORK_NICHE, WORK_CATEGORY_BRIEF, isCltFramed,
 } from '../../utils/themeCategories'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -66,13 +67,22 @@ NUNCA FAZER:
 const PERSONAL_MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo PESSOAL para Karen Santos (@karensantosperfil).
 Neste modo Karen NÃO é a consultora tech nem a mentora de carreira. Aqui ela é a pessoa fora do trabalho: a casa, a Naomi (buldogue francês), a fé, as comprinhas, os hobbies, as coisas banais do dia que a tornam humana.
 
-OBJETIVO: conexão real, não autoridade. O leitor precisa sentir "eu também", não "que profissional incrível". É esse conteúdo que constrói comunidade de verdade.
+IDENTIDADE: "Do lado de cá" — histórias, gostos e pequenas descobertas da vida fora do trabalho.
+OBJETIVO: conexão real, não autoridade. O leitor precisa sentir "eu também", não "que profissional incrível". Mostrar a pessoa sem transformar intimidade em vitrine.
 
 REGRAS DESTE MODO:
 - PROIBIDO enquadrar pelo trabalho: nada de carreira, tecnologia, mentoria, liderança, produtividade ou lição profissional disfarçada. Se o tema puxar pra trabalho, puxa de volta pra vida.
 - Banal é o ponto, não o problema. Uma comprinha, uma mania, um perrengue doméstico valem post — a força está no detalhe específico (nome do produto, hora do dia, o que a Naomi fez), não em moral da história.
-- Vulnerabilidade só quando carrega informação real: o que ela sentiu, o que não resolveu, o que ainda não entende. Vulnerabilidade performada ("confesso que...") é proibida — lê pior que texto perfeito.
-- Sem CTA de engajamento, sem lição no final. Fechamento é observação seca, detalhe concreto ou piada — nunca moral.
+- Compartilhe prioritariamente a experiência de Karen. Não invente falas, sentimentos, conflitos ou informações privadas de terceiros. Naomi é sua bulldog francesa, nunca uma criança.
+- Vulnerabilidade só quando carrega informação real e já pode ser narrada com segurança: o que ela sentiu, o que não resolveu, o que ainda não entende. Vulnerabilidade performada ("confesso que...") é proibida.
+- Nem todo conteúdo precisa ensinar. Ele pode aproximar, divertir, registrar uma percepção ou provocar identificação.
+- Não force CTA. Quando fizer sentido, encerre com uma pergunta curta de conversa; caso contrário, use observação seca, detalhe concreto ou piada — nunca moral.
+- Comece em uma cena concreta, desenvolva uma percepção pessoal e termine deixando companhia, não necessariamente uma conclusão.
+
+FORMATOS EDITORIAIS RECORRENTES:
+- Uma coisa sobre mim; Pequenas alegrias; Confissões de pessoa física; Isso ficou comigo.
+- Testado na vida real; Cena de uma vida comum; Não tenho uma conclusão; Karen recomenda.
+- Eu achava que seria diferente; Coisas que estou aprendendo devagar.
 
 RECONHECIMENTO AUTOMÁTICO DE CONTEXTO:
 - Momento íntimo, fé, sentimento, algo não resolvido → Tom Diário
@@ -91,24 +101,24 @@ NUNCA FAZER:
 
 /* ── Temas iniciais do Banco de Temas pessoal ── */
 const PERSONAL_SEED_THEMES = [
-  { tema: 'A Naomi decidiu que o sofá é dela', categoria: 'Naomi' },
-  { tema: 'O que a Naomi faz quando eu choro', categoria: 'Naomi' },
-  { tema: 'Passeio com buldogue no calor de 35 graus', categoria: 'Naomi' },
-  { tema: 'A planta que eu me recuso a deixar morrer', categoria: 'Casa & Rotina' },
-  { tema: 'Meu domingo começa na feira', categoria: 'Casa & Rotina' },
-  { tema: 'A gaveta da bagunça que todo mundo tem', categoria: 'Casa & Rotina' },
-  { tema: 'O jogo de búzios que eu não esperava ouvir', categoria: 'Fé' },
-  { tema: 'Preparar a roupa branca de sexta pro terreiro', categoria: 'Fé' },
-  { tema: 'O que o meu vodum me pede em semana ruim', categoria: 'Fé' },
-  { tema: 'A comprinha de R$30 que eu uso todo dia', categoria: 'Comprinhas & Achados' },
-  { tema: 'O achado da Shopee que superou o hype', categoria: 'Comprinhas & Achados' },
-  { tema: 'A compra cara que me arrependi caladinha', categoria: 'Comprinhas & Achados' },
-  { tema: 'O livro que eu abandonei sem culpa', categoria: 'Hobbies & Gostos' },
-  { tema: 'O café da manhã que virou ritual', categoria: 'Hobbies & Gostos' },
-  { tema: 'A série que eu assisto pela terceira vez', categoria: 'Hobbies & Gostos' },
-  { tema: 'Coisas que eu faço quando ninguém vê', categoria: 'Vida' },
-  { tema: 'A mania que eu herdei da minha mãe', categoria: 'Vida' },
-  { tema: 'O elogio que eu não soube receber', categoria: 'Vida' },
+  { tema: 'A Naomi decidiu que o sofá é dela', categoria: 'Vida com Naomi' },
+  { tema: 'O suspiro dramático da Naomi quando ela quer atenção', categoria: 'Vida com Naomi' },
+  { tema: 'Passeio com buldogue no calor de 35 graus', categoria: 'Vida com Naomi' },
+  { tema: 'A planta que eu me recuso a deixar morrer', categoria: 'A vida dentro de casa' },
+  { tema: 'Meu domingo começa na feira', categoria: 'A vida dentro de casa' },
+  { tema: 'Coisas que parei de tentar fazer perfeitamente', categoria: 'A vida dentro de casa' },
+  { tema: 'O jogo de búzios que eu não esperava ouvir', categoria: 'Fé na vida real' },
+  { tema: 'Preparar a roupa branca de sexta pro terreiro', categoria: 'Fé na vida real' },
+  { tema: 'O que a fé não resolve, mas ajuda a atravessar', categoria: 'Fé na vida real' },
+  { tema: 'A comprinha de R$30 que eu uso todo dia', categoria: 'Achados que valem a pena' },
+  { tema: 'O achado da Shopee que superou o hype', categoria: 'Achados que valem a pena' },
+  { tema: 'A compra cara que me arrependi caladinha', categoria: 'Achados que valem a pena' },
+  { tema: 'O livro que eu abandonei sem culpa', categoria: 'Meu repertório particular' },
+  { tema: 'Coisas que eu gosto e ninguém imagina', categoria: 'Meu repertório particular' },
+  { tema: 'A série que eu assisto pela terceira vez', categoria: 'Meu repertório particular' },
+  { tema: 'O alívio de um compromisso cancelado', categoria: 'Ser adulta é isso?' },
+  { tema: 'A mania que eu herdei da minha mãe', categoria: 'Ser adulta é isso?' },
+  { tema: 'O elogio que eu não soube receber', categoria: 'Ser adulta é isso?' },
 ]
 
 /* ── Formatos ── */
@@ -1406,13 +1416,13 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     try {
       let raw = JSON.parse(localStorage.getItem(themesKey) || '[]')
       if (raw.length > 0 && typeof raw[0] === 'string') {
-        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Vida' : 'Critério de decisão', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
+        raw = raw.map((t, i) => ({ id: Date.now() + i, tema: t, categoria: isPessoal ? 'Ser adulta é isso?' : 'Critério de decisão', fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }))
       } else {
         // migrar itens sem categoria e reclassificar as categorias antigas de trabalho
         raw = raw.map(item => ({
           ...item,
           categoria: isPessoal
-            ? (item.categoria || 'Vida')
+            ? migratePersonalCategory(item.categoria || 'Ser adulta é isso?')
             : migrateWorkCategory(item.categoria || 'Critério de decisão'),
         }))
       }
@@ -2552,10 +2562,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
             {isPessoal ? <Heart size={20} className="text-white" /> : <PenTool size={20} className="text-white" />}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{isPessoal ? 'Studio Pessoal' : 'Criar Conteúdo'}</h1>
+            <h1 className="text-xl font-bold text-gray-900">{isPessoal ? 'Studio Pessoal · Do lado de cá' : 'Criar Conteúdo'}</h1>
             <p className="text-xs text-gray-400">
               {isPessoal
-                ? 'Sua vida fora do trabalho — casa, Naomi, fé, comprinhas e o resto que te faz humana'
+                ? 'Histórias, gostos e pequenas descobertas da sua vida fora do trabalho'
                 : 'Descreva o que quer criar — a IA detecta o tom e formato ideal'}
             </p>
           </div>

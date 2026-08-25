@@ -138,63 +138,68 @@ export const TEMAS_CARROSSEL = [
 // Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
 export const PERSONAL_TEMAS_SUGESTOES = [
   {
-    categoria: 'Naomi',
+    categoria: 'Vida com Naomi',
     temas: [
-      'A Naomi rosnando pro entregador que ela já conhece',
-      'Tentando tirar foto profissional e ela só quer brincar',
-      'O ronco dela enquanto eu tento trabalhar',
-      'Ela escondendo o brinquedo debaixo do sofá',
-      'A cara de decepção quando eu saio sem ela',
+      'A Naomi gerenciando os horários da casa',
+      'O suspiro dramático quando ela quer atenção',
+      'O passeio que ela decidiu encerrar no meio',
+      'Coisas que comprei para ela e não funcionaram',
+      'O lugar da casa que oficialmente virou dela',
     ],
   },
   {
-    categoria: 'Casa & Rotina',
+    categoria: 'A vida dentro de casa',
     temas: [
       'O dia que eu decidi organizar um armário e desisti na metade',
       'A lista de compras que eu nunca sigo no mercado',
       'Café da manhã em pé porque atrasei',
       'A parede que eu quero pintar há um ano',
       'Domingo de faxina que vira documentário no fundo',
+      'Coisas que parei de tentar fazer perfeitamente',
     ],
   },
   {
-    categoria: 'Fé',
+    categoria: 'Fé na vida real',
     temas: [
       'O que o búzio disse que eu não queria ouvir',
       'Separar a roupa branca de sexta com pressa',
       'A dúvida que eu não conto nem pro povo de santo',
       'Gratidão ao meu vodum num dia que não teve nada de especial',
       'A obrigação que eu adiei até não dar mais',
+      'O que a fé não resolve, mas me ajuda a atravessar',
     ],
   },
   {
-    categoria: 'Comprinhas & Achados',
+    categoria: 'Achados que valem a pena',
     temas: [
       'O item que ficou 3 meses no carrinho até eu comprar',
       'A resenha que me convenceu contra minha vontade',
       'O produto que todo mundo recomendou e eu não gostei',
       'A promoção que eu jurei que não ia cair',
       'O achado de R$15 que virou queridinho',
+      'A compra que facilitou uma irritação muito específica',
     ],
   },
   {
-    categoria: 'Hobbies & Gostos',
+    categoria: 'Meu repertório particular',
     temas: [
       'O podcast que eu escuto lavando louça',
       'A receita que eu erro sempre do mesmo jeito',
       'O documentário que eu assisto sozinha porque ninguém quer',
       'A playlist que muda meu humor em 2 minutos',
       'O hobby que eu larguei e quero retomar',
+      'Coisas que eu gosto e ninguém imagina',
     ],
   },
   {
-    categoria: 'Vida',
+    categoria: 'Ser adulta é isso?',
     temas: [
       'A ligação que eu adio há semanas',
       'O silêncio que eu preciso depois de um dia cheio',
       'A frase da minha avó que eu repito sem perceber',
       'O jeito que eu percebo que preciso descansar',
       'A saudade de uma fase que eu não queria voltar, só visitar',
+      'O alívio socialmente inaceitável de um compromisso cancelado',
     ],
   },
 ]

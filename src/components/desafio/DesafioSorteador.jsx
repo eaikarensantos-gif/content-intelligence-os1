@@ -31,7 +31,7 @@ const CATEGORIAS_IA = new Set([
   "IA no comportamento humano",
 ]);
 
-const NAOMI_TEMAS = PERSONAL_TEMAS_SUGESTOES.find((c) => c.categoria === "Naomi");
+const NAOMI_TEMAS = PERSONAL_TEMAS_SUGESTOES.find((c) => c.categoria === "Vida com Naomi");
 
 const PILARES = [...TEMAS_CARROSSEL, ...(NAOMI_TEMAS ? [NAOMI_TEMAS] : [])].map((c) => ({
   id: c.categoria,

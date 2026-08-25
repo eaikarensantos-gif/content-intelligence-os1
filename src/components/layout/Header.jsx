@@ -15,7 +15,7 @@ const TITLES = {
   '/ads': { title: 'Publicidade', sub: 'Gerencie campanhas, orçamentos e acompanhe resultados' },
   '/security': { title: 'Registro de Acessos', sub: 'Histórico completo de logins e tentativas' },
   '/create': { title: 'Studio de Criação', sub: 'Crie conteúdo em qualquer formato com IA e sua voz de marca' },
-  '/create-pessoal': { title: 'Studio Pessoal', sub: 'Conteúdo da sua vida fora do trabalho — casa, Naomi, fé, comprinhas e o que te faz humana' },
+  '/create-pessoal': { title: 'Studio Pessoal · Do lado de cá', sub: 'Histórias, gostos e pequenas descobertas da sua vida fora do trabalho' },
   '/reports': { title: 'Relatórios', sub: 'Relatórios de performance prontos para compartilhar' },
   '/naomi': { title: 'Naomi Studio', sub: 'Roteiros e prompts de vídeo para a personagem Naomi' },
   '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },

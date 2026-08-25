@@ -3,6 +3,7 @@ import {
   WORK_CATEGORIES,
   PERSONAL_CATEGORIES,
   migrateWorkCategory,
+  migratePersonalCategory,
   categorizeWorkTheme,
   categorizePersonalTheme,
   categorizeTheme,
@@ -57,6 +58,15 @@ describe('migração dos temas já salvos', () => {
 
   it('categoria já nova passa intacta', () => {
     WORK_CATEGORIES.forEach((c) => expect(migrateWorkCategory(c)).toBe(c))
+  })
+
+  it('categorias pessoais antigas recebem os nomes editoriais novos', () => {
+    expect(migratePersonalCategory('Naomi')).toBe('Vida com Naomi')
+    expect(migratePersonalCategory('Casa & Rotina')).toBe('A vida dentro de casa')
+    expect(migratePersonalCategory('Fé')).toBe('Fé na vida real')
+    expect(migratePersonalCategory('Comprinhas & Achados')).toBe('Achados que valem a pena')
+    expect(migratePersonalCategory('Hobbies & Gostos')).toBe('Meu repertório particular')
+    expect(migratePersonalCategory('Vida')).toBe('Ser adulta é isso?')
   })
 })
 
@@ -123,19 +133,19 @@ describe('palavra inteira, não pedaço de palavra', () => {
 
   it('não confunde pedaço de palavra no banco de vida', () => {
     const casos = [
-      ['Ninguém me compreende quando falo disso', 'Vida'],   // "compr" em compreende
-      ['Competência não é tudo', 'Vida'],                     // "pet" em competência
-      ['Casaco novo que comprei', 'Comprinhas & Achados'],    // "casa" em casaco
-      ['Petiscos no fim de semana', 'Hobbies & Gostos'],      // "pet" em petisco não é a Naomi
+      ['Ninguém me compreende quando falo disso', 'Ser adulta é isso?'],
+      ['Competência não é tudo', 'Ser adulta é isso?'],
+      ['Casaco novo que comprei', 'Achados que valem a pena'],
+      ['Petiscos no fim de semana', 'Meu repertório particular'],
     ]
     casos.forEach(([tema, esperado]) => expect(categorizePersonalTheme(tema), tema).toBe(esperado))
   })
 
   it('"fé" com acento é reconhecida — \\b do JS não enxerga letra acentuada', () => {
-    expect(categorizePersonalTheme('fé em dia difícil')).toBe('Fé')
-    expect(categorizePersonalTheme('minha fé')).toBe('Fé')
+    expect(categorizePersonalTheme('fé em dia difícil')).toBe('Fé na vida real')
+    expect(categorizePersonalTheme('minha fé')).toBe('Fé na vida real')
     // e café não vira fé por causa da terminação
-    expect(categorizePersonalTheme('Tomar café na padaria')).toBe('Hobbies & Gostos')
+    expect(categorizePersonalTheme('Tomar café na padaria')).toBe('Meu repertório particular')
   })
 
   it('tokenize quebra por letra, respeitando acento', () => {
@@ -147,10 +157,10 @@ describe('palavra inteira, não pedaço de palavra', () => {
 
 describe('classificação de tema pessoal continua intacta', () => {
   it('mantém as gavetas da vida', () => {
-    expect(categorizePersonalTheme('a Naomi decide o dia dela antes de mim')).toBe('Naomi')
-    expect(categorizePersonalTheme('jogo de búzios')).toBe('Fé')
-    expect(categorizePersonalTheme('achados da shopee')).toBe('Comprinhas & Achados')
-    expect(categorizePersonalTheme('qualquer outra coisa')).toBe('Vida')
+    expect(categorizePersonalTheme('a Naomi decide o dia dela antes de mim')).toBe('Vida com Naomi')
+    expect(categorizePersonalTheme('jogo de búzios')).toBe('Fé na vida real')
+    expect(categorizePersonalTheme('achados da shopee')).toBe('Achados que valem a pena')
+    expect(categorizePersonalTheme('qualquer outra coisa')).toBe('Ser adulta é isso?')
   })
 
   it('sempre devolve categoria pessoal válida', () => {
@@ -161,8 +171,8 @@ describe('classificação de tema pessoal continua intacta', () => {
 })
 
 describe('categorizeTheme escolhe o banco pela persona', () => {
-  it('ancestralidade é Fé na vida e Camada humana no trabalho', () => {
-    expect(categorizeTheme('ancestralidade', true)).toBe('Fé')
+  it('ancestralidade é Fé na vida real e Camada humana no trabalho', () => {
+    expect(categorizeTheme('ancestralidade', true)).toBe('Fé na vida real')
     expect(categorizeTheme('ancestralidade', false)).toBe('Camada humana')
   })
 })
