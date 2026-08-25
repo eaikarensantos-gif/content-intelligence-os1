@@ -642,7 +642,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
-const buildPersonalReelsPrompt = ({ tema, ideia, texto }) => `
+const buildPersonalReelsPrompt = ({ tema, ideia, texto, template }) => `
 Crie um Reel pessoal para Karen Santos.
 
 TEMA: ${tema}
@@ -651,13 +651,19 @@ ${texto ? `DETALHES REAIS INFORMADOS POR KAREN:\n${texto}` : ''}
 
 ${PERSONAL_SPECIFICITY_RULES}
 ${isNaomiTheme(`${tema} ${ideia || ''} ${texto || ''}`) ? NAOMI_EDITORIAL_GUIDE : ''}
+${template ? `
+ESTRUTURA ESCOLHIDA: ${template.label}
+OBJETIVO: ${template.desc}
+${template.estrutura}
 
-O roteiro principal deve ter entre 30 e 45 segundos e seguir:
+Esta estrutura substitui a sequência genérica abaixo. Siga seus movimentos na ordem e faça o roteiro soar pessoal, vivido e específico para o tema.` : ''}
+
+O roteiro principal deve ter entre 30 e 60 segundos e ${template ? 'seguir rigorosamente a estrutura escolhida acima' : `seguir:
 1. Gancho na tela que já entra na cena.
 2. Situação concreta em primeira pessoa.
 3. Dois ou três comportamentos observáveis em progressão.
 4. Minha reação, sem explicar demais.
-5. Fechamento com imagem concreta ou humor seco.
+5. Fechamento com imagem concreta ou humor seco.`}
 
 Não crie exercício prático. Não tente ensinar. Não use linguagem de análise, controle, produtividade ou desenvolvimento pessoal. A variação emocional deve ser mais afetiva, não melodramática. A variação de humor seco deve observar a mesma cena por outro ângulo, sem crueldade.
 
@@ -1284,6 +1290,79 @@ const ENGAGEMENT_TEMPLATES = {
    ❌ Errado: "E foi assim que a IA revolucionou meu negócio"
    ✅ Certo: "Isso sozinho já tira 2 horas por semana da recepção — e o seu negócio provavelmente tem o mesmo tipo de tarefa repetitiva escondida em algum canto"
    Termina apontando pra ação do espectador, não fechando a história como case perfeito.`,
+  },
+}
+
+/* Estruturas equivalentes do Studio Pessoal. Mantêm as seis mecânicas de
+   retenção, mas removem linguagem de autoridade, estudo de negócio e ensino. */
+const PERSONAL_ENGAGEMENT_TEMPLATES = {
+  yapping: {
+    label: 'Pensando em voz alta',
+    alavanca: 'retenção até o fim',
+    desc: 'Um pensamento espontâneo que vai encontrando forma durante a fala',
+    estrutura: `Roteiro falado em 5 movimentos:
+1. Comece no meio de um pensamento pessoal, sem saudação ou anúncio do tema.
+2. Mostre uma contradição, detalhe ou pergunta que ainda não fecha.
+3. Traga dois ou três exemplos cotidianos específicos em progressão.
+4. Diga o que você passou a perceber, sem transformar em conselho.
+5. Feche ecoando o começo, como quem terminou de pensar — não com moral ou "me segue".
+O ritmo pode ter autocorreção e oralidade, mas não deve parecer texto desorganizado.`,
+  },
+  hot_take: {
+    label: 'Uma opinião pessoal',
+    alavanca: 'comentário e discordância',
+    desc: 'Uma opinião clara sobre a vida cotidiana, sustentada por experiências observáveis',
+    estrutura: `Roteiro falado em 4 movimentos:
+1. Declare a opinião pessoal de forma direta, sem "talvez" ou pedido de desculpas.
+2. Mostre a cena ou comportamento cotidiano que fez você pensar assim.
+3. Nomeie o que essa opinião muda na forma como você vive ou se percebe.
+4. Termine com uma pergunta que pede experiência ou posição, nunca "concorda?".
+Não transforme a opinião em regra universal nem em provocação fabricada.`,
+  },
+  mito_fato: {
+    label: 'Eu achava × Hoje percebo',
+    alavanca: 'identificação e salvamento',
+    desc: 'Uma crença pessoal antiga confrontada com o que a vida mostrou na prática',
+    estrutura: `Roteiro falado em 4 movimentos:
+1. "Eu achava": apresente a crença antiga sem ridicularizá-la.
+2. Explique por que ela parecia verdadeira para você naquela fase.
+3. "Hoje percebo": mostre a cena, repetição ou experiência concreta que mudou sua leitura.
+4. Feche com a diferença entre as duas versões, sem declarar uma lição universal.
+Quando funcionar, use dois ou três pares curtos de "eu achava / hoje percebo".`,
+  },
+  confissao_bastidor: {
+    label: 'Uma coisa sobre mim',
+    alavanca: 'identificação e confiança',
+    desc: 'Uma admissão pessoal concreta, contada sem vulnerabilidade performada',
+    estrutura: `Roteiro falado em 4 movimentos:
+1. Revele a admissão já na primeira frase; não use "preciso confessar" como suspense.
+2. Mostre quando isso acontece com uma cena específica.
+3. Conte a interpretação que você fazia antes e o que entende hoje.
+4. Feche aceitando a contradição ou deixando a observação em aberto.
+Não dramatize, não peça validação e não transforme a confissão em case de superação.`,
+  },
+  estudo_de_caso: {
+    label: 'Cena de uma vida comum',
+    alavanca: 'história e identificação',
+    desc: 'Uma situação cotidiana observada como pequeno estudo de caso pessoal',
+    estrutura: `Roteiro falado em 5 movimentos:
+1. Nomeie a cena como um pequeno "estudo de caso" cotidiano, com humor leve.
+2. Diga qual era o plano ou expectativa concreta.
+3. Mostre o que realmente aconteceu, sem inventar detalhes dramáticos.
+4. Conte o que você fez diferente ou decidiu não fazer.
+5. Feche com o resultado humano da cena e, se couber, uma observação seca.
+Não use métricas, credibilidade profissional, cliente ou linguagem de negócio.`,
+  },
+  como_eu_usaria: {
+    label: 'Como isso aparece na minha vida',
+    alavanca: 'aplicação pessoal',
+    desc: 'Mostra como uma percepção se traduz em escolhas reais, sem virar tutorial',
+    estrutura: `Roteiro falado em 4 movimentos:
+1. Apresente a percepção pessoal que você está tentando acomodar, não resolver perfeitamente.
+2. Mostre como ela aparece numa situação cotidiana específica.
+3. Conte duas escolhas pequenas que você faz hoje por causa dessa percepção.
+4. Feche nomeando o que ainda continua contraditório ou incompleto.
+Não ensine passos ao público. Fale apenas do que você faz, evita, aceita ou ainda está aprendendo.`,
   },
 }
 
@@ -2036,7 +2115,7 @@ ${revText.trim()}`
           max_tokens: 12000,
           system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
           messages: [{ role: 'user', content: isPessoal
-            ? buildPersonalReelsPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto })
+            ? buildPersonalReelsPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, template: engTemplate ? PERSONAL_ENGAGEMENT_TEMPLATES[engTemplate] : null })
             : buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
         }),
       })
@@ -2326,8 +2405,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       platforms: ['instagram'],
       priority: 'medium',
       status: 'ready',
-      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20), ...(engTemplate ? [ENGAGEMENT_TEMPLATES[engTemplate].label.toLowerCase()] : [])],
-      source: engTemplate ? `Protocolo Anti-Emoji — ${ENGAGEMENT_TEMPLATES[engTemplate].label}` : 'Protocolo Anti-Emoji',
+      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20), ...(engTemplate ? [((isPessoal ? PERSONAL_ENGAGEMENT_TEMPLATES : ENGAGEMENT_TEMPLATES)[engTemplate]?.label || engTemplate).toLowerCase()] : [])],
+      source: engTemplate ? `${isPessoal ? 'Reels do lado de cá' : 'Protocolo Anti-Emoji'} — ${(isPessoal ? PERSONAL_ENGAGEMENT_TEMPLATES : ENGAGEMENT_TEMPLATES)[engTemplate]?.label}` : isPessoal ? 'Reels do lado de cá' : 'Protocolo Anti-Emoji',
     })
     setEngSavedHub(true)
   }
@@ -3314,8 +3393,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 <MessageCircle size={15} className="text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Protocolo Anti-Emoji</p>
-                <p className="text-xs text-gray-400 mt-0.5">Gera roteiro otimizado para comentários reais — não emojis</p>
+                <p className="text-sm font-bold text-gray-900">{isPessoal ? 'Roteiros do lado de cá' : 'Protocolo Anti-Emoji'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{isPessoal ? 'Transforma uma observação pessoal em história, afeto ou humor' : 'Gera roteiro otimizado para comentários reais — não emojis'}</p>
               </div>
             </div>
 
@@ -3340,7 +3419,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 Estrutura de roteiro <span className="text-gray-300">(opcional)</span>
               </label>
               <div className="grid grid-cols-2 gap-1.5">
-                {Object.entries(ENGAGEMENT_TEMPLATES).map(([key, t]) => (
+                {Object.entries(isPessoal ? PERSONAL_ENGAGEMENT_TEMPLATES : ENGAGEMENT_TEMPLATES).map(([key, t]) => (
                   <button
                     key={key}
                     type="button"
