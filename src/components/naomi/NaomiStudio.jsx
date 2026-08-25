@@ -199,6 +199,7 @@ export default function NaomiStudio() {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 1000,
+          skipAntiCliche: true,
           messages: [{ role: 'user', content: `Translate this video generation prompt from Portuguese to English. Keep all technical terms, character descriptions, camera instructions, and formatting intact. Return ONLY the translated prompt, no preamble:\n\n${result.video_prompt}` }],
         }),
       })

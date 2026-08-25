@@ -9,6 +9,8 @@
 //   'transcribe'       → OpenAI Whisper
 //   (default)          → AI chat completion
 
+import { ANTI_AI_FILTER } from '../src/lib/antiAIFilter.js'
+
 // The ~30 call sites across the app build requests in Anthropic Messages
 // shape (model/system/messages/thinking/max_tokens) and parse responses as
 // `content: [{type, text}]` + `stop_reason`. Rather than touch every call
@@ -26,6 +28,25 @@ const PROVIDER_URLS = {
   groq:       'https://api.groq.com/openai/v1/chat/completions',
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
   custom:     null,
+}
+
+// Enforce the editorial protocol at the shared gateway so a new generator
+// cannot accidentally bypass it. Faithful transformations such as translation
+// may opt out explicitly because rewriting their source would be incorrect.
+function withGlobalAntiCliche(system = '') {
+  if (system.includes('FILTRO DE AUTENTICIDADE — REGRA GLOBAL')) return system
+  return `${ANTI_AI_FILTER}\n\n---\n\n${system}`.trim()
+}
+
+function messagesWithGlobalAntiCliche(messages = [], skipAntiCliche = false) {
+  if (skipAntiCliche) return messages
+  const systemIndex = messages.findIndex((message) => message.role === 'system')
+  if (systemIndex < 0) {
+    return [{ role: 'system', content: withGlobalAntiCliche() }, ...messages]
+  }
+  return messages.map((message, index) => index === systemIndex
+    ? { ...message, content: withGlobalAntiCliche(message.content || '') }
+    : message)
 }
 
 async function callOpenAICompatible(url, apiKey, model, messages, options = {}, extraHeaders = {}) {
@@ -954,7 +975,8 @@ export default async function handler(req, res) {
     if (action === 'anthropic') {
       const apiKey = req.headers['x-api-key']
       if (!apiKey) return res.status(400).json({ error: 'API key is required' })
-      const { action: _drop, ...anthropicBody } = req.body || {}
+      const { action: _drop, skipAntiCliche = false, ...anthropicBody } = req.body || {}
+      if (!skipAntiCliche) anthropicBody.system = withGlobalAntiCliche(anthropicBody.system || '')
       const upstream = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -972,7 +994,8 @@ export default async function handler(req, res) {
     if (action === 'gemini') {
       const apiKey = req.headers['x-api-key']
       if (!apiKey) return res.status(400).json({ error: 'API key is required' })
-      const { action: _drop, ...geminiBody } = req.body || {}
+      const { action: _drop, skipAntiCliche = false, ...geminiBody } = req.body || {}
+      if (!skipAntiCliche) geminiBody.system = withGlobalAntiCliche(geminiBody.system || '')
       const result = await callGeminiMessages(apiKey, geminiBody)
       return res.status(result.status).json(result.body)
     }
@@ -1099,13 +1122,14 @@ export default async function handler(req, res) {
     }
 
     // ── AI chat completion (default) ──────────────────────────────────────────
-    const { provider, apiKey, model, messages, options = {}, customBaseUrl } = req.body
+    const { provider, apiKey, model, messages, options = {}, customBaseUrl, skipAntiCliche = false } = req.body
     if (!apiKey?.trim())    return res.status(400).json({ error: 'API key is required' })
     if (!messages?.length)  return res.status(400).json({ error: 'Messages are required' })
 
+    const filteredMessages = messagesWithGlobalAntiCliche(messages, skipAntiCliche)
     let content
     if (provider === 'gemini') {
-      content = await callGemini(apiKey, model, messages, options)
+      content = await callGemini(apiKey, model, filteredMessages, options)
     } else {
       let url = PROVIDER_URLS[provider]
       if (provider === 'custom') {
@@ -1116,7 +1140,7 @@ export default async function handler(req, res) {
       const extraHeaders = provider === 'openrouter'
         ? { 'HTTP-Referer': req.headers.origin || 'https://content-intelligence-os1.vercel.app', 'X-Title': 'Content Intelligence OS' }
         : {}
-      content = await callOpenAICompatible(url, apiKey, model, messages, options, extraHeaders)
+      content = await callOpenAICompatible(url, apiKey, model, filteredMessages, options, extraHeaders)
     }
 
     return res.status(200).json({ content })
