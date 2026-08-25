@@ -36,6 +36,7 @@ import BrandLinterPanel from '../linter/BrandLinterPanel'
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
 const LS_KEY = 'cio-anthropic-key'
+const DISMISSED_MICROTHEMES_KEY = 'cio-dismissed-personal-microthemes'
 
 /* ── Master Prompt Karen (do PDF) ── */
 const MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo para Karen Santos (@karensantosperfil).
@@ -1607,6 +1608,12 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [newThemeInput, setNewThemeInput] = useState('')
   const [showThemesPanel, setShowThemesPanel] = useState(true)
   const [showPersonalSuggestions, setShowPersonalSuggestions] = useState(false)
+  const [dismissedPersonalSuggestions, setDismissedPersonalSuggestions] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(DISMISSED_MICROTHEMES_KEY) || '[]')
+      return Array.isArray(stored) ? stored : []
+    } catch { return [] }
+  })
   const [expandingThemes, setExpandingThemes] = useState(false)
   const [expandThemesError, setExpandThemesError] = useState(null)
   const [categorizingThemes, setCategorizingThemes] = useState(false)
@@ -1620,6 +1627,10 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   useEffect(() => {
     localStorage.setItem(themesKey, JSON.stringify(savedThemes))
   }, [savedThemes, themesKey])
+
+  useEffect(() => {
+    localStorage.setItem(DISMISSED_MICROTHEMES_KEY, JSON.stringify(dismissedPersonalSuggestions))
+  }, [dismissedPersonalSuggestions])
 
   // ── Brand Linter com debounce ──
   useEffect(() => {
@@ -2830,6 +2841,17 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </p>
             )}
 
+            {isPessoal && dismissedPersonalSuggestions.length > 0 && (
+              <div className="mx-4 mt-2 flex justify-end">
+                <button
+                  onClick={() => setDismissedPersonalSuggestions([])}
+                  className="text-[10px] font-medium text-gray-400 hover:text-rose-500 underline underline-offset-2"
+                >
+                  Restaurar {dismissedPersonalSuggestions.length} microtema{dismissedPersonalSuggestions.length > 1 ? 's' : ''} apagado{dismissedPersonalSuggestions.length > 1 ? 's' : ''}
+                </button>
+              </div>
+            )}
+
             {!isPessoal && (() => {
               const clt = savedThemes.filter(t => isCltFramed(t.tema))
               if (clt.length === 0) return null
@@ -2872,7 +2894,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 const savedSet = new Set(savedThemes.map(s => s.tema))
                 const sugestoesNaoSalvas = isPessoal && !showPersonalSuggestions
                   ? []
-                  : sugestoes.filter(t => !savedSet.has(t))
+                  : sugestoes.filter(t => !savedSet.has(t) && (!isPessoal || !dismissedPersonalSuggestions.includes(t)))
                 const totalCount = savedInCat.length
                 return (
                   <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -2915,7 +2937,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
                             </button>
                             <button
                               onClick={() => removeTheme(item.id)}
-                              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all shrink-0 p-1"
+                              title={isPessoal ? 'Apagar microtema' : 'Apagar tema'}
+                              aria-label={isPessoal ? `Apagar microtema ${item.tema}` : `Apagar tema ${item.tema}`}
+                              className={clsx(
+                                'text-gray-300 hover:text-red-400 transition-all shrink-0 p-1',
+                                !isPessoal && 'opacity-0 group-hover:opacity-100'
+                              )}
                             >
                               <X size={11} />
                             </button>
@@ -2934,14 +2961,25 @@ Responda EXCLUSIVAMENTE com JSON válido:
                           </p>
                         )}
                         {sugestoesNaoSalvas.map(tema => (
-                          <button
-                            key={tema}
-                            onClick={() => addThemeFromSuggestion(tema, categoria)}
-                            className="w-full text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
-                          >
-                            <span>{tema}</span>
-                            <Plus size={11} className="text-gray-300 shrink-0" />
-                          </button>
+                          <div key={tema} className="flex items-center gap-1 group">
+                            <button
+                              onClick={() => addThemeFromSuggestion(tema, categoria)}
+                              className="flex-1 text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
+                            >
+                              <span>{tema}</span>
+                              <Plus size={11} className="text-gray-300 shrink-0" />
+                            </button>
+                            {isPessoal && (
+                              <button
+                                onClick={() => setDismissedPersonalSuggestions(prev => prev.includes(tema) ? prev : [...prev, tema])}
+                                title="Apagar sugestão"
+                                aria-label={`Apagar sugestão ${tema}`}
+                                className="text-gray-300 hover:text-red-400 transition-colors shrink-0 p-1"
+                              >
+                                <X size={11} />
+                              </button>
+                            )}
+                          </div>
                         ))}
 
                         {savedInCat.length === 0 && sugestoesNaoSalvas.length === 0 && (!isPessoal || showPersonalSuggestions) && (
