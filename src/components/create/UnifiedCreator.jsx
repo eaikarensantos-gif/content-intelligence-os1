@@ -63,6 +63,43 @@ ELEMENTOS OBRIGATÓRIOS:
 NUNCA FAZER:
 - Motivação baça, corporativismo vazio, superficialidade, só problema sem solução, julgamento moral, soluções simplistas, hype sem fundamento`
 
+const NAOMI_EDITORIAL_GUIDE = `
+GUIA EDITORIAL — VIDA COM NAOMI:
+- Naomi é a bulldog francesa de Karen. Nunca trate Naomi como criança, filha ou ser humano literal.
+- O conteúdo mostra a personalidade real dela e a dinâmica entre as duas: manias, rotina, expressões, passeios, visitas, espaços da casa, compras que não funcionaram, pedidos de atenção, banho, veterinário, aprendizados e pequenos rituais.
+- Pode haver humor por antropomorfismo leve, como "gerente de rotina", desde que venha de um comportamento canino observável.
+- O tom combina conexão, humor seco e afeto. Não infantilize, não use voz de bebê e não seja açucarado.
+- Não invente ações da Naomi. Quando faltar uma cena concreta, escreva o roteiro como molde e sinalize o detalhe que Karen precisa completar.
+- Pode encerrar com uma pergunta natural para quem também convive com animais, mas nunca force engajamento.
+
+REFERÊNCIA OFICIAL DE TOM PARA REELS SOBRE NAOMI — use o ritmo e a caracterização; só reproduza literalmente quando Karen escolher este mesmo recorte:
+GANCHO NA TELA: "Eu achava que tinha uma cachorra. Descobri que tenho uma gerente de rotina."
+
+ROTEIRO:
+"A Naomi sabe exatamente a hora de tudo.
+
+A hora de comer. A hora de passear. A hora de receber atenção. E, principalmente, a hora em que eu já trabalhei o suficiente.
+
+Ela não precisa olhar o relógio.
+
+Basta perceber que estou concentrada há tempo demais para começar uma operação cuidadosamente planejada:
+
+primeiro, ela fica me olhando;
+depois, suspira dramaticamente;
+e, se nada funcionar, posiciona o corpo inteiro no caminho.
+
+Oficialmente, eu organizo a minha rotina.
+
+Na prática, existe uma bulldog fazendo a gestão do meu tempo — e ela não aceita hora extra."
+
+LEGENDA:
+"Naomi não conhece metodologias de produtividade. Mas entende muito bem de pausas obrigatórias, comunicação não verbal e gestão por pressão."
+
+CTA:
+"Quem também trabalha sob a supervisão de um animal?"
+
+PRINCÍPIO EDITORIAL: Naomi cria conexão, humor e afeto sem ser humanizada de forma açucarada. O charme está na personalidade real dela e na dinâmica entre as duas.`
+
 /* ── Master Prompt Pessoal (Studio Pessoal — vida fora do trabalho) ── */
 const PERSONAL_MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo PESSOAL para Karen Santos (@karensantosperfil).
 Neste modo Karen NÃO é a consultora tech nem a mentora de carreira. Aqui ela é a pessoa fora do trabalho: a casa, a Naomi (buldogue francês), a fé, as comprinhas, os hobbies, as coisas banais do dia que a tornam humana.
@@ -83,6 +120,8 @@ FORMATOS EDITORIAIS RECORRENTES:
 - Uma coisa sobre mim; Pequenas alegrias; Confissões de pessoa física; Isso ficou comigo.
 - Testado na vida real; Cena de uma vida comum; Não tenho uma conclusão; Karen recomenda.
 - Eu achava que seria diferente; Coisas que estou aprendendo devagar.
+
+${NAOMI_EDITORIAL_GUIDE}
 
 RECONHECIMENTO AUTOMÁTICO DE CONTEXTO:
 - Momento íntimo, fé, sentimento, algo não resolvido → Tom Diário
@@ -436,7 +475,7 @@ CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito
 const buildHookSystem = (isPessoal) => `Você gera hooks de abertura para reels de Karen Santos.
 
 ${isPessoal
-    ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.'
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}`
     : `Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. ${WORK_NICHE}`}
 
 REGRA CENTRAL:
@@ -587,7 +626,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
 /* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
 const buildCarouselSystem = (isPessoal) => `Você é um gerador de carrossel para Karen Santos. ${isPessoal
-    ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.'
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.\n${NAOMI_EDITORIAL_GUIDE}`
     : `Designer com 10+ anos, especialista em IA para negócios. Analítica, técnica, sem floreio. ${WORK_NICHE}`}
 Seu trabalho não é criar conteúdo bonito. É criar conteúdo que faz a pessoa escrever mais de uma linha nos comentários.
 
@@ -781,7 +820,7 @@ const buildStoriesSystem = (isPessoal) => `— IDENTIDADE —
 Você é um gerador de roteiros de stories para Instagram.
 
 ${isPessoal
-    ? 'A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.'
+    ? `A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.\n${NAOMI_EDITORIAL_GUIDE}`
     : 'A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.'}
 
 
@@ -1941,7 +1980,7 @@ ${revText.trim()}`
 
 Você gera hooks para o slide 1 de carrosséis do Instagram para Karen Santos.
 ${isPessoal
-    ? 'Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.'
+    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo.\n${NAOMI_EDITORIAL_GUIDE}`
     : WORK_NICHE}
 
 PRINCÍPIO CENTRAL:
