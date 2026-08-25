@@ -999,7 +999,7 @@ ${isPessoal ? `- "A Naomi fez de novo aquilo que só ela sabe fazer."
 
 — REGRAS GLOBAIS OBRIGATÓRIAS —
 
-Frases: máximo 15 palavras cada. Sem exceção.
+${isPessoal ? 'Fala: até 30 palavras por frame. Texto na tela: máximo 15 palavras por bloco.' : 'Frases: máximo 15 palavras cada. Sem exceção.'}
 Parágrafos: 1 a 2 frases. Nunca blocos longos.
 Pontuação: ponto final e vírgula apenas. Sem exclamação. Sem reticências dramáticas.
 Vocabulário: NUNCA USE → transformador, poderoso, incrível, surpreendente, real talk, verdade, jornada, propósito, impacto, engajamento, entregar valor.
@@ -1009,10 +1009,14 @@ Vocabulário: NUNCA USE → transformador, poderoso, incrível, surpreendente, r
 
 Divida o texto em 4 a 7 frames numerados, um bloco curto (1-2 frases) por frame, marcados assim:
 [FRAME 1]
-texto do frame...
+${isPessoal ? `[MÍDIA: vídeo falando | vídeo ambiente | foto | texto sobre fundo]
+[GRAVAR: instrução específica e simples do que captar]
+[FALA: texto exato para Karen dizer, ou "sem fala"]
+[TEXTO NA TELA: texto exato, ou "sem texto"]
+[RITMO: duração aproximada e indicação de pausa/corte]` : 'texto do frame...'}
 
 [FRAME 2]
-texto do frame...
+${isPessoal ? '[repita os mesmos campos]' : 'texto do frame...'}
 
 Cada frame precisa fazer sentido sozinho na tela — a pessoa lê em 2-3 segundos e toca pra avançar. Não deixe um frame de transição vazio ou só de contexto.
 
@@ -1036,13 +1040,16 @@ NUNCA invente dados, estatísticas ou estudos.
 — AUTOVERIFICAÇÃO ANTES DE ENTREGAR —
 
 Antes de retornar o texto, verifique internamente:
-1. Alguma frase passa de 15 palavras? → reescreva.
+1. ${isPessoal ? 'Algum texto na tela passa de 15 palavras ou alguma fala passa de 30? → reescreva.' : 'Alguma frase passa de 15 palavras? → reescreva.'}
 2. Tem exclamação? → remova.
 3. Tem palavra da lista proibida? → substitua.
 4. Tem moral explícita no final? → apague essa parte.
 5. Começa com título ou introdução? → remova.
 6. Tem os marcadores [FRAME N] em cada bloco? → se não, adicione.
 7. Tem exatamente um [ENQUETE: ...] ou [CAIXA DE PERGUNTA: ...], nem zero nem dois? → corrija.
+${isPessoal ? `8. Todo frame informa mídia, o que gravar, fala, texto na tela e ritmo? → complete.
+9. As imagens são filmáveis com celular na vida real, sem produção complexa? → simplifique.
+10. A estrutura escolhida mudou a narrativa de verdade, ou só o tom? → reescreva seguindo os movimentos específicos.` : ''}
 
 Se tudo passar: entregue apenas o texto do stories com os marcadores de frame, sem comentários, sem explicações, sem "aqui está o texto:".`
 
@@ -1074,17 +1081,36 @@ const PERSONAL_STORIES_STRUCTURES = {
   diario: {
     label: 'Diário',
     desc: 'Momento íntimo, fé ou sentimento não resolvido',
-    prompt: 'Escreva em primeira pessoa, confessional de verdade, como quem conta pra amiga próxima. Pode terminar sem resposta, sem moral. Sem CTA de engajamento.',
+    prompt: `Construa 5 ou 6 frames como um registro íntimo ainda em elaboração:
+1. Abra com a percepção pessoal, sem explicar sua origem.
+2. Mostre o primeiro sinal concreto no corpo, na casa ou num comportamento.
+3. Aprofunde com outro detalhe específico, sem generalizar.
+4. Inclua exatamente uma enquete binária que compare reconhecer cedo versus perceber tarde.
+5. Diga o que Karen ainda está tentando fazer diferente.
+6. Se necessário, encerre sem resposta, em uma imagem ou frase contida.
+Priorize vídeo falando, detalhe de ambiente e silêncio. Sem moral, conselho ou CTA genérico.`,
   },
   cotidiano: {
     label: 'Cotidiano',
     desc: 'Cena do dia, perrengue, mania ou a Naomi',
-    prompt: 'Escreva leve, engraçado, autoirônico, cheio de detalhe específico (nome do produto, hora do dia, o que a Naomi fez). Termine em observação seca ou piada — nunca moral.',
+    prompt: `Construa 5 frames a partir de uma ação banal e visual:
+1. Abra já dentro da cena, mostrando o comportamento que denuncia o tema.
+2. Repita ou agrave a ação de forma reconhecível.
+3. Mostre a interpretação autoirônica de Karen.
+4. Inclua exatamente uma enquete com duas manifestações cotidianas do mesmo comportamento.
+5. Feche voltando à ação inicial com humor seco.
+Use objetos, cômodos, gestos e pequenos cortes filmáveis. Naomi só entra se o tema mencioná-la. Nunca invente um fato pessoal; use [Karen: detalhe real] quando necessário.`,
   },
   observacao: {
     label: 'Observação',
     desc: 'Algo que ela viu ou notou no mundo, sem ser corporativo',
-    prompt: 'Escreva como uma observação curiosa, sem julgamento, sobre algo que ela viu ou notou fora do trabalho. Termine em constatação seca, sem moral e sem CTA de engajamento.',
+    prompt: `Construa 5 frames como uma observação que parte do particular e abre para identificação:
+1. Declare o padrão percebido em uma frase simples, sem título.
+2. Mostre uma manifestação concreta desse padrão.
+3. Traga uma segunda manifestação que amplie a leitura.
+4. Inclua exatamente uma caixa de pergunta pedindo um sinal, cena ou exemplo específico da pessoa.
+5. Encerre com uma constatação aberta, sem prescrever comportamento.
+Alterne texto sobre fundo, b-roll cotidiano e um trecho falando para a câmera. Sem aula, diagnóstico ou moral.`,
   },
 }
 
