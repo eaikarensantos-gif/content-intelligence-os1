@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
-  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin, Workflow,
+  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -37,9 +37,7 @@ const NAV_GROUPS = [
       { to: '/analytics', icon: BarChart2, label: 'Analytics' },
       { to: '/trends', icon: Radar, label: 'Creator Insights' },
       { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
-      { to: '/dm-flows', icon: Workflow, label: 'Fluxos de DM' },
-      { to: '/dm-rules', icon: Zap, label: 'Regras de Gatilho' },
-      { to: '/dm-contacts', icon: Users, label: 'Contatos' },
+      { to: '/dm-automation', icon: Zap, label: 'Automação de DM' },
       { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
       { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
     ],
