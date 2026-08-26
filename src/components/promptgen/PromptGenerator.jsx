@@ -23,6 +23,25 @@ const MODES = [
   { id: 'titulos', label: 'Títulos Poderosos', desc: '100 fórmulas, tom sênior', icon: Wand2 },
 ]
 
+const PERSONAL_MODE_COPY = {
+  personalidade: { label: 'Aberturas pessoais', desc: '30 começos humanos para reels' },
+  disruptivo: { label: 'Dar personalidade', desc: 'Tira o genérico sem forçar polêmica' },
+  linguagem: { label: 'Variações de voz', desc: '5 versões naturais do mesmo relato' },
+  ranqueamento: { label: 'Hashtags pessoais', desc: 'Hashtags coerentes com o tema' },
+  legenda: { label: 'Legendas pessoais', desc: 'Conexão, contexto e complemento' },
+  titulos: { label: 'Títulos naturais', desc: 'Curiosidade sem clickbait' },
+}
+
+const PERSONAL_TITLE_CATEGORY_COPY = {
+  curiosidade: 'Curiosidade cotidiana',
+  beneficios: 'Pequena descoberta',
+  transformacao: 'O que mudou na prática',
+  dor: 'Contradição pessoal',
+  solucao: 'O que funcionou para mim',
+  acao: 'Convite à identificação',
+  objecoes: 'Eu também achava',
+}
+
 function Field({ label, children }) {
   return (
     <label className="block space-y-1">
@@ -106,20 +125,22 @@ function GroupResult({ title, items }) {
   )
 }
 
-export default function PromptGenerator() {
+export default function PromptGenerator({ persona = 'trabalho' }) {
+  const isPessoal = persona === 'pessoal'
   const [mode, setMode] = useState('personalidade')
   const apiKey = typeof window !== 'undefined' ? (localStorage.getItem(LS_KEY) || '') : ''
   const bannedWords = useStore((s) => s.posicionamento.lista_negra) || []
   const brandVoice = useStore((s) => s.brandVoice)
   const dislikedContent = useStore((s) => s.dislikedContent)
   const posicionamento = useStore((s) => s.posicionamento)
-  const voiceOpts = { bannedWords, brandVoice, dislikedContent, posicionamento }
+  const voiceOpts = { bannedWords, brandVoice, dislikedContent, posicionamento, persona }
+  const modes = isPessoal ? MODES.map((mode) => ({ ...mode, ...PERSONAL_MODE_COPY[mode.id] })) : MODES
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
       <div>
-        <h2 className="text-sm font-semibold text-gray-800">Gerador de Prompt</h2>
-        <p className="text-[12px] text-gray-400 mt-0.5">Templates prontos de gancho, copy e título — sempre passando pelo filtro anti-clichê antes de aparecer aqui.</p>
+        <h2 className="text-sm font-semibold text-gray-800">{isPessoal ? 'Gerador de Prompt · Do lado de cá' : 'Gerador de Prompt'}</h2>
+        <p className="text-[12px] text-gray-400 mt-0.5">{isPessoal ? 'Aberturas, legendas e títulos para mostrar sua vida real sem transformar intimidade em conteúdo.' : 'Templates prontos de gancho, copy e título — sempre passando pelo filtro anti-clichê antes de aparecer aqui.'}</p>
       </div>
 
       {!apiKey && (
@@ -129,7 +150,7 @@ export default function PromptGenerator() {
       )}
 
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        {MODES.map((m) => {
+        {modes.map((m) => {
           const Icon = m.icon
           const active = mode === m.id
           return (
@@ -152,18 +173,18 @@ export default function PromptGenerator() {
       </div>
 
       <div className="border border-gray-200 rounded-xl p-4">
-        {mode === 'personalidade' && <PersonalidadeMode apiKey={apiKey} voiceOpts={voiceOpts} />}
-        {mode === 'disruptivo' && <DisruptivoMode apiKey={apiKey} voiceOpts={voiceOpts} />}
-        {mode === 'linguagem' && <LinguagemMode apiKey={apiKey} voiceOpts={voiceOpts} />}
-        {mode === 'ranqueamento' && <RanqueamentoMode apiKey={apiKey} />}
-        {mode === 'legenda' && <LegendaMode apiKey={apiKey} voiceOpts={voiceOpts} />}
-        {mode === 'titulos' && <TitulosMode apiKey={apiKey} voiceOpts={voiceOpts} />}
+        {mode === 'personalidade' && <PersonalidadeMode apiKey={apiKey} voiceOpts={voiceOpts} isPessoal={isPessoal} />}
+        {mode === 'disruptivo' && <DisruptivoMode apiKey={apiKey} voiceOpts={voiceOpts} isPessoal={isPessoal} />}
+        {mode === 'linguagem' && <LinguagemMode apiKey={apiKey} voiceOpts={voiceOpts} isPessoal={isPessoal} />}
+        {mode === 'ranqueamento' && <RanqueamentoMode apiKey={apiKey} voiceOpts={voiceOpts} isPessoal={isPessoal} />}
+        {mode === 'legenda' && <LegendaMode apiKey={apiKey} voiceOpts={voiceOpts} isPessoal={isPessoal} />}
+        {mode === 'titulos' && <TitulosMode apiKey={apiKey} voiceOpts={voiceOpts} isPessoal={isPessoal} />}
       </div>
     </div>
   )
 }
 
-function PersonalidadeMode({ apiKey, voiceOpts }) {
+function PersonalidadeMode({ apiKey, voiceOpts, isPessoal }) {
   const [ideia, setIdeia] = useState('')
   const [publicoAlvo, setPublicoAlvo] = useState('')
   const [loading, setLoading] = useState(false)
@@ -171,7 +192,7 @@ function PersonalidadeMode({ apiKey, voiceOpts }) {
   const [data, setData] = useState(null)
 
   const run = async () => {
-    if (!ideia.trim() || !publicoAlvo.trim()) return
+    if (!ideia.trim() || (!isPessoal && !publicoAlvo.trim())) return
     setLoading(true); setError(null); setData(null)
     try {
       const { result, sweep } = await generatePersonalityHooks(apiKey, { ideia, publicoAlvo }, voiceOpts)
@@ -185,13 +206,13 @@ function PersonalidadeMode({ apiKey, voiceOpts }) {
 
   return (
     <div className="space-y-4">
-      <Field label="Ideia do vídeo">
-        <textarea rows={2} value={ideia} onChange={(e) => setIdeia(e.target.value)} placeholder="Ex.: como eu organizo minha semana de trabalho remoto" className={textareaCls} />
+      <Field label={isPessoal ? 'Tema ou cena pessoal' : 'Ideia do vídeo'}>
+        <textarea rows={2} value={ideia} onChange={(e) => setIdeia(e.target.value)} placeholder={isPessoal ? 'Ex.: o jeito que a Naomi avisa que já trabalhei demais' : 'Ex.: como eu organizo minha semana de trabalho remoto'} className={textareaCls} />
       </Field>
-      <Field label="Público-alvo">
-        <input value={publicoAlvo} onChange={(e) => setPublicoAlvo(e.target.value)} placeholder="Ex.: pessoas que querem trabalhar de casa com mais foco" className={inputCls} />
+      <Field label={isPessoal ? 'Quem pode se identificar (opcional)' : 'Público-alvo'}>
+        <input value={publicoAlvo} onChange={(e) => setPublicoAlvo(e.target.value)} placeholder={isPessoal ? 'Ex.: quem também vive sob a supervisão de um animal' : 'Ex.: pessoas que querem trabalhar de casa com mais foco'} className={inputCls} />
       </Field>
-      <GenerateButton onClick={run} loading={loading} disabled={!ideia.trim() || !publicoAlvo.trim()} />
+      <GenerateButton onClick={run} loading={loading} disabled={!ideia.trim() || (!isPessoal && !publicoAlvo.trim())} />
       {error && <p className="text-[11px] text-red-500">{error}</p>}
       {data && (
         <div className="space-y-4 pt-1">
@@ -205,7 +226,7 @@ function PersonalidadeMode({ apiKey, voiceOpts }) {
   )
 }
 
-function DisruptivoMode({ apiKey, voiceOpts }) {
+function DisruptivoMode({ apiKey, voiceOpts, isPessoal }) {
   const [textoOriginal, setTextoOriginal] = useState('')
   const [publicoAlvo, setPublicoAlvo] = useState('')
   const [loading, setLoading] = useState(false)
@@ -227,11 +248,11 @@ function DisruptivoMode({ apiKey, voiceOpts }) {
 
   return (
     <div className="space-y-4">
-      <Field label="Copy original do reels">
+      <Field label={isPessoal ? 'Texto que está genérico' : 'Copy original do reels'}>
         <textarea rows={4} value={textoOriginal} onChange={(e) => setTextoOriginal(e.target.value)} placeholder="Cole o texto que quer reformular" className={textareaCls} />
       </Field>
-      <Field label="Público-alvo que vamos atingir">
-        <input value={publicoAlvo} onChange={(e) => setPublicoAlvo(e.target.value)} placeholder="Ex.: mulheres 25+ que romantizam a rotina" className={inputCls} />
+      <Field label={isPessoal ? 'Quem pode se identificar' : 'Público-alvo que vamos atingir'}>
+        <input value={publicoAlvo} onChange={(e) => setPublicoAlvo(e.target.value)} placeholder={isPessoal ? 'Ex.: mulheres que tentam deixar a rotina menos pesada' : 'Ex.: mulheres 25+ que romantizam a rotina'} className={inputCls} />
       </Field>
       <GenerateButton onClick={run} loading={loading} disabled={!textoOriginal.trim() || !publicoAlvo.trim()} />
       {error && <p className="text-[11px] text-red-500">{error}</p>}
@@ -245,7 +266,7 @@ function DisruptivoMode({ apiKey, voiceOpts }) {
   )
 }
 
-function LinguagemMode({ apiKey, voiceOpts }) {
+function LinguagemMode({ apiKey, voiceOpts, isPessoal }) {
   const [textoBase, setTextoBase] = useState('')
   const [estiloId, setEstiloId] = useState(LANGUAGE_STYLES[0].id)
   const [objetivo, setObjetivo] = useState('')
@@ -270,7 +291,7 @@ function LinguagemMode({ apiKey, voiceOpts }) {
   return (
     <div className="space-y-4">
       <Field label="Legenda base">
-        <textarea rows={3} value={textoBase} onChange={(e) => setTextoBase(e.target.value)} placeholder="Legenda que serve de ponto de partida" className={textareaCls} />
+        <textarea rows={3} value={textoBase} onChange={(e) => setTextoBase(e.target.value)} placeholder={isPessoal ? 'Conte a cena ou escreva o rascunho com suas palavras' : 'Legenda que serve de ponto de partida'} className={textareaCls} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Estilo de linguagem">
@@ -299,7 +320,7 @@ function LinguagemMode({ apiKey, voiceOpts }) {
   )
 }
 
-function RanqueamentoMode({ apiKey }) {
+function RanqueamentoMode({ apiKey, voiceOpts, isPessoal }) {
   const [palavrasChave, setPalavrasChave] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -309,7 +330,7 @@ function RanqueamentoMode({ apiKey }) {
     if (!palavrasChave.trim()) return
     setLoading(true); setError(null); setData(null)
     try {
-      const { result } = await generateHashtagRanking(apiKey, { palavrasChave })
+      const { result } = await generateHashtagRanking(apiKey, { palavrasChave }, voiceOpts)
       setData(result)
     } catch (e) {
       setError(e.message || 'Erro ao gerar.')
@@ -323,7 +344,7 @@ function RanqueamentoMode({ apiKey }) {
   return (
     <div className="space-y-4">
       <Field label="Palavras-chave do perfil (uma por linha)">
-        <textarea rows={4} value={palavrasChave} onChange={(e) => setPalavrasChave(e.target.value)} placeholder={'vídeos de rotina\nrotina cozy\ndona do lar\ncasal/marido'} className={textareaCls} />
+        <textarea rows={4} value={palavrasChave} onChange={(e) => setPalavrasChave(e.target.value)} placeholder={isPessoal ? 'vida com bulldog\nrotina real\nachados pessoais\nfé no cotidiano' : 'vídeos de rotina\nrotina cozy\ndona do lar\ncasal/marido'} className={textareaCls} />
       </Field>
       <GenerateButton onClick={run} loading={loading} disabled={!palavrasChave.trim()} />
       {error && <p className="text-[11px] text-red-500">{error}</p>}
@@ -342,7 +363,7 @@ function RanqueamentoMode({ apiKey }) {
   )
 }
 
-function LegendaMode({ apiKey, voiceOpts }) {
+function LegendaMode({ apiKey, voiceOpts, isPessoal }) {
   const [publicoAlvo, setPublicoAlvo] = useState('')
   const [objetivo, setObjetivo] = useState('')
   const [produto, setProduto] = useState('')
@@ -387,17 +408,17 @@ function LegendaMode({ apiKey, voiceOpts }) {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Legenda de venda</p>
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{isPessoal ? 'Legenda a partir de uma vivência' : 'Legenda de venda'}</p>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Público-alvo">
-            <input value={publicoAlvo} onChange={(e) => setPublicoAlvo(e.target.value)} placeholder="Mesmo público do perfil" className={inputCls} />
+          <Field label={isPessoal ? 'Quem pode se identificar' : 'Público-alvo'}>
+            <input value={publicoAlvo} onChange={(e) => setPublicoAlvo(e.target.value)} placeholder={isPessoal ? 'Ex.: quem também demora a perceber que precisa descansar' : 'Mesmo público do perfil'} className={inputCls} />
           </Field>
-          <Field label="Objetivo principal">
-            <input value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Ex.: ensinar e gerar consciência sobre o produto" className={inputCls} />
+          <Field label={isPessoal ? 'O que você quer dividir' : 'Objetivo principal'}>
+            <input value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder={isPessoal ? 'Ex.: contar o que mudou para deixar a rotina mais leve' : 'Ex.: ensinar e gerar consciência sobre o produto'} className={inputCls} />
           </Field>
         </div>
-        <Field label="Produto/serviço (opcional)">
-          <input value={produto} onChange={(e) => setProduto(e.target.value)} placeholder="O que está sendo vendido, se houver" className={inputCls} />
+        <Field label={isPessoal ? 'Detalhe real que precisa aparecer (opcional)' : 'Produto/serviço (opcional)'}>
+          <input value={produto} onChange={(e) => setProduto(e.target.value)} placeholder={isPessoal ? 'Ex.: caminhar com a Naomi antes de abrir o notebook' : 'O que está sendo vendido, se houver'} className={inputCls} />
         </Field>
         <GenerateButton onClick={runSales} loading={salesLoading} disabled={!publicoAlvo.trim() || !objetivo.trim()} />
         {salesError && <p className="text-[11px] text-red-500">{salesError}</p>}
@@ -439,12 +460,15 @@ function LegendaMode({ apiKey, voiceOpts }) {
   )
 }
 
-function TitulosMode({ apiKey, voiceOpts }) {
+function TitulosMode({ apiKey, voiceOpts, isPessoal }) {
   const [tema, setTema] = useState('')
   const [categoriaId, setCategoriaId] = useState(TITULO_CATEGORIES[0].id)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [data, setData] = useState(null)
+  const titleCategories = isPessoal
+    ? TITULO_CATEGORIES.filter((category) => PERSONAL_TITLE_CATEGORY_COPY[category.id])
+    : TITULO_CATEGORIES
 
   const run = async () => {
     if (!tema.trim()) return
@@ -461,14 +485,14 @@ function TitulosMode({ apiKey, voiceOpts }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-[11px] text-gray-400 leading-relaxed">Baseado nas 100 fórmulas de título de referência — usadas só como estrutura. O texto final sempre sai reescrito no tom sênior e sem clickbait exigido pelo filtro anti-clichê.</p>
+      <p className="text-[11px] text-gray-400 leading-relaxed">{isPessoal ? 'As fórmulas servem apenas como ponto de partida. A saída preserva naturalidade, detalhe pessoal e curiosidade sem clickbait.' : 'Baseado nas 100 fórmulas de título de referência — usadas só como estrutura. O texto final sempre sai reescrito no tom sênior e sem clickbait exigido pelo filtro anti-clichê.'}</p>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Tema / nicho / produto">
-          <input value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ex.: carreira em tecnologia" className={inputCls} />
+        <Field label={isPessoal ? 'Tema ou microtema' : 'Tema / nicho / produto'}>
+          <input value={tema} onChange={(e) => setTema(e.target.value)} placeholder={isPessoal ? 'Ex.: manias muito específicas da Naomi' : 'Ex.: carreira em tecnologia'} className={inputCls} />
         </Field>
         <Field label="Categoria de gancho">
           <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className={inputCls}>
-            {TITULO_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            {titleCategories.map((c) => <option key={c.id} value={c.id}>{isPessoal ? PERSONAL_TITLE_CATEGORY_COPY[c.id] : c.label}</option>)}
           </select>
         </Field>
       </div>

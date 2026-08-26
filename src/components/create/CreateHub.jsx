@@ -115,7 +115,7 @@ export default function CreateHub({ persona = 'trabalho' }) {
         )}
         {visited.has('promptgen') && (
           <div className="h-full overflow-y-auto" hidden={active !== 'promptgen'}>
-            <Suspense fallback={<ToolLoader />}><PromptGenerator /></Suspense>
+            <Suspense fallback={<ToolLoader />}><PromptGenerator persona={persona} /></Suspense>
           </div>
         )}
         {visited.has('briefing') && (
