@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2, RefreshCw, Eye, MessageCircle, LogOut, ChevronRight, ChevronLeft, Clock, Instagram } from 'lucide-react'
+import { Loader2, RefreshCw, Eye, MessageCircle, LogOut, ChevronRight, ChevronLeft, Clock, Instagram, MousePointerClick } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { instagramFetchStories } from '../../lib/aiService'
 
@@ -24,6 +24,7 @@ function timeLeft(timestamp) {
 export default function StoriesGrid({ accessToken }) {
   const [stories, setStories] = useState(null)
   const [insightsAvailable, setInsightsAvailable] = useState(true)
+  const [linkClicksAvailable, setLinkClicksAvailable] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -31,9 +32,10 @@ export default function StoriesGrid({ accessToken }) {
     setLoading(true)
     setError(null)
     instagramFetchStories(accessToken)
-      .then(({ stories: fetched, insightsAvailable: ia }) => {
+      .then(({ stories: fetched, insightsAvailable: ia, linkClicksAvailable: lca }) => {
         setStories(fetched)
         setInsightsAvailable(ia)
+        setLinkClicksAvailable(lca !== false)
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -57,6 +59,12 @@ export default function StoriesGrid({ accessToken }) {
       {!insightsAvailable && stories && (
         <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg p-2.5 border border-amber-200 mb-4">
           ⚠️ Conexão sem permissão de Insights — alcance, respostas e navegação não disponíveis. <Link to="/settings" className="underline">Reconecte o Instagram</Link> pra liberar esses números.
+        </p>
+      )}
+
+      {insightsAvailable && !linkClicksAvailable && stories?.length > 0 && (
+        <p className="text-[11px] text-blue-600 bg-blue-50 rounded-lg p-2.5 border border-blue-200 mb-4">
+          A Meta não liberou a métrica de cliques no link para esta conexão. Os demais números dos Stories continuam disponíveis. O app mostrará “Cliques no link” automaticamente quando a API devolver essa métrica.
         </p>
       )}
 
@@ -102,6 +110,9 @@ export default function StoriesGrid({ accessToken }) {
                 <div className="p-2.5 flex flex-wrap gap-x-2 gap-y-1">
                   <StatChip icon={Eye} value={story.reach} label="Alcance" />
                   <StatChip icon={MessageCircle} value={story.replies} label="Respostas" />
+                  {story.linkClicks !== null && story.linkClicks !== undefined && (
+                    <StatChip icon={MousePointerClick} value={story.linkClicks} label="Cliques no link" />
+                  )}
                   <StatChip icon={LogOut} value={story.exits} label="Saídas" />
                   <StatChip icon={ChevronRight} value={story.tapsForward} label="Avançou" />
                   <StatChip icon={ChevronLeft} value={story.tapsBack} label="Voltou" />

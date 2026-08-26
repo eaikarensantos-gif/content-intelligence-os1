@@ -479,6 +479,7 @@ async function instagramFetchMetrics(accessToken, limit) {
 
   const items = mediaData.data || []
   let insightsAvailable = true
+  let linkClicksAvailable = true
 
   const postTypeMap = { REELS: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: 'image', VIDEO: 'video' }
 
@@ -652,7 +653,7 @@ async function instagramFetchStories(accessToken) {
 
   const stories = []
   for (const m of items) {
-    let reach = 0, replies = 0, exits = 0, tapsForward = 0, tapsBack = 0
+    let reach = 0, replies = 0, exits = 0, tapsForward = 0, tapsBack = 0, linkClicks = null
 
     if (insightsAvailable) {
       const tiers = ['reach,replies,exits,taps_forward,taps_back', 'reach,replies', 'reach']
@@ -675,17 +676,33 @@ async function instagramFetchStories(accessToken) {
       }
     }
 
+    // Link sticker taps are requested separately. Meta exposes `link_clicks`
+    // only for eligible Story/account/login combinations; keeping it out of
+    // the main metric bundle prevents an unsupported metric from hiding reach,
+    // replies and navigation that are still available.
+    if (insightsAvailable && linkClicksAvailable) {
+      const clickResult = await fetchInsights(m.id, 'link_clicks')
+      if (clickResult.ok) {
+        const metric = (clickResult.data.data || []).find((item) => item.name === 'link_clicks')
+        linkClicks = metric
+          ? (metric.values?.[0]?.value ?? metric.total_value?.value ?? 0)
+          : null
+      } else if (clickResult.status === 400 || clickResult.status === 403) {
+        linkClicksAvailable = false
+      }
+    }
+
     stories.push({
       id:           m.id,
       mediaType:    m.media_type || '',
       thumbnailUrl: m.thumbnail_url || m.media_url || null,
       permalink:    m.permalink || '',
       timestamp:    m.timestamp || '',
-      reach, replies, exits, tapsForward, tapsBack,
+      reach, replies, exits, tapsForward, tapsBack, linkClicks,
     })
   }
 
-  return { stories, insightsAvailable }
+  return { stories, insightsAvailable, linkClicksAvailable }
 }
 
 // ─── Instagram — publicar post (imagem) ─────────────────────────────────────
