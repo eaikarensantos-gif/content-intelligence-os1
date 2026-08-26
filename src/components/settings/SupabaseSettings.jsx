@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon, Instagram, Copy, Download } from 'lucide-react'
+import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon, Instagram, Copy, Download, CalendarDays } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
@@ -8,6 +8,11 @@ import {
   getAppId, getAppSecret, saveCredentials, getRedirectUri,
   getConnection, clearConnection, isExpiringSoon, startConnect,
 } from '../../lib/instagramAuth'
+import {
+  getGoogleClientId, getGoogleClientSecret, saveGoogleCredentials,
+  getGoogleCalendarRedirectUri, getGoogleConnection, clearGoogleConnection,
+  startGoogleCalendarConnect,
+} from '../../lib/googleCalendarAuth'
 
 const LS_ANTHROPIC       = 'cio-anthropic-key'
 const LS_GROQ            = 'cio-groq-key'
@@ -72,6 +77,12 @@ export default function SupabaseSettings() {
   const [igSaved,        setIgSaved]        = useState(false)
   const [igJustConnected, setIgJustConnected] = useState(false)
   const [copiedUri,      setCopiedUri]      = useState(false)
+  const [googleClientId, setGoogleClientId] = useState(() => getGoogleClientId())
+  const [googleClientSecret, setGoogleClientSecret] = useState(() => getGoogleClientSecret())
+  const [showGoogleSecret, setShowGoogleSecret] = useState(false)
+  const [googleConnection, setGoogleConnection] = useState(() => getGoogleConnection())
+  const [googleSaved, setGoogleSaved] = useState(false)
+  const [copiedGoogleUri, setCopiedGoogleUri] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -170,6 +181,28 @@ export default function SupabaseSettings() {
     await navigator.clipboard.writeText(getRedirectUri())
     setCopiedUri(true)
     setTimeout(() => setCopiedUri(false), 1500)
+  }
+
+  const handleSaveGoogleCredentials = () => {
+    saveGoogleCredentials(googleClientId, googleClientSecret)
+    setGoogleSaved(true)
+    setTimeout(() => setGoogleSaved(false), 1500)
+  }
+
+  const handleConnectGoogle = () => {
+    saveGoogleCredentials(googleClientId, googleClientSecret)
+    startGoogleCalendarConnect(googleClientId.trim())
+  }
+
+  const handleDisconnectGoogle = () => {
+    clearGoogleConnection()
+    setGoogleConnection(null)
+  }
+
+  const handleCopyGoogleUri = async () => {
+    await navigator.clipboard.writeText(getGoogleCalendarRedirectUri())
+    setCopiedGoogleUri(true)
+    setTimeout(() => setCopiedGoogleUri(false), 1500)
   }
 
   const configured = isSupabaseConfigured()
@@ -374,6 +407,48 @@ alter table user_data disable row level security;`}</pre>
           <a href="https://developer.vimeo.com/apps" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Vimeo Dev</a>
           <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener noreferrer" className="text-xs text-fuchsia-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Apify Console</a>
         </div>
+      </div>
+
+      {/* ── Google Calendar ───────────────────────────────────────────────────── */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2"><CalendarDays size={15} className="text-blue-500" /> Google Calendar</h2>
+          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${googleConnection ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+            {googleConnection ? <><CheckCircle2 size={11} /> Conectado</> : 'Não conectado'}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500">Mostra os eventos da sua agenda dentro da visão de calendário em Tarefas. O acesso é somente leitura: o app não cria, altera ou apaga compromissos.</p>
+        <div>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">URI de redirecionamento autorizada</label>
+          <div className="flex gap-2">
+            <input readOnly value={getGoogleCalendarRedirectUri()} onFocus={(e) => e.target.select()} className="input w-full text-sm font-mono bg-gray-50" />
+            <button onClick={handleCopyGoogleUri} className="btn-secondary text-xs px-3 shrink-0">{copiedGoogleUri ? <CheckCircle2 size={14} /> : <Copy size={14} />}</button>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">ID do cliente OAuth do Google</label>
+          <input value={googleClientId} onChange={(e) => setGoogleClientId(e.target.value)} placeholder="...apps.googleusercontent.com" className="input w-full text-sm font-mono" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium mb-1.5 block">Chave secreta do cliente</label>
+          <div className="relative">
+            <input type={showGoogleSecret ? 'text' : 'password'} value={googleClientSecret} onChange={(e) => setGoogleClientSecret(e.target.value)} placeholder="GOCSPX-..." className="input w-full pr-10 text-sm font-mono" />
+            <button onClick={() => setShowGoogleSecret((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">{showGoogleSecret ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+          </div>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={handleSaveGoogleCredentials} className="btn-secondary text-xs">{googleSaved ? <><CheckCircle2 size={12} /> Salvo!</> : 'Salvar credenciais'}</button>
+          {!googleConnection ? (
+            <button onClick={handleConnectGoogle} disabled={!googleClientId.trim() || !googleClientSecret.trim()} className="btn-primary text-xs">Conectar Google Calendar</button>
+          ) : (
+            <button onClick={handleDisconnectGoogle} className="btn-secondary text-xs text-red-600">Desconectar</button>
+          )}
+        </div>
+        <div className="text-[10px] text-gray-500 bg-blue-50 border border-blue-100 rounded-lg p-2.5 space-y-1">
+          <p>Ative a Google Calendar API, crie um cliente OAuth do tipo “Aplicativo da Web” e cole a URI acima em “URIs de redirecionamento autorizados”.</p>
+          <p>Enquanto o app estiver em teste, inclua seu e-mail em “Usuários de teste” na tela de consentimento OAuth.</p>
+        </div>
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"><ExternalLink size={11} /> Abrir credenciais no Google Cloud</a>
       </div>
 
       {/* ── Instagram (API oficial da Meta) ───────────────────────────────────── */}

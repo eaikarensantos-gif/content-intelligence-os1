@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
+import TaskCalendar from './TaskCalendar'
 
 /* ── Constantes ──────────────────────────────────────────── */
 const COLUMNS = [
@@ -518,7 +519,7 @@ export default function TaskBoard() {
   const updateTask = useStore((s) => s.updateTask)
   const deleteTask = useStore((s) => s.deleteTask)
 
-  const [view, setView] = useState('kanban') // kanban | list
+  const [view, setView] = useState(() => new URLSearchParams(window.location.search).get('view') === 'calendar' ? 'calendar' : 'kanban') // kanban | list | calendar
   const [editingTask, setEditingTask] = useState(null)
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState('all')
@@ -621,6 +622,11 @@ export default function TaskBoard() {
               className={clsx('p-2 transition-colors', view === 'list' ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:text-gray-600')}>
               <List size={14} />
             </button>
+            <button onClick={() => setView('calendar')}
+              className={clsx('p-2 transition-colors', view === 'calendar' ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:text-gray-600')}
+              title="Calendário">
+              <Calendar size={14} />
+            </button>
           </div>
 
           {/* Add task */}
@@ -667,7 +673,9 @@ export default function TaskBoard() {
       )}
 
       {/* Content */}
-      {view === 'kanban' ? (
+      {view === 'calendar' ? (
+        <TaskCalendar tasks={sorted} onEditTask={setEditingTask} />
+      ) : view === 'kanban' ? (
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
           {COLUMNS.map(col => (
             <KanbanColumn

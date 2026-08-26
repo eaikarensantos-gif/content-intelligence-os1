@@ -29,6 +29,7 @@ const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
 const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
 const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
 const InstagramCallback = lazy(() => import('./components/settings/InstagramCallback'))
+const GoogleCalendarCallback = lazy(() => import('./components/settings/GoogleCalendarCallback'))
 const InstagramStudio = lazy(() => import('./components/instagram/InstagramStudio'))
 const DmAutomation = lazy(() => import('./components/instagram/DmAutomation'))
 const VideoSwipe = lazy(() => import('./components/video-swipe/VideoSwipe'))
@@ -158,6 +159,7 @@ export default function App() {
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/instagram-callback" element={<InstagramCallback />} />
+            <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
             <Route path="/instagram" element={<InstagramStudio />} />
             <Route path="/dm-automation" element={<DmAutomation />} />
             <Route path="/tasks" element={<div className="p-6 animate-fade-in"><TaskBoard /></div>} />
