@@ -177,6 +177,21 @@ export const PERSONAL_TEMAS_SUGESTOES = [
     ],
   },
   {
+    categoria: 'Home Office',
+    temas: [
+      'A roupa profissional que termina na cintura',
+      'O almoço adiado por uma reunião que “vai ser rápida”',
+      'A culpa por descansar estando perto do notebook',
+      'Falar sozinha depois de muitas horas sem companhia',
+      'A intimidade de conhecer a casa dos colegas pela câmera',
+      'Uma obra começando antes de uma apresentação importante',
+      'Trabalhar de pantufa e ainda terminar o dia exausta',
+      'O notebook fechado na mesa parecendo uma tarefa pendente',
+      'Rituais para separar a casa do trabalho',
+      'Sentir falta de pessoas, mas não necessariamente do escritório',
+    ],
+  },
+  {
     categoria: 'Fé na vida real',
     temas: [
       'O que o búzio disse que eu não queria ouvir',

@@ -156,6 +156,12 @@ describe('palavra inteira, não pedaço de palavra', () => {
 })
 
 describe('classificação de tema pessoal continua intacta', () => {
+  it('classifica cenas humanizadas de home office na categoria própria', () => {
+    expect(categorizePersonalTheme('A culpa por descansar estando perto do notebook')).toBe('Home Office')
+    expect(categorizePersonalTheme('Rituais para separar a casa do trabalho remoto')).toBe('Home Office')
+    expect(categorizePersonalTheme('Uma reunião que vai ser rápida adiou meu almoço')).toBe('Home Office')
+  })
+
   it('mantém as gavetas da vida', () => {
     expect(categorizePersonalTheme('a Naomi decide o dia dela antes de mim')).toBe('Vida com Naomi')
     expect(categorizePersonalTheme('jogo de búzios')).toBe('Fé na vida real')

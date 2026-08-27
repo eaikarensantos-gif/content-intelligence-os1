@@ -2792,11 +2792,12 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
           output_config: { effort: 'medium' },
           max_tokens: 1500,
           messages: [{ role: 'user', content: `${isPessoal
-            ? `Você sugere MICROTemas de conteúdo PESSOAL para Karen Santos, que compartilha a vida fora do trabalho: casa, a bulldog Naomi, fé, achados, repertório e vida adulta. O objetivo é conexão sem exposição. PROIBIDO: carreira, tecnologia, produtividade, mundo corporativo, conselho genérico ou moral da história.
+            ? `Você sugere MICROTemas de conteúdo PESSOAL para Karen Santos, que compartilha a vida fora do trabalho: casa, a bulldog Naomi, home office humanizado, fé, achados, repertório e vida adulta. O objetivo é conexão sem exposição. PROIBIDO: carreira, tecnologia, produtividade, mundo corporativo, conselho genérico ou moral da história.
 
 Categorias disponíveis — use exatamente estes nomes:
 - "Vida com Naomi": comportamentos reais da bulldog, rotina, manias, passeios e a dinâmica entre as duas. Naomi é cachorra, nunca criança ou pessoa.
 - "A vida dentro de casa": rotina doméstica, casa vivida, comida, organização possível, objetos e pequenos rituais.
+- "Home Office": a convivência humana entre casa e trabalho: interrupções, limites, solidão, conforto, culpa e pequenas manias. Não dê dicas de produtividade e não transforme em conteúdo corporativo.
 - "Fé na vida real": terreiro, vodum, búzios, espera, dúvida, gratidão e espiritualidade sem pregação.
 - "Achados que valem a pena": compras usadas de verdade, arrependimentos, custo-benefício e consumo consciente.
 - "Meu repertório particular": livros, séries, música, comida, gostos inesperados, referências e hobbies.

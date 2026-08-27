@@ -21,6 +21,7 @@ export const WORK_CATEGORIES = ['Critério de decisão', 'Desmonte de hype', 'Ba
 export const PERSONAL_CATEGORIES = [
   'Vida com Naomi',
   'A vida dentro de casa',
+  'Home Office',
   'Fé na vida real',
   'Achados que valem a pena',
   'Meu repertório particular',
@@ -140,6 +141,10 @@ export function categorizeWorkTheme(tema) {
 export function categorizePersonalTheme(tema) {
   const t = (tema || '').toLowerCase()
   const tk = tokenize(t)
+
+  if (hasWord(tk, 'notebook', 'reunião', 'reuniao', 'reuniões', 'reunioes', 'expediente',
+    'videoconferência', 'videoconferencia', 'zoom', 'meet', 'câmera', 'camera', 'colegas', 'escritório', 'escritorio')
+    || hasPhrase(t, 'home office', 'trabalho remoto', 'trabalhar de casa', 'trabalho de casa')) return 'Home Office'
 
   if (hasWord(tk, 'naomi', 'pet', 'pets', 'cachorro', 'cachorra', 'cadela', 'buldogue', 'bulldog', 'ração', 'racao')
     || hasStem(tk, 'veterinári', 'veterinari')) return 'Vida com Naomi'
