@@ -7,7 +7,7 @@ import {
 import clsx from 'clsx'
 import { withManualOperacional } from '../../lib/manualOperacional'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const NAOMI_SYSTEM = `You are the character content generator for Critical Content Coach.
 
@@ -123,11 +123,11 @@ export default function NaomiStudio() {
     setSuggestLoading(true)
     setSuggestions([])
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 400,
@@ -167,10 +167,10 @@ export default function NaomiStudio() {
         messages.push({ role: 'user', content: buildPrompt({ situation, videoTool, hasPhoto: false }) })
       }
 
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+        body: JSON.stringify({ model: 'gpt-5.6-terra', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, system: withManualOperacional(NAOMI_SYSTEM), messages }),
       })
 
       if (!res.ok) {
@@ -193,11 +193,11 @@ export default function NaomiStudio() {
     if (!apiKey || !result?.video_prompt) return
     setTranslating(true)
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'gpt-5.6-luna',
           max_tokens: 1000,
           skipAntiCliche: true,
           messages: [{ role: 'user', content: `Translate this video generation prompt from Portuguese to English. Keep all technical terms, character descriptions, camera instructions, and formatting intact. Return ONLY the translated prompt, no preamble:\n\n${result.video_prompt}` }],

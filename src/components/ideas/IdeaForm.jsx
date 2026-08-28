@@ -19,7 +19,7 @@ import { FORMATS, FORMAT_LABELS, HOOK_TYPES, HOOK_LABELS } from '../../utils/con
 import { STORY_IDEA_PROMPTS } from '../../data/storyIdeaPrompts'
 import { generateMoreStoryPrompts } from '../../utils/storyIdeaGenerator'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const PLATFORMS = ['instagram', 'linkedin', 'twitter', 'youtube', 'tiktok']
 
@@ -185,11 +185,11 @@ Responda APENAS com JSON válido (array de 4 strings), sem markdown:
   // não se aplica. Todo o resto é texto criativo: passa pelo mesmo sistema dos
   // outros geradores (anti-AI filter + manual operacional + voz/lista negra).
   const isCreative = type !== 'refQueries'
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
     body: JSON.stringify({
-      model: isCreative ? 'claude-sonnet-5' : 'claude-haiku-4-5-20251001',
+      model: isCreative ? 'gpt-5.6-terra' : 'gpt-5.6-luna',
       // 1024 batia exatamente no piso de 1024 tokens que o Gemini sempre
       // reserva pro "pensamento" — sem margem nenhuma pro texto de fato.
       max_tokens: type === 'script' ? 3000 : type === 'caption' ? 2000 : 1500,
@@ -354,7 +354,7 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const handleGenerateTitle = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key da OpenAI primeiro.'); return }
     if (!form.description.trim() && !form.topic.trim()) { alert('Preencha a Descrição ou o Tópico antes de gerar títulos.'); return }
     setGeneratingTitle(true); setTitleSuggestions([])
     try {
@@ -370,17 +370,17 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
 
   const expandThemes = async (categoria) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setExpandThemesError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setExpandThemesError('Configure sua API key da OpenAI primeiro.'); return }
     setExpandingThemes(true)
     setExpandThemesError(null)
     try {
       const base = TEMAS_CARROSSEL.find((c) => c.categoria === categoria)
       const existentes = [...(base?.temas || []), ...(extraTemas[categoria] || [])]
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           max_tokens: 1500,
           messages: [{
@@ -427,7 +427,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
   const handleGenerateStoryIdeas = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setStoryIdeasError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setStoryIdeasError('Configure sua API key da OpenAI primeiro.'); return }
     setGeneratingStoryIdeas(true)
     setStoryIdeasError(null)
     try {
@@ -442,7 +442,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
   const handleGenerateHook = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key da OpenAI primeiro.'); return }
     if (!form.title.trim()) { alert('Preencha o título antes de gerar o gancho.'); return }
     setGeneratingHook(true)
     try {
@@ -457,7 +457,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
   const handleGenerateScript = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key da OpenAI primeiro.'); return }
     if (!form.title.trim()) { alert('Preencha o título antes de gerar o roteiro.'); return }
     setGeneratingScript(true)
     try {
@@ -469,7 +469,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
   const handleGenerateAI = async (type) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { alert('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { alert('Configure sua API key da OpenAI primeiro.'); return }
     if (!form.title.trim()) { alert('Preencha o título antes de gerar.'); return }
     const setter = type === 'caption' ? setGeneratingCaption : setGeneratingCta
     setter(true)
@@ -510,7 +510,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
         setRefResults(results.slice(0, 5))
       } else {
         const apiKey = localStorage.getItem(LS_KEY)
-        if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key Gemini para buscar referências.'); setSearchingRefs(false); return }
+        if (!apiKey) { alert('Configure a YouTube API Key (em Configurações) ou a API Key OpenAI para buscar referências.'); setSearchingRefs(false); return }
         const raw = await generateWithAI(apiKey, 'refQueries', form, voiceCtx)
         const clean = raw.replace(/```[a-z]*\n?/gi, '').trim()
         const match = clean.match(/\[[\s\S]*\]/)

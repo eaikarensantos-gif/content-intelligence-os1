@@ -196,15 +196,15 @@ async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000) {
       ]
     : prompt
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: maxTokens,
@@ -487,15 +487,15 @@ Return ONLY this JSON:
   "b_roll_suggestions": ["B-roll idea 1", "B-roll idea 2", "B-roll idea 3"],
   "thumbnail_ideas": ["Thumbnail concept 1", "Thumbnail concept 2"]
 }`
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 3000,
@@ -571,15 +571,15 @@ export default function VideoAnalyzer() {
     if (!text || text.trim().length < 10 || !apiKey) return
     setTranslating(true)
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'gpt-5.6-luna',
           max_tokens: 4096,
           skipAntiCliche: true,
           messages: [{ role: 'user', content: `Traduza o texto abaixo para português brasileiro de forma fiel e natural. Mantenha a formatação, parágrafos e estrutura original. Retorne APENAS a tradução, sem introdução nem comentários.\n\n${text.trim()}` }],
@@ -716,7 +716,7 @@ export default function VideoAnalyzer() {
         return
       }
       if (!apiKey) {
-        setError('Uma API Key do Gemini é necessária. Clique em "Adicionar API Key" acima.')
+        setError('Uma API Key da OpenAI é necessária. Clique em "Adicionar API Key" acima.')
         return
       }
     }
@@ -733,7 +733,7 @@ export default function VideoAnalyzer() {
     }
 
     if (analysisMode !== 'script' && !apiKey) {
-      setError('Uma API Key do Gemini é necessária. Clique em "Adicionar API Key" acima.')
+      setError('Uma API Key da OpenAI é necessária. Clique em "Adicionar API Key" acima.')
       return
     }
 
@@ -1098,7 +1098,7 @@ Responda APENAS com este JSON:
             <p className="text-xs text-gray-500">
               Este analisador nunca gera conteúdo fictício. Ele lê sua transcrição real ou frames do vídeo e extrai insights diretos do conteúdo.{' '}
               <button onClick={() => setShowKeyModal(true)} className="text-violet-600 hover:underline font-medium">
-                Adicione sua API Key do Gemini
+                Adicione sua API Key da OpenAI
               </button>{' '}
               para começar.
             </p>

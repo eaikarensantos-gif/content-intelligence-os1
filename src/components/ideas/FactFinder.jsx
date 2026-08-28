@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Loader2, Search, ChevronDown, ChevronUp, ExternalLink, Plus, BookOpen } from 'lucide-react'
 import { assertNotTruncated, extractJsonObject } from '../../utils/aiJson'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 // Remove marcadores de citação que o Gemini às vezes deixa dentro do texto
 // grounded, tipo "[1.1.1]" ou "[1.2.9" — não têm sentido fora da resposta
@@ -71,7 +71,7 @@ export default function FactFinder({ topic, onInsert }) {
 
   const handleSearch = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro.'); return }
     if (!topic?.trim()) { setError('Preencha o título ou a descrição antes de buscar dados.'); return }
     setLoading(true)
     setError(null)
@@ -92,11 +92,11 @@ REGRAS OBRIGATÓRIAS:
 Responda EXCLUSIVAMENTE com JSON válido, sem markdown, sem texto antes ou depois:
 {"dados": [{"dado": "texto do dado com o número específico", "fonte": "nome da instituição ou veículo", "ano": "20XX ou null", "link": "URL real da matéria/página ou null"}]}`
 
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           grounding: true,
           // Cada dado agora carrega um campo "link" com a URL completa da
           // fonte — a resposta ficou maior que quando só tinha dado/fonte/ano,

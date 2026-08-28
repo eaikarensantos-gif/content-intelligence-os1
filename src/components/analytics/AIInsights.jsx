@@ -186,7 +186,7 @@ export default function AIInsights() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [phase, setPhase] = useState(0)
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-anthropic-key') || '')
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-openai-key') || '')
   const [showKeyInput, setShowKeyInput] = useState(false)
 
   const canGenerate = enriched.length >= 3
@@ -204,15 +204,15 @@ export default function AIInsights() {
     try {
       if (!apiKey) throw new Error('Configure sua API key clicando no ícone de chave abaixo.')
 
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 4000,
@@ -297,7 +297,7 @@ export default function AIInsights() {
               />
               <button
                 onClick={() => {
-                  localStorage.setItem('cio-anthropic-key', apiKey)
+                  localStorage.setItem('cio-openai-key', apiKey)
                   setShowKeyInput(false)
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"

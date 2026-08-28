@@ -6,7 +6,7 @@ import {
 import useStore from '../../store/useStore'
 import { buildPositioningBlock } from '../../utils/voiceContext'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const FORMATS = [
   { value: 'reels', label: 'Reels' },
@@ -84,15 +84,15 @@ ${text.trim()}
 MELHORIAS A INCORPORAR:
 ${suggestionsList}`
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 2000,
@@ -111,7 +111,7 @@ ${suggestionsList}`
   const analyze = async () => {
     if (!text.trim()) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro'); return }
     setLoading(true)
     setResult(null)
     setError('')
@@ -141,15 +141,15 @@ TEXTO PARA REVISAR:
 ${text.trim()}`
 
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 1500,

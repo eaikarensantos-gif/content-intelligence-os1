@@ -60,11 +60,11 @@ export default function DailyAgentBanner() {
       <Sparkles size={14} className="text-gray-400 shrink-0" />
       <p className="text-xs text-gray-500 flex-1">
         Agente diário não rodou ainda hoje.
-        {!localStorage.getItem('cio-anthropic-key') && (
+        {!localStorage.getItem('cio-openai-key') && (
           <span className="text-amber-600 ml-1">Configure a API key em Configurações para ativar.</span>
         )}
       </p>
-      {localStorage.getItem('cio-anthropic-key') && (
+      {localStorage.getItem('cio-openai-key') && (
         <button
           onClick={runNow}
           className="text-xs text-orange-600 hover:text-orange-800 font-medium flex items-center gap-1 shrink-0 border border-orange-200 bg-white px-2 py-1 rounded-lg"

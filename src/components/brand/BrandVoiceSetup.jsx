@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronRight, ChevronLeft, Sparkles, Check, RotateCcw, Loader2, Eye, Copy, Zap } from 'lucide-react'
 import useStore from '../../store/useStore'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 /* ── Questionário ──────────────────────────────────────────── */
 const STEPS = [
@@ -259,11 +259,11 @@ function VoiceCalibrator() {
     setError(null)
 
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 2000,

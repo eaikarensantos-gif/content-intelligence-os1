@@ -4,7 +4,7 @@ import { assertNotTruncated } from '../../utils/aiJson'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 /**
  * Reorganiza e melhora o roteiro inteiro — resolve o problema de dados
@@ -22,7 +22,7 @@ export default function ScriptCoherenceFixer({ script, onApply, voiceCtx = '' })
 
   const handleFix = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro.'); return }
     setLoading(true)
     setError(null)
     setPreview(null)
@@ -43,11 +43,11 @@ REGRAS OBRIGATÓRIAS:
 - NÃO mude o sentido ou a opinião do que já está escrito.
 - Responda APENAS com o roteiro final, sem introdução, sem explicação do que foi mudado.`
 
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           max_tokens: 4000,
           system: withManualOperacional(withAntiAIFilter(
             `Você escreve conteúdo para Karen Santos, criadora brasileira. Siga as regras de voz abaixo em tudo que gerar.${voiceCtx}`

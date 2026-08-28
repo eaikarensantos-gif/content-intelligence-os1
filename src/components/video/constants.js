@@ -2,7 +2,7 @@ import { Link2, BookOpen, Lightbulb, Layers, Eye, Mic, Target, Star, FileVideo, 
 
 export const CDN = '/ffmpeg'
 
-export const LS_KEY = 'cio-anthropic-key'
+export const LS_KEY = 'cio-openai-key'
 export const LS_KEY_GROQ = 'cio-groq-key'
 
 export const INPUT_MODES = [

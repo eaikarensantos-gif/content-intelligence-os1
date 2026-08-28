@@ -4,7 +4,7 @@
 // que a Karen já usava manualmente colados no chat (Personalidade, Disruptivo,
 // Linguagem, Ranqueamento, Legenda) e um gerador de títulos a partir das 100
 // fórmulas de referência (ver data/promptGenTemplates.js). Mesmo padrão de
-// chamada usado pela aba "Criar" (UnifiedCreator): endpoint /api/ai?action=gemini,
+// chamada usado pela aba "Criar" (UnifiedCreator): endpoint /api/ai?action=openai,
 // filtro de autenticidade injetado no system, e varredura+correção anti-clichê
 // (lib/clicheSweep) rodando sobre o resultado antes de devolver pra tela.
 
@@ -18,11 +18,11 @@ import { TITULO_CATEGORIES, LANGUAGE_STYLES } from '../data/promptGenTemplates'
 async function callGemini(apiKey, { system, prompt, maxTokens = 2000 }) {
   if (!apiKey?.trim()) throw new Error('Configure sua API key em Analytics > Configurações.')
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: maxTokens,

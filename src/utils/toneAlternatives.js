@@ -1,6 +1,6 @@
 import { extractJsonArray, assertNotTruncated } from './aiJson.js'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 /**
  * Gera 3 alternativas de reescrita para um trecho sinalizado pelo Brand Linter.
@@ -29,15 +29,15 @@ Gere 3 alternativas concretas para reescrever APENAS a parte sinalizada, mantend
 Responda APENAS com JSON:
 ["alternativa 1", "alternativa 2", "alternativa 3"]`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       // 300 era menor que o piso de 1024 tokens que o orçamento de "pensamento"

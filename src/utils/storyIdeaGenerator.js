@@ -14,15 +14,15 @@ REGRAS:
 Responda SOMENTE com um array JSON de strings, sem markdown e sem texto antes ou depois:
 ["ideia 1", "ideia 2", ...]`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'low' },
       max_tokens: 1200,

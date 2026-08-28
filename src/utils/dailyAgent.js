@@ -2,7 +2,7 @@
 // Agente diário — gera 5 ideias às 10h e joga direto no store
 // Sem dependências externas. Usa a mesma API key já salva no app.
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 const LS_DAILY_PREFIX = 'cio-daily-agent-'
 
 // Fallback: usado só quando /posicionamento ainda não tem pilares definidos.
@@ -77,15 +77,15 @@ Retorne SOMENTE JSON válido, sem markdown, sem explicações:
   ]
 }`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-5.6-luna',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     }),

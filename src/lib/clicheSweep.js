@@ -299,11 +299,11 @@ export function countBlocks(findings) {
 /** Reescreve um texto corrido (content, caption, legenda) sem os padrões apontados. */
 export async function rewriteWithoutCliches(apiKey, text, hits) {
   const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 4000,
@@ -327,11 +327,11 @@ export async function rewriteShortLines(apiKey, entries) {
     `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}`
   ).join('\n')
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 1500,

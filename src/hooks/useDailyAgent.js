@@ -36,7 +36,7 @@ export default function useDailyAgent() {
     const alreadyRan = getDailyAgentStatus()
     if (alreadyRan) return
 
-    const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
+    const hasApiKey = !!localStorage.getItem('cio-openai-key')
     if (!hasApiKey) return
 
     const hour = new Date().getHours()

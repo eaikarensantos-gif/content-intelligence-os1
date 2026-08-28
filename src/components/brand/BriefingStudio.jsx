@@ -98,7 +98,7 @@ export default function BriefingStudio() {
   const dislikedContent = useStore(s => s.dislikedContent)
   const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const posicionamento = useStore(s => s.posicionamento)
-  const apiKey = useState(() => localStorage.getItem('cio-anthropic-key') || '')[0]
+  const apiKey = useState(() => localStorage.getItem('cio-openai-key') || '')[0]
 
   const [briefingText, setBriefingText] = useState('')
   const [briefingName, setBriefingName] = useState('')
@@ -200,11 +200,11 @@ Responda EXCLUSIVAMENTE com JSON válido:
 }`
 
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 6000,

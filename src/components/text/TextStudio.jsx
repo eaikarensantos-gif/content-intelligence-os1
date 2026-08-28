@@ -16,7 +16,7 @@ import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voice
 import { lintText } from '../../utils/brandLinter'
 import BrandLinterPanel, { BrandDirectiveBanner } from '../common/BrandLinterPanel'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const SOURCE_TYPES = [
   { id: 'article', label: 'Artigo / Blog' },
@@ -143,15 +143,15 @@ Responda SOMENTE com um JSON válido neste formato:
   }
 }`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 8000,
@@ -476,7 +476,7 @@ export default function TextStudio() {
       return
     }
     if (!apiKey) {
-      setError('Adicione sua chave da API Gemini nas configurações.')
+      setError('Adicione sua chave da API OpenAI nas configurações.')
       return
     }
     if (selectedPlatforms.length === 0) {
@@ -702,7 +702,7 @@ export default function TextStudio() {
 
           {!apiKey && (
             <p className="text-center text-[11px] text-amber-600">
-              Configure sua chave Gemini API nas configurações do Analisador de Vídeo para usar este recurso.
+              Configure sua chave da OpenAI nas configurações do Analisador de Vídeo para usar este recurso.
             </p>
           )}
         </div>

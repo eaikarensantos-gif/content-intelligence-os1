@@ -4,7 +4,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 const HISTORY_KEY = 'cio-community-comments-history'
 
 // ─── System prompt — mesma voz da Karen usada no Community Studio ─────────────
@@ -121,15 +121,15 @@ export default function CommunityEngager() {
         : `Reescreva o comentário abaixo em no máximo ${target.qty} linha${target.qty > 1 ? 's' : ''}, mantendo o tom e voz originais. Retorne apenas o comentário, sem explicações.`
       : `Reduza o comentário abaixo em até 40%, mantendo o tom e a voz originais. Retorne apenas o comentário reduzido, sem explicações.`
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 400,
@@ -150,21 +150,21 @@ export default function CommunityEngager() {
   const generate = async () => {
     if (!post.trim()) return
     if (!apiKey) {
-      setError('Configure sua API key do Gemini em Configurações')
+      setError('Configure sua API key da OpenAI em Configurações')
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 1200,

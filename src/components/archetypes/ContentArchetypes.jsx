@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const TABS = [
   { id: 'benchmark', label: 'Benchmark', icon: Globe },
@@ -40,15 +40,15 @@ const GEN_PHASES = [
 // ── API helpers ────────────────────────────────────────────────────────────────
 
 async function callClaude(apiKey, systemPrompt, userPrompt, maxTokens = 5000) {
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: maxTokens,
@@ -522,7 +522,7 @@ export default function ContentArchetypes() {
 
   const handleExtract = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setExtractError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setExtractError('Configure sua API key da OpenAI primeiro.'); return }
     if (!input.trim()) { setExtractError('Insira referências de criadores ou conteúdos.'); return }
 
     setExtracting(true)
@@ -573,7 +573,7 @@ export default function ContentArchetypes() {
 
   const handleGenerate = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setGenError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setGenError('Configure sua API key da OpenAI primeiro.'); return }
     if (!selectedArch) { setGenError('Selecione um arquétipo.'); return }
 
     setGenerating(true)
@@ -638,7 +638,7 @@ export default function ContentArchetypes() {
 
   const handleHybridize = async () => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setHybridError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setHybridError('Configure sua API key da OpenAI primeiro.'); return }
     if (selectedForHybrid.length < 2) { setHybridError('Selecione pelo menos 2 arquétipos.'); return }
 
     setHybridizing(true)
@@ -699,7 +699,7 @@ export default function ContentArchetypes() {
 
       // Build the full Anthropic API body so Make just forwards it
       const apiBody = {
-        model: 'claude-sonnet-5',
+        model: 'gpt-5.6-terra',
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
         max_tokens: 8000,

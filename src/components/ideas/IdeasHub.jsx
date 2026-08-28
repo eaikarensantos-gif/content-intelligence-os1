@@ -770,7 +770,7 @@ function GenerateView() {
 
   const hasInsights = insights.length > 0
   const hasTrends   = !!trendResults
-  const hasApiKey   = !!localStorage.getItem('cio-anthropic-key')
+  const hasApiKey   = !!localStorage.getItem('cio-openai-key')
   const PHASES      = mode === 'signals' ? SIGNALS_LOADING_PHASES : INSIGHTS_LOADING_PHASES
 
   const handleGenerate = async () => {
@@ -784,10 +784,10 @@ function GenerateView() {
     }, 1000)
 
     try {
-      const apiKey = localStorage.getItem('cio-anthropic-key')
+      const apiKey = localStorage.getItem('cio-openai-key')
 
       if (mode === 'signals') {
-        if (!apiKey) throw new Error('Sinais Culturais requer a chave Gemini. Configure em Configurações.')
+        if (!apiKey) throw new Error('Sinais Culturais requer a chave OpenAI. Configure em Configurações.')
         const result = await generateSignalBasedIdeas(apiKey, {
           niche: niche.trim() || 'criação de conteúdo digital',
           audience: audience.trim() || undefined,
@@ -991,7 +991,7 @@ function GenerateView() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-700">
-              <span className="font-semibold">Sinais Culturais requer a chave Gemini.</span> Configure em Configurações para ativar o gerador de próxima geração.
+              <span className="font-semibold">Sinais Culturais requer a chave OpenAI.</span> Configure em Configurações para ativar o gerador de próxima geração.
             </p>
           </div>
         )}

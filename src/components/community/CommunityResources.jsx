@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import useAIStore from '../../store/useAIStore'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const CATEGORIES = [
   {
@@ -254,29 +254,22 @@ Retorne APENAS JSON válido sem texto adicional:
   ]
 }`
 
-// Chama a API da Anthropic em streaming; com useWebSearch, habilita a
-// ferramenta de busca na web para a IA confirmar cada indicação e obter o
-// link real. Streaming evita a conexão ficar muda por minutos (e travar)
-// enquanto as buscas rodam, e permite mostrar progresso na tela.
-async function callClaude(apiKey, messages, useWebSearch, onSearch, signal) {
-  const body = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
-    stream: true,
-    messages,
-  }
-  if (useWebSearch) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8 }]
-  }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+// Usa o proxy do app para manter a chave fora de chamadas diretas do navegador.
+// A busca na web é executada pela ferramenta nativa da Responses API.
+async function callOpenAI(apiKey, messages, useWebSearch, onSearch, signal) {
+  if (useWebSearch) onSearch?.()
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      model: 'gpt-5.6-terra',
+      max_tokens: 8192,
+      messages,
+      grounding: useWebSearch,
+    }),
     signal,
   })
   if (!res.ok) {
@@ -285,56 +278,7 @@ async function callClaude(apiKey, messages, useWebSearch, onSearch, signal) {
     e.status = res.status
     throw e
   }
-
-  // Reconstrói os blocos de conteúdo a partir dos eventos SSE.
-  const content = []
-  let stopReason = null
-  const handleEvent = (evt) => {
-    if (evt.type === 'error') {
-      throw new Error(evt.error?.message || 'Erro no stream da API')
-    } else if (evt.type === 'content_block_start') {
-      content[evt.index] = { ...evt.content_block }
-      if (evt.content_block.type === 'server_tool_use') {
-        content[evt.index]._json = ''
-        onSearch?.()
-      }
-    } else if (evt.type === 'content_block_delta') {
-      const block = content[evt.index]
-      if (!block) return
-      if (evt.delta.type === 'text_delta') block.text = (block.text || '') + evt.delta.text
-      else if (evt.delta.type === 'input_json_delta') block._json = (block._json || '') + evt.delta.partial_json
-      else if (evt.delta.type === 'thinking_delta') block.thinking = (block.thinking || '') + evt.delta.thinking
-    } else if (evt.type === 'content_block_stop') {
-      const block = content[evt.index]
-      if (block && block._json !== undefined) {
-        try { block.input = JSON.parse(block._json || '{}') } catch { block.input = {} }
-        delete block._json
-      }
-    } else if (evt.type === 'message_delta') {
-      stopReason = evt.delta?.stop_reason || stopReason
-    }
-  }
-
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const parts = buffer.split('\n\n')
-    buffer = parts.pop()
-    for (const part of parts) {
-      const line = part.split('\n').find((l) => l.startsWith('data:'))
-      if (!line) continue
-      const payload = line.slice(5).trim()
-      if (!payload) continue
-      let evt
-      try { evt = JSON.parse(payload) } catch { continue }
-      handleEvent(evt)
-    }
-  }
-  return { content, stop_reason: stopReason }
+  return res.json()
 }
 
 // Com busca na web, a resposta vem em vários blocos (buscas + texto);
@@ -362,7 +306,7 @@ export default function CommunityResources() {
   async function buscar() {
     const t = topic.trim()
     if (!t || loading) return
-    if (!apiKey) { setError('Configure sua API key do Gemini em Configurações'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI em Configurações'); return }
     setLoading(true)
     setError(null)
     setResults(null)
@@ -379,21 +323,21 @@ export default function CommunityResources() {
       let messages = [{ role: 'user', content: PROMPT(t, depth, true) }]
       let data
       try {
-        data = await callClaude(apiKey, messages, true, onSearch, controller.signal)
+        data = await callOpenAI(apiKey, messages, true, onSearch, controller.signal)
       } catch (e) {
         // Chave sem acesso à busca na web → refaz sem a ferramenta
         // (os links caem nos fallbacks de busca por categoria).
         if (e.status !== 400) throw e
         useWebSearch = false
         messages = [{ role: 'user', content: PROMPT(t, depth, false) }]
-        data = await callClaude(apiKey, messages, false, onSearch, controller.signal)
+        data = await callOpenAI(apiKey, messages, false, onSearch, controller.signal)
       }
       // O servidor pausa o loop de buscas após várias rodadas; reenviar a
       // conversa continua de onde parou.
       let guard = 0
       while (data.stop_reason === 'pause_turn' && guard++ < 3) {
         messages = [...messages, { role: 'assistant', content: data.content }]
-        data = await callClaude(apiKey, messages, useWebSearch, onSearch, controller.signal)
+        data = await callOpenAI(apiKey, messages, useWebSearch, onSearch, controller.signal)
       }
       const parsed = parseJSON(extractText(data))
 
@@ -521,7 +465,7 @@ export default function CommunityResources() {
             <p className="text-xs text-gray-400">
               Indicações sobre <strong className="text-gray-600">"{lastTopic}"</strong>
               {noWebSearch ? (
-                <span className="ml-2 text-red-500">· sua chave da API não tem busca na web — links não verificados</span>
+                <span className="ml-2 text-red-500">· sua chave da API não tem acesso à busca na web — links não verificados</span>
               ) : CATEGORIES.some(({ key }) => (results[key] || []).some((it) => !it.url)) && (
                 <span className="ml-2 text-amber-500">· itens sem link confirmado abrem na busca</span>
               )}

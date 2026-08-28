@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -74,17 +74,17 @@ function chunkText(text, maxChars = 12000) {
 
 async function callAnthropic(prompt, system, maxTokens = 2000) {
   const apiKey = localStorage.getItem(LS_KEY) || ''
-  if (!apiKey) throw new Error('Chave de API Gemini não configurada. Vá em Configurações para adicionar.')
+  if (!apiKey) throw new Error('Chave de API OpenAI não configurada. Vá em Configurações para adicionar.')
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-5.6-luna',
       max_tokens: maxTokens,
       system,
       messages: [{ role: 'user', content: prompt }],

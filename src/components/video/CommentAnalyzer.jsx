@@ -69,7 +69,7 @@ export default function CommentAnalyzer() {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro'); return }
 
     setAnalyzing(true)
     setError('')
@@ -82,15 +82,15 @@ export default function CommentAnalyzer() {
         })
         const mediaType = file.type || 'image/png'
 
-        const resp = await fetch('/api/ai?action=gemini', {
+        const resp = await fetch('/api/ai?action=openai', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
+
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-5',
+            model: 'gpt-5.6-terra',
             thinking: { type: 'adaptive' },
             output_config: { effort: 'medium' },
             max_tokens: 3000,
@@ -122,7 +122,7 @@ export default function CommentAnalyzer() {
       : comments
     if (!allComments.length) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro'); return }
 
     if (pendingText) { setComments(allComments); setCommentText('') }
     setAnalyzedComments(allComments)
@@ -136,15 +136,15 @@ export default function CommentAnalyzer() {
       const pathsSection = pathsList.length
         ? `\n\nCAMINHOS DE RESPOSTA DESEJADOS:\nSiga estritamente estes caminhos/direções ao gerar as respostas:\n${pathsList.map((p, i) => `${i + 1}. ${p}`).join('\n')}`
         : '\n\nNenhum caminho de resposta específico foi definido: gere respostas variando o tom (ex: empática, direta, educativa).'
-      const resp = await fetch('/api/ai?action=gemini', {
+      const resp = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 6000,
@@ -213,21 +213,21 @@ Responda APENAS com JSON válido, sem markdown:
 
   const shortenReply = async (ci, si) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro'); return }
     const current = suggestions.replies[ci].suggestions[si].reply
     const replyId = `${ci}-${si}`
     setShorteningId(replyId)
     setError('')
     try {
-      const resp = await fetch('/api/ai?action=gemini', {
+      const resp = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'disabled' },
           max_tokens: 500,
           messages: [{
@@ -255,7 +255,7 @@ Responda APENAS com JSON válido, sem markdown:
 
   const regenerateReply = async (ci, si) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro'); return }
     const replyEntry = suggestions.replies[ci]
     const current = replyEntry.suggestions[si]
     const replyId = `${ci}-${si}`
@@ -263,15 +263,15 @@ Responda APENAS com JSON válido, sem markdown:
     setError('')
     try {
       const voiceContext = brandVoice?.prompt ? `\n\nVOZ DO CRIADOR:\n${brandVoice.prompt}` : ''
-      const resp = await fetch('/api/ai?action=gemini', {
+      const resp = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'disabled' },
           max_tokens: 600,
           messages: [{

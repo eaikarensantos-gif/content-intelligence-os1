@@ -1,15 +1,10 @@
 // ─── Provider definitions ────────────────────────────────────────────────────
 
 export const PROVIDERS = {
-  anthropic: {
-    label: 'Anthropic (Claude)',
-    models: ['claude-fable-5', 'claude-sonnet-5', 'claude-haiku-4-5-20251001'],
-    defaultModel: 'claude-fable-5',
-  },
   openai: {
     label: 'OpenAI',
-    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-    defaultModel: 'gpt-4o-mini',
+    models: ['gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-5.6-luna'],
+    defaultModel: 'gpt-5.6-terra',
   },
   groq: {
     label: 'Groq (rápido e gratuito)',

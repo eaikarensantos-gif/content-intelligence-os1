@@ -1,7 +1,6 @@
 // Vercel Serverless Function — AI proxy + multi-platform video search + Whisper
 // Routing (action via body.action):
-//   'anthropic'        → Anthropic Messages API
-//   'gemini'           → Gemini generateContent, translated to/from Anthropic Messages shape
+//   'openai'           → OpenAI Responses API, with the legacy response shape
 //   'youtube-search'   → YouTube Data API v3 (supports duration + sort filters)
 //   'dailymotion-search' → Dailymotion public API (no key, supports sort)
 //   'vimeo-search'     → Vimeo API (token required, supports sort)
@@ -10,18 +9,6 @@
 //   (default)          → AI chat completion
 
 import { ANTI_AI_FILTER } from '../src/lib/antiAIFilter.js'
-
-// The ~30 call sites across the app build requests in Anthropic Messages
-// shape (model/system/messages/thinking/max_tokens) and parse responses as
-// `content: [{type, text}]` + `stop_reason`. Rather than touch every call
-// site, this map keeps the same Claude model names in the request body and
-// translates them to their Gemini-generation equivalent here, then reshapes
-// the Gemini response back into the same Anthropic shape the frontend
-// already parses (see `src/utils/aiJson.js`).
-const GEMINI_MODEL_MAP = {
-  'claude-sonnet-5': 'gemini-3.5-flash',
-  'claude-haiku-4-5-20251001': 'gemini-3.5-flash-lite',
-}
 
 const PROVIDER_URLS = {
   openai:     'https://api.openai.com/v1/chat/completions',
@@ -88,117 +75,73 @@ async function callGemini(apiKey, model, messages, options = {}) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
-// ─── Gemini (Anthropic-shape in, Anthropic-shape out) ─────────────────────────
+// ─── OpenAI Responses API (legacy response shape out) ────────────────────────
 
-function toGeminiRole(role) {
-  return role === 'assistant' ? 'model' : 'user'
-}
-
-// Anthropic content blocks (`{type:'text'}` / `{type:'image', source:{type:'base64', media_type, data}}`)
-// need translating to Gemini parts — otherwise a multi-block message (e.g. video
-// frame analysis) gets JSON.stringified whole, sending raw base64 as text instead
-// of an actual image the model can see.
-function toGeminiParts(content) {
-  if (typeof content === 'string') return [{ text: content }]
-  if (!Array.isArray(content)) return [{ text: JSON.stringify(content) }]
-  return content.map((block) => {
-    if (block.type === 'text') return { text: block.text }
-    if (block.type === 'image' && block.source?.type === 'base64') {
-      return { inlineData: { mimeType: block.source.media_type, data: block.source.data } }
+function toOpenAIContent(content, role) {
+  const textType = role === 'assistant' ? 'output_text' : 'input_text'
+  if (typeof content === 'string') return [{ type: textType, text: content }]
+  if (!Array.isArray(content)) return [{ type: textType, text: JSON.stringify(content) }]
+  return content.flatMap((block) => {
+    if (block.type === 'text') return [{ type: textType, text: block.text || '' }]
+    if (role !== 'assistant' && block.type === 'image' && block.source?.type === 'base64') {
+      return [{ type: 'input_image', image_url: `data:${block.source.media_type};base64,${block.source.data}`, detail: 'auto' }]
     }
-    return { text: JSON.stringify(block) }
+    return []
   })
 }
 
-async function callGeminiMessages(apiKey, { model, max_tokens, system, thinking, messages, grounding }) {
-  const geminiModel = GEMINI_MODEL_MAP[model] || 'gemini-3.5-flash'
-  const contents = (messages || []).map((m) => ({
-    role: toGeminiRole(m.role),
-    parts: toGeminiParts(m.content),
+async function callOpenAIResponses(apiKey, { model, max_tokens, system, thinking, messages, grounding }) {
+  const input = (messages || []).map((message) => ({
+    role: message.role === 'assistant' ? 'assistant' : 'user',
+    content: toOpenAIContent(message.content, message.role),
   }))
-
-  const generationConfig = { maxOutputTokens: max_tokens || 2048 }
-  if (thinking?.type === 'disabled') {
-    generationConfig.thinkingConfig = { thinkingBudget: 0 }
-  } else {
-    // Gemini's dynamic thinking budget (-1, uncapped) can consume most of
-    // max_tokens on a complex prompt, starving the actual response and
-    // causing silent truncation — the same failure mode as the Anthropic
-    // adaptive-thinking bug from earlier in this app's history. This isn't
-    // opt-in: Gemini enables thinking by default even when the caller never
-    // passes a `thinking` param at all, so the cap has to apply
-    // unconditionally — checking `thinking &&` here left every caller that
-    // doesn't explicitly request thinking (title/hook/script/caption/cta in
-    // the Hub, refQueries, etc.) fully exposed to the same truncation bug
-    // this was supposed to have fixed for good. Capping at half the total
-    // budget guarantees at least half stays for the text either way.
-    const thinkingBudget = Math.max(1024, Math.floor((max_tokens || 2048) * 0.5))
-    generationConfig.thinkingConfig = { thinkingBudget, includeThoughts: true }
+  const body = {
+    model: model || 'gpt-5.6-terra',
+    input,
+    max_output_tokens: max_tokens || 2048,
+    reasoning: { effort: thinking?.type === 'disabled' ? 'none' : 'medium' },
+    text: { verbosity: 'medium' },
+    store: false,
   }
+  if (system) body.instructions = system
+  if (grounding) body.tools = [{ type: 'web_search' }]
 
-  const body = { contents, generationConfig }
-  if (system) body.systemInstruction = { parts: [{ text: system }] }
-  // Grounding com Google Search — usado quando o caller precisa de dados reais
-  // e verificáveis (não a "memória" do modelo, que pode alucinar número e
-  // fonte). Com isso ligado o Gemini pesquisa de verdade antes de responder,
-  // e a resposta traz groundingMetadata com os links reais consultados.
-  if (grounding) body.tools = [{ google_search: {} }]
-
-  const upstream = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify(body),
-    }
-  )
+  const upstream = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+  })
   const data = await upstream.json().catch(() => ({}))
   if (!upstream.ok) {
-    const message = data.error?.message || `Gemini error ${upstream.status}`
+    const message = data.error?.message || `OpenAI error ${upstream.status}`
     return { status: upstream.status, body: { error: { message } } }
   }
 
-  const candidate = data.candidates?.[0]
-  if (!candidate) {
-    const reason = data.promptFeedback?.blockReason || 'sem candidatos na resposta'
-    return { status: 502, body: { error: { message: `Gemini não retornou conteúdo (${reason})` } } }
+  const text = data.output_text || (data.output || [])
+    .flatMap((item) => item.content || [])
+    .filter((item) => item.type === 'output_text')
+    .map((item) => item.text || '')
+    .join('')
+  if (!text) return { status: 502, body: { error: { message: 'OpenAI não retornou conteúdo.' } } }
+
+  const annotations = (data.output || [])
+    .flatMap((item) => item.content || [])
+    .flatMap((item) => item.annotations || [])
+    .filter((annotation) => annotation.type === 'url_citation' && annotation.url)
+  const seen = new Set()
+  const grounding_sources = annotations
+    .filter((annotation) => !seen.has(annotation.url) && seen.add(annotation.url))
+    .map((annotation) => ({ uri: annotation.url, title: annotation.title || annotation.url }))
+    .slice(0, 8)
+
+  return {
+    status: 200,
+    body: {
+      content: [{ type: 'text', text }],
+      stop_reason: data.status === 'incomplete' ? 'max_tokens' : 'end_turn',
+      ...(grounding ? { grounding_sources } : {}),
+    },
   }
-
-  const parts = candidate.content?.parts || []
-  const text = parts.filter((p) => !p.thought && typeof p.text === 'string').map((p) => p.text).join('')
-  const finishReason = candidate.finishReason
-  const stop_reason =
-    finishReason === 'MAX_TOKENS' ? 'max_tokens' : finishReason === 'STOP' ? 'end_turn' : finishReason || null
-
-  const responseBody = { content: [{ type: 'text', text }], stop_reason }
-  if (grounding) {
-    const chunks = candidate.groundingMetadata?.groundingChunks || []
-    const seen = new Set()
-    responseBody.grounding_sources = chunks
-      .map((c) => c.web)
-      .filter((w) => w?.uri && w?.title && !seen.has(w.title) && seen.add(w.title))
-      .slice(0, 8)
-
-    // groundingSupports liga trechos específicos do texto gerado aos chunks
-    // que os embasam — é o jeito confiável de saber QUAL fonte respalda QUAL
-    // dado, em vez de confiar no modelo lembrar de citar a URL certa dentro
-    // do JSON ou tentar casar nome de fonte por string (falha na maioria dos
-    // casos, porque o título do resultado de busca raramente é igual ao nome
-    // da instituição citada no texto).
-    const supports = candidate.groundingMetadata?.groundingSupports || []
-    responseBody.grounding_supports = supports
-      .map((s) => ({
-        text: s.segment?.text || '',
-        sources: (s.groundingChunkIndices || [])
-          .map((i) => chunks[i]?.web)
-          .filter((w) => w?.uri)
-          .map((w) => ({ uri: w.uri, title: w.title || null })),
-      }))
-      .filter((s) => s.text.trim().length > 0 && s.sources.length > 0)
-      .slice(0, 40)
-  }
-
-  return { status: 200, body: responseBody }
 }
 
 // ─── YouTube Data API v3 ──────────────────────────────────────────────────────
@@ -972,7 +915,7 @@ function applyCors(req, res) {
     res.setHeader('Vary', 'Origin')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, anthropic-version')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key')
   return isAllowedOrigin(origin)
 }
 
@@ -988,32 +931,13 @@ export default async function handler(req, res) {
   const action = (req.body && req.body.action) || (req.query && req.query.action)
 
   try {
-    // ── Anthropic ────────────────────────────────────────────────────────────
-    if (action === 'anthropic') {
+    // ── OpenAI Responses API (compatibility response shape) ─────────────────
+    if (action === 'openai') {
       const apiKey = req.headers['x-api-key']
       if (!apiKey) return res.status(400).json({ error: 'API key is required' })
-      const { action: _drop, skipAntiCliche = false, ...anthropicBody } = req.body || {}
-      if (!skipAntiCliche) anthropicBody.system = withGlobalAntiCliche(anthropicBody.system || '')
-      const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': req.headers['anthropic-version'] || '2023-06-01',
-        },
-        body: JSON.stringify(anthropicBody),
-      })
-      const data = await upstream.json().catch(() => ({ error: { message: `Anthropic error ${upstream.status}` } }))
-      return res.status(upstream.status).json(data)
-    }
-
-    // ── Gemini (Anthropic-shape compatibility) ───────────────────────────────
-    if (action === 'gemini') {
-      const apiKey = req.headers['x-api-key']
-      if (!apiKey) return res.status(400).json({ error: 'API key is required' })
-      const { action: _drop, skipAntiCliche = false, ...geminiBody } = req.body || {}
-      if (!skipAntiCliche) geminiBody.system = withGlobalAntiCliche(geminiBody.system || '')
-      const result = await callGeminiMessages(apiKey, geminiBody)
+      const { action: _drop, skipAntiCliche = false, ...openaiBody } = req.body || {}
+      if (!skipAntiCliche) openaiBody.system = withGlobalAntiCliche(openaiBody.system || '')
+      const result = await callOpenAIResponses(apiKey, openaiBody)
       return res.status(result.status).json(result.body)
     }
 
@@ -1145,7 +1069,20 @@ export default async function handler(req, res) {
 
     const filteredMessages = messagesWithGlobalAntiCliche(messages, skipAntiCliche)
     let content
-    if (provider === 'gemini') {
+    if (provider === 'openai') {
+      const systemMessage = filteredMessages.find((message) => message.role === 'system')
+      const result = await callOpenAIResponses(apiKey, {
+        model: model || 'gpt-5.6-terra',
+        max_tokens: options.maxTokens,
+        system: systemMessage?.content || '',
+        thinking: { type: options.reasoningEffort === 'none' ? 'disabled' : 'adaptive' },
+        messages: filteredMessages.filter((message) => message.role !== 'system'),
+      })
+      if (result.status !== 200) {
+        return res.status(result.status).json({ error: result.body.error?.message || 'OpenAI request failed' })
+      }
+      content = result.body.content?.[0]?.text || ''
+    } else if (provider === 'gemini') {
       content = await callGemini(apiKey, model, filteredMessages, options)
     } else {
       let url = PROVIDER_URLS[provider]

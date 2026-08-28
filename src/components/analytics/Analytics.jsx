@@ -1431,7 +1431,7 @@ export default function Analytics() {
           setPubliError(null)
           setPubliReport(null)
 
-          const apiKey = localStorage.getItem('cio-anthropic-key') || ''
+          const apiKey = localStorage.getItem('cio-openai-key') || ''
           if (!apiKey) { setPubliError('Configure sua API key em Relatórios > ícone de chave.'); setPubliLoading(false); return }
 
           const tableData = publiPosts.map(m => ({
@@ -1462,10 +1462,10 @@ Retorne EXCLUSIVAMENTE JSON válido:
 }`
 
           try {
-            const res = await fetch('/api/ai?action=gemini', {
+            const res = await fetch('/api/ai?action=openai', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-              body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+              body: JSON.stringify({ model: 'gpt-5.6-terra', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
             const data = await res.json()
@@ -1485,7 +1485,7 @@ Retorne EXCLUSIVAMENTE JSON válido:
           setPubliClientReport(null)
           setPubliWhatsapp('')
 
-          const apiKey = localStorage.getItem('cio-anthropic-key') || ''
+          const apiKey = localStorage.getItem('cio-openai-key') || ''
           if (!apiKey) { setPubliError('Configure sua API key em Relatórios > ícone de chave.'); setPubliClientLoading(false); return }
 
           const clientLabel = selectedClientName || 'Cliente'
@@ -1570,10 +1570,10 @@ Gere EXCLUSIVAMENTE JSON:
 REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.234). Se dado falta, use '— dado não disponível'. Foco no essencial.`
 
           try {
-            const res = await fetch('/api/ai?action=gemini', {
+            const res = await fetch('/api/ai?action=openai', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-              body: JSON.stringify({ model: 'claude-sonnet-5', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+              body: JSON.stringify({ model: 'gpt-5.6-terra', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 3000, messages: [{ role: 'user', content: prompt }] }),
             })
             if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `Erro: ${res.status}`) }
             const data = await res.json()

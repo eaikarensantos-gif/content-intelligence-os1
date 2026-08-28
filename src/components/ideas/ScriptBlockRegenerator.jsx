@@ -4,7 +4,7 @@ import { assertNotTruncated } from '../../utils/aiJson'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 // Divide o roteiro em blocos por linha em branco — cada marcador de cena
 // ([CENA: ...], [CORTE: ...]), título de seção (**ABERTURA**) ou parágrafo
@@ -25,7 +25,7 @@ export default function ScriptBlockRegenerator({ script, onChange, voiceCtx = ''
 
   const regenerateBlock = async (index) => {
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua API key do Gemini primeiro.'); return }
+    if (!apiKey) { setError('Configure sua API key da OpenAI primeiro.'); return }
     setLoadingIndex(index)
     setError(null)
     try {
@@ -40,11 +40,11 @@ ${after ? `\nTRECHO SEGUINTE (contexto — NÃO reescreva):\n${after}` : ''}
 ${instruction.trim() ? `\nINSTRUÇÃO DE COMO MUDAR: ${instruction.trim()}` : '\nMelhore esse trecho especificamente — mais concreto, menos genérico, mantendo a mesma ideia central.'}
 
 Responda APENAS com o texto novo desse trecho — mesmo formato e marcadores do original (ex.: se o trecho começa com [CENA: ...] ou **TÍTULO**, mantenha esse padrão), sem introdução nem explicação.`
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           // Gemini sempre reserva um piso de 1024 tokens pro orçamento de
           // "pensamento" antes de escrever qualquer texto — com max_tokens
           // igual ou abaixo disso, a resposta corta antes de sair. 1500 dá

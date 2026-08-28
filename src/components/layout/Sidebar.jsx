@@ -74,7 +74,7 @@ function findGroupForPath(pathname) {
 }
 
 const STORE_KEY = 'content-intelligence-os-v3'
-const API_KEYS = ['cio-anthropic-key', 'cio-groq-key']
+const API_KEYS = ['cio-openai-key', 'cio-groq-key']
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()

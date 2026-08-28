@@ -11,9 +11,9 @@ import { VOICE_SIGNATURE } from '../../utils/voiceContext'
 import useStore from '../../store/useStore'
 
 async function callAI(apiKey, body) {
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -23,7 +23,7 @@ async function callAI(apiKey, body) {
   return res.json()
 }
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 const LS_FEEDS_KEY = 'cio-news-feeds'
 
 // Fontes brasileiras adicionadas depois do lançamento — ficam separadas do
@@ -261,7 +261,7 @@ Regras:
 - Ordene por relevance (alto primeiro)
 - Retorne APENAS o JSON, sem texto antes ou depois`
       const res = await callAI(apiKey, {
-        model: 'claude-haiku-4-5-20251001',
+        model: 'gpt-5.6-luna',
         // até 40 manchetes pra agrupar em 5 temas — 1500 ainda cortava com
         // um lote real de manchetes, testado ao vivo até achar uma margem segura
         max_tokens: 3000,
@@ -405,7 +405,7 @@ Resumo: ${desc}
 
 Retorne JSON: {"titulo": "...", "resumo": "..."}`
       const res = await callAI(apiKey, {
-        model: 'claude-haiku-4-5-20251001',
+        model: 'gpt-5.6-luna',
         max_tokens: 1500,
         skipAntiCliche: true,
         messages: [{ role: 'user', content: prompt }],
@@ -434,7 +434,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
     try {
       const prompt = buildPrompt(selected, format)
       const res = await callAI(apiKey, {
-        model: 'claude-sonnet-5',
+        model: 'gpt-5.6-terra',
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
         max_tokens: MAX_TOKENS_BY_FORMAT[format] || 2000,

@@ -12,7 +12,7 @@ import {
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 // ─── Carousel templates ──────────────────────────────────────────────────────
 const CAROUSEL_TYPES = [
@@ -115,15 +115,15 @@ Responda APENAS com JSON válido:
   "alternative_hooks": ["hook alternativo 1", "hook alternativo 2", "hook alternativo 3"]
 }`
 
-  const response = await fetch('/api/ai?action=gemini', {
+  const response = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 6000,
@@ -643,7 +643,7 @@ export default function CarouselStudio() {
   const handleGenerate = async () => {
     if (!topic.trim() || !carouselType) return
     const apiKey = localStorage.getItem(LS_KEY)
-    if (!apiKey) { setError('Configure sua chave Gemini primeiro.'); return }
+    if (!apiKey) { setError('Configure sua chave OpenAI primeiro.'); return }
 
     setLoading(true)
     setError(null)

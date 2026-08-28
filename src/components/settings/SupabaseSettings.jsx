@@ -14,7 +14,7 @@ import {
   startGoogleCalendarConnect,
 } from '../../lib/googleCalendarAuth'
 
-const LS_ANTHROPIC       = 'cio-anthropic-key'
+const LS_OPENAI          = 'cio-openai-key'
 const LS_GROQ            = 'cio-groq-key'
 const LS_YOUTUBE         = 'cio-youtube-key'
 const LS_VIMEO           = 'cio-vimeo-token'
@@ -49,7 +49,7 @@ export default function SupabaseSettings() {
   const [sbKey, setSbKey]   = useState(getSupabaseKey)
   const [showSbKey, setShowSbKey] = useState(false)
 
-  const [anthropicKey, setAnthropicKey] = useState(() => localStorage.getItem(LS_ANTHROPIC) || '')
+  const [openaiKey, setOpenaiKey] = useState(() => localStorage.getItem(LS_OPENAI) || '')
   const [groqKey,      setGroqKey]      = useState(() => localStorage.getItem(LS_GROQ)       || '')
   const [youtubeKey,   setYoutubeKey]   = useState(() => localStorage.getItem(LS_YOUTUBE)    || '')
   const [vimeoToken,   setVimeoToken]   = useState(() => localStorage.getItem(LS_VIMEO)      || '')
@@ -58,7 +58,7 @@ export default function SupabaseSettings() {
   const [apifyToken,   setApifyToken]   = useState(() => localStorage.getItem(LS_APIFY)      || '')
   const [apifyActor,   setApifyActor]   = useState(() => localStorage.getItem(LS_APIFY_ACTOR) || '')
 
-  const [showAnthropicKey, setShowAnthropicKey] = useState(false)
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false)
   const [showGroqKey,      setShowGroqKey]      = useState(false)
   const [showYoutubeKey,   setShowYoutubeKey]   = useState(false)
   const [showVimeoToken,   setShowVimeoToken]   = useState(false)
@@ -134,7 +134,7 @@ export default function SupabaseSettings() {
   }
 
   const handleSaveApiKeys = () => {
-    localStorage.setItem(LS_ANTHROPIC, anthropicKey.trim())
+    localStorage.setItem(LS_OPENAI, openaiKey.trim())
     localStorage.setItem(LS_GROQ, groqKey.trim())
     if (youtubeKey.trim()) localStorage.setItem(LS_YOUTUBE, youtubeKey.trim())
     else localStorage.removeItem(LS_YOUTUBE)
@@ -321,7 +321,7 @@ alter table user_data disable row level security;`}</pre>
         </h2>
         <div className="space-y-3">
           {[
-            { label: 'Gemini (Google AI Studio)', placeholder: 'AIza... ou AQ...', value: anthropicKey, set: setAnthropicKey, show: showAnthropicKey, setShow: setShowAnthropicKey },
+            { label: 'OpenAI', placeholder: 'sk-...', value: openaiKey, set: setOpenaiKey, show: showOpenaiKey, setShow: setShowOpenaiKey },
             { label: 'Groq (gratuito — transcrição)', placeholder: 'gsk_...', value: groqKey, set: setGroqKey, show: showGroqKey, setShow: setShowGroqKey },
           ].map(({ label, placeholder, value, set, show, setShow }) => (
             <div key={label}>
@@ -401,7 +401,7 @@ alter table user_data disable row level security;`}</pre>
         </button>
 
         <div className="flex gap-3 flex-wrap">
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-xs text-violet-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Google AI Studio</a>
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-xs text-violet-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> OpenAI Platform</a>
           <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Groq (gratuito)</a>
           <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer" className="text-xs text-red-500 hover:underline flex items-center gap-1"><ExternalLink size={11} /> YouTube API</a>
           <a href="https://developer.vimeo.com/apps" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:underline flex items-center gap-1"><ExternalLink size={11} /> Vimeo Dev</a>

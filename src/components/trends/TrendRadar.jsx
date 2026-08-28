@@ -308,15 +308,15 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   ]
 }`
 
-  const response = await fetch('/api/ai?action=gemini', {
+  const response = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-5.6-luna',
       max_tokens: 8192,
       system: withAntiAIFilter('You are a trend intelligence analyst. Respond ONLY with a valid JSON object. No markdown, no code blocks, no explanations.'),
       messages: [{ role: 'user', content: prompt }],
@@ -704,7 +704,7 @@ export default function TrendRadar() {
 
   const addFavorite = useStore((s) => s.addFavorite)
   const favorites   = useStore((s) => s.favorites)
-  const hasApiKey = !!localStorage.getItem('cio-anthropic-key')
+  const hasApiKey = !!localStorage.getItem('cio-openai-key')
   const hasYtKey  = !!localStorage.getItem(LS_YOUTUBE)
   const hasTiktokKey = !!localStorage.getItem(LS_RAPIDAPI)
   const hasApifyToken = !!localStorage.getItem(LS_APIFY)
@@ -780,8 +780,8 @@ export default function TrendRadar() {
     }, 600)
 
     try {
-      const apiKey = localStorage.getItem('cio-anthropic-key')
-      if (!apiKey) throw new Error('Chave Gemini não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
+      const apiKey = localStorage.getItem('cio-openai-key')
+      if (!apiKey) throw new Error('Chave OpenAI não configurada. Adicione sua chave em Configurações para usar o Creator Insights.')
 
       const results = await callClaudeForTrends(apiKey, topic.trim(), insights, listaNegra, posicionamento)
       setTrendResults(results)
@@ -896,7 +896,7 @@ export default function TrendRadar() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-700">
-              <span className="font-semibold">Configure sua chave Gemini</span> para ativar o Creator Insights completo — análise real de tendências, criadores, padrões e oportunidades com IA.
+              <span className="font-semibold">Configure sua chave OpenAI</span> para ativar o Creator Insights completo — análise real de tendências, criadores, padrões e oportunidades com IA.
             </p>
           </div>
         )}

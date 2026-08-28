@@ -418,7 +418,7 @@ export default function ClientReports() {
     setShareUrl(null)
 
     try {
-      const apiKey = localStorage.getItem('cio-anthropic-key')
+      const apiKey = localStorage.getItem('cio-openai-key')
       if (!apiKey) throw new Error('Configure sua API key. Vá em Dashboard > configurações.')
 
       const totalImpressions = filtered.reduce((s, m) => s + m.impressions, 0)
@@ -462,15 +462,15 @@ export default function ClientReports() {
         top5, bottom3, formatBreakdown, dayBreakdown,
       })
 
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 4000,

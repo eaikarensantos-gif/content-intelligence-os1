@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const AUDIENCES = [
   { id: 'general', label: 'Público geral' },
@@ -117,15 +117,15 @@ GERE a apresentação completa com esta estrutura JSON:
 
 Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 8000,
@@ -361,7 +361,7 @@ export default function PresentationMode() {
 
     try {
       const apiKey = localStorage.getItem(LS_KEY)
-      if (!apiKey) throw new Error('Configure sua chave Gemini no Analisador de Vídeo primeiro.')
+      if (!apiKey) throw new Error('Configure sua chave OpenAI no Analisador de Vídeo primeiro.')
       const data = await generatePresentation(apiKey, { topic, audience, goal, duration, context })
       setResult(data)
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200)
@@ -576,7 +576,7 @@ export default function PresentationMode() {
             )}
 
             <p className="text-[10px] text-gray-400 text-center">
-              Configure sua chave Gemini nas configurações do Analisador de Vídeo.
+              Configure sua chave OpenAI nas configurações do Analisador de Vídeo.
             </p>
           </div>
         </div>

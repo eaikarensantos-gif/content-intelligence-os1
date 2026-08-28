@@ -3,7 +3,7 @@ import { Film, Plus, Check, Sparkles, RefreshCw, AlertCircle } from 'lucide-reac
 import { STORY_IDEA_PROMPTS } from '../../data/storyIdeaPrompts'
 import { generateMoreStoryPrompts } from '../../utils/storyIdeaGenerator'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 export default function StoryIdeasPanel({ onAddIdea }) {
   const [apiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
@@ -27,7 +27,7 @@ export default function StoryIdeasPanel({ onAddIdea }) {
   }
 
   const handleGenerate = async () => {
-    if (!apiKey) { setError('Configure sua chave Gemini nas configurações do Analisador de Vídeo.'); return }
+    if (!apiKey) { setError('Configure sua chave OpenAI nas configurações do Analisador de Vídeo.'); return }
     setLoading(true)
     setError('')
     try {

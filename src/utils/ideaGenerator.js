@@ -119,15 +119,15 @@ Respond ONLY with a valid JSON object (no markdown, no code blocks):
   ]
 }`
 
-  const response = await fetch('/api/ai?action=gemini', {
+  const response = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 6000,
@@ -213,15 +213,15 @@ Respond with ONLY a valid JSON array, no markdown code blocks, no explanation:
   }
 ]`
 
-  const response = await fetch('/api/ai?action=gemini', {
+  const response = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 5000,

@@ -7,7 +7,7 @@ import {
 import useStore from '../../store/useStore'
 import clsx from 'clsx'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 // ── Build prompt ──────────────────────────────────────────────────────────────
 function buildAnalysisPrompt(draft, benchmarkText, creatorContext) {
@@ -113,15 +113,15 @@ Exemplos de gancho: ${(p.hook_examples || []).slice(0, 3).join(' | ') || 'N/A'}
 async function runAnalysis(apiKey, draft, benchmarkText, creatorContext) {
   const prompt = buildAnalysisPrompt(draft, benchmarkText, creatorContext)
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 2000,
@@ -217,7 +217,7 @@ export default function AuthenticityAnalyzer() {
 
   const handleAnalyze = async () => {
     if (!draft.trim()) return setError('Cole o rascunho para analisar')
-    if (!apiKey) return setError('Configure sua chave Gemini em Configurações')
+    if (!apiKey) return setError('Configure sua chave OpenAI em Configurações')
     setError('')
     setResult(null)
     setLoading(true)

@@ -101,15 +101,15 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
   }
 }`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 4000,
@@ -324,7 +324,7 @@ export default function ThoughtCapture() {
 
   const phaseRef = useRef(null)
   const resultsRef = useRef(null)
-  const apiKey = localStorage.getItem('cio-anthropic-key')
+  const apiKey = localStorage.getItem('cio-openai-key')
 
   const startPhases = () => {
     setLoadPhase(0)
@@ -339,7 +339,7 @@ export default function ThoughtCapture() {
 
   const handleCapture = async () => {
     if (!thought.trim() || thought.trim().length < 10) { setError('Escreva ao menos 10 caracteres para capturar.'); return }
-    if (!apiKey) { setError('Chave da API Gemini não configurada. Vá em Configurações.'); return }
+    if (!apiKey) { setError('Chave da API OpenAI não configurada. Vá em Configurações.'); return }
     setError(''); setLoading(true); setResult(null); setSavedFormats(new Set()); setCurrentThought(thought)
     startPhases()
     try {

@@ -15,7 +15,7 @@ import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { WORK_NICHE } from '../../utils/themeCategories'
 
-const LS_ANTHROPIC = 'cio-anthropic-key'
+const LS_OPENAI = 'cio-openai-key'
 
 const PLATFORM_LABELS = { youtube: 'YouTube', dailymotion: 'Dailymotion', vimeo: 'Vimeo', tiktok: 'TikTok', instagram: 'Instagram' }
 
@@ -64,11 +64,11 @@ Responda SOMENTE com JSON válido, sem texto antes ou depois:
 }
 
 async function callClaude(apiKey, systemPrompt, userPrompt) {
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 3000,
@@ -281,8 +281,8 @@ export default function ViralReferences() {
   }
 
   const handleAnalyze = async (video) => {
-    const apiKey = localStorage.getItem(LS_ANTHROPIC)
-    if (!apiKey) { setAnalyzeError('Configure sua API key do Gemini em Configurações.'); return }
+    const apiKey = localStorage.getItem(LS_OPENAI)
+    if (!apiKey) { setAnalyzeError('Configure sua API key da OpenAI em Configurações.'); return }
     setAnalyzingId(video.id)
     setAnalyzeError(null)
     try {

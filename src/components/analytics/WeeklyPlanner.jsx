@@ -126,7 +126,7 @@ export default function WeeklyPlanner() {
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-anthropic-key') || '')
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-openai-key') || '')
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [onlineHours, setOnlineHours] = useState(null)
 
@@ -167,15 +167,15 @@ export default function WeeklyPlanner() {
 
       const prompt = buildPrompt(topPosts, postsInPeriod, period, topHours?.length ? topHours : null)
 
-      const res = await fetch('/api/ai?action=gemini', {
+      const res = await fetch('/api/ai?action=openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-5',
+          model: 'gpt-5.6-terra',
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 4000,
@@ -278,7 +278,7 @@ export default function WeeklyPlanner() {
                 className="flex-1 px-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded-lg outline-none text-white placeholder-gray-500 focus:border-orange-400"
               />
               <button
-                onClick={() => { localStorage.setItem('cio-anthropic-key', apiKey); setShowKeyInput(false) }}
+                onClick={() => { localStorage.setItem('cio-openai-key', apiKey); setShowKeyInput(false) }}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"
               >
                 <Check size={12} /> Salvar

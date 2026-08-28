@@ -12,7 +12,7 @@ import {
   generatePowerfulTitles,
 } from '../../lib/promptGenService'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 const MODES = [
   { id: 'personalidade', label: 'Personalidade', desc: '30 ganchos provocativos pro reels', icon: Sparkles },

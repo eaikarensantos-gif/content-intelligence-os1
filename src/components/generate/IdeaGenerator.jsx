@@ -12,7 +12,7 @@ import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import DailyAgentBanner from '../ideas/DailyAgentBanner'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 // ── Controls config ───────────────────────────────────────────────────────────
 const TONES = [
@@ -166,15 +166,15 @@ ${voiceContext || ''}${regenInstruction || ''}`
 async function generateIdeas(apiKey, params) {
   const prompt = buildPrompt(params)
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 6000,
@@ -402,7 +402,7 @@ export default function IdeaGenerator() {
 
   const handleGenerate = async () => {
     if (!topic.trim()) { setError('Defina o tópico.'); return }
-    if (!apiKey) { setError('Configure sua chave Gemini nas configurações do Analisador de Vídeo.'); return }
+    if (!apiKey) { setError('Configure sua chave OpenAI nas configurações do Analisador de Vídeo.'); return }
 
     setLoading(true)
     setError('')
@@ -706,7 +706,7 @@ export default function IdeaGenerator() {
 
               {!apiKey && (
                 <p className="text-center text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                  Configure sua chave Gemini nas configurações do Analisador de Vídeo.
+                  Configure sua chave OpenAI nas configurações do Analisador de Vídeo.
                 </p>
               )}
             </div>

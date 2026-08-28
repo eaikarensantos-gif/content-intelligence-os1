@@ -12,7 +12,7 @@ import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
 import { parseFile } from '../../utils/csvNormalizer'
 
-const LS_KEY = 'cio-anthropic-key'
+const LS_KEY = 'cio-openai-key'
 
 // ── Loading Phases ──────────────────────────────────────────────────────────
 const PHASES = [
@@ -261,15 +261,15 @@ REGRAS PARA creator_references:
 - Pode ser internacional se não houver nacional adequado — prefira qualidade ao localismo.
 - A justificativa "what_to_learn" deve ser SEMPRE sobre método de entrega (estrutura do post, técnica narrativa, formato visual) — nunca sobre tema.`
 
-  const res = await fetch('/api/ai?action=gemini', {
+  const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 8000,
@@ -390,7 +390,7 @@ export default function ContentDNA() {
       return
     }
     if (!apiKey) {
-      setError('Configure sua chave Gemini API nas configurações.')
+      setError('Configure sua chave da OpenAI nas configurações.')
       return
     }
 
@@ -551,7 +551,7 @@ export default function ContentDNA() {
 
           {!apiKey && (
             <p className="text-center text-[11px] text-amber-600">
-              Configure sua chave Gemini API nas configurações para usar este recurso.
+              Configure sua chave da OpenAI nas configurações para usar este recurso.
             </p>
           )}
         </div>

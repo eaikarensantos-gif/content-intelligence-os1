@@ -82,14 +82,14 @@ export function ApiKeyModal({ onClose, onSave }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Key size={16} className="text-violet-500" />
-            <h2 className="text-sm font-bold text-gray-900">API Key do Gemini</h2>
+            <h2 className="text-sm font-bold text-gray-900">API Key da OpenAI</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
         </div>
         <div className="p-3 rounded-xl bg-violet-50 border border-violet-100 flex items-start gap-2">
           <ShieldCheck size={14} className="text-violet-500 mt-0.5 shrink-0" />
           <p className="text-xs text-gray-600">
-            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage). Nunca é enviada para outros servidores além da API do Gemini.
+            Sua chave fica salva <strong>apenas no seu navegador</strong> (localStorage) e é encaminhada pelo proxy do app somente para a API da OpenAI.
           </p>
         </div>
         <div>
@@ -98,7 +98,7 @@ export function ApiKeyModal({ onClose, onSave }) {
             <input
               type={show ? 'text' : 'password'}
               className="input pr-16"
-              placeholder="sk-ant-api03-..."
+              placeholder="sk-..."
               value={val}
               onChange={(e) => setVal(e.target.value)}
             />
@@ -108,8 +108,8 @@ export function ApiKeyModal({ onClose, onSave }) {
           </div>
           <p className="text-[11px] text-gray-400 mt-1">
             Obtenha em{' '}
-            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">
-              console.anthropic.com
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">
+              platform.openai.com
             </a>
           </p>
         </div>
