@@ -5,7 +5,8 @@
 //   'dailymotion-search' → Dailymotion public API (no key, supports sort)
 //   'vimeo-search'     → Vimeo API (token required, supports sort)
 //   'tiktok-search'    → TikTok via RapidAPI provider
-//   'transcribe'       → OpenAI Whisper
+//   'transcribe'       → OpenAI Whisper for an audio URL
+//   'transcribe-url'   → YouTube captions or OpenAI transcription for direct media URLs
 //   (default)          → AI chat completion
 
 import { ANTI_AI_FILTER } from '../src/lib/antiAIFilter.js'
@@ -874,7 +875,15 @@ async function instagramFetchAccountOverview(accessToken) {
 async function transcribeAudio(openaiApiKey, audioUrl) {
   const audioRes = await fetch(audioUrl)
   if (!audioRes.ok) throw new Error(`Could not fetch audio: ${audioRes.status}`)
+  const declaredSize = Number(audioRes.headers.get('content-length') || 0)
+  const maxBytes = 25 * 1024 * 1024
+  if (declaredSize > maxBytes) {
+    throw new Error('O arquivo do link ultrapassa 25 MB. Envie o arquivo pelo upload para que o app possa reduzi-lo antes da transcrição.')
+  }
   const audioBuffer = await audioRes.arrayBuffer()
+  if (audioBuffer.byteLength > maxBytes) {
+    throw new Error('O arquivo do link ultrapassa 25 MB. Envie o arquivo pelo upload para que o app possa reduzi-lo antes da transcrição.')
+  }
   const urlPath = new URL(audioUrl).pathname
   const ext     = urlPath.split('.').pop()?.toLowerCase() || 'mp3'
   const supported = ['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac']
@@ -891,6 +900,58 @@ async function transcribeAudio(openaiApiKey, audioUrl) {
   const data = await whisperRes.json()
   if (!whisperRes.ok) throw new Error(data.error?.message || `Whisper error ${whisperRes.status}`)
   return data.text
+}
+
+function isYouTubeUrl(value) {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase().replace(/^www\./, '')
+    return hostname === 'youtube.com' || hostname === 'm.youtube.com' || hostname === 'youtu.be'
+  } catch {
+    return false
+  }
+}
+
+function isDirectMediaUrl(value) {
+  try {
+    const parsed = new URL(value)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false
+    const hostname = parsed.hostname.toLowerCase()
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false
+    return /\.(mp3|mp4|mpeg|mpga|m4a|wav|webm|ogg|flac)$/i.test(parsed.pathname)
+  } catch {
+    return false
+  }
+}
+
+async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt') {
+  if (isYouTubeUrl(videoUrl)) {
+    const { YoutubeTranscript } = await import('youtube-transcript')
+    try {
+      let segments = null
+      const preferredLanguages = [...new Set([language, language === 'pt' ? 'pt-BR' : null, 'en'].filter(Boolean))]
+      for (const lang of preferredLanguages) {
+        try {
+          segments = await YoutubeTranscript.fetchTranscript(videoUrl, { lang })
+          break
+        } catch {
+          // Try the next preferred language before accepting YouTube's first track.
+        }
+      }
+      if (!segments) segments = await YoutubeTranscript.fetchTranscript(videoUrl)
+      const transcript = segments.map((segment) => segment.text).join(' ').replace(/\s+/g, ' ').trim()
+      if (!transcript) throw new Error('A transcrição retornou vazia.')
+      return { transcript, source: 'youtube_captions' }
+    } catch {
+      throw new Error('Este vídeo do YouTube não possui legendas públicas disponíveis. Envie o arquivo de vídeo ou cole a transcrição.')
+    }
+  }
+
+  if (isDirectMediaUrl(videoUrl)) {
+    const transcript = await transcribeAudio(openaiApiKey, videoUrl)
+    return { transcript, source: 'openai_transcription' }
+  }
+
+  throw new Error('Este link não expõe o áudio diretamente. No momento, links automáticos funcionam com YouTube ou URLs diretas de MP4, MP3, M4A, WAV e WebM.')
 }
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
@@ -1060,6 +1121,15 @@ export default async function handler(req, res) {
       if (!audioUrl?.trim())     return res.status(400).json({ error: 'Audio URL is required' })
       const transcript = await transcribeAudio(openaiApiKey, audioUrl)
       return res.status(200).json({ transcript })
+    }
+
+    if (action === 'transcribe-url') {
+      const apiKey = req.headers['x-api-key'] || req.body?.openaiApiKey
+      const { videoUrl, language } = req.body || {}
+      if (!apiKey?.trim()) return res.status(400).json({ error: 'OpenAI API key is required' })
+      if (!videoUrl?.trim()) return res.status(400).json({ error: 'Video URL is required' })
+      const result = await transcribeVideoUrl(apiKey, videoUrl.trim(), language || 'pt')
+      return res.status(200).json(result)
     }
 
     // ── AI chat completion (default) ──────────────────────────────────────────

@@ -120,6 +120,21 @@ async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
   return (await res.text()).trim()
 }
 
+async function transcribeFromUrl(openaiKey, videoUrl, lang = 'pt', onStatus) {
+  onStatus?.('Obtendo o áudio ou as legendas do link...')
+  const res = await fetch('/api/ai?action=transcribe-url', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': openaiKey,
+    },
+    body: JSON.stringify({ videoUrl, language: lang }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || `Não foi possível transcrever o link (${res.status}).`)
+  return data.transcript || ''
+}
+
 async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
   const MAX_BYTES = 24 * 1024 * 1024
   const BYTES_PER_SEC = 16000 * 2
@@ -726,6 +741,7 @@ export default function VideoAnalyzer() {
     const hasUrl = url.trim().length > 0
     const hasTitle = title.trim().length > 0
     const canAutoTranscribe = videoFile && groqKey && !hasTranscriptText
+    const canTranscribeUrl = hasUrl && apiKey && !hasTranscriptText
 
     if (analysisMode !== 'script' && !hasTranscriptText && !hasFramesData && !hasUrl && !hasTitle && !videoFile) {
       setError('Informe pelo menos a URL, título do vídeo, ou envie um arquivo de vídeo para analisar.')
@@ -762,8 +778,25 @@ export default function VideoAnalyzer() {
           }
         }
 
-        // Step 1 — Auto-transcribe with Groq Whisper if file present and no transcript yet
-        if (canAutoTranscribe) {
+        // Step 1 — Transcribe a pasted link first; file upload remains the fallback.
+        if (canTranscribeUrl) {
+          setLoadingStep(1)
+          setTranscribing(true)
+          try {
+            const text = await transcribeFromUrl(apiKey, url.trim(), transcriptLang, setTranscribingStatus)
+            if (text.trim().length <= 20) throw new Error('A transcrição do link retornou vazia.')
+            finalTranscript = text.trim()
+            setTranscript(finalTranscript)
+          } catch (transcribeErr) {
+            if (!videoFile && !hasFramesData) throw transcribeErr
+            console.warn('URL transcription failed; using uploaded content:', transcribeErr.message)
+          } finally {
+            setTranscribing(false)
+            setTranscribingStatus('')
+          }
+        }
+
+        if (!finalTranscript.trim() && canAutoTranscribe) {
           setLoadingStep(1)
           try {
             const text = await transcribeLargeFile(groqKey, videoFile, transcriptLang, setTranscribingStatus)
@@ -1356,11 +1389,19 @@ Responda APENAS com este JSON:
                 </label>
                 <input
                   className="input"
-                  placeholder="YouTube, TikTok, Instagram, LinkedIn..."
+                  placeholder="YouTube ou link direto de MP4, MP3, M4A, WAV ou WebM"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                 />
+                <p className="text-[10px] text-gray-400 mt-1.5">
+                  O app transcreve automaticamente vídeos do YouTube com legendas públicas e links diretos de mídia. Instagram e TikTok podem exigir o upload do arquivo.
+                </p>
+                {transcribing && transcribingStatus && (
+                  <p className="text-[10px] text-violet-600 mt-1.5 flex items-center gap-1.5">
+                    <RefreshCw size={10} className="animate-spin" /> {transcribingStatus}
+                  </p>
+                )}
               </div>
 
               {/* YouTube thumbnail preview */}
