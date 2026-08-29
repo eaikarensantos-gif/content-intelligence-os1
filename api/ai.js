@@ -888,26 +888,50 @@ async function transcribeAudio(openaiApiKey, audioUrl) {
   if (audioBuffer.byteLength > maxBytes) {
     throw new Error('O arquivo do link ultrapassa 25 MB. Envie o arquivo pelo upload para que o app possa reduzi-lo antes da transcrição.')
   }
+  const typeToExtension = {
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/mp4': 'm4a',
+    'video/mp4': 'mp4',
+    'audio/x-m4a': 'm4a',
+    'audio/wav': 'wav',
+    'audio/webm': 'webm',
+    'video/webm': 'webm',
+    'audio/ogg': 'ogg',
+    'audio/flac': 'flac',
+  }
   const urlPath = new URL(audioUrl).pathname
-  const ext     = urlPath.split('.').pop()?.toLowerCase() || 'mp3'
+  const pathExt = urlPath.split('.').pop()?.toLowerCase()
+  const ext = typeToExtension[contentType.split(';')[0]] || pathExt || 'mp3'
   const supported = ['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac']
   const fileExt   = supported.includes(ext) ? ext : 'mp3'
-  const formData  = new FormData()
-  formData.append('file', new Blob([audioBuffer], { type: `audio/${fileExt}` }), `audio.${fileExt}`)
-  formData.append('model', 'whisper-1')
-  formData.append('response_format', 'json')
-  const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${openaiApiKey}` },
-    body: formData,
-  })
-  const responseText = await whisperRes.text()
-  let data
-  try { data = JSON.parse(responseText) } catch {
-    throw new Error(`A transcrição retornou uma resposta inválida (${whisperRes.status}).`)
+  const mimeType = contentType.split(';')[0] || (fileExt === 'mp4' ? 'video/mp4' : `audio/${fileExt}`)
+  const retryableStatuses = new Set([429, 502, 503, 504])
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const formData = new FormData()
+    formData.append('file', new Blob([audioBuffer], { type: mimeType }), `audio.${fileExt}`)
+    formData.append('model', 'gpt-transcribe')
+    formData.append('response_format', 'json')
+    const transcriptionRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${openaiApiKey}` },
+      body: formData,
+    })
+    const responseText = await transcriptionRes.text()
+    let data = null
+    try { data = JSON.parse(responseText) } catch { /* handled below */ }
+
+    if (transcriptionRes.ok && data?.text) return data.text
+    const retryable = retryableStatuses.has(transcriptionRes.status)
+    if (retryable && attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 750 * (attempt + 1)))
+      continue
+    }
+    if (data?.error?.message) throw new Error(data.error.message)
+    throw new Error(`A API de transcrição falhou (${transcriptionRes.status}) após ${attempt + 1} tentativa${attempt ? 's' : ''}.`)
   }
-  if (!whisperRes.ok) throw new Error(data.error?.message || `Whisper error ${whisperRes.status}`)
-  return data.text
+  throw new Error('A API de transcrição não retornou uma resposta.')
 }
 
 function isYouTubeUrl(value) {
