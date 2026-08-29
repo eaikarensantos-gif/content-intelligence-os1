@@ -984,13 +984,18 @@ async function resolveSocialAudioUrl(videoUrl) {
       noCheckCertificates: true,
     }, { timeout: 90_000 })
     const formats = Array.isArray(output?.formats) ? output.formats : []
+    const progressive = formats.filter((format) =>
+      format?.url && format.ext === 'mp4' && format.acodec !== 'none' && format.vcodec !== 'none'
+    )
     const audioOnly = formats.filter((format) =>
       format?.url && format.acodec && format.acodec !== 'none' && format.vcodec === 'none'
     )
-    const withinLimit = audioOnly.filter((format) =>
+    const withinLimit = [...progressive, ...audioOnly].filter((format) =>
       Number(format.filesize || format.filesize_approx || 0) < 25 * 1024 * 1024
     )
-    const selected = withinLimit.at(-1) || audioOnly.at(-1)
+    // Instagram's audio-only DASH track is often a fragmented M4A that the
+    // transcription API rejects. Prefer its progressive MP4 when available.
+    const selected = withinLimit[0] || audioOnly.at(-1)
     if (!selected?.url) throw new Error('Nenhum arquivo de áudio foi retornado.')
     return { url: selected.url, fileExt: selected.ext || 'm4a' }
   } catch {
