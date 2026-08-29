@@ -12,10 +12,7 @@
   "functions": {
     "api/ai.js": {
       "maxDuration": 300,
-      "includeFiles": [
-        "node_modules/youtube-dl-exec/bin/**",
-        "node_modules/ffmpeg-static/**"
-      ]
+      "includeFiles": "node_modules/{youtube-dl-exec/bin,ffmpeg-static}/**"
     },
     "api/renderVideo.js": {
       "maxDuration": 300
