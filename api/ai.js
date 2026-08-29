@@ -940,7 +940,7 @@ async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '', nor
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const formData = new FormData()
     formData.append('file', new Blob([audioBuffer], { type: mimeType }), `audio.${fileExt}`)
-    formData.append('model', 'gpt-transcribe')
+    formData.append('model', 'whisper-1')
     formData.append('response_format', 'json')
     const transcriptionRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
