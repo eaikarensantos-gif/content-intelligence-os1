@@ -923,6 +923,37 @@ function isDirectMediaUrl(value) {
   }
 }
 
+function socialVideoService(value) {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase().replace(/^www\./, '')
+    if (hostname === 'tiktok.com' || hostname.endsWith('.tiktok.com')) return 'TikTok'
+    if (hostname === 'instagram.com' || hostname.endsWith('.instagram.com')) return 'Instagram'
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function resolveSocialAudioUrl(videoUrl) {
+  const service = socialVideoService(videoUrl)
+  if (!service) return null
+  try {
+    const { default: youtubeDl } = await import('youtube-dl-exec')
+    const output = await youtubeDl(videoUrl, {
+      getUrl: true,
+      format: 'bestaudio[filesize<25M]/bestaudio[filesize_approx<25M]/worstaudio',
+      noPlaylist: true,
+      noWarnings: true,
+      noCheckCertificates: true,
+    }, { timeout: 90_000 })
+    const mediaUrl = String(output || '').split(/\r?\n/).find((line) => /^https?:\/\//.test(line.trim()))?.trim()
+    if (!mediaUrl) throw new Error('Nenhum arquivo de mídia foi retornado.')
+    return mediaUrl
+  } catch {
+    throw new Error(`Não foi possível acessar este vídeo do ${service}. Confirme que ele é público; vídeos privados, restritos por idade ou que exigem login precisam ser enviados pelo upload.`)
+  }
+}
+
 async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt') {
   if (isYouTubeUrl(videoUrl)) {
     const { YoutubeTranscript } = await import('youtube-transcript')
@@ -951,7 +982,13 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt') {
     return { transcript, source: 'openai_transcription' }
   }
 
-  throw new Error('Este link não expõe o áudio diretamente. No momento, links automáticos funcionam com YouTube ou URLs diretas de MP4, MP3, M4A, WAV e WebM.')
+  if (socialVideoService(videoUrl)) {
+    const mediaUrl = await resolveSocialAudioUrl(videoUrl)
+    const transcript = await transcribeAudio(openaiApiKey, mediaUrl)
+    return { transcript, source: 'social_video_transcription' }
+  }
+
+  throw new Error('Link não compatível. Use YouTube, Instagram, TikTok ou uma URL direta de MP4, MP3, M4A, WAV ou WebM.')
 }
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────

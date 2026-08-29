@@ -11,7 +11,8 @@
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "functions": {
     "api/ai.js": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "includeFiles": "node_modules/youtube-dl-exec/bin/**"
     },
     "api/renderVideo.js": {
       "maxDuration": 300

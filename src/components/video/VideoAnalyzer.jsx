@@ -1389,13 +1389,13 @@ Responda APENAS com este JSON:
                 </label>
                 <input
                   className="input"
-                  placeholder="YouTube ou link direto de MP4, MP3, M4A, WAV ou WebM"
+                  placeholder="YouTube, Instagram, TikTok ou link direto de mídia"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                 />
                 <p className="text-[10px] text-gray-400 mt-1.5">
-                  O app transcreve automaticamente vídeos do YouTube com legendas públicas e links diretos de mídia. Instagram e TikTok podem exigir o upload do arquivo.
+                  O app transcreve vídeos públicos do YouTube, Instagram e TikTok, além de links diretos de mídia. Conteúdo privado ou que exige login precisa ser enviado pelo upload.
                 </p>
                 {transcribing && transcribingStatus && (
                   <p className="text-[10px] text-violet-600 mt-1.5 flex items-center gap-1.5">
