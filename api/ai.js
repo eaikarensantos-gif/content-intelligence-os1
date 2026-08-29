@@ -954,7 +954,45 @@ async function resolveSocialAudioUrl(videoUrl) {
   }
 }
 
-async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt') {
+function normalizeInstagramPermalink(value) {
+  try {
+    const parsed = new URL(value)
+    return `${parsed.hostname.toLowerCase().replace(/^www\./, '')}${parsed.pathname.replace(/\/+$/, '')}`
+  } catch {
+    return ''
+  }
+}
+
+async function resolveInstagramFromOfficialApi(videoUrl, accessToken) {
+  if (!accessToken?.trim()) return null
+  let nextUrl = `https://graph.instagram.com/me/media?fields=id,media_url,permalink,media_type,media_product_type&limit=100&access_token=${encodeURIComponent(accessToken)}`
+  const target = normalizeInstagramPermalink(videoUrl)
+  for (let page = 0; nextUrl && page < 3; page += 1) {
+    const response = await fetch(nextUrl)
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) return null
+    const match = (data.data || []).find((item) => normalizeInstagramPermalink(item.permalink) === target)
+    if (match?.media_url && (match.media_type === 'VIDEO' || match.media_product_type === 'REELS')) return match.media_url
+    nextUrl = data.paging?.next || null
+  }
+  return null
+}
+
+async function resolveInstagramFromApify(videoUrl, apifyToken, actorId) {
+  if (!apifyToken?.trim()) return null
+  const actor = (actorId && actorId.trim()) || 'apify~instagram-scraper'
+  const response = await fetch(`https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${encodeURIComponent(apifyToken)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ directUrls: [videoUrl], resultsType: 'details', resultsLimit: 1 }),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || !Array.isArray(data)) return null
+  const item = data.find((entry) => entry?.videoUrl || entry?.video_url || entry?.url)
+  return item?.videoUrl || item?.video_url || null
+}
+
+async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integrations = {}) {
   if (isYouTubeUrl(videoUrl)) {
     const { YoutubeTranscript } = await import('youtube-transcript')
     try {
@@ -983,7 +1021,23 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt') {
   }
 
   if (socialVideoService(videoUrl)) {
-    const mediaUrl = await resolveSocialAudioUrl(videoUrl)
+    const service = socialVideoService(videoUrl)
+    let mediaUrl = null
+    if (service === 'Instagram') {
+      mediaUrl = await resolveInstagramFromOfficialApi(videoUrl, integrations.instagramAccessToken)
+    }
+    if (!mediaUrl) {
+      try { mediaUrl = await resolveSocialAudioUrl(videoUrl) } catch { /* try configured fallback below */ }
+    }
+    if (!mediaUrl && service === 'Instagram') {
+      mediaUrl = await resolveInstagramFromApify(videoUrl, integrations.apifyToken, integrations.apifyActorId)
+    }
+    if (!mediaUrl) {
+      const setupHint = service === 'Instagram'
+        ? 'Conecte sua conta do Instagram ou configure a Apify em Configurações; vídeos privados continuam exigindo upload.'
+        : 'Confirme que o vídeo é público ou envie o arquivo pelo upload.'
+      throw new Error(`Não foi possível acessar este vídeo do ${service}. ${setupHint}`)
+    }
     const transcript = await transcribeAudio(openaiApiKey, mediaUrl)
     return { transcript, source: 'social_video_transcription' }
   }
@@ -1162,10 +1216,14 @@ export default async function handler(req, res) {
 
     if (action === 'transcribe-url') {
       const apiKey = req.headers['x-api-key'] || req.body?.openaiApiKey
-      const { videoUrl, language } = req.body || {}
+      const { videoUrl, language, instagramAccessToken, apifyToken, apifyActorId } = req.body || {}
       if (!apiKey?.trim()) return res.status(400).json({ error: 'OpenAI API key is required' })
       if (!videoUrl?.trim()) return res.status(400).json({ error: 'Video URL is required' })
-      const result = await transcribeVideoUrl(apiKey, videoUrl.trim(), language || 'pt')
+      const result = await transcribeVideoUrl(apiKey, videoUrl.trim(), language || 'pt', {
+        instagramAccessToken,
+        apifyToken,
+        apifyActorId,
+      })
       return res.status(200).json(result)
     }
 

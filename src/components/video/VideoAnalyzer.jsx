@@ -12,6 +12,8 @@ import {
   Scissors, Download, Languages, MessageSquare,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
+import useAIStore from '../../store/useAIStore'
+import { getConnection as getInstagramConnection } from '../../lib/instagramAuth'
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/videoAnalyzer'
 import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
 import { CDN, LS_KEY, LS_KEY_GROQ, TABS, MY_VIDEO_TABS, TYPE_OPTIONS, ARCHETYPE_COLORS, ARCHETYPE_LABELS } from './constants'
@@ -120,7 +122,7 @@ async function transcribeWithGroq(groqKey, audioFile, lang = 'pt') {
   return (await res.text()).trim()
 }
 
-async function transcribeFromUrl(openaiKey, videoUrl, lang = 'pt', onStatus) {
+async function transcribeFromUrl(openaiKey, videoUrl, lang = 'pt', integrations = {}, onStatus) {
   onStatus?.('Obtendo o áudio ou as legendas do link...')
   const res = await fetch('/api/ai?action=transcribe-url', {
     method: 'POST',
@@ -128,7 +130,7 @@ async function transcribeFromUrl(openaiKey, videoUrl, lang = 'pt', onStatus) {
       'Content-Type': 'application/json',
       'x-api-key': openaiKey,
     },
-    body: JSON.stringify({ videoUrl, language: lang }),
+    body: JSON.stringify({ videoUrl, language: lang, ...integrations }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || `Não foi possível transcrever o link (${res.status}).`)
@@ -536,6 +538,8 @@ export default function VideoAnalyzer() {
   const videoAnalyses = useStore((s) => s.videoAnalyses)
   const addIdea = useStore((s) => s.addIdea)
   const addFavorite = useStore((s) => s.addFavorite)
+  const apifyToken = useAIStore((s) => s.apifyToken)
+  const apifyActorId = useAIStore((s) => s.apifyActorId)
 
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(LS_KEY) || '')
   const [showKeyModal, setShowKeyModal] = useState(false)
@@ -783,7 +787,12 @@ export default function VideoAnalyzer() {
           setLoadingStep(1)
           setTranscribing(true)
           try {
-            const text = await transcribeFromUrl(apiKey, url.trim(), transcriptLang, setTranscribingStatus)
+            const instagramConnection = getInstagramConnection()
+            const text = await transcribeFromUrl(apiKey, url.trim(), transcriptLang, {
+              instagramAccessToken: instagramConnection?.accessToken || '',
+              apifyToken,
+              apifyActorId,
+            }, setTranscribingStatus)
             if (text.trim().length <= 20) throw new Error('A transcrição do link retornou vazia.')
             finalTranscript = text.trim()
             setTranscript(finalTranscript)
@@ -1395,7 +1404,7 @@ Responda APENAS com este JSON:
                   onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                 />
                 <p className="text-[10px] text-gray-400 mt-1.5">
-                  O app transcreve vídeos públicos do YouTube, Instagram e TikTok, além de links diretos de mídia. Conteúdo privado ou que exige login precisa ser enviado pelo upload.
+                  YouTube e TikTok públicos funcionam direto. Para Instagram, o app usa a conta conectada ou a Apify quando o acesso público é bloqueado. Conteúdo privado precisa ser enviado pelo upload.
                 </p>
                 {transcribing && transcribingStatus && (
                   <p className="text-[10px] text-violet-600 mt-1.5 flex items-center gap-1.5">
