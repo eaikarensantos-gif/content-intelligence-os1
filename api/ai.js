@@ -928,6 +928,11 @@ async function transcribeAudio(openaiApiKey, audioUrl) {
       await new Promise((resolve) => setTimeout(resolve, 750 * (attempt + 1)))
       continue
     }
+    if (transcriptionRes.status === 401) {
+      const authError = new Error('A chave da OpenAI foi recusada. Gere uma nova chave na OpenAI Platform e substitua a chave salva em Configurações.')
+      authError.code = 'OPENAI_AUTH_ERROR'
+      throw authError
+    }
     if (data?.error?.message) throw new Error(data.error.message)
     throw new Error(`A API de transcrição falhou (${transcriptionRes.status}) após ${attempt + 1} tentativa${attempt ? 's' : ''}.`)
   }
@@ -1076,6 +1081,7 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integ
         const transcript = await transcribeAudio(openaiApiKey, mediaUrl)
         if (transcript?.trim()) return { transcript, source: 'social_video_transcription' }
       } catch (error) {
+        if (error?.code === 'OPENAI_AUTH_ERROR') throw error
         lastError = error
       }
     }

@@ -134,7 +134,13 @@ export default function SupabaseSettings() {
   }
 
   const handleSaveApiKeys = () => {
-    localStorage.setItem(LS_OPENAI, openaiKey.trim())
+    const normalizedOpenaiKey = openaiKey.trim()
+    if (normalizedOpenaiKey && !normalizedOpenaiKey.startsWith('sk-')) {
+      alert('A chave da OpenAI parece inválida. Ela deve começar com sk-.')
+      return
+    }
+    if (normalizedOpenaiKey) localStorage.setItem(LS_OPENAI, normalizedOpenaiKey)
+    else localStorage.removeItem(LS_OPENAI)
     localStorage.setItem(LS_GROQ, groqKey.trim())
     if (youtubeKey.trim()) localStorage.setItem(LS_YOUTUBE, youtubeKey.trim())
     else localStorage.removeItem(LS_YOUTUBE)
