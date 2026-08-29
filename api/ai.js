@@ -882,12 +882,12 @@ async function normalizeSocialMedia(audioBuffer, inputExtension) {
   ])
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cio-transcribe-'))
   const inputPath = path.join(tempDir, `input.${inputExtension || 'mp4'}`)
-  const outputPath = path.join(tempDir, 'audio.mp3')
+  const outputPath = path.join(tempDir, 'audio.wav')
   try {
     await fs.writeFile(inputPath, Buffer.from(audioBuffer))
     await new Promise((resolve, reject) => {
       childProcess.execFile(ffmpegPath, [
-        '-y', '-i', inputPath, '-vn', '-ac', '1', '-ar', '16000', '-b:a', '64k', outputPath,
+        '-y', '-i', inputPath, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', outputPath,
       ], { timeout: 120_000 }, (error) => error ? reject(error) : resolve())
     })
     return await fs.readFile(outputPath)
@@ -931,10 +931,10 @@ async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '', nor
   let fileExt = supported.includes(ext) ? ext : 'mp3'
   if (normalize) {
     audioBuffer = await normalizeSocialMedia(audioBuffer, fileExt)
-    fileExt = 'mp3'
+    fileExt = 'wav'
   }
   const extensionMimeTypes = { m4a: 'audio/mp4', mp4: 'video/mp4', mp3: 'audio/mpeg' }
-  const mimeType = normalize ? 'audio/mpeg' : (hintedExtension && extensionMimeTypes[fileExt]) || contentType.split(';')[0] || extensionMimeTypes[fileExt] || `audio/${fileExt}`
+  const mimeType = normalize ? 'audio/wav' : (hintedExtension && extensionMimeTypes[fileExt]) || contentType.split(';')[0] || extensionMimeTypes[fileExt] || `audio/${fileExt}`
   const retryableStatuses = new Set([429, 502, 503, 504])
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
