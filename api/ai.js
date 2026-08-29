@@ -872,7 +872,7 @@ async function instagramFetchAccountOverview(accessToken) {
 
 // ─── Whisper ──────────────────────────────────────────────────────────────────
 
-async function transcribeAudio(openaiApiKey, audioUrl) {
+async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '') {
   const audioRes = await fetch(audioUrl)
   if (!audioRes.ok) throw new Error(`Could not fetch audio: ${audioRes.status}`)
   const contentType = (audioRes.headers.get('content-type') || '').toLowerCase()
@@ -902,10 +902,11 @@ async function transcribeAudio(openaiApiKey, audioUrl) {
   }
   const urlPath = new URL(audioUrl).pathname
   const pathExt = urlPath.split('.').pop()?.toLowerCase()
-  const ext = typeToExtension[contentType.split(';')[0]] || pathExt || 'mp3'
+  const ext = hintedExtension.toLowerCase() || typeToExtension[contentType.split(';')[0]] || pathExt || 'mp3'
   const supported = ['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac']
   const fileExt   = supported.includes(ext) ? ext : 'mp3'
-  const mimeType = contentType.split(';')[0] || (fileExt === 'mp4' ? 'video/mp4' : `audio/${fileExt}`)
+  const extensionMimeTypes = { m4a: 'audio/mp4', mp4: 'video/mp4', mp3: 'audio/mpeg' }
+  const mimeType = (hintedExtension && extensionMimeTypes[fileExt]) || contentType.split(';')[0] || extensionMimeTypes[fileExt] || `audio/${fileExt}`
   const retryableStatuses = new Set([429, 502, 503, 504])
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -977,15 +978,21 @@ async function resolveSocialAudioUrl(videoUrl) {
   try {
     const { default: youtubeDl } = await import('youtube-dl-exec')
     const output = await youtubeDl(videoUrl, {
-      getUrl: true,
-      format: 'bestaudio[filesize<25M]/bestaudio[filesize_approx<25M]/worstaudio',
+      dumpSingleJson: true,
       noPlaylist: true,
       noWarnings: true,
       noCheckCertificates: true,
     }, { timeout: 90_000 })
-    const mediaUrl = String(output || '').split(/\r?\n/).find((line) => /^https?:\/\//.test(line.trim()))?.trim()
-    if (!mediaUrl) throw new Error('Nenhum arquivo de mídia foi retornado.')
-    return mediaUrl
+    const formats = Array.isArray(output?.formats) ? output.formats : []
+    const audioOnly = formats.filter((format) =>
+      format?.url && format.acodec && format.acodec !== 'none' && format.vcodec === 'none'
+    )
+    const withinLimit = audioOnly.filter((format) =>
+      Number(format.filesize || format.filesize_approx || 0) < 25 * 1024 * 1024
+    )
+    const selected = withinLimit.at(-1) || audioOnly.at(-1)
+    if (!selected?.url) throw new Error('Nenhum arquivo de áudio foi retornado.')
+    return { url: selected.url, fileExt: selected.ext || 'm4a' }
   } catch {
     throw new Error(`Não foi possível acessar este vídeo do ${service}. Confirme que ele é público; vídeos privados, restritos por idade ou que exigem login precisam ser enviados pelo upload.`)
   }
@@ -1065,8 +1072,8 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integ
       if (officialUrl) candidates.push(officialUrl)
     }
     try {
-      const publicUrl = await resolveSocialAudioUrl(videoUrl)
-      if (publicUrl) candidates.push(publicUrl)
+      const publicMedia = await resolveSocialAudioUrl(videoUrl)
+      if (publicMedia) candidates.push(publicMedia)
     } catch {
       // Instagram and TikTok frequently block anonymous server requests.
     }
@@ -1076,9 +1083,13 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integ
     }
 
     let lastError = null
-    for (const mediaUrl of [...new Set(candidates)]) {
+    const uniqueCandidates = [...new Map(candidates.map((candidate) => {
+      const normalized = typeof candidate === 'string' ? { url: candidate, fileExt: '' } : candidate
+      return [normalized.url, normalized]
+    })).values()]
+    for (const media of uniqueCandidates) {
       try {
-        const transcript = await transcribeAudio(openaiApiKey, mediaUrl)
+        const transcript = await transcribeAudio(openaiApiKey, media.url, media.fileExt)
         if (transcript?.trim()) return { transcript, source: 'social_video_transcription' }
       } catch (error) {
         if (error?.code === 'OPENAI_AUTH_ERROR') throw error
