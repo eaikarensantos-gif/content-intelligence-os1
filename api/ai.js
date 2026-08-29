@@ -875,6 +875,10 @@ async function instagramFetchAccountOverview(accessToken) {
 async function transcribeAudio(openaiApiKey, audioUrl) {
   const audioRes = await fetch(audioUrl)
   if (!audioRes.ok) throw new Error(`Could not fetch audio: ${audioRes.status}`)
+  const contentType = (audioRes.headers.get('content-type') || '').toLowerCase()
+  if (contentType.includes('text/html')) {
+    throw new Error('O endereço de mídia retornou uma página HTML de bloqueio em vez do vídeo.')
+  }
   const declaredSize = Number(audioRes.headers.get('content-length') || 0)
   const maxBytes = 25 * 1024 * 1024
   if (declaredSize > maxBytes) {
@@ -897,7 +901,11 @@ async function transcribeAudio(openaiApiKey, audioUrl) {
     headers: { Authorization: `Bearer ${openaiApiKey}` },
     body: formData,
   })
-  const data = await whisperRes.json()
+  const responseText = await whisperRes.text()
+  let data
+  try { data = JSON.parse(responseText) } catch {
+    throw new Error(`A transcrição retornou uma resposta inválida (${whisperRes.status}).`)
+  }
   if (!whisperRes.ok) throw new Error(data.error?.message || `Whisper error ${whisperRes.status}`)
   return data.text
 }
@@ -1022,24 +1030,37 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integ
 
   if (socialVideoService(videoUrl)) {
     const service = socialVideoService(videoUrl)
-    let mediaUrl = null
+    const candidates = []
     if (service === 'Instagram') {
-      mediaUrl = await resolveInstagramFromOfficialApi(videoUrl, integrations.instagramAccessToken)
+      const officialUrl = await resolveInstagramFromOfficialApi(videoUrl, integrations.instagramAccessToken)
+      if (officialUrl) candidates.push(officialUrl)
     }
-    if (!mediaUrl) {
-      try { mediaUrl = await resolveSocialAudioUrl(videoUrl) } catch { /* try configured fallback below */ }
+    try {
+      const publicUrl = await resolveSocialAudioUrl(videoUrl)
+      if (publicUrl) candidates.push(publicUrl)
+    } catch {
+      // Instagram and TikTok frequently block anonymous server requests.
     }
-    if (!mediaUrl && service === 'Instagram') {
-      mediaUrl = await resolveInstagramFromApify(videoUrl, integrations.apifyToken, integrations.apifyActorId)
+    if (service === 'Instagram') {
+      const apifyUrl = await resolveInstagramFromApify(videoUrl, integrations.apifyToken, integrations.apifyActorId)
+      if (apifyUrl) candidates.push(apifyUrl)
     }
-    if (!mediaUrl) {
-      const setupHint = service === 'Instagram'
-        ? 'Conecte sua conta do Instagram ou configure a Apify em Configurações; vídeos privados continuam exigindo upload.'
-        : 'Confirme que o vídeo é público ou envie o arquivo pelo upload.'
-      throw new Error(`Não foi possível acessar este vídeo do ${service}. ${setupHint}`)
+
+    let lastError = null
+    for (const mediaUrl of [...new Set(candidates)]) {
+      try {
+        const transcript = await transcribeAudio(openaiApiKey, mediaUrl)
+        if (transcript?.trim()) return { transcript, source: 'social_video_transcription' }
+      } catch (error) {
+        lastError = error
+      }
     }
-    const transcript = await transcribeAudio(openaiApiKey, mediaUrl)
-    return { transcript, source: 'social_video_transcription' }
+
+    const setupHint = service === 'Instagram'
+      ? 'Conecte sua conta do Instagram ou configure a Apify em Configurações; vídeos privados continuam exigindo upload.'
+      : 'Confirme que o vídeo é público ou envie o arquivo pelo upload.'
+    const detail = lastError?.message ? ` Última tentativa: ${lastError.message}` : ''
+    throw new Error(`Não foi possível acessar este vídeo do ${service}. ${setupHint}${detail}`)
   }
 
   throw new Error('Link não compatível. Use YouTube, Instagram, TikTok ou uma URL direta de MP4, MP3, M4A, WAV ou WebM.')
