@@ -872,7 +872,31 @@ async function instagramFetchAccountOverview(accessToken) {
 
 // ─── Whisper ──────────────────────────────────────────────────────────────────
 
-async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '') {
+async function normalizeSocialMedia(audioBuffer, inputExtension) {
+  const [{ default: ffmpegPath }, fs, os, path, childProcess] = await Promise.all([
+    import('ffmpeg-static'),
+    import('node:fs/promises'),
+    import('node:os'),
+    import('node:path'),
+    import('node:child_process'),
+  ])
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cio-transcribe-'))
+  const inputPath = path.join(tempDir, `input.${inputExtension || 'mp4'}`)
+  const outputPath = path.join(tempDir, 'audio.mp3')
+  try {
+    await fs.writeFile(inputPath, Buffer.from(audioBuffer))
+    await new Promise((resolve, reject) => {
+      childProcess.execFile(ffmpegPath, [
+        '-y', '-i', inputPath, '-vn', '-ac', '1', '-ar', '16000', '-b:a', '64k', outputPath,
+      ], { timeout: 120_000 }, (error) => error ? reject(error) : resolve())
+    })
+    return await fs.readFile(outputPath)
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {})
+  }
+}
+
+async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '', normalize = false) {
   const audioRes = await fetch(audioUrl)
   if (!audioRes.ok) throw new Error(`Could not fetch audio: ${audioRes.status}`)
   const contentType = (audioRes.headers.get('content-type') || '').toLowerCase()
@@ -884,7 +908,7 @@ async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '') {
   if (declaredSize > maxBytes) {
     throw new Error('O arquivo do link ultrapassa 25 MB. Envie o arquivo pelo upload para que o app possa reduzi-lo antes da transcrição.')
   }
-  const audioBuffer = await audioRes.arrayBuffer()
+  let audioBuffer = await audioRes.arrayBuffer()
   if (audioBuffer.byteLength > maxBytes) {
     throw new Error('O arquivo do link ultrapassa 25 MB. Envie o arquivo pelo upload para que o app possa reduzi-lo antes da transcrição.')
   }
@@ -904,9 +928,13 @@ async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '') {
   const pathExt = urlPath.split('.').pop()?.toLowerCase()
   const ext = hintedExtension.toLowerCase() || typeToExtension[contentType.split(';')[0]] || pathExt || 'mp3'
   const supported = ['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac']
-  const fileExt   = supported.includes(ext) ? ext : 'mp3'
+  let fileExt = supported.includes(ext) ? ext : 'mp3'
+  if (normalize) {
+    audioBuffer = await normalizeSocialMedia(audioBuffer, fileExt)
+    fileExt = 'mp3'
+  }
   const extensionMimeTypes = { m4a: 'audio/mp4', mp4: 'video/mp4', mp3: 'audio/mpeg' }
-  const mimeType = (hintedExtension && extensionMimeTypes[fileExt]) || contentType.split(';')[0] || extensionMimeTypes[fileExt] || `audio/${fileExt}`
+  const mimeType = normalize ? 'audio/mpeg' : (hintedExtension && extensionMimeTypes[fileExt]) || contentType.split(';')[0] || extensionMimeTypes[fileExt] || `audio/${fileExt}`
   const retryableStatuses = new Set([429, 502, 503, 504])
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -1094,7 +1122,7 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integ
     })).values()]
     for (const media of uniqueCandidates) {
       try {
-        const transcript = await transcribeAudio(openaiApiKey, media.url, media.fileExt)
+        const transcript = await transcribeAudio(openaiApiKey, media.url, media.fileExt, true)
         if (transcript?.trim()) return { transcript, source: 'social_video_transcription' }
       } catch (error) {
         if (error?.code === 'OPENAI_AUTH_ERROR') throw error
