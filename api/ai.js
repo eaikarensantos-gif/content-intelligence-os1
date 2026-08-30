@@ -904,24 +904,30 @@ async function normalizeSocialMedia(audioBuffer, inputExtension) {
   }
 }
 
-async function downloadSocialTrack(videoUrl, formatId, extension) {
-  const [{ default: youtubeDl }, fs, os, path] = await Promise.all([
+async function downloadSocialTrack(videoUrl, formatId) {
+  const [{ default: youtubeDl }, { default: ffmpegPath }, fs, os, path] = await Promise.all([
     import('youtube-dl-exec'),
+    import('ffmpeg-static'),
     import('node:fs/promises'),
     import('node:os'),
     import('node:path'),
   ])
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cio-download-'))
-  const outputPath = path.join(tempDir, `source.${extension || 'm4a'}`)
+  const outputTemplate = path.join(tempDir, 'source.%(ext)s')
   try {
     await youtubeDl(videoUrl, {
       format: formatId,
-      output: outputPath,
+      output: outputTemplate,
+      extractAudio: true,
+      audioFormat: 'wav',
+      ffmpegLocation: path.dirname(ffmpegPath),
       noPlaylist: true,
       noWarnings: true,
       noCheckCertificates: true,
     }, { timeout: 120_000 })
-    return await fs.readFile(outputPath)
+    const outputName = (await fs.readdir(tempDir)).find((name) => name.endsWith('.wav'))
+    if (!outputName) throw new Error('O yt-dlp não gerou o arquivo WAV esperado.')
+    return await fs.readFile(path.join(tempDir, outputName))
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
@@ -932,8 +938,10 @@ async function transcribeAudio(openaiApiKey, audioUrl, hintedExtension = '', nor
   let declaredSize = 0
   let audioBuffer
   if (downloadSource?.videoUrl && downloadSource?.formatId) {
-    audioBuffer = await downloadSocialTrack(downloadSource.videoUrl, downloadSource.formatId, hintedExtension)
-    contentType = hintedExtension === 'm4a' ? 'audio/mp4' : `audio/${hintedExtension || 'mp4'}`
+    audioBuffer = await downloadSocialTrack(downloadSource.videoUrl, downloadSource.formatId)
+    contentType = 'audio/wav'
+    hintedExtension = 'wav'
+    normalize = false
     declaredSize = audioBuffer.byteLength
   } else {
     const audioRes = await fetch(audioUrl)
