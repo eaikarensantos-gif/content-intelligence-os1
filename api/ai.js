@@ -887,12 +887,18 @@ async function normalizeSocialMedia(audioBuffer, inputExtension) {
     await fs.writeFile(inputPath, Buffer.from(audioBuffer))
     await new Promise((resolve, reject) => {
       childProcess.execFile(ffmpegPath, [
-        '-y', '-i', inputPath, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', outputPath,
-      ], { timeout: 120_000 }, (error) => error ? reject(error) : resolve())
+        '-hide_banner', '-loglevel', 'error', '-y', '-i', inputPath,
+        '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', outputPath,
+      ], { timeout: 120_000 }, (error, _stdout, stderr) => {
+        if (!error) return resolve()
+        const detail = String(stderr || error.message || '')
+          .split(/\r?\n/).map((line) => line.trim()).filter(Boolean).at(-1)
+        reject(new Error(detail || 'Falha desconhecida do conversor.'))
+      })
     })
     return await fs.readFile(outputPath)
-  } catch {
-    throw new Error('O servidor não conseguiu preparar a faixa de áudio do vídeo para transcrição.')
+  } catch (error) {
+    throw new Error(`O servidor não conseguiu preparar a faixa de áudio do vídeo para transcrição. ${error.message}`)
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
