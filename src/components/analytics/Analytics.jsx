@@ -382,6 +382,7 @@ export default function Analytics() {
   const [publiNotes, setPubliNotes] = useState('')
   const [publiSearch, setPubliSearch] = useState('')
   const [publiPlacement, setPubliPlacement] = useState('all')
+  const [publiMarkFilter, setPubliMarkFilter] = useState('all')
   const [publiUnifiedLoading, setPubliUnifiedLoading] = useState(false)
   const [publiUnifiedReport, setPubliUnifiedReport] = useState(null)
   const [rawDataSearch, setRawDataSearch] = useState('')
@@ -1408,6 +1409,11 @@ export default function Analytics() {
         }).sort((a, b) => new Date(b.date) - new Date(a.date))
 
         let publiPosts = periodPosts.filter(isPubliMetric)
+        const markingPosts = periodPosts.filter(m => {
+          if (publiMarkFilter === 'marked') return isPubliMetric(m)
+          if (publiMarkFilter === 'unmarked') return !isPubliMetric(m)
+          return true
+        })
 
         // Filtra por cliente selecionado
         if (publiClient) {
@@ -1961,13 +1967,29 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                   <h4 className="text-xs font-bold text-gray-800">Marcar publicações</h4>
                   <p className="text-[10px] text-gray-400 mt-0.5">A escolha fica salva. Desmarcar também substitui a detecção automática.</p>
                 </div>
-                <span className="text-[10px] text-gray-400">{periodPosts.length} no período</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="select text-xs py-1.5 w-40"
+                    value={publiMarkFilter}
+                    onChange={(e) => setPubliMarkFilter(e.target.value)}
+                  >
+                    <option value="all">Todos os posts</option>
+                    <option value="marked">Só publis</option>
+                    <option value="unmarked">Não marcados</option>
+                  </select>
+                  <span className="text-[10px] text-gray-400 whitespace-nowrap">{markingPosts.length} de {periodPosts.length}</span>
+                </div>
               </div>
               {periodPosts.length === 0 ? (
                 <p className="text-xs text-gray-400 py-2">Nenhuma publicação nesse período e formato.</p>
+              ) : markingPosts.length === 0 ? (
+                <div className="border border-gray-100 rounded-xl py-6 text-center">
+                  <Filter size={18} className="text-gray-300 mx-auto mb-2" />
+                  <p className="text-xs text-gray-400">Nenhuma publicação corresponde a este filtro.</p>
+                </div>
               ) : (
                 <div className="max-h-64 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-xl">
-                  {periodPosts.map((m) => {
+                  {markingPosts.map((m) => {
                     const marked = isPubliMetric(m)
                     return (
                       <label key={m.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50/40 cursor-pointer">
