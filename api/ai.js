@@ -1226,6 +1226,7 @@ function applyCors(req, res) {
 
 export default async function handler(req, res) {
   const originAllowed = applyCors(req, res)
+  res.setHeader('X-CIO-API-Version', 'public-audio-v4')
 
   if (req.method === 'OPTIONS') return res.status(originAllowed ? 200 : 403).end()
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' })
@@ -1234,6 +1235,7 @@ export default async function handler(req, res) {
   const action = (req.body && req.body.action) || (req.query && req.query.action)
 
   try {
+    if (action === 'version') return res.status(200).json({ version: 'public-audio-v4' })
     // ── OpenAI Responses API (compatibility response shape) ─────────────────
     if (action === 'openai') {
       const apiKey = req.headers['x-api-key']
