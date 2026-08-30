@@ -1160,11 +1160,11 @@ async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integ
       // Instagram and TikTok frequently block anonymous server requests.
     }
     if (service === 'Instagram' && candidates.length === 0) {
-      const officialUrl = await resolveInstagramFromOfficialApi(videoUrl, integrations.instagramAccessToken)
-      if (officialUrl) candidates.push(officialUrl)
+      const apifyUrl = await resolveInstagramFromApify(videoUrl, integrations.apifyToken, integrations.apifyActorId)
+      if (apifyUrl) candidates.push(apifyUrl)
       if (candidates.length === 0) {
-        const apifyUrl = await resolveInstagramFromApify(videoUrl, integrations.apifyToken, integrations.apifyActorId)
-        if (apifyUrl) candidates.push(apifyUrl)
+        const officialUrl = await resolveInstagramFromOfficialApi(videoUrl, integrations.instagramAccessToken)
+        if (officialUrl) candidates.push(officialUrl)
       }
     }
 
