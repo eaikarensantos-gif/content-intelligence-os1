@@ -1612,6 +1612,88 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
 
         const copyToClipboard = (text) => { navigator.clipboard.writeText(text) }
 
+        const handleClientReportCsv = () => {
+          if (!publiClientReport) return
+
+          const columns = [
+            'secao', 'ordem', 'item', 'valor', 'unidade', 'posts', 'impressoes',
+            'er', 'descricao', 'data', 'plataforma', 'formato', 'link_do_post',
+          ]
+          const rows = []
+          const addRow = (row) => rows.push(columns.map(column => row[column] ?? ''))
+
+          addRow({ secao: 'Identificação', ordem: 1, item: 'Cliente', valor: selectedClientName || 'Cliente' })
+          addRow({ secao: 'Identificação', ordem: 2, item: 'Período', valor: monthLabel })
+          addRow({ secao: 'Resumo executivo', ordem: 1, item: 'Resumo', descricao: publiClientReport.resumo_executivo })
+
+          const numberLabels = {
+            posts: ['Posts', 'posts'],
+            impressoes: ['Impressões', 'impressões'],
+            er_medio: ['ER médio', 'percentual'],
+            salvamentos: ['Salvamentos', 'salvamentos'],
+            cliques_link: ['Cliques no link', 'cliques'],
+            melhor_post: ['Melhor post', 'texto'],
+            pior_post: ['Pior post', 'texto'],
+            hashtags_top: ['Hashtags top', 'lista'],
+            mencoes_top: ['Menções top', 'lista'],
+          }
+          Object.entries(numberLabels).forEach(([key, [label, unit]], index) => {
+            const rawValue = publiClientReport.numeros?.[key]
+            const value = Array.isArray(rawValue) ? rawValue.join(', ') : rawValue
+            addRow({ secao: 'Números', ordem: index + 1, item: label, valor: value, unidade: unit })
+          })
+
+          ;(publiClientReport.por_formato || []).forEach((format, index) => addRow({
+            secao: 'Por formato', ordem: index + 1, item: format.formato,
+            posts: format.posts, er: format.er_medio, descricao: format.veredicto,
+            formato: format.formato,
+          }))
+
+          ;(publiClientReport.por_plataforma || []).forEach((platform, index) => addRow({
+            secao: 'Por plataforma', ordem: index + 1, item: platform.plataforma,
+            posts: platform.posts, impressoes: platform.impressoes, er: platform.er_medio,
+            descricao: platform.veredicto, plataforma: platform.plataforma,
+          }))
+
+          if (publiNotes.trim()) {
+            addRow({ secao: 'Observações da consultora', ordem: 1, item: 'Observações', descricao: publiNotes.trim() })
+          }
+
+          ;(publiClientReport.proximos_passos || []).forEach((step, index) => addRow({
+            secao: 'Próximos passos', ordem: index + 1, item: `Passo ${index + 1}`, descricao: step,
+          }))
+
+          if (publiWhatsapp) {
+            addRow({ secao: 'WhatsApp', ordem: 1, item: 'Resumo para WhatsApp', descricao: publiWhatsapp })
+          }
+
+          publiPosts.forEach((post, index) => addRow({
+            secao: 'Posts do relatório', ordem: index + 1,
+            item: detectBrand(post.description), valor: post.engagement || 0, unidade: 'engajamentos',
+            impressoes: post.impressions || 0, er: `${(post.engagement_rate * 100).toFixed(2)}%`,
+            descricao: post.description, data: post.date, plataforma: post.platform,
+            formato: post.post_type, link_do_post: post.link,
+          }))
+
+          const escapeCsv = (value) => {
+            const text = String(value ?? '')
+            return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
+          }
+          const csv = '\uFEFF' + [columns, ...rows]
+            .map(row => row.map(escapeCsv).join(','))
+            .join('\r\n')
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+          const url = URL.createObjectURL(blob)
+          const anchor = document.createElement('a')
+          const safeClient = (selectedClientName || 'cliente').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()
+          anchor.href = url
+          anchor.download = `relatorio-publi-${safeClient}-${firstOfMonth}-a-${lastDay}.csv`
+          document.body.appendChild(anchor)
+          anchor.click()
+          anchor.remove()
+          URL.revokeObjectURL(url)
+        }
+
         // ── Relatório Unificado (Instagram + LinkedIn) ──
         const handleUnifiedReport = async () => {
           if (publiPosts.length === 0) return
@@ -2193,9 +2275,14 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                         <FileText size={14} className="text-blue-500" />
                         Relatorio — {selectedClientName || 'Cliente'} — {monthLabel}
                       </h3>
-                      <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                        <Printer size={12} /> Imprimir / PDF
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={handleClientReportCsv} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-lg hover:bg-emerald-200 transition-colors">
+                          <Download size={12} /> Exportar CSV
+                        </button>
+                        <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                          <Printer size={12} /> Imprimir / PDF
+                        </button>
+                      </div>
                     </div>
 
                     {/* Resumo Executivo */}
