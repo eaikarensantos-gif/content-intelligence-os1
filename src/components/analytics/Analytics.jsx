@@ -152,8 +152,20 @@ function detectBrand(description = '') {
   return mentions.map(m => m.replace('@', '')).join(', ') || '—'
 }
 
+function isPubliMetric(metric) {
+  if (metric.is_publi === true) return true
+  if (metric.is_publi === false) return false
+  if (metric.client?.trim()) return true
+  const description = (metric.description || '').toLowerCase()
+  return PUBLI_SIGNALS.some(signal => description.includes(signal)) || /@[\w._]+/i.test(description)
+}
+
+function isFeedMetric(metric) {
+  return metric.post_type !== 'story'
+}
+
 // ── Post Card for the new Posts tab ─────────────────────────────────────────
-function PostCard({ m, onDelete, onTemplate, onGenerate, onImageUpload }) {
+function PostCard({ m, onDelete, onTemplate, onGenerate, onImageUpload, onTogglePubli }) {
   const erColor = m.engagement_rate > 0.04 ? 'bg-emerald-500' : m.engagement_rate > 0.02 ? 'bg-amber-400' : 'bg-gray-300'
   const erTextColor = m.engagement_rate > 0.04 ? 'text-emerald-600' : m.engagement_rate > 0.02 ? 'text-amber-600' : 'text-gray-400'
   const erBg = m.engagement_rate > 0.04 ? 'bg-emerald-50' : m.engagement_rate > 0.02 ? 'bg-amber-50' : 'bg-gray-50'
@@ -264,6 +276,13 @@ function PostCard({ m, onDelete, onTemplate, onGenerate, onImageUpload }) {
         {/* Action buttons */}
         <div className="flex gap-1.5 pt-2 border-t border-gray-100">
           <button
+            onClick={() => onTogglePubli(m)}
+            className={`flex items-center justify-center gap-1 text-[10px] font-semibold border rounded-lg px-2 py-1.5 transition-all ${isPubliMetric(m) ? 'text-orange-700 border-orange-200 bg-orange-50 hover:bg-orange-100' : 'text-gray-400 border-gray-200 bg-gray-50 hover:bg-gray-100'}`}
+            title={isPubliMetric(m) ? 'Remover marcação de publi' : 'Marcar como publi'}
+          >
+            <Target size={10} /> Publi
+          </button>
+          <button
             onClick={() => onTemplate(m)}
             className="flex-1 flex items-center justify-center gap-1 text-[10px] font-medium text-gray-500 hover:text-orange-700 bg-gray-50 hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded-lg py-1.5 transition-all"
           >
@@ -362,6 +381,7 @@ export default function Analytics() {
   const [publiWhatsapp, setPubliWhatsapp] = useState('')
   const [publiNotes, setPubliNotes] = useState('')
   const [publiSearch, setPubliSearch] = useState('')
+  const [publiPlacement, setPubliPlacement] = useState('all')
   const [publiUnifiedLoading, setPubliUnifiedLoading] = useState(false)
   const [publiUnifiedReport, setPubliUnifiedReport] = useState(null)
   const [rawDataSearch, setRawDataSearch] = useState('')
@@ -1287,6 +1307,7 @@ export default function Analytics() {
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
                             onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
+                            onTogglePubli={(metric) => updateMetric(metric.id, { is_publi: !isPubliMetric(metric) })}
                           />
                         ))}
                       </div>
@@ -1314,6 +1335,7 @@ export default function Analytics() {
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
                             onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
+                            onTogglePubli={(metric) => updateMetric(metric.id, { is_publi: !isPubliMetric(metric) })}
                           />
                         ))}
                       </div>
@@ -1341,6 +1363,7 @@ export default function Analytics() {
                             onTemplate={handleSaveTemplate}
                             onGenerate={handleGenerateSimilar}
                             onImageUpload={(id, img) => updateMetric(id, { post_image: img })}
+                            onTogglePubli={(metric) => updateMetric(metric.id, { is_publi: !isPubliMetric(metric) })}
                           />
                         ))}
                       </div>
@@ -1375,16 +1398,16 @@ export default function Analytics() {
         }
         const monthLabel = `${fmtRangeDate(firstOfMonth)} a ${fmtRangeDate(lastDay)}`
 
-        // Filtra pelo período selecionado + sinalizadores publi
-        // Inclui: posts com sinais na descrição (hashtags/menções) OU com cliente preenchido manualmente
-        let publiPosts = enriched.filter(m => {
+        // A marcação manual tem precedência sobre a detecção por texto/cliente.
+        // "Feed" reúne tudo que não é Story (Reel, carrossel, imagem e vídeo).
+        const periodPosts = enriched.filter(m => {
           if (m.date < firstOfMonth || m.date > lastDay) return false
-          if (m.client && m.client.trim()) return true   // cliente preenchido = publi
-          const desc = (m.description || '').toLowerCase()
-          const hasSignal = PUBLI_SIGNALS.some(s => desc.includes(s))
-          const hasMention = /@[\w._]+/i.test(desc)
-          return hasSignal || hasMention
+          if (publiPlacement === 'stories') return m.post_type === 'story'
+          if (publiPlacement === 'feed') return isFeedMetric(m)
+          return true
         }).sort((a, b) => new Date(b.date) - new Date(a.date))
+
+        let publiPosts = periodPosts.filter(isPubliMetric)
 
         // Filtra por cliente selecionado
         if (publiClient) {
@@ -1811,6 +1834,15 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
                       {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   )}
+                  <select
+                    className="select text-xs py-1.5 w-36"
+                    value={publiPlacement}
+                    onChange={(e) => { setPubliPlacement(e.target.value); setPubliReport(null); setPubliClientReport(null) }}
+                  >
+                    <option value="all">Feed + Stories</option>
+                    <option value="feed">Feed</option>
+                    <option value="stories">Stories</option>
+                  </select>
                   <div className="relative flex-1 sm:max-w-xs">
                     <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
                     <input
@@ -1840,11 +1872,45 @@ REGRAS: Tom profissional e direto. Sem emojis. Números formato brasileiro (1.23
               </div>
             </div>
 
+            {/* Marcação manual: permite incluir ou excluir qualquer publicação do relatório. */}
+            <div className="card p-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h4 className="text-xs font-bold text-gray-800">Marcar publicações</h4>
+                  <p className="text-[10px] text-gray-400 mt-0.5">A escolha fica salva. Desmarcar também substitui a detecção automática.</p>
+                </div>
+                <span className="text-[10px] text-gray-400">{periodPosts.length} no período</span>
+              </div>
+              {periodPosts.length === 0 ? (
+                <p className="text-xs text-gray-400 py-2">Nenhuma publicação nesse período e formato.</p>
+              ) : (
+                <div className="max-h-64 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-xl">
+                  {periodPosts.map((m) => {
+                    const marked = isPubliMetric(m)
+                    return (
+                      <label key={m.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50/40 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={marked}
+                          onChange={() => updateMetric(m.id, { is_publi: !marked })}
+                          className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        />
+                        <span className="text-[10px] font-semibold text-gray-500 w-14 shrink-0">{fmtDateShort(m.date)}</span>
+                        <PostTypeBadge type={m.post_type} />
+                        <span className="text-xs text-gray-700 truncate flex-1">{m.description || 'Sem descrição'}</span>
+                        {marked && <span className="text-[9px] font-semibold text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">PUBLI</span>}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             {publiPosts.length === 0 ? (
               <div className="card p-8 text-center">
                 <AlertTriangle size={24} className="mx-auto mb-3 text-gray-300" />
                 <p className="text-sm font-medium text-gray-600">Nenhum dado de publicidade detectado no período selecionado ({monthLabel}).</p>
-                <p className="text-xs text-gray-400 mt-1">Certifique-se de que seus posts contêm #publi, #ad, #parceria ou @marca na descrição.</p>
+                <p className="text-xs text-gray-400 mt-1">Marque uma publicação acima ou ajuste o filtro entre Feed e Stories.</p>
               </div>
             ) : (
               <>
