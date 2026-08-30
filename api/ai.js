@@ -1118,8 +1118,10 @@ async function resolveInstagramFromApify(videoUrl, apifyToken, actorId) {
   })
   const data = await response.json().catch(() => null)
   if (!response.ok || !Array.isArray(data)) return null
-  const item = data.find((entry) => entry?.videoUrl || entry?.video_url || entry?.url)
-  return item?.videoUrl || item?.video_url || null
+  const item = data.find((entry) => entry?.audioUrl || entry?.audio_url || entry?.videoUrl || entry?.video_url)
+  // Instagram commonly exposes separate CDN assets for Reel video and audio.
+  // Prefer the audio asset so FFmpeg does not receive a video-only stream.
+  return item?.audioUrl || item?.audio_url || item?.videoUrl || item?.video_url || null
 }
 
 async function transcribeVideoUrl(openaiApiKey, videoUrl, language = 'pt', integrations = {}) {
