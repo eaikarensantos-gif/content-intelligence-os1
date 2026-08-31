@@ -31,6 +31,7 @@ const KANBAN_COLUMNS = [
   { id: 'draft',     label: 'Rascunhos',     color: 'border-blue-200 bg-blue-50/60',       dot: 'bg-blue-400',    count_bg: 'bg-blue-100 text-blue-700' },
   { id: 'editing',    label: 'Editando',      color: 'border-amber-200 bg-amber-50/60',      dot: 'bg-amber-400',    count_bg: 'bg-amber-100 text-amber-700' },
   { id: 'ready',      label: 'Pronto',        color: 'border-emerald-200 bg-emerald-50/60',  dot: 'bg-emerald-400',  count_bg: 'bg-emerald-100 text-emerald-700' },
+  { id: 'approval',   label: 'Aprovação',     color: 'border-rose-200 bg-rose-50/60',        dot: 'bg-rose-400',     count_bg: 'bg-rose-100 text-rose-700' },
   { id: 'scheduled',  label: 'Agendado',      color: 'border-violet-200 bg-violet-50/60',    dot: 'bg-violet-400',   count_bg: 'bg-violet-100 text-violet-700' },
   { id: 'published',  label: 'Publicado',     color: 'border-green-200 bg-green-50/60',      dot: 'bg-green-400',    count_bg: 'bg-green-100 text-green-700' },
 ]
@@ -40,6 +41,7 @@ const STATUS_META = {
   draft:     { label: 'Rascunho',  className: 'bg-blue-100 text-blue-700 border-blue-200' },
   editing:   { label: 'Editando',  className: 'bg-amber-100 text-amber-700 border-amber-200' },
   ready:     { label: 'Pronto',    className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  approval:  { label: 'Aprovação', className: 'bg-rose-100 text-rose-700 border-rose-200' },
   scheduled: { label: 'Agendado',  className: 'bg-violet-100 text-violet-700 border-violet-200' },
   published: { label: 'Publicado', className: 'bg-green-100 text-green-700 border-green-200' },
 }
@@ -1574,7 +1576,7 @@ function OrderView({ ideas, updateIdea, onCardClick }) {
   )
 }
 
-const STATUS_LABELS_FILTER   = { all: 'Todos Status',      idea: 'Ideia', draft: 'Rascunho', editing: 'Editando', ready: 'Pronto', scheduled: 'Agendado', published: 'Publicado' }
+const STATUS_LABELS_FILTER   = { all: 'Todos Status',      idea: 'Ideia', draft: 'Rascunho', editing: 'Editando', ready: 'Pronto', approval: 'Aprovação', scheduled: 'Agendado', published: 'Publicado' }
 const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium: 'Média',   low: 'Baixa' }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -1775,7 +1777,7 @@ export default function IdeasHub() {
                   {allPlatforms.map((p) => <option key={p} value={p}>{p === 'all' ? 'Plataforma' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                 </select>
                 <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                  {['all','idea','draft','editing','ready','scheduled','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
+                  {['all','idea','draft','editing','ready','approval','scheduled','published'].map((s) => <option key={s} value={s}>{STATUS_LABELS_FILTER[s] || s}</option>)}
                 </select>
                 <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
                   {['all','high','medium','low'].map((p) => <option key={p} value={p}>{PRIORITY_LABELS_FILTER[p] || p}</option>)}
