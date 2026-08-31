@@ -43,6 +43,7 @@ export function normalizeResult(raw, category, query) {
     viewCount: raw.viewCount || null,
     likeCount: raw.likeCount || null,
     engagementRate: raw.engagementRate || null,
+    publishedAt: raw.publishedAt || raw.published_at || raw.createdAt || raw.created_at || null,
     category,
     query,
   }
@@ -56,15 +57,15 @@ export function getEnabledPlatforms() {
 
   const youtubeKey = (localStorage.getItem(LS_YOUTUBE) || '').trim()
   if (youtubeKey) {
-    platforms.push({ id: 'youtube', label: 'YouTube', run: (q) => youtubeSearch(youtubeKey, q) })
+    platforms.push({ id: 'youtube', label: 'YouTube', run: (q, opts) => youtubeSearch(youtubeKey, q, opts) })
   }
 
   // Always on — public search, no key.
-  platforms.push({ id: 'dailymotion', label: 'Dailymotion', run: (q) => dailymotionSearch(q) })
+  platforms.push({ id: 'dailymotion', label: 'Dailymotion', run: (q, opts) => dailymotionSearch(q, opts) })
 
   const vimeoToken = (localStorage.getItem(LS_VIMEO) || '').trim()
   if (vimeoToken) {
-    platforms.push({ id: 'vimeo', label: 'Vimeo', run: (q) => vimeoSearch(vimeoToken, q) })
+    platforms.push({ id: 'vimeo', label: 'Vimeo', run: (q, opts) => vimeoSearch(vimeoToken, q, opts) })
   }
 
   const rapidKey = (localStorage.getItem(LS_RAPIDAPI) || '').trim()

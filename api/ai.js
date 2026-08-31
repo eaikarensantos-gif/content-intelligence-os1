@@ -153,6 +153,7 @@ async function youtubeSearch(youtubeApiKey, query, opts = {}) {
   const orderMap = { recent: 'date', views: 'viewCount' }
   let searchUrl = `${base}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&relevanceLanguage=pt&key=${youtubeApiKey}`
   if (opts.duration && opts.duration !== 'any') searchUrl += `&videoDuration=${opts.duration}`
+  if (opts.publishedAfter) searchUrl += `&publishedAfter=${encodeURIComponent(opts.publishedAfter)}`
   searchUrl += `&order=${orderMap[opts.sort] || 'relevance'}`
 
   const searchRes  = await fetch(searchUrl)
@@ -205,7 +206,7 @@ async function youtubeSearch(youtubeApiKey, query, opts = {}) {
 async function dailymotionSearch(query, opts = {}) {
   const sortMap = { recent: 'recent', views: 'visited' }
   const sortVal = sortMap[opts.sort] || 'relevance'
-  const fields  = 'id,title,owner.screenname,thumbnail_360_url,views_total,url'
+  const fields  = 'id,title,owner.screenname,thumbnail_360_url,views_total,url,created_time'
   const url = `https://api.dailymotion.com/videos?search=${encodeURIComponent(query)}` +
     `&fields=${encodeURIComponent(fields)}&limit=10&sort=${sortVal}`
   const res  = await fetch(url)
@@ -221,6 +222,7 @@ async function dailymotionSearch(query, opts = {}) {
     url:        v.url || `https://www.dailymotion.com/video/${v.id}`,
     viewCount:  v.views_total != null ? String(v.views_total) : null,
     likeCount:  null,
+    publishedAt: v.created_time ? new Date(v.created_time * 1000).toISOString() : null,
   }))
 }
 
@@ -229,7 +231,7 @@ async function dailymotionSearch(query, opts = {}) {
 async function vimeoSearch(accessToken, query, opts = {}) {
   const sortMap = { recent: 'newest', views: 'plays' }
   const sortVal = sortMap[opts.sort] || 'relevant'
-  const fields  = 'uri,name,link,user.name,pictures.sizes,stats.plays'
+  const fields  = 'uri,name,link,user.name,pictures.sizes,stats.plays,created_time'
   const url = `https://api.vimeo.com/videos?query=${encodeURIComponent(query)}&per_page=10` +
     `&sort=${sortVal}&direction=desc&filter=playable&fields=${encodeURIComponent(fields)}`
   const res  = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } })
@@ -249,6 +251,7 @@ async function vimeoSearch(accessToken, query, opts = {}) {
       url:        v.link || `https://vimeo.com/${id}`,
       viewCount:  v.stats?.plays != null ? String(v.stats.plays) : null,
       likeCount:  null,
+      publishedAt: v.created_time || null,
     }
   })
 }
@@ -279,6 +282,9 @@ function normalizeTiktokItem(raw) {
     url:        `https://www.tiktok.com/@${unique}/video/${id}`,
     viewCount:  String(stats.playCount ?? stats.play_count ?? v.play_count ?? '') || null,
     likeCount:  String(stats.diggCount ?? stats.digg_count ?? v.digg_count ?? '') || null,
+    publishedAt: v.createTime || v.create_time
+      ? new Date(Number(v.createTime || v.create_time) * 1000).toISOString()
+      : null,
   }
 }
 
@@ -320,6 +326,9 @@ function normalizeInstagramItem(v) {
     url:        v.url || (v.shortCode ? `https://www.instagram.com/p/${v.shortCode}/` : ''),
     viewCount:  views != null ? String(views) : null,
     likeCount:  v.likesCount != null ? String(v.likesCount) : null,
+    publishedAt: v.timestamp || (v.takenAtTimestamp
+      ? new Date(Number(v.takenAtTimestamp) * 1000).toISOString()
+      : null),
   }
 }
 
@@ -1250,10 +1259,10 @@ export default async function handler(req, res) {
 
     // ── YouTube search ────────────────────────────────────────────────────────
     if (action === 'youtube-search') {
-      const { youtubeApiKey, query, duration, sort } = req.body
+      const { youtubeApiKey, query, duration, sort, publishedAfter } = req.body
       if (!youtubeApiKey?.trim()) return res.status(400).json({ error: 'YouTube API key is required' })
       if (!query?.trim())         return res.status(400).json({ error: 'Search query is required' })
-      const results = await youtubeSearch(youtubeApiKey, query, { duration, sort })
+      const results = await youtubeSearch(youtubeApiKey, query, { duration, sort, publishedAfter })
       return res.status(200).json({ results })
     }
 

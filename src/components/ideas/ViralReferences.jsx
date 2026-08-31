@@ -3,6 +3,7 @@ import {
   Flame, Search, Loader2, Sparkles, ExternalLink, Trash2, Check,
   AlertCircle, ChevronDown, ChevronUp, Eye, Heart, Save, Info,
   LayoutGrid, List,
+  CalendarDays,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
@@ -27,6 +28,13 @@ function formatCount(n) {
   return String(num)
 }
 
+function formatPublishedDate(date) {
+  if (!date) return null
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 // ── Prompt de análise — só legenda/título + métricas, nunca o vídeo em si ──────
 function buildViralAnalysisPrompt({ video, topic, voiceContext }) {
   return `Você está analisando um vídeo viral encontrado numa busca por tema — você NÃO tem acesso ao vídeo em si (sem frames, sem transcrição), só ao título/legenda e às métricas públicas abaixo. Nunca invente o que aparece na tela ou é dito em voz alta — trabalhe só com o texto disponível.
@@ -36,6 +44,7 @@ TEMA DA BUSCA: ${topic}
 TÍTULO/LEGENDA DISPONÍVEL: ${video.caption?.trim() || video.title?.trim() || '(nenhuma legenda disponível — vídeo sem texto associado)'}
 VISUALIZAÇÕES: ${video.viewCount || 'não disponível'}
 CURTIDAS: ${video.likeCount || 'não disponível'}
+DATA DE PUBLICAÇÃO: ${formatPublishedDate(video.publishedAt) || 'não disponível'}
 
 Extraia, com honestidade sobre o que dá pra inferir:
 1. Gancho provável de abertura (se a legenda já É literalmente a fala de abertura, use-a citando; senão, é uma inferência baseada no padrão do texto — marque como inferência)
@@ -222,6 +231,9 @@ export default function ViralReferences() {
   const [analyzingId, setAnalyzingId] = useState(null)
   const [analyzeError, setAnalyzeError] = useState(null)
   const [savedIdeaKeys, setSavedIdeaKeys] = useState(new Set())
+  const [recencyDays, setRecencyDays] = useState('30')
+  const [resultSort, setResultSort] = useState('recent')
+  const [hasSearched, setHasSearched] = useState(false)
 
   const toggleTopic = (query) => {
     setSelectedTopics((prev) => {
@@ -251,13 +263,20 @@ export default function ViralReferences() {
   const handleSearch = async () => {
     if (selectedTopics.size === 0 || platformsToSearch.length === 0) return
     setSearching(true)
+    setHasSearched(false)
     setSearchError(null)
     try {
+      const days = recencyDays === 'any' ? null : Number(recencyDays)
+      const cutoff = days ? new Date(Date.now() - days * 86400000) : null
+      const searchOptions = {
+        sort: resultSort,
+        ...(cutoff ? { publishedAfter: cutoff.toISOString() } : {}),
+      }
       const tasks = []
       for (const topic of selectedTopics) {
         for (const platform of platformsToSearch) {
           tasks.push(
-            platform.run(topic)
+            platform.run(topic, searchOptions)
               .then((raw) => raw.map((v) => normalizeResult(v, topic, topic)))
               .catch(() => [])
           )
@@ -268,11 +287,20 @@ export default function ViralReferences() {
       const merged = []
       for (const v of lists.flat()) {
         if (!v.id || seen.has(v.id) || savedSourceIds.has(v.id)) continue
+        if (cutoff) {
+          const published = v.publishedAt ? new Date(v.publishedAt) : null
+          if (!published || Number.isNaN(published.getTime()) || published < cutoff) continue
+        }
         seen.add(v.id)
         merged.push(v)
       }
-      merged.sort((a, b) => (parseInt(b.viewCount, 10) || 0) - (parseInt(a.viewCount, 10) || 0))
+      if (resultSort === 'recent') {
+        merged.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
+      } else if (resultSort === 'views') {
+        merged.sort((a, b) => (parseInt(b.viewCount, 10) || 0) - (parseInt(a.viewCount, 10) || 0))
+      }
       setResults(merged.slice(0, 30))
+      setHasSearched(true)
     } catch (e) {
       setSearchError(e.message)
     } finally {
@@ -299,6 +327,7 @@ export default function ViralReferences() {
         thumbnailUrl: video.thumbnailUrl,
         viewCount: video.viewCount,
         likeCount: video.likeCount,
+        publishedAt: video.publishedAt,
         topic: video.category,
         result,
       })
@@ -384,6 +413,38 @@ export default function ViralReferences() {
       </div>
 
       <div>
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Recência dos conteúdos</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <CalendarDays size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <select
+              value={recencyDays}
+              onChange={(e) => setRecencyDays(e.target.value)}
+              className="pl-8 pr-8 py-2 text-xs font-medium bg-white border border-gray-200 rounded-xl text-gray-600 outline-none focus:border-orange-300"
+            >
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="365">Último ano</option>
+              <option value="any">Qualquer data</option>
+            </select>
+          </div>
+          <select
+            value={resultSort}
+            onChange={(e) => setResultSort(e.target.value)}
+            className="px-3 py-2 text-xs font-medium bg-white border border-gray-200 rounded-xl text-gray-600 outline-none focus:border-orange-300"
+          >
+            <option value="recent">Ordenar por mais recentes</option>
+            <option value="views">Ordenar por mais vistos</option>
+            <option value="relevance">Ordenar por relevância</option>
+          </select>
+          {recencyDays !== 'any' && (
+            <span className="text-[10px] text-gray-400">Resultados sem data verificável ficam fora deste recorte.</span>
+          )}
+        </div>
+      </div>
+
+      <div>
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
           Temas (pilares do Posicionamento + banco de temas do Carrossel)
         </p>
@@ -436,11 +497,19 @@ export default function ViralReferences() {
         </div>
       )}
 
+      {hasSearched && results.length === 0 && !searchError && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center">
+          <CalendarDays size={22} className="text-gray-300 mx-auto mb-2" />
+          <p className="text-sm font-medium text-gray-600">Nenhum vídeo encontrado neste período.</p>
+          <p className="text-xs text-gray-400 mt-1">Amplie o intervalo de datas ou escolha “Qualquer data”.</p>
+        </div>
+      )}
+
       {results.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-              {results.length} resultado{results.length !== 1 ? 's' : ''}, ordenado por visualizações
+              {results.length} resultado{results.length !== 1 ? 's' : ''} no período selecionado
             </p>
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
               <button
@@ -477,6 +546,7 @@ export default function ViralReferences() {
                     </span>
                     <p className="text-xs font-medium text-gray-800 line-clamp-2">{video.title}</p>
                     <p className="text-[10px] text-gray-400 flex items-center gap-2">
+                      {formatPublishedDate(video.publishedAt) && <span className="flex items-center gap-1"><CalendarDays size={10} /> {formatPublishedDate(video.publishedAt)}</span>}
                       {formatCount(video.viewCount) && <span className="flex items-center gap-1"><Eye size={10} /> {formatCount(video.viewCount)}</span>}
                       {formatCount(video.likeCount) && <span className="flex items-center gap-1"><Heart size={10} /> {formatCount(video.likeCount)}</span>}
                     </p>
@@ -516,6 +586,7 @@ export default function ViralReferences() {
                       <p className="text-xs font-medium text-gray-800 truncate">{video.title}</p>
                     </div>
                     <p className="text-[10px] text-gray-400 flex items-center gap-2 mt-1">
+                      {formatPublishedDate(video.publishedAt) && <span className="flex items-center gap-1"><CalendarDays size={10} /> {formatPublishedDate(video.publishedAt)}</span>}
                       {formatCount(video.viewCount) && <span className="flex items-center gap-1"><Eye size={10} /> {formatCount(video.viewCount)}</span>}
                       {formatCount(video.likeCount) && <span className="flex items-center gap-1"><Heart size={10} /> {formatCount(video.likeCount)}</span>}
                       <span className="text-gray-300">·</span>
