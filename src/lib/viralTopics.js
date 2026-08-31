@@ -13,8 +13,21 @@ export function topicsFromPositioning(pilares = []) {
     .map((p) => ({ label: p.nome.trim(), query: p.nome.trim(), source: 'pilar' }))
 }
 
+// Categorias cujo nome de exibição é ambíguo pra busca de vídeo. "Criativos"
+// em PT-BR é dominado por conteúdo de "criativos de anúncio" (marketing/ads),
+// então buscar pelo nome da categoria puxa tutorial de ferramenta de ads, não
+// conteúdo sobre profissionais criativos. Query alternativa só pra busca —
+// o label de exibição continua o nome real da categoria.
+const SEARCH_QUERY_OVERRIDES = {
+  'IA para profissionais criativos': 'IA para designers, redatores e diretores de arte',
+}
+
 export function topicsFromThemeBank() {
-  return TEMAS_CARROSSEL.map((c) => ({ label: c.categoria, query: c.categoria, source: 'tema' }))
+  return TEMAS_CARROSSEL.map((c) => ({
+    label: c.categoria,
+    query: SEARCH_QUERY_OVERRIDES[c.categoria] || c.categoria,
+    source: 'tema',
+  }))
 }
 
 // Combina as duas fontes, deduplicando por label (case-insensitive).
