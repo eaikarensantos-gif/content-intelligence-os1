@@ -91,7 +91,7 @@ function toOpenAIContent(content, role) {
   })
 }
 
-async function callOpenAIResponses(apiKey, { model, max_tokens, system, thinking, messages, grounding }) {
+async function callOpenAIResponses(apiKey, { model, max_tokens, system, thinking, messages, grounding, effort, verbosity }) {
   const input = (messages || []).map((message) => ({
     role: message.role === 'assistant' ? 'assistant' : 'user',
     content: toOpenAIContent(message.content, message.role),
@@ -100,8 +100,8 @@ async function callOpenAIResponses(apiKey, { model, max_tokens, system, thinking
     model: model || 'gpt-5.6-terra',
     input,
     max_output_tokens: max_tokens || 2048,
-    reasoning: { effort: thinking?.type === 'disabled' ? 'none' : 'medium' },
-    text: { verbosity: 'medium' },
+    reasoning: { effort: thinking?.type === 'disabled' ? 'none' : (effort || 'medium') },
+    text: { verbosity: verbosity || 'medium' },
     store: false,
   }
   if (system) body.instructions = system
@@ -595,6 +595,7 @@ async function instagramFetchStories(accessToken) {
 
   const items = mediaData.data || []
   let insightsAvailable = true
+  let linkClicksAvailable = true
 
   async function fetchInsights(mediaId, metricNames) {
     const res = await fetch(
