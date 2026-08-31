@@ -518,6 +518,7 @@ export default function TaskBoard() {
   const addTask = useStore((s) => s.addTask)
   const updateTask = useStore((s) => s.updateTask)
   const deleteTask = useStore((s) => s.deleteTask)
+  const clearTasks = useStore((s) => s.clearTasks)
 
   const [view, setView] = useState(() => new URLSearchParams(window.location.search).get('view') === 'calendar' ? 'calendar' : 'kanban') // kanban | list | calendar
   const [editingTask, setEditingTask] = useState(null)
@@ -552,6 +553,13 @@ export default function TaskBoard() {
 
   const handleAdd = (data) => addTask(data)
   const handleMove = (id, status) => updateTask(id, { status })
+  const handleClearTasks = () => {
+    if (tasks.length === 0) return
+    const confirmed = window.confirm(`Excluir todas as ${tasks.length} tarefas? Esta ação não pode ser desfeita.`)
+    if (!confirmed) return
+    clearTasks()
+    setEditingTask(null)
+  }
   const handleDrop = (e, status) => {
     const id = e.dataTransfer.getData('taskId')
     if (id) updateTask(id, { status })
@@ -630,6 +638,14 @@ export default function TaskBoard() {
           </div>
 
           {/* Add task */}
+          <button
+            onClick={handleClearTasks}
+            disabled={tasks.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Excluir todas as tarefas"
+          >
+            <Trash2 size={13} /> Excluir todas
+          </button>
           <button onClick={() => addTask({ title: 'Nova tarefa', status: 'todo' })}
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors shadow-sm">
             <Plus size={14} /> Nova Tarefa

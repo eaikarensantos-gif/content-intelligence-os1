@@ -548,6 +548,8 @@ const useStore = create(
       deleteTask: (id) =>
         set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
 
+      clearTasks: () => set({ tasks: [] }),
+
       reorderTasks: (tasks) => set({ tasks }),
 
       // ── Ads (Publicidades) ─────────────────────────────────
