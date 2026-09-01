@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
@@ -21,6 +21,8 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
+import { buildEditorialContext, classifyEditorialFunction, getCompatibleSeries } from '../../utils/editorialContext'
+import { EDITORIAL_FUNCTIONS, DEFAULT_AUDIENCE_CUTS } from '../../data/editorialStrategy'
 import { assertNotTruncated } from '../../utils/aiJson'
 import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from '../../data/temasCarrossel'
 import { checkCoherence } from '../../lib/coherenceCheck'
@@ -1578,6 +1580,21 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [banCandidate, setBanCandidate] = useState(null)
   const [banPosition, setBanPosition] = useState({ x: 0, y: 0 })
 
+  // ── Briefing editorial — compartilhado por todos os modos abaixo ──
+  // Ver src/data/editorialStrategy.js. null/'' em qualquer campo = automático
+  // (a IA decide); Karen sempre vê e pode sobrescrever a classificação.
+  const [edOpen, setEdOpen] = useState(false)
+  const [edFunction, setEdFunction] = useState(null)
+  const [edSeries, setEdSeries] = useState(null)
+  const [edAudienceCut, setEdAudienceCut] = useState(null)
+  const [edSituation, setEdSituation] = useState('')
+  const [edEvidence, setEdEvidence] = useState('')
+  const [edCost, setEdCost] = useState('')
+  const [edDecision, setEdDecision] = useState('')
+  const [edDesiredResponse, setEdDesiredResponse] = useState('')
+
+  const edCompatibleSeries = useMemo(() => getCompatibleSeries(edFunction), [edFunction])
+
   /* Selecionar um trecho em QUALQUER bloco de texto gerado — Studio Livre,
      Reels, Carrossel ou Stories — abre o popup de banir. Estado compartilhado,
      handler compartilhado, popup renderizado uma vez só no fim do componente. */
@@ -1863,7 +1880,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     if (overrides.adjustment) setAdjusting(overrides.adjustment)
 
     // No modo pessoal a voz de marca profissional fica de fora; frases proibidas e dislikes continuam
-    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)
+    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)
     const regenInstr = overrides.regen ? buildRegenerateInstruction(history.length) : ''
     const selectedFormat = overrides.format || format
 
@@ -2157,7 +2174,7 @@ ${revText.trim()}`
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: isPessoal
             ? buildPersonalReelsPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, template: engTemplate ? PERSONAL_ENGAGEMENT_TEMPLATES[engTemplate] : null })
             : buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
@@ -2213,7 +2230,7 @@ ${revText.trim()}`
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
         }),
       })
@@ -2299,7 +2316,7 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
@@ -2340,7 +2357,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: isPessoal
             ? buildPersonalCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto })
             : buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
@@ -2584,7 +2601,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
       })
@@ -2896,6 +2913,23 @@ Responda EXCLUSIVAMENTE com JSON válido:
     cotidiano: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Cotidiano' },
     observacao: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', label: 'Observação' },
   }
+
+  // Classificação automática de função editorial (fallback heurístico, sem
+  // IA) — só usada quando Karen não escolheu manualmente no briefing acima.
+  // Calculado aqui porque depende de estado (engTema, carTema) declarado
+  // mais abaixo no componente.
+  const edAutoFunction = edFunction || classifyEditorialFunction(`${input} ${briefing} ${engTema} ${carTema}`)
+
+  const editorialContextBlock = buildEditorialContext({
+    editorialFunction: edFunction || edAutoFunction || undefined,
+    editorialSeries: edSeries || undefined,
+    audienceCut: edAudienceCut || undefined,
+    observedSituation: edSituation.trim() || undefined,
+    evidence: edEvidence.trim() || undefined,
+    materialCost: edCost.trim() || undefined,
+    decisionSupported: edDecision.trim() || undefined,
+    desiredResponse: edDesiredResponse.trim() || undefined,
+  })
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
@@ -3232,6 +3266,63 @@ Responda EXCLUSIVAMENTE com JSON válido:
           <Building2 size={13} /> IA no Negócio
         </button>
       </div>
+
+      {/* ── Briefing editorial — função, série e público deste conteúdo ── */}
+      {mode !== 'revisor' && (
+        <div className="card p-3 space-y-2">
+          <button
+            type="button"
+            onClick={() => setEdOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 text-xs font-semibold text-gray-700"
+          >
+            <span className="flex items-center gap-1.5">
+              <Target size={13} className="text-gray-400" />
+              Função editorial: {(EDITORIAL_FUNCTIONS.find(f => f.id === edAutoFunction)?.label) || 'automático'}
+              {!edFunction && <span className="text-[10px] font-normal text-gray-400">(classificação automática — revise abaixo)</span>}
+            </span>
+            {edOpen ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />}
+          </button>
+
+          {edOpen && (
+            <div className="space-y-2.5 pt-1 animate-fade-in">
+              <div className="flex flex-wrap gap-1.5">
+                {EDITORIAL_FUNCTIONS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => { setEdFunction((cur) => cur === f.id ? null : f.id); setEdSeries(null) }}
+                    className={clsx('chip border text-[11px]',
+                      edFunction === f.id ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                    )}
+                    title={f.goal}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <select className="select text-xs flex-1 min-w-[160px]" value={edSeries || ''} onChange={(e) => setEdSeries(e.target.value || null)}>
+                  <option value="">Série (opcional)</option>
+                  {edCompatibleSeries.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+                <select className="select text-xs flex-1 min-w-[160px]" value={edAudienceCut || ''} onChange={(e) => setEdAudienceCut(e.target.value || null)}>
+                  <option value="">Público específico (opcional)</option>
+                  {DEFAULT_AUDIENCE_CUTS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input className="input text-xs" placeholder="Situação observada" value={edSituation} onChange={(e) => setEdSituation(e.target.value)} />
+                <input className="input text-xs" placeholder="Evidência/dado disponível" value={edEvidence} onChange={(e) => setEdEvidence(e.target.value)} />
+                <input className="input text-xs" placeholder="Custo, risco ou consequência" value={edCost} onChange={(e) => setEdCost(e.target.value)} />
+                <input className="input text-xs" placeholder="Decisão que o conteúdo ajuda a tomar" value={edDecision} onChange={(e) => setEdDecision(e.target.value)} />
+                <input className="input text-xs sm:col-span-2" placeholder="Tipo de conversa/resposta desejada" value={edDesiredResponse} onChange={(e) => setEdDesiredResponse(e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Revisor de Texto ── */}
       {mode === 'revisor' && (

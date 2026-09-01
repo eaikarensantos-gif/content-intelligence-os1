@@ -20,6 +20,7 @@ import StoryIdeasPanel from './StoryIdeasPanel'
 import { PlatformBadge, PriorityBadge, FormatBadge } from '../common/Badge'
 import Modal from '../common/Modal'
 import { generateIdeasFromInsights, generateIdeasFromTrends, generateIdeasWithClaude, generateSignalBasedIdeas } from '../../utils/ideaGenerator'
+import { EDITORIAL_FUNCTIONS, EDITORIAL_SERIES } from '../../data/editorialStrategy'
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -42,6 +43,13 @@ const STATUS_META = {
   ready:     { label: 'Pronto',    className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
   scheduled: { label: 'Agendado',  className: 'bg-violet-100 text-violet-700 border-violet-200' },
   published: { label: 'Publicado', className: 'bg-green-100 text-green-700 border-green-200' },
+}
+
+const EDITORIAL_FUNCTION_META = {
+  critical_reading:     { label: 'Leitura crítica',       className: 'bg-slate-100 text-slate-700 border-slate-200' },
+  practical_utility:    { label: 'Utilidade',              className: 'bg-teal-100 text-teal-700 border-teal-200' },
+  decision_backstage:   { label: 'Bastidor',                className: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  community_connection: { label: 'Convivência',             className: 'bg-pink-100 text-pink-700 border-pink-200' },
 }
 
 const SOURCE_COLORS = {
@@ -129,6 +137,11 @@ function KanbanMiniCard({ idea, onClick, dragHandleProps, isDragging, onTagClick
         )}
         {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
         <FormatBadge format={idea.format} />
+        {idea.editorial_function && EDITORIAL_FUNCTION_META[idea.editorial_function] && (
+          <span className={`chip border text-[9px] ${EDITORIAL_FUNCTION_META[idea.editorial_function].className}`}>
+            {EDITORIAL_FUNCTION_META[idea.editorial_function].label}
+          </span>
+        )}
         {idea.content_type && idea.content_type !== 'organic' && CONTENT_TYPE_LABELS[idea.content_type] && (
           <span className={`chip border text-[9px] ${CONTENT_TYPE_COLORS[idea.content_type]}`}>
             {CONTENT_TYPE_LABELS[idea.content_type]}
@@ -689,6 +702,11 @@ function SignalIdeaCard({ idea, signal, onSave, saved, rank }) {
       <div className="flex flex-wrap gap-1.5">
         {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
         <FormatBadge format={idea.format} />
+        {idea.editorial_function && EDITORIAL_FUNCTION_META[idea.editorial_function] && (
+          <span className={`chip border text-[9px] ${EDITORIAL_FUNCTION_META[idea.editorial_function].className}`}>
+            {EDITORIAL_FUNCTION_META[idea.editorial_function].label}
+          </span>
+        )}
         <PriorityBadge priority={idea.priority} />
       </div>
 
@@ -1184,6 +1202,11 @@ function GeneratedIdeaCard({ idea, onSave, saved }) {
       <div className="flex flex-wrap gap-1.5">
         {platforms.map((p) => <PlatformBadge key={p} platform={p} />)}
         <FormatBadge format={idea.format} />
+        {idea.editorial_function && EDITORIAL_FUNCTION_META[idea.editorial_function] && (
+          <span className={`chip border text-[9px] ${EDITORIAL_FUNCTION_META[idea.editorial_function].className}`}>
+            {EDITORIAL_FUNCTION_META[idea.editorial_function].label}
+          </span>
+        )}
         <PriorityBadge priority={idea.priority} />
       </div>
       {hasExtras && (
@@ -1603,6 +1626,7 @@ export default function IdeasHub() {
   const [filterPriority, setFilterPriority] = useState('all')
   const [filterFormat, setFilterFormat]     = useState('all')
   const [filterPilar, setFilterPilar]       = useState('all')
+  const [filterEditorialFunction, setFilterEditorialFunction] = useState('all')
   const [filterTag, setFilterTag]           = useState(null)  // tag selecionável
   const [showFilters, setShowFilters]       = useState(false)
 
@@ -1622,6 +1646,7 @@ export default function IdeasHub() {
       if (filterPriority !== 'all' && i.priority !== filterPriority) return false
       if (filterFormat !== 'all' && (i.format || '').toLowerCase() !== filterFormat) return false
       if (filterPilar !== 'all' && (i.pilar_id || '') !== filterPilar) return false
+      if (filterEditorialFunction !== 'all' && (i.editorial_function || '') !== filterEditorialFunction) return false
       if (filterTag && !(i.tags || []).includes(filterTag)) return false
       if (search && !i.title?.toLowerCase().includes(search.toLowerCase()) &&
           !i.topic?.toLowerCase().includes(search.toLowerCase())) return false
@@ -1730,7 +1755,7 @@ export default function IdeasHub() {
 
       {/* Filtros */}
       {(tab === 'kanban' || tab === 'calendar' || tab === 'order') && (() => {
-        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterFormat !== 'all' ? 1 : 0) + (filterPilar !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
+        const activeFilterCount = (filterPlatform !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterPriority !== 'all' ? 1 : 0) + (filterFormat !== 'all' ? 1 : 0) + (filterPilar !== 'all' ? 1 : 0) + (filterEditorialFunction !== 'all' ? 1 : 0) + (filterTag ? 1 : 0)
         return (
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
@@ -1799,6 +1824,10 @@ export default function IdeasHub() {
                     {pilares.map((p) => <option key={p.id} value={p.id}>{p.nome || 'Pilar sem nome'}</option>)}
                   </select>
                 )}
+                <select className="select w-auto flex-1 sm:flex-none text-xs" value={filterEditorialFunction} onChange={(e) => setFilterEditorialFunction(e.target.value)}>
+                  <option value="all">Função editorial</option>
+                  {EDITORIAL_FUNCTIONS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                </select>
               </div>
 
               {/* Tags selecionáveis */}

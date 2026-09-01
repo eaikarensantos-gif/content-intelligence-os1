@@ -1,3 +1,5 @@
+import { EDITORIAL_FUNCTIONS, EDITORIAL_SERIES } from '../data/editorialStrategy'
+
 // ─── Provider definitions ────────────────────────────────────────────────────
 
 export const PROVIDERS = {
@@ -111,31 +113,34 @@ export async function aiGenerateIdeas(aiSettings, { insights, trendResults, coun
   let context = ''
 
   if (insights?.length && (source === 'insights' || source === 'all')) {
-    context += `\nAnalytics insights:\n${insights
+    context += `\nInsights de analytics:\n${insights
       .slice(0, 5)
       .map((i) => `- ${i.title}: ${i.recommendation || i.description}`)
       .join('\n')}`
   }
 
   if (trendResults && (source === 'trends' || source === 'all')) {
-    context += `\nTrend topic: "${trendResults.topic}"\nOpportunities: ${trendResults.opportunities
+    context += `\nTópico em alta: "${trendResults.topic}"\nOportunidades: ${trendResults.opportunities
       ?.slice(0, 3)
       .map((o) => o.title)
       .join(', ')}`
   }
 
-  if (!context) context = '\nGenerate diverse, high-quality content ideas for a creator.'
+  if (!context) context = '\nGere ideias de conteúdo diversas e de alta qualidade.'
 
   const sourceType = source === 'insights' ? 'insight' : source === 'trends' ? 'trend' : 'ai'
+
+  const functionsBlock = EDITORIAL_FUNCTIONS.map((f) => `- ${f.id}: ${f.label} — ${f.goal}`).join('\n')
+  const seriesBlock = EDITORIAL_SERIES.map((s) => `- ${s.id}: ${s.label} — ${s.description}`).join('\n')
 
   const messages = [
     {
       role: 'system',
-      content: 'You are a content strategy expert. Respond ONLY with valid JSON, no explanations, no markdown.',
+      content: 'Você é uma estrategista de conteúdo. Responda APENAS com JSON válido, sem explicações, sem markdown.',
     },
     {
       role: 'user',
-      content: `Generate ${count} creative content ideas for a creator based on this context:\n${context}\n\nReturn a JSON array:\n[\n  {\n    "id": "idea-1",\n    "title": "...",\n    "description": "2-3 sentence description",\n    "topic": "...",\n    "hook": "list",\n    "format": "carousel",\n    "platform": "linkedin",\n    "priority": "high",\n    "source_type": "${sourceType}"\n  }\n]\n\nRules:\n- hook: list | contrarian | story | data | problem | question\n- format: carousel | thread | video | reel | article\n- platform: linkedin | twitter | instagram | youtube | tiktok\n- priority: high | medium | low\n- Make titles specific and compelling, not generic\n- Return ONLY the JSON array`,
+      content: `Gere ${count} ideias de conteúdo para Instagram a partir deste contexto:\n${context}\n\nCada ideia precisa se encaixar em UMA das quatro funções editoriais:\n${functionsBlock}\n\nSe fizer sentido, associe a ideia a uma destas séries (ou deixe null):\n${seriesBlock}\n\nRetorne um array JSON:\n[\n  {\n    "id": "idea-1",\n    "title": "...",\n    "description": "descrição de 2-3 frases",\n    "editorial_function": "critical_reading",\n    "editorial_series": null,\n    "audience_cut": "quem especificamente esse conteúdo serve",\n    "observed_situation": "a situação concreta que origina o conteúdo",\n    "evidence_needed": "dado ou evidência que falta pra sustentar a tese, ou null se já tem o suficiente no contexto",\n    "material_cost": "custo, risco ou consequência material envolvida, ou null",\n    "decision_supported": "decisão que esse conteúdo ajuda a pessoa a tomar, ou null",\n    "desired_response": "tipo de resposta/comentário que esse conteúdo busca",\n    "topic": "...",\n    "hook": "list",\n    "format": "carrossel",\n    "platform": "instagram",\n    "priority": "high",\n    "confidence": "high",\n    "source_type": "${sourceType}"\n  }\n]\n\nRegras:\n- hook: list | contrarian | story | data | problem | question\n- format: carrossel | reel | stories | thread | artigo\n- platform: instagram\n- priority: high | medium | low\n- confidence: high | medium | low — marque "low" quando a tese depender de evidência que não foi dada\n- NUNCA invente dado, número ou fonte para completar a pauta — se faltar, preencha evidence_needed em vez de inventar\n- Títulos específicos e reconhecíveis, nunca genéricos de conta de IA ou carreira\n- Retorne APENAS o array JSON`,
     },
   ]
 
