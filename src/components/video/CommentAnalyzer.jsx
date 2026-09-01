@@ -6,6 +6,7 @@ import { extractJsonObject, extractJsonArray, assertNotTruncated } from '../../u
 import { handleApiError } from '../../utils/apiError'
 import { getConnection } from '../../lib/instagramAuth'
 import { instagramFetchPosts, instagramFetchComments, instagramReplyComment } from '../../lib/aiService'
+import { classifyEditorialFunction } from '../../utils/editorialContext'
 import Modal from '../common/Modal'
 
 const POST_TYPE_LABEL = { reel: 'Reel', carousel: 'carrossel', image: 'post', video: 'vídeo' }
@@ -164,7 +165,7 @@ Regras para as respostas:
 - Se o CONTEXTO DOS COMENTÁRIOS trouxer o vídeo/post original, dados, ou um exemplo de resposta já escrita pela própria pessoa, use isso para aprofundar o raciocínio e espelhar o tom, vocabulário e nível de formalidade desse exemplo.
 - Respostas podem ser curtas — nem toda resposta precisa de parágrafos longos.
 
-Tarefa secundária: agrupe os comentários em PERFIS DE DOR (problemas/frustrações similares) e sugira 2-3 ideias de conteúdo por perfil.
+Tarefa secundária: agrupe os comentários em PERFIS DE DOR (problemas/frustrações similares) e sugira 2-3 ideias de conteúdo por perfil. Em "comment_indices", liste o número (1-based) de CADA comentário da lista acima que pertence a esse perfil.
 
 Responda APENAS com JSON válido, sem markdown:
 {
@@ -186,6 +187,7 @@ Responda APENAS com JSON válido, sem markdown:
       "description": "o que essas pessoas sentem/enfrentam",
       "comments_count": 3,
       "intensity": "alta|média|baixa",
+      "comment_indices": [1, 3],
       "content_ideas": [
         {
           "title": "título do conteúdo sugerido",
@@ -305,7 +307,13 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
     finally { setRegeneratingId(null) }
   }
 
-  const handleSaveIdea = (idea, profileName) => {
+  const handleSaveIdea = (idea, profileName, commentIndices = []) => {
+    // Origem em comentário real — ver src/data/editorialStrategy.js. A
+    // função editorial é uma classificação heurística de ponto de partida;
+    // Karen revisa/ajusta no Banco de Ideias, não é decisão final da IA.
+    const sourceCommentIds = commentIndices
+      .map((idx) => analyzedComments[idx - 1]?.id)
+      .filter((id) => id != null)
     addIdea({
       title: idea.title,
       description: `Ângulo: ${idea.angle}\n\nGancho: ${idea.hook}\n\nPor quê: ${idea.why}\n\nPerfil de dor: ${profileName}`,
@@ -314,6 +322,10 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
       priority: 'high',
       status: 'idea',
       tags: ['comentarios', 'dor-audiencia'],
+      editorial_function: classifyEditorialFunction(`${idea.title} ${idea.angle}`),
+      observed_situation: profileName,
+      source_comment_ids: sourceCommentIds,
+      editorial_confidence: 'low',
     })
   }
 
@@ -692,7 +704,7 @@ Gere uma NOVA sugestão de resposta pra esse mesmo comentário${current.path ? `
                         </div>
                       </div>
                       <button
-                        onClick={() => handleSaveIdea(idea, profile.name)}
+                        onClick={() => handleSaveIdea(idea, profile.name, profile.comment_indices || [])}
                         className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
                       >
                         <Plus size={12} /> Salvar

@@ -76,11 +76,12 @@ Vale SÓ pra formatos que são lidos em voz alta (roteiro de Reels, TikTok, víd
 
 NÃO vale pra formatos escritos (post, carrossel, thread, legenda) — aqui "né", autocorreção e repetição ficam com cara de texto não revisado. Nesses formatos a oralidade aparece só pelo "a gente" e pelo fluxo de frase, sem tiques de fala.\n`
 
-export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = [], posicionamento = null) {
+export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords = [], posicionamento = null, editorialContext = '') {
   let ctx = ''
 
   ctx += buildBannedWordsBlock(bannedWords)
   ctx += buildPositioningBlock(posicionamento)
+  ctx += editorialContext || ''
   ctx += VOICE_SIGNATURE
 
   if (brandVoice?.prompt) {

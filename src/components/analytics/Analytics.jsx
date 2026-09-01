@@ -19,7 +19,8 @@ import MetricsForm from './MetricsForm'
 import AIInsights from './AIInsights'
 import WeeklyPlanner from './WeeklyPlanner'
 import AudienceAnalytics from './AudienceAnalytics'
-import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
+import { enrichMetric, timelineData, aggregateByFormat, aggregateByPlatform, topPosts, aggregateByEditorialFunction } from '../../utils/analytics'
+import { EDITORIAL_FUNCTIONS } from '../../data/editorialStrategy'
 import { normalizeRow, parseFile, isLinkedinFile, normalizeLinkedinRow } from '../../utils/csvNormalizer'
 import { PlatformBadge, FormatBadge } from '../common/Badge'
 
@@ -402,6 +403,7 @@ export default function Analytics() {
   const timeline = timelineData(metrics)
   const byFormat = aggregateByFormat(posts, metrics)
   const byPlatform = aggregateByPlatform(posts, metrics)
+  const byEditorialFunction = aggregateByEditorialFunction(posts, metrics)
   const top = topPosts(posts, metrics, 5)
 
   const totalImpressions = enriched.reduce((s, m) => s + m.impressions, 0)
@@ -591,6 +593,38 @@ export default function Analytics() {
                   <Bar yAxisId="r" dataKey="eng. rate %" name="Eng. Rate %" fill="#10b981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Desempenho por função editorial — ver src/data/editorialStrategy.js.
+              Prioriza salvamento/compartilhamento por ALCANCE, não curtida. */}
+          {byEditorialFunction.length > 0 && (
+            <div className="card p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Desempenho por Função Editorial</h3>
+              <p className="text-[11px] text-gray-400 mb-4">
+                {byEditorialFunction.reduce((s, f) => s + f.count, 0) < 5
+                  ? 'Amostra pequena — trate como sinal observado, não como comparação definitiva.'
+                  : 'Salvamento e compartilhamento por alcance — curtida não decide sozinha.'}
+              </p>
+              <div className="space-y-3">
+                {[...byEditorialFunction].sort((a, b) => (b.saves_per_reach || 0) - (a.saves_per_reach || 0)).map((f) => {
+                  const label = EDITORIAL_FUNCTIONS.find((ef) => ef.id === f.editorial_function)?.label || f.editorial_function
+                  const savesPct = f.saves_per_reach != null ? (f.saves_per_reach * 100).toFixed(1) : null
+                  const sharesPct = f.shares_per_reach != null ? (f.shares_per_reach * 100).toFixed(1) : null
+                  return (
+                    <div key={f.editorial_function} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-600 w-36 shrink-0 truncate">{label}</span>
+                      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full bg-orange-400" style={{ width: `${Math.min(100, (f.saves_per_reach || 0) * 1000)}%` }} />
+                      </div>
+                      <span className="text-[11px] text-gray-500 w-16 shrink-0 text-right">{f.count} post{f.count !== 1 ? 's' : ''}</span>
+                      <span className="text-[11px] text-gray-400 w-40 shrink-0 text-right">
+                        {savesPct != null ? `${savesPct}% salvo` : 'sem dado'} · {sharesPct != null ? `${sharesPct}% comp.` : 'sem dado'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 

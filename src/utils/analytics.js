@@ -444,3 +444,52 @@ export function generateInsights(posts, metrics) {
 function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 }
+
+// ─── Estratégia editorial — ver src/data/editorialStrategy.js ────────────────
+// Prioriza compartilhamento/salvamento/comentário por ALCANCE, não curtida —
+// curtida pode aparecer, mas nunca decide sozinha uma recomendação.
+
+function aggregateByEditorialKey(posts, metrics, key) {
+  const map = {}
+  metrics.forEach((m) => {
+    const post = posts.find((p) => p.id === m.post_id)
+    const value = post?.[key]
+    if (!value) return
+    if (!map[value]) map[value] = { [key]: value, reach: 0, saves: 0, shares: 0, comments: 0, profile_visits: 0, count: 0 }
+    map[value].reach += m.reach || 0
+    map[value].saves += m.saves || 0
+    map[value].shares += m.shares || 0
+    map[value].comments += m.comments || 0
+    map[value].profile_visits += m.profile_visits || 0
+    map[value].count += 1
+  })
+  return Object.values(map).map((d) => ({
+    ...d,
+    saves_per_reach: d.reach ? d.saves / d.reach : null,
+    shares_per_reach: d.reach ? d.shares / d.reach : null,
+    comments_per_reach: d.reach ? d.comments / d.reach : null,
+    profile_visits_per_1k_views: d.reach ? (d.profile_visits / d.reach) * 1000 : null,
+  }))
+}
+
+/** Desempenho agregado por função editorial (critical_reading, practical_utility, decision_backstage, community_connection). */
+export function aggregateByEditorialFunction(posts, metrics) {
+  return aggregateByEditorialKey(posts, metrics, 'editorial_function')
+}
+
+/** Desempenho agregado por série editorial. */
+export function aggregateByEditorialSeries(posts, metrics) {
+  return aggregateByEditorialKey(posts, metrics, 'editorial_series')
+}
+
+/**
+ * Resumo pronto pra injetar em prompt via buildPerformanceLearningContext()
+ * (src/utils/editorialContext.js) — nunca a lista bruta de métricas.
+ */
+export function buildEditorialMetricsSummary(posts, metrics) {
+  const withFunction = metrics.filter((m) => posts.find((p) => p.id === m.post_id)?.editorial_function)
+  return {
+    sampleSize: withFunction.length,
+    byFunction: aggregateByEditorialFunction(posts, metrics),
+  }
+}
