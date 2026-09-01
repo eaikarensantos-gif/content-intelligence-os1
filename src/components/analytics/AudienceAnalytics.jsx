@@ -5,6 +5,16 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 
+const EIGHT_WEEK_BASELINE = [
+  ['Onde foi parar o seu ano', 0.64, 4.7],
+  ['Agenda Tech', 0.40, 9.1],
+  ['Reel com outras criadoras', 0.20, null],
+  ['PJ solo 14h', 0.16, 7.4],
+  ['Fali três vezes', 0.09, 22.4],
+  ['Viagem', 0.06, null],
+  ['E-mail sem pontuação', 0.01, null],
+]
+
 // ─── PILARES ─────────────────────────────────────────────────────────────────
 
 const PILAR_COLORS = {
@@ -68,6 +78,18 @@ function num(v) {
   return isNaN(n) ? 0 : n
 }
 
+function pickNum(row, keys) {
+  const key = keys.find((candidate) => row[candidate] !== undefined)
+  return key ? num(row[key]) : 0
+}
+
+function metricRatios(row) {
+  return {
+    salvamentoPorCurtida: row.curtidas > 0 ? row.salvamentos / row.curtidas : 0,
+    visitasPorMil: row.impressoes > 0 && row.visitasPerfil > 0 ? row.visitasPerfil / (row.impressoes / 1000) : null,
+  }
+}
+
 // ─── DETECTAR FORMATO DE CSV ──────────────────────────────────────────────────
 // Suporta dois formatos:
 // Formato A (antigo): colunas "Tipo", "Impressões", "Taxa Eng.%"
@@ -92,6 +114,7 @@ function normalizarRow(r, formato) {
       comentarios: num(r['Comentários']),
       compartilhamentos: num(r['Compartilhamentos']),
       salvamentos: num(r['Salvamentos']),
+      visitasPerfil: pickNum(r, ['Visitas ao perfil', 'Visualizações do perfil a partir desta publicação']),
       taxaEng: num(r['Taxa Eng.%']),
     }
   }
@@ -115,6 +138,7 @@ function normalizarRow(r, formato) {
     comentarios,
     compartilhamentos,
     salvamentos,
+    visitasPerfil: pickNum(r, ['Visitas ao perfil', 'Visualizações do perfil a partir desta publicação']),
     taxaEng,
   }
 }
@@ -143,6 +167,7 @@ function normalizarFromMetric(m) {
     comentarios: m.comments || 0,
     compartilhamentos: m.shares || 0,
     salvamentos: m.saves || 0,
+    visitasPerfil: m.profile_visits || 0,
     taxaEng: base > 0 ? (interacoes / base) * 100 : 0,
   }
 }
@@ -162,6 +187,7 @@ function processarNormalizado(normalizado, totalRows) {
   const stories = unique.filter(r => !ehFeed(r.tipo))
 
   feed.forEach(r => { r._pilar = classificar(r.desc) })
+  feed.forEach(r => Object.assign(r, metricRatios(r)))
 
   // stats por pilar
   const pilarMap = {}
@@ -221,7 +247,7 @@ function processarNormalizado(normalizado, totalRows) {
     avgImpressoes: stories.length ? Math.round(stories.reduce((s, r) => s + r.impressoes, 0) / stories.length) : 0,
   }
 
-  const topPosts = [...feed].sort((a, b) => b.taxaEng - a.taxaEng).slice(0, 6)
+  const topPosts = [...feed].sort((a, b) => b.salvamentoPorCurtida - a.salvamentoPorCurtida).slice(0, 8)
 
   return { totalRows, uniquePosts: unique.length, feedPosts: feed.length, pilarStats, formatoStats, storiesStats, topPosts }
 }
@@ -457,6 +483,29 @@ export default function AudienceAnalytics() {
       </div>
 
       {/* Insights */}
+      <div className="card p-5">
+        <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+          <div>
+            <p className="text-xs font-semibold text-gray-700">Linha de referência · 8 semanas</p>
+            <p className="text-[11px] text-gray-400 mt-1">Meta operacional: salvamentos por curtida ≥ 0,40. Traço significa que a visita ao perfil não estava disponível.</p>
+          </div>
+          <span className="chip bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">7 posts analisados</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr className="text-gray-400 border-b border-gray-100"><th className="text-left py-2 font-medium">Post</th><th className="text-right py-2 font-medium">Salv./curt.</th><th className="text-right py-2 font-medium">Visitas/1 mil</th></tr></thead>
+            <tbody>{EIGHT_WEEK_BASELINE.map(([name, ratio, visits]) => (
+              <tr key={name} className="border-b border-gray-50 last:border-0">
+                <td className="py-2.5 text-gray-700">{name}</td>
+                <td className={`py-2.5 text-right font-bold ${ratio >= 0.4 ? 'text-emerald-600' : 'text-red-500'}`}>{ratio.toFixed(2)}</td>
+                <td className="py-2.5 text-right text-gray-600">{visits === null ? '—' : visits.toFixed(1)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Insights */}
       <div className="space-y-3">
         <div className="flex items-center gap-2"><Zap size={14} className="text-orange-500" /><p className="text-xs font-semibold text-gray-700">Padrões identificados</p></div>
         {insights.map((ins, i) => {
@@ -472,7 +521,7 @@ export default function AudienceAnalytics() {
 
       {/* Top posts */}
       <div className="card p-5">
-        <div className="flex items-center gap-2 mb-4"><FileText size={14} className="text-gray-500" /><p className="text-xs font-semibold text-gray-700">Top posts por taxa de engajamento</p></div>
+        <div className="flex items-center gap-2 mb-4"><FileText size={14} className="text-gray-500" /><p className="text-xs font-semibold text-gray-700">Posts por capacidade de gerar salvamento</p></div>
         <div className="space-y-2">
           {topPosts.map((p, i) => {
             const style = PILAR_COLORS[p._pilar] || PILAR_COLORS['Outro']
@@ -487,11 +536,11 @@ export default function AudienceAnalytics() {
                   <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{p.desc ? p.desc.slice(0, 120) : '(sem descrição)'}</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-bold text-gray-900">{p.taxaEng.toFixed(2)}%</p>
+                  <p className={`text-sm font-bold ${p.salvamentoPorCurtida >= 0.4 ? 'text-emerald-600' : 'text-red-500'}`}>{p.salvamentoPorCurtida.toFixed(2)} <span className="text-[9px] font-medium text-gray-400">salv./curt.</span></p>
                   <div className="flex gap-2 text-[10px] text-gray-400 mt-0.5 justify-end">
-                    <span><Eye size={9} className="inline mr-0.5" />{p.alcance.toLocaleString('pt-BR')}</span>
                     <span><Bookmark size={9} className="inline mr-0.5" />{p.salvamentos}</span>
                     <span><Share2 size={9} className="inline mr-0.5" />{p.compartilhamentos}</span>
+                    <span>{p.visitasPorMil === null ? 'visitas/1k —' : `visitas/1k ${p.visitasPorMil.toFixed(1)}`}</span>
                   </div>
                 </div>
               </div>
@@ -509,3 +558,4 @@ export default function AudienceAnalytics() {
     </div>
   )
 }
+
