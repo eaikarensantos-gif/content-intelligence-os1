@@ -151,11 +151,14 @@ describe('sweepResult — varre todos os campos gerados', () => {
   })
 
   it('resultado limpo não gera achado nenhum', () => {
+    // content sem numeração "Slide N:" de propósito — este teste cobre o
+    // sweep de clichê, não o gate estrutural de carrossel (slideMatches >= 2),
+    // que já tem cobertura própria em brandLinter.test.js.
     expect(sweepResult({
       title: 'Como montei minha tabela de preço',
       title_options: ['O que mudou depois que parei de cobrar por hora'],
       hook_alternatives: ['Cobrei R$ 4.000 por 12 horas de trabalho.'],
-      content: 'Slide 1: O custo fixo mensal era R$ 6.200.\nSlide 2: Salva a conta antes da próxima proposta.',
+      content: 'O custo fixo mensal era R$ 6.200. Salva a conta antes da próxima proposta.',
       caption: 'A conta que uso está no slide 2.',
     })).toEqual([])
   })
