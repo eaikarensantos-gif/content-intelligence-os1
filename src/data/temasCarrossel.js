@@ -133,6 +133,54 @@ export const TEMAS_CARROSSEL = [
       'Promover quem tem mais tempo de casa em vez de quem entrega mais é conforto disfarçado de meritocracia',
     ],
   },
+  {
+    categoria: 'Tomada de decisão sob incerteza',
+    temas: [
+      'O critério objetivo que uso pra aceitar ou recusar uma proposta antes de olhar o valor',
+      'Quando a falta de dado vira desculpa pra não decidir',
+      'A proposta que parecia certa no briefing e caiu no primeiro número real',
+      'Negociar sem informação completa: o que dá pra fechar e o que precisa esperar',
+      'O sinal que me faz trocar de rota no meio de um projeto já vendido',
+      'Recusar um projeto grande por um motivo que não cabe em planilha',
+      'A diferença entre esperar mais dado e usar a incerteza como desculpa',
+    ],
+  },
+  {
+    categoria: 'Leitura institucional e corporativa',
+    temas: [
+      'A reestruturação que parece corte de time mas é ajuste de margem',
+      'O número que explica uma demissão em massa antes de qualquer comunicado de RH',
+      'Por que corte de headcount nem sempre significa empresa em crise',
+      'A mudança de cultura que só aconteceu porque o caixa mudou primeiro',
+      'Como ler um resultado trimestral antes de opinar sobre a estratégia da empresa',
+      'O que várias empresas cortando o mesmo cargo ao mesmo tempo mostram sobre o setor',
+      'A diferença entre reestruturação por eficiência e reestruturação por erro de planejamento anterior',
+    ],
+  },
+  {
+    categoria: 'Governança pessoal e autonomia',
+    temas: [
+      'O registro de entrega que mantenho pra provar impacto sem depender da memória do cliente',
+      'Por que depender de um único CNPJ é o maior risco de quem presta serviço',
+      'A métrica que uso pra medir o próprio valor fora do que o cliente relata',
+      'O limite de entrega que defino antes de qualquer contrato começar',
+      'Como diversificar cliente sem perder qualidade de entrega em nenhum deles',
+      'O relatório que escrevo pra mim, não pro cliente, depois de cada projeto',
+      'Por que autonomia profissional começa em não ter só uma fonte de receita',
+    ],
+  },
+  {
+    categoria: 'Avaliação de risco e priorização',
+    temas: [
+      'O filtro que uso pra saber se uma demanda move carreira ou só ocupa agenda',
+      'A tarefa operacional que parece urgente e não muda nada no fim do trimestre',
+      'Como priorizar entre o pedido do cliente e o que realmente constrói autoridade',
+      'O risco que vale correr e o que só parece ousado',
+      'Por que dizer sim pra toda demanda burocrática é o jeito mais lento de estagnar',
+      'A pergunta que faço antes de aceitar uma tarefa que não estava no escopo',
+      'O que prioridade real significa quando duas entregas urgentes chegam juntas',
+    ],
+  },
 ]
 
 // Sugestões do Banco de Temas do Studio Pessoal (accordion por categoria pessoal)
