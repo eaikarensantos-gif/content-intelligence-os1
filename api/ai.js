@@ -595,6 +595,7 @@ async function instagramFetchStories(accessToken) {
 
   const items = mediaData.data || []
   let insightsAvailable = true
+  let linkClicksAvailable = true
 
   async function fetchInsights(mediaId, metricNames) {
     const res = await fetch(
