@@ -225,58 +225,11 @@ export const WORK_NICHE =
 
 // ─── Modo profissional: PJ autônomo vs CLT ───────────────────────────────────
 // O banco de temas nasce em PJ (quem presta serviço, decide sozinho, responde a
-// cliente). Cada pilar pode ser lido em modo CLT: mesmo raciocínio, vocabulário
-// de quem é funcionário e responde a um gestor dentro de uma estrutura — não a
-// rotina genérica de "pedir aumento" que isCltFramed já sinaliza como sobra de
-// um posicionamento anterior.
-
-// Cada substituição mantém o gênero do termo original ("cliente" → "gestor",
-// ambos masculinos; "proposta" → "demanda", ambas femininas) pra não quebrar
-// concordância de artigo ou adjetivo vizinho ("uma proposta" → "uma demanda",
-// nunca "uma pedido"). Por isso não existe uma troca de "negócio": aparece
-// sempre colado a adjetivo ("pequeno negócio", "negócio físico") e qualquer
-// termo CLT de gênero diferente quebraria a concordância do adjetivo também.
-const CLT_WORD_SUBSTITUTIONS = [
-  [/clientes/gi, 'gestores'],
-  [/cliente/gi, 'gestor'],
-  [/propostas/gi, 'demandas'],
-  [/proposta/gi, 'demanda'],
-  [/projetos/gi, 'trabalhos'],
-  [/projeto/gi, 'trabalho'],
-  [/contratos/gi, 'cargos'],
-  [/contrato/gi, 'cargo'],
-  [/cnpj/gi, 'emprego'],
-  [/freelancer/gi, 'CLT'],
-  [/autônomo/gi, 'CLT'],
-  [/autônoma/gi, 'CLT'],
-  [/faturar/gi, 'ganhar'], // só a forma verbal — "fatura" sozinho também é 3ª pessoa de "faturar", ambíguo com o substantivo
-]
-
-const preserveCase = (matched, replacement) => {
-  if (!matched) return replacement
-  // Sigla inteira maiúscula (CNPJ) não é início de frase — não capitaliza a troca
-  if (matched.length > 1 && matched === matched.toUpperCase() && matched !== matched.toLowerCase()) {
-    return replacement
-  }
-  const first = matched[0]
-  return first === first.toUpperCase() && first !== first.toLowerCase()
-    ? replacement.charAt(0).toUpperCase() + replacement.slice(1)
-    : replacement
-}
-
-/**
- * Rótulo de exibição em modo CLT — troca de vocabulário superficial (cliente →
- * gestor, CNPJ → emprego, proposta → demanda...) pro texto curto do Banco de
- * Temas. É um rascunho automático, não uma reescrita completa: a adaptação de
- * verdade acontece na geração, guiada por WORK_CLT_GUIDE.
- */
-export function reframeThemeToClt(tema) {
-  if (!tema) return tema
-  return CLT_WORD_SUBSTITUTIONS.reduce(
-    (t, [pattern, replacement]) => t.replace(pattern, (matched) => preserveCase(matched, replacement)),
-    tema
-  )
-}
+// cliente). Cada pilar do banco de trabalho (src/data/temasCarrossel.js) tem
+// uma segunda lista autoral, temasClt — mesmo raciocínio de cada tema, mas
+// escrito do lugar de quem é funcionário e responde a um gestor dentro de uma
+// estrutura, não uma tradução mecânica palavra por palavra da versão PJ (isso
+// já foi tentado e soava como o mesmo tema com rótulo trocado).
 
 /** Instrução extra pro modelo quando o pilar ativo está em modo CLT. */
 export const WORK_CLT_GUIDE =

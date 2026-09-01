@@ -29,7 +29,7 @@ import {
   WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, migratePersonalCategory,
   categorizeTheme as classifyTheme,
   WORK_NICHE, WORK_CATEGORY_BRIEF, isCltFramed,
-  reframeThemeToClt, WORK_CLT_GUIDE,
+  WORK_CLT_GUIDE,
 } from '../../utils/themeCategories'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
@@ -2774,13 +2774,14 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
     return prev.filter(t => t.id !== id)
   })
 
+  // tema já vem no texto certo (PJ ou CLT) — quem escolhe a fonte é o accordion,
+  // que lê categoria.temas ou categoria.temasClt conforme o modo do pilar.
   const addThemeFromSuggestion = (tema, categoria) => {
     const modoTrabalho = workModeFor(categoria)
-    const temaFinal = modoTrabalho === 'clt' ? reframeThemeToClt(tema) : tema
     const existing = new Set(savedThemes.map(s => s.tema))
-    if (existing.has(temaFinal)) return
+    if (existing.has(tema)) return
     const entry = {
-      id: Date.now(), tema: temaFinal, categoria, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
+      id: Date.now(), tema, categoria, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
       ...(modoTrabalho === 'clt' ? { modoTrabalho } : {}),
     }
     setSavedThemes(prev => [entry, ...prev])
@@ -3050,20 +3051,18 @@ Responda EXCLUSIVAMENTE com JSON válido:
             {/* Accordion por categoria — temas salvos + sugestões (lista de categorias
                 muda por persona: Studio Pessoal nunca deve mostrar seções profissionais) */}
             <div className="px-4 py-3 space-y-1.5">
-              {(isPessoal ? PERSONAL_TEMAS_SUGESTOES : TEMAS_CARROSSEL).map(({ categoria, temas: sugestoes }) => {
+              {(isPessoal ? PERSONAL_TEMAS_SUGESTOES : TEMAS_CARROSSEL).map(({ categoria, temas, temasClt }) => {
                 const isOpen = bankOpenCategory === categoria
                 const savedInCat = savedThemes.filter(s => s.categoria === categoria)
                 const savedSet = new Set(savedThemes.map(s => s.tema))
                 const categoryWorkMode = workModeFor(categoria)
-                // Em modo CLT o que fica salvo é o texto reframeado, não o original
-                // da sugestão — compara com o mesmo texto que addThemeFromSuggestion
-                // de fato salva, senão a sugestão nunca some da lista depois de salva.
+                // Cada pilar de trabalho tem duas listas autorais (temas/temasClt) —
+                // o modo do pilar escolhe qual delas vira sugestão, não é uma
+                // transformação em cima do texto PJ.
+                const sugestoes = categoryWorkMode === 'clt' && temasClt ? temasClt : temas
                 const sugestoesNaoSalvas = isPessoal && !showPersonalSuggestions
                   ? []
-                  : sugestoes.filter(t => {
-                    const salvoComo = categoryWorkMode === 'clt' ? reframeThemeToClt(t) : t
-                    return !savedSet.has(salvoComo) && (!isPessoal || !dismissedPersonalSuggestions.includes(t))
-                  })
+                  : sugestoes.filter(t => !savedSet.has(t) && (!isPessoal || !dismissedPersonalSuggestions.includes(t)))
                 const totalCount = savedInCat.length
                 return (
                   <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -3165,7 +3164,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                               onClick={() => addThemeFromSuggestion(tema, categoria)}
                               className="flex-1 text-left text-xs text-gray-400 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between gap-2"
                             >
-                              <span>{categoryWorkMode === 'clt' ? reframeThemeToClt(tema) : tema}</span>
+                              <span>{tema}</span>
                               <Plus size={11} className="text-gray-300 shrink-0" />
                             </button>
                             {isPessoal && (
