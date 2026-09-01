@@ -222,3 +222,73 @@ export const WORK_NICHE =
   'Nicho: IA aplicada ao negócio, explicada por quem entende a lógica de decisão — não por quem lista ferramenta. ' +
   'Audiência: founder (público núcleo, ticket alto) e profissional de tecnologia em topo de funil — ' +
   'não é criador de hype de IA, não é lista de ferramenta do dia, não é conteúdo de vida de empregado em busca de promoção.'
+
+// ─── Modo profissional: PJ autônomo vs CLT ───────────────────────────────────
+// O banco de temas nasce em PJ (quem presta serviço, decide sozinho, responde a
+// cliente). Cada pilar pode ser lido em modo CLT: mesmo raciocínio, vocabulário
+// de quem é funcionário e responde a um gestor dentro de uma estrutura — não a
+// rotina genérica de "pedir aumento" que isCltFramed já sinaliza como sobra de
+// um posicionamento anterior.
+
+// Cada substituição mantém o gênero do termo original ("cliente" → "gestor",
+// ambos masculinos; "proposta" → "demanda", ambas femininas) pra não quebrar
+// concordância de artigo ou adjetivo vizinho ("uma proposta" → "uma demanda",
+// nunca "uma pedido"). Por isso não existe uma troca de "negócio": aparece
+// sempre colado a adjetivo ("pequeno negócio", "negócio físico") e qualquer
+// termo CLT de gênero diferente quebraria a concordância do adjetivo também.
+const CLT_WORD_SUBSTITUTIONS = [
+  [/clientes/gi, 'gestores'],
+  [/cliente/gi, 'gestor'],
+  [/propostas/gi, 'demandas'],
+  [/proposta/gi, 'demanda'],
+  [/projetos/gi, 'trabalhos'],
+  [/projeto/gi, 'trabalho'],
+  [/contratos/gi, 'cargos'],
+  [/contrato/gi, 'cargo'],
+  [/cnpj/gi, 'emprego'],
+  [/freelancer/gi, 'CLT'],
+  [/autônomo/gi, 'CLT'],
+  [/autônoma/gi, 'CLT'],
+  [/faturar/gi, 'ganhar'], // só a forma verbal — "fatura" sozinho também é 3ª pessoa de "faturar", ambíguo com o substantivo
+]
+
+const preserveCase = (matched, replacement) => {
+  if (!matched) return replacement
+  // Sigla inteira maiúscula (CNPJ) não é início de frase — não capitaliza a troca
+  if (matched.length > 1 && matched === matched.toUpperCase() && matched !== matched.toLowerCase()) {
+    return replacement
+  }
+  const first = matched[0]
+  return first === first.toUpperCase() && first !== first.toLowerCase()
+    ? replacement.charAt(0).toUpperCase() + replacement.slice(1)
+    : replacement
+}
+
+/**
+ * Rótulo de exibição em modo CLT — troca de vocabulário superficial (cliente →
+ * gestor, CNPJ → emprego, proposta → demanda...) pro texto curto do Banco de
+ * Temas. É um rascunho automático, não uma reescrita completa: a adaptação de
+ * verdade acontece na geração, guiada por WORK_CLT_GUIDE.
+ */
+export function reframeThemeToClt(tema) {
+  if (!tema) return tema
+  return CLT_WORD_SUBSTITUTIONS.reduce(
+    (t, [pattern, replacement]) => t.replace(pattern, (matched) => preserveCase(matched, replacement)),
+    tema
+  )
+}
+
+/** Instrução extra pro modelo quando o pilar ativo está em modo CLT. */
+export const WORK_CLT_GUIDE =
+  `MODO PROFISSIONAL: CLT.
+O mesmo raciocínio de founder/consultor, mas na pele de quem é CLT sênior — não quem decide sozinho, quem decide dentro de uma estrutura, respondendo a uma liderança.
+
+Troque o vocabulário de quem presta serviço pelo de quem é empregado, mantendo o mesmo nível de análise:
+- cliente → gestor / liderança / empresa
+- proposta, contrato, projeto vendido → card no board, escopo, trabalho aprovado
+- CNPJ, autônomo, freelancer → emprego, cargo, CLT
+- fechar negócio / faturar → ser chamada pra decisão / ser considerada
+- ciclo de cliente de seis meses → ciclo de escopo ou de avaliação de seis meses
+
+PERMITIDO neste modo, mesmo banido no modo padrão: gestor, liderança, feedback, 1:1, ciclo de avaliação, cargo, escopo, board — é o vocabulário real de quem é CLT, não sobra de posicionamento antigo.
+PROIBIDO mesmo em modo CLT: queixa genérica de emprego (medo de ser demitido, síndrome do impostor, pedir aumento, política de escritório). O ângulo continua sendo critério, leitura de sinal e tomada de decisão — só que lida de dentro da estrutura, não de fora dela.`
