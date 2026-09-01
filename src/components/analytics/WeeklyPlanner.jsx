@@ -48,9 +48,11 @@ function buildPrompt(topPosts, allPosts, period, topHours) {
     .map(([day, d]) => `- ${day}: ${d.count} posts, ER médio: ${(d.er_sum / d.count * 100).toFixed(2)}%`)
     .join('\n')
 
-  return `Você é um estrategista de conteúdo digital. Analise os posts que mais performaram nos últimos ${period} dias e sugira um plano de conteúdo para a PRÓXIMA SEMANA (7 dias).
+  const periodLabel = period === 'all' ? 'em todo o histórico' : `nos últimos ${period} dias`
 
-═══ TOP POSTS DO PERÍODO (${period} dias) ═══
+  return `Você é um estrategista de conteúdo digital. Analise os posts que mais performaram ${periodLabel} e sugira um plano de conteúdo para a PRÓXIMA SEMANA (7 dias).
+
+═══ TOP POSTS DO PERÍODO (${periodLabel}) ═══
 ${topData}
 
 ═══ PERFORMANCE POR FORMATO ═══
@@ -128,7 +130,7 @@ export default function WeeklyPlanner() {
   const metrics = useStore((s) => s.metrics)
   const enriched = metrics.map(enrichMetric)
 
-  const [period, setPeriod] = useState(28)
+  const [period, setPeriod] = useState(28) // número de dias, ou 'all' pra todo o histórico
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -154,12 +156,14 @@ export default function WeeklyPlanner() {
   const sortedByDate = [...enriched].filter(m => m.date).sort((a, b) => b.date.localeCompare(a.date))
   const latestDate = sortedByDate[0]?.date || new Date().toISOString().slice(0, 10)
   const cutoff = (() => {
+    if (period === 'all') return null
     const d = new Date(latestDate + 'T12:00:00')
     d.setDate(d.getDate() - period)
     return d.toISOString().slice(0, 10)
   })()
-  const postsInPeriod = enriched.filter(m => m.date && m.date >= cutoff)
+  const postsInPeriod = enriched.filter(m => m.date && (cutoff === null || m.date >= cutoff))
   const topPosts = [...postsInPeriod].sort((a, b) => b.engagement_rate - a.engagement_rate).slice(0, 10)
+  const periodText = period === 'all' ? 'em todo o histórico' : `nos últimos ${period} dias`
 
   const canGenerate = topPosts.length >= 2
 
@@ -231,7 +235,7 @@ export default function WeeklyPlanner() {
           <div className="flex items-center gap-3 flex-wrap">
             {/* Period selector */}
             <div className="flex gap-1 bg-white/10 rounded-xl p-1">
-              {[7, 14, 28].map(d => (
+              {[7, 14, 28, 'all'].map(d => (
                 <button
                   key={d}
                   onClick={() => setPeriod(d)}
@@ -239,7 +243,7 @@ export default function WeeklyPlanner() {
                     period === d ? 'bg-white text-orange-700' : 'text-gray-300 hover:text-white'
                   }`}
                 >
-                  {d}d
+                  {d === 'all' ? 'Tudo' : `${d}d`}
                 </button>
               ))}
             </div>
@@ -266,11 +270,11 @@ export default function WeeklyPlanner() {
 
             {!canGenerate && (
               <span className="text-xs text-amber-300 flex items-center gap-1">
-                <AlertCircle size={12} /> Mínimo 2 posts nos últimos {period} dias
+                <AlertCircle size={12} /> Mínimo 2 posts {periodText}
               </span>
             )}
 
-            <span className="text-xs text-gray-400 ml-auto">{postsInPeriod.length} posts nos últimos {period} dias</span>
+            <span className="text-xs text-gray-400 ml-auto">{postsInPeriod.length} posts {periodText}</span>
           </div>
 
           {showKeyInput && (
@@ -455,7 +459,7 @@ export default function WeeklyPlanner() {
           </div>
           <h3 className="text-gray-700 font-semibold mb-2">Dados insuficientes</h3>
           <p className="text-gray-400 text-sm max-w-sm">
-            Adicione pelo menos 2 posts com métricas nos últimos {period} dias para gerar o plano semanal — importe um CSV ou sincronize direto do Instagram em Analytics → Adicionar Métricas.
+            Adicione pelo menos 2 posts com métricas {periodText} para gerar o plano semanal — importe um CSV ou sincronize direto do Instagram em Analytics → Adicionar Métricas.
           </p>
         </div>
       )}
