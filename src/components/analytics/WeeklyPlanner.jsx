@@ -78,7 +78,7 @@ REGRAS:
 2. Indique o MELHOR DIA e FORMATO para cada post baseado nos dados
 3. Explique POR QUÊ aquele tema/formato vai funcionar (cite números)
 4. Sugira de 5 a 7 posts para a semana
-5. Inclua variações dos temas que mais performaram + 1-2 temas novos para testar
+5. Os TOP POSTS acima são referência de PADRÃO — formato, horário, tipo de gancho, tema geral que funcionou — não são texto pra copiar. PROIBIDO sugerir um post com o mesmo título, mesma frase de abertura ou mesmo recorte específico de um post que já foi publicado (listado em TOP POSTS ou citado como "reference_post"). "Variação" significa ângulo, recorte ou pergunta diferente dentro do mesmo tema geral — não é reescrever o post antigo com outras palavras. Pelo menos 1-2 sugestões precisam ser tema novo, nunca testado no período.
 6. Pra cada sugestão, preencha "duracao" e "objetivo" usando a estrutura de rotação de formatos acima como referência
 7. Pra cada sugestão, preencha "editorial_function" com o id de uma das funções listadas acima. NÃO agende dois "critical_reading" em dias seguidos — alterne autoridade (critical_reading), aplicação (practical_utility), bastidor (decision_backstage) e proximidade (community_connection) ao longo da semana.
 ${topHours ? '8. Pra cada sugestão, indique também um HORÁRIO baseado nos horários reais de audiência online listados acima (não invente outro horário).' : ''}
@@ -97,7 +97,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
       ${topHours ? '"time": "horário sugerido, ex: 19h",' : ''}
       "title": "Título curto do post sugerido",
       "format": "Reel|Carrossel|Story|Post estático",
-      "theme": "Tema baseado nos dados",
+      "theme": "Tema baseado nos dados — recorte novo, nunca o mesmo já publicado",
       "duracao": "Duração sugerida do vídeo, ex: 5-7 seg",
       "objetivo": "O que esse vídeo deve alcançar, ex: vender e fechar clientes",
       "editorial_function": "critical_reading|practical_utility|decision_backstage|community_connection",
