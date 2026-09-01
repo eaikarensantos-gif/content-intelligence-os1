@@ -189,6 +189,24 @@ export function lintText(text) {
     }
   }
 
+  // Gates estruturais: só rodam quando o texto se identifica como carrossel
+  // com slides numerados. Legendas e roteiros comuns ficam fora desta checagem.
+  const slideMatches = [...text.matchAll(/(?:^|\n)\s*(?:slide\s*)?(\d+)\s*[:.)-]\s*([^\n]+)/gi)]
+  if (slideMatches.length >= 2) {
+    const slides = new Map(slideMatches.map((match) => [Number(match[1]), match[2].trim()]))
+    const first = slides.get(1) || ''
+    const seventh = slides.get(7) || ''
+    const countPattern = /\b(quant(?:o|a|os|as)|n[uú]mero|horas?|vezes|clientes?|projetos?|decis(?:ão|ões)|dias?|semanas?|meses?)\b/i
+    const bridgePattern = /\b(perfil|bio|link|direct|dm|mensagem|baix|abr|agenda|lista|biblioteca|coment[aá]rio fixado)\b/i
+
+    if (!countPattern.test(first)) {
+      violations.push({ id: 'gate-contagem', category: 'Estrutura do exercício', match: first || 'Slide 1 ausente', suggestion: 'O slide 1 precisa ser uma pergunta respondível com um número.' })
+    }
+    if (!seventh || !bridgePattern.test(seventh)) {
+      violations.push({ id: 'gate-ponte', category: 'Estrutura do exercício', match: seventh || 'Slide 7 ausente', suggestion: 'O slide 7 precisa indicar uma ação concreta fora do post.' })
+    }
+  }
+
   return violations
 }
 
@@ -198,3 +216,4 @@ export function lintText(text) {
 export function isClean(text) {
   return lintText(text).length === 0
 }
+
