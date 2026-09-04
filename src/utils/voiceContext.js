@@ -50,7 +50,7 @@ export function buildPositioningBlock(posicionamento) {
   }
 
   if (posicionamento.teste_coerencia?.trim()) {
-    ctx += `\nTESTE DE COERÊNCIA — todo conteúdo gerado deve responder SIM a esta pergunta:\n"${posicionamento.teste_coerencia.trim()}"\n`
+    ctx += `\nTESTE DE COERÊNCIA (orientação de fundo sobre o que costuma reforçar o posicionamento central — não é filtro obrigatório: se a tarefa pedir um tema específico, o tema pedido tem prioridade):\n"${posicionamento.teste_coerencia.trim()}"\n`
   }
 
   return ctx
