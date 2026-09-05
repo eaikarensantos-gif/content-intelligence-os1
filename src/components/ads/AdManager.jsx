@@ -8,6 +8,7 @@ import {
   MessageSquare, Star, XCircle, ArrowRight, Mail, Building2, Hash, FileText, Paperclip, Download,
 } from 'lucide-react'
 import clsx from 'clsx'
+import * as XLSX from 'xlsx'
 import useStore from '../../store/useStore'
 import PricingManager from '../pricing/PricingManager'
 
@@ -44,12 +45,13 @@ const LEAD_STAGES = [
   { id: 'contact', label: 'Contato Feito', color: 'bg-purple-100 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
   { id: 'proposal', label: 'Proposta Enviada', color: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
   { id: 'negotiation', label: 'Negociação', color: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
+  { id: 'repasse_assessoria', label: 'Repasse Assessoria', color: 'bg-teal-100 text-teal-700 border-teal-200', dot: 'bg-teal-500' },
   { id: 'won', label: 'Fechou!', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
   { id: 'lost', label: 'Perdido', color: 'bg-red-100 text-red-600 border-red-200', dot: 'bg-red-500' },
 ]
 
 const LEAD_SOURCES = [
-  'Instagram DM', 'LinkedIn', 'Indicação', 'Email', 'WhatsApp', 'Site', 'Evento', 'Outro',
+  'Instagram DM', 'LinkedIn', 'Indicação', 'Email', 'WhatsApp', 'Site', 'Evento', 'Assessoria', 'Outro',
 ]
 
 const EMPTY_AD = {
@@ -83,6 +85,41 @@ function daysAgo(dateStr) {
   const d = new Date(dateStr)
   const now = new Date()
   return Math.floor((now - d) / (1000 * 60 * 60 * 24))
+}
+
+/** Monta e baixa um .xlsx com Leads, Campanhas e Clientes em abas separadas. */
+function exportToExcel({ leads, ads, clients }) {
+  const wb = XLSX.utils.book_new()
+
+  const leadsRows = (leads || []).map(l => ({
+    Nome: l.name || '', Empresa: l.company || '', Contato: l.contact || '', Email: l.email || '',
+    Origem: l.source || '', Etapa: LEAD_STAGES.find(s => s.id === l.stage)?.label || l.stage || '',
+    'Valor Estimado': l.value || '', Serviço: l.service || '', 'Próximo Follow-up': l.next_followup || '',
+    Observações: l.notes || '', 'Criado em': l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '',
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(leadsRows), 'Leads')
+
+  const adsRows = (ads || []).map(a => ({
+    Título: a.title || '', Cliente: a.client || '',
+    Plataforma: PLATFORMS.find(p => p.id === a.platform)?.label || a.platform || '',
+    Tipo: AD_TYPES.find(t => t.id === a.ad_type)?.label || a.ad_type || '',
+    Status: STATUSES.find(s => s.id === a.status)?.label || a.status || '',
+    Orçamento: a.budget || '', Gasto: a.spent || '', Receita: a.revenue || '',
+    Início: a.start_date || '', Término: a.end_date || '',
+    Impressões: a.impressions || '', Alcance: a.reach || '', Cliques: a.clicks || '', Conversões: a.conversions || '',
+    Link: a.link || '', Observações: a.notes || '',
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(adsRows), 'Campanhas')
+
+  const clientsRows = (clients || []).map(c => ({
+    Nome: c.name || '', Empresa: c.company || '', Contato: c.contact || '', Email: c.email || '',
+    Serviço: c.service || '', Valor: c.value || '', Origem: c.source || '', Hashtags: c.hashtags || '',
+    'Status Pagamento': c.payment_status || '', Observações: c.notes || '',
+    'Criado em': c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '',
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clientsRows), 'Clientes')
+
+  XLSX.writeFile(wb, `ads-leads-clientes-${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 /* ── Ad Form Modal ──────────────────────────────────────── */
@@ -618,27 +655,33 @@ export default function AdManager() {
   return (
     <div className="p-4 sm:p-6 space-y-5">
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-lg">
-        <button onClick={() => setTab('leads')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            tab === 'leads' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-          <UserPlus size={14} /> Leads
-          {activeLeads > 0 && (
-            <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{activeLeads}</span>
-          )}
-        </button>
-        <button onClick={() => setTab('clients')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            tab === 'clients' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-          <Building2 size={14} /> Clientes
-          {clients.length > 0 && (
-            <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{clients.length}</span>
-          )}
-        </button>
-        <button onClick={() => setTab('pricing')}
-          className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-            tab === 'pricing' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-          <DollarSign size={14} /> Preços
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-lg">
+          <button onClick={() => setTab('leads')}
+            className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              tab === 'leads' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+            <UserPlus size={14} /> Leads
+            {activeLeads > 0 && (
+              <span className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{activeLeads}</span>
+            )}
+          </button>
+          <button onClick={() => setTab('clients')}
+            className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              tab === 'clients' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+            <Building2 size={14} /> Clientes
+            {clients.length > 0 && (
+              <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{clients.length}</span>
+            )}
+          </button>
+          <button onClick={() => setTab('pricing')}
+            className={clsx('flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              tab === 'pricing' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+            <DollarSign size={14} /> Preços
+          </button>
+        </div>
+        <button onClick={() => exportToExcel({ leads, ads, clients })}
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-emerald-300 hover:text-emerald-700 transition-colors shadow-sm">
+          <Download size={14} /> Exportar Excel
         </button>
       </div>
 
