@@ -170,7 +170,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   // Shared NavLink renderer
   const renderNavItem = ({ to, icon: Icon, label }, indent = false) => {
-    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation', '/carousel']
+    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation']
     const isCreateGroup = to === '/create'
     const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
     const isPinned = pinnedPages.includes(to)
