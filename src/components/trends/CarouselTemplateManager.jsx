@@ -179,11 +179,12 @@ function TemplateForm({ template, onSave, onCancel }) {
     return publicUrlData.publicUrl
   }
 
-  const addBackground = (imageUrl) =>
+  const addBackground = (imageUrl, overrides = {}) =>
     setBackgrounds((prev) => [...prev, {
       imageUrl,
-      headline: { ...DEFAULT_HEADLINE_ZONE },
-      subtext: { ...DEFAULT_SUBTEXT_ZONE },
+      headline: overrides.headline || { ...DEFAULT_HEADLINE_ZONE },
+      subtext: overrides.subtext || { ...DEFAULT_SUBTEXT_ZONE },
+      ...(overrides.maskColor ? { maskColor: overrides.maskColor } : {}),
     }])
 
   const handleUpload = async (file) => {
@@ -270,7 +271,11 @@ function TemplateForm({ template, onSave, onCancel }) {
       for (const img of data.images || []) {
         const blob = await (await fetch(img.dataUrl)).blob()
         const imageUrl = await uploadBackground(blob, 'image/png', nameById.get(img.nodeId) || 'figma')
-        addBackground(imageUrl)
+        addBackground(imageUrl, {
+          headline: img.headline || null,
+          subtext: img.subtext || null,
+          maskColor: img.backgroundColor || null,
+        })
       }
       setFigmaOpen(false)
       setFigmaData(null)

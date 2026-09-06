@@ -310,12 +310,21 @@ function drawImageCover(ctx, img, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
 }
 
-function drawZoneText(ctx, zone, text, fontSize, weight) {
+function drawZoneText(ctx, zone, text, fontSize, weight, maskColor) {
   if (!zone || !text?.trim()) return
   const x = (zone.xPct / 100) * SLIDE_W
   const y = (zone.yPct / 100) * SLIDE_H
   const w = (zone.wPct / 100) * SLIDE_W
+  const h = (zone.hPct / 100) * SLIDE_H
   const align = zone.align === 'center' ? 'center' : 'left'
+
+  // Template importado do Figma: a imagem de fundo já traz o texto original
+  // (placeholder) desenhado. Cobrimos essa área com a cor de fundo do próprio
+  // frame antes de escrever o texto gerado, senão os dois ficam sobrepostos.
+  if (maskColor) {
+    ctx.fillStyle = maskColor
+    ctx.fillRect(x - 6, y - 6, w + 12, h + 12)
+  }
 
   ctx.font = `${weight} ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
   const lines = wrapText(ctx, text, w, fontSize)
@@ -352,8 +361,8 @@ async function renderSlideToCanvasWithTemplate(canvas, slide, index, total, temp
 
   const headline = slide.headline || ''
   const fontSize = headline.length > 80 ? 52 : headline.length > 50 ? 60 : 72
-  drawZoneText(ctx, bg.headline, headline, fontSize, 'bold')
-  drawZoneText(ctx, bg.subtext, slide.subtext, 32, '500')
+  drawZoneText(ctx, bg.headline, headline, fontSize, 'bold', bg.maskColor)
+  drawZoneText(ctx, bg.subtext, slide.subtext, 32, '500', bg.maskColor)
 
   return canvas
 }
