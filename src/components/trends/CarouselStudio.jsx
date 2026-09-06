@@ -7,10 +7,11 @@ import {
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
   Share2, Bookmark, ArrowRight, RotateCcw, Wand2, FileText, Layers,
   Target, Brain, AlertCircle, Check, Image as ImageIcon, Type, User, Settings,
-  ExternalLink, Download, ThumbsDown,
+  ExternalLink, Download, ThumbsDown, LayoutTemplate,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
+import CarouselTemplateManager from './CarouselTemplateManager'
 
 const LS_KEY = 'cio-openai-key'
 
@@ -252,11 +253,15 @@ function renderSlideToCanvas(canvas, slide, index, total) {
   return canvas
 }
 
-async function generateAllSlideImages(slides) {
+async function generateAllSlideImages(slides, template) {
   const canvas = document.createElement('canvas')
   const images = []
   for (let i = 0; i < slides.length; i++) {
-    renderSlideToCanvas(canvas, slides[i], i, slides.length)
+    if (template?.backgrounds?.length) {
+      await renderSlideToCanvasWithTemplate(canvas, slides[i], i, slides.length, template)
+    } else {
+      renderSlideToCanvas(canvas, slides[i], i, slides.length)
+    }
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
     const url = URL.createObjectURL(blob)
     images.push({ url, blob, name: `slide-${String(i + 1).padStart(2, '0')}.png` })
@@ -272,6 +277,85 @@ async function downloadAllSlides(images, title) {
     a.click()
     await new Promise((r) => setTimeout(r, 300)) // small delay between downloads
   }
+}
+
+// ─── Slide image generator using one of Karen's registered visual templates ──
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Não foi possível carregar a imagem do template.'))
+    img.src = url
+  })
+}
+
+// Recorta a imagem em "cover" (mesmo comportamento do object-fit: cover usado
+// no editor de zonas), pra a posição das caixas bater com o resultado final.
+function drawImageCover(ctx, img, w, h) {
+  const imgRatio = img.width / img.height
+  const boxRatio = w / h
+  let sx, sy, sw, sh
+  if (imgRatio > boxRatio) {
+    sh = img.height
+    sw = sh * boxRatio
+    sx = (img.width - sw) / 2
+    sy = 0
+  } else {
+    sw = img.width
+    sh = sw / boxRatio
+    sx = 0
+    sy = (img.height - sh) / 2
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
+}
+
+function drawZoneText(ctx, zone, text, fontSize, weight) {
+  if (!zone || !text?.trim()) return
+  const x = (zone.xPct / 100) * SLIDE_W
+  const y = (zone.yPct / 100) * SLIDE_H
+  const w = (zone.wPct / 100) * SLIDE_W
+  const align = zone.align === 'center' ? 'center' : 'left'
+
+  ctx.font = `${weight} ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
+  const lines = wrapText(ctx, text, w, fontSize)
+  const lineHeight = fontSize * 1.25
+
+  ctx.fillStyle = zone.color || '#1a1a1a'
+  ctx.textAlign = align
+  const startX = align === 'center' ? x + w / 2 : x
+  lines.forEach((line, i) => {
+    ctx.fillText(line, startX, y + fontSize + i * lineHeight)
+  })
+}
+
+async function renderSlideToCanvasWithTemplate(canvas, slide, index, total, template) {
+  const ctx = canvas.getContext('2d')
+  canvas.width = SLIDE_W
+  canvas.height = SLIDE_H
+
+  const bg = template.backgrounds[index % template.backgrounds.length]
+  const img = await loadImage(bg.imageUrl)
+  drawImageCover(ctx, img, SLIDE_W, SLIDE_H)
+
+  // Contador de slide — pill escuro fixo, funciona em qualquer fundo
+  ctx.save()
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'
+  ctx.beginPath()
+  ctx.roundRect(SLIDE_W - 170, 40, 110, 46, 23)
+  ctx.fill()
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'center'
+  ctx.font = '24px "SF Mono", "Fira Code", monospace'
+  ctx.fillText(`${index + 1}/${total}`, SLIDE_W - 115, 69)
+  ctx.restore()
+
+  const headline = slide.headline || ''
+  const fontSize = headline.length > 80 ? 52 : headline.length > 50 ? 60 : 72
+  drawZoneText(ctx, bg.headline, headline, fontSize, 'bold')
+  drawZoneText(ctx, bg.subtext, slide.subtext, 32, '500')
+
+  return canvas
 }
 
 // ─── Slide editor card ───────────────────────────────────────────────────────
@@ -565,6 +649,7 @@ export default function CarouselStudio() {
   const addDislike = useStore((s) => s.addDislike)
   const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const posicionamento = useStore(s => s.posicionamento)
+  const carouselTemplates = useStore((s) => s.carouselTemplates)
 
   const [step, setStep] = useState('config') // config | generating | editor
   const [carouselType, setCarouselType] = useState('')
@@ -583,6 +668,9 @@ export default function CarouselStudio() {
   const [generatingImages, setGeneratingImages] = useState(false)
   const [imageError, setImageError] = useState(null)
   const [canvaCopied, setCanvaCopied] = useState(false)
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
+  const selectedTemplate = carouselTemplates.find((t) => t.id === selectedTemplateId) || null
 
   // Show profile setup if no niche configured
   const hasProfile = creatorProfile?.niche?.trim()
@@ -761,7 +849,7 @@ export default function CarouselStudio() {
     try {
       // Clean up old URLs
       slideImages.forEach((img) => URL.revokeObjectURL(img.url))
-      const images = await generateAllSlideImages(result.slides)
+      const images = await generateAllSlideImages(result.slides, selectedTemplate)
       setSlideImages(images)
     } catch (e) {
       setImageError(e.message || 'Erro ao gerar imagens')
@@ -827,6 +915,13 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
             <p className="text-xs text-gray-400">Roteiros de carrossel com potencial viral — inspirados nos seus dados + tendências</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setShowTemplateManager(true)}
+              className="flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-all"
+              title="Gerenciar templates visuais"
+            >
+              <LayoutTemplate size={9} /> Meus templates
+            </button>
             <button
               onClick={() => setEditingProfile(true)}
               className="flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-all"
@@ -1030,6 +1125,10 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
             </div>
           </div>
         )}
+
+        {showTemplateManager && (
+          <CarouselTemplateManager onClose={() => setShowTemplateManager(false)} />
+        )}
       </div>
     )
   }
@@ -1071,6 +1170,23 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
               className="btn-ghost text-xs border border-red-200 text-red-600 hover:bg-red-50"
             >
               <ThumbsDown size={12} /> Dislike
+            </button>
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              className="text-xs font-medium border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white"
+              title="Modelo visual usado ao gerar as imagens"
+            >
+              <option value="">Padrão (clássico)</option>
+              {carouselTemplates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowTemplateManager(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
+            >
+              <LayoutTemplate size={12} /> Meus templates
             </button>
             <button
               onClick={handleGenerateImages}
@@ -1276,6 +1392,10 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
             />
           </div>
         </div>
+
+        {showTemplateManager && (
+          <CarouselTemplateManager onClose={() => setShowTemplateManager(false)} />
+        )}
       </div>
     )
   }
