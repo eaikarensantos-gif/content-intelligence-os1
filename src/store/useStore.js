@@ -142,6 +142,28 @@ const useStore = create(
       setCreatorProfile: (profile) =>
         set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
 
+      // ── Templates visuais de carrossel (Carousel Studio) ────────────────
+      carouselTemplates: [],
+
+      addCarouselTemplate: (template) =>
+        set((s) => ({
+          carouselTemplates: [...s.carouselTemplates, {
+            id: uuidv4(),
+            created_at: new Date().toISOString(),
+            name: '',
+            backgrounds: [],
+            ...template,
+          }],
+        })),
+
+      updateCarouselTemplate: (id, updates) =>
+        set((s) => ({
+          carouselTemplates: s.carouselTemplates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        })),
+
+      deleteCarouselTemplate: (id) =>
+        set((s) => ({ carouselTemplates: s.carouselTemplates.filter((t) => t.id !== id) })),
+
       // ── Desafio de Formato (sorteador) ───────────────────────────────────
       addDesafio: (desafio) =>
         set((s) => ({ desafioHistory: [...s.desafioHistory, desafio] })),
@@ -678,6 +700,7 @@ const useStore = create(
             archetypes:        mergeById(data.archetypes, local.archetypes),
             hybridArchetypes:  mergeById(data.hybridArchetypes, local.hybridArchetypes),
             viralReferences:   mergeById(data.viralReferences, local.viralReferences),
+            carouselTemplates: mergeById(data.carouselTemplates, local.carouselTemplates),
             thoughtCaptures:   mergeById(data.thoughtCaptures, local.thoughtCaptures),
             commentContexts:   mergeById(data.commentContexts, local.commentContexts),
             videoAnalyses:     mergeById(data.videoAnalyses, local.videoAnalyses),
@@ -769,6 +792,7 @@ const useStore = create(
         audienceProfiles: s.audienceProfiles,
         audienceWeights: s.audienceWeights,
         audienceCuts: s.audienceCuts,
+        carouselTemplates: s.carouselTemplates,
         // brandVoice ficava de fora do partialize — sem Supabase configurado,
         // o questionário de voz da marca se perdia a cada reload. Corrigido aqui.
         brandVoice: s.brandVoice,
