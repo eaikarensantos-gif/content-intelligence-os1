@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   X, Plus, Trash2, Upload, Loader2, AlertCircle, LayoutTemplate,
-  AlignLeft, AlignCenter, Sun, Moon, Pencil,
+  AlignLeft, AlignCenter, Sun, Moon, Pencil, Figma, Check, Square, CheckSquare,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase'
 
 const BUCKET = 'cio-media'
+const LS_FIGMA = 'cio-figma-token'
 const LIGHT = '#ffffff'
 const DARK = '#1a1a1a'
 
@@ -149,39 +150,136 @@ function TemplateForm({ template, onSave, onCancel }) {
   const [error, setError] = useState(null)
   const inputRef = useRef(null)
 
+  const [figmaOpen, setFigmaOpen] = useState(false)
+  const [figmaFileInput, setFigmaFileInput] = useState('')
+  const [figmaLoading, setFigmaLoading] = useState(false)
+  const [figmaError, setFigmaError] = useState(null)
+  const [figmaData, setFigmaData] = useState(null) // { fileKey, fileName, pages }
+  const [selectedNodeIds, setSelectedNodeIds] = useState(new Set())
+  const [figmaImporting, setFigmaImporting] = useState(false)
+
+  // Sobe um blob já pronto (arquivo local ou frame renderizado do Figma) pro
+  // mesmo bucket usado pelo upload manual, e devolve a URL pública.
+  const uploadBackground = async (blob, contentType, filenameHint) => {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Configure o Supabase em Configurações — é usado para hospedar as imagens dos seus templates.')
+    }
+    const supabase = getSupabase()
+    const safeName = (filenameHint || 'fundo').replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `templates/${Date.now()}-${safeName}.png`
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, blob, {
+      cacheControl: '3600',
+      contentType: contentType || 'image/png',
+    })
+    if (uploadError) {
+      throw new Error(`Falha ao hospedar a imagem (bucket "${BUCKET}"): ${uploadError.message}. Crie um bucket público com esse nome no seu projeto Supabase (Storage → New bucket → Public bucket) se ainda não existir.`)
+    }
+    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path)
+    if (!publicUrlData?.publicUrl) throw new Error('Não foi possível obter a URL pública da imagem.')
+    return publicUrlData.publicUrl
+  }
+
+  const addBackground = (imageUrl) =>
+    setBackgrounds((prev) => [...prev, {
+      imageUrl,
+      headline: { ...DEFAULT_HEADLINE_ZONE },
+      subtext: { ...DEFAULT_SUBTEXT_ZONE },
+    }])
+
   const handleUpload = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
       setError('Envie um arquivo de imagem (JPG ou PNG).')
       return
     }
-    if (!isSupabaseConfigured()) {
-      setError('Configure o Supabase em Configurações — é usado para hospedar as imagens dos seus templates.')
-      return
-    }
     setUploading(true)
     setError(null)
     try {
-      const supabase = getSupabase()
-      const path = `templates/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
-        cacheControl: '3600',
-        contentType: file.type,
-      })
-      if (uploadError) {
-        throw new Error(`Falha ao hospedar a imagem (bucket "${BUCKET}"): ${uploadError.message}. Crie um bucket público com esse nome no seu projeto Supabase (Storage → New bucket → Public bucket) se ainda não existir.`)
-      }
-      const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path)
-      if (!publicUrlData?.publicUrl) throw new Error('Não foi possível obter a URL pública da imagem.')
-
-      setBackgrounds((prev) => [...prev, {
-        imageUrl: publicUrlData.publicUrl,
-        headline: { ...DEFAULT_HEADLINE_ZONE },
-        subtext: { ...DEFAULT_SUBTEXT_ZONE },
-      }])
+      const imageUrl = await uploadBackground(file, file.type, file.name.replace(/\.[^.]+$/, ''))
+      addBackground(imageUrl)
     } catch (err) {
       setError(err.message)
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleFigmaSearch = async () => {
+    if (!figmaFileInput.trim()) return
+    setFigmaLoading(true)
+    setFigmaError(null)
+    setFigmaData(null)
+    setSelectedNodeIds(new Set())
+    try {
+      const figmaToken = localStorage.getItem(LS_FIGMA) || ''
+      if (!figmaToken) throw new Error('Configure seu token do Figma em Configurações primeiro.')
+      const res = await fetch('/api/figma', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list-frames', figmaToken, fileKey: figmaFileInput.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Falha ao buscar o arquivo do Figma.')
+      if (!data.pages?.length) throw new Error('Nenhum frame encontrado nesse arquivo.')
+      setFigmaData(data)
+    } catch (err) {
+      setFigmaError(err.message)
+    } finally {
+      setFigmaLoading(false)
+    }
+  }
+
+  const toggleFrame = (id) => {
+    setSelectedNodeIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleAllInPage = (page) => {
+    setSelectedNodeIds((prev) => {
+      const next = new Set(prev)
+      const allSelected = page.frames.every((f) => next.has(f.id))
+      page.frames.forEach((f) => { if (allSelected) next.delete(f.id); else next.add(f.id) })
+      return next
+    })
+  }
+
+  const handleFigmaImport = async () => {
+    if (!selectedNodeIds.size || !figmaData) return
+    setFigmaImporting(true)
+    setFigmaError(null)
+    try {
+      const figmaToken = localStorage.getItem(LS_FIGMA) || ''
+      if (!figmaToken) throw new Error('Configure seu token do Figma em Configurações primeiro.')
+      const res = await fetch('/api/figma', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'render-frames',
+          figmaToken,
+          fileKey: figmaData.fileKey,
+          nodeIds: Array.from(selectedNodeIds),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Falha ao renderizar os frames do Figma.')
+
+      const nameById = new Map(figmaData.pages.flatMap((p) => p.frames).map((f) => [f.id, f.name]))
+      for (const img of data.images || []) {
+        const blob = await (await fetch(img.dataUrl)).blob()
+        const imageUrl = await uploadBackground(blob, 'image/png', nameById.get(img.nodeId) || 'figma')
+        addBackground(imageUrl)
+      }
+      setFigmaOpen(false)
+      setFigmaData(null)
+      setFigmaFileInput('')
+      setSelectedNodeIds(new Set())
+    } catch (err) {
+      setFigmaError(err.message)
+    } finally {
+      setFigmaImporting(false)
     }
   }
 
@@ -210,13 +308,23 @@ function TemplateForm({ template, onSave, onCancel }) {
           <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
             Fundos ({backgrounds.length})
           </label>
-          <button
-            onClick={() => !uploading && inputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-lg hover:bg-orange-100 transition-all disabled:opacity-50"
-          >
-            {uploading ? <><Loader2 size={11} className="animate-spin" /> Enviando...</> : <><Upload size={11} /> Adicionar fundo</>}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFigmaOpen((v) => !v)}
+              className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${
+                figmaOpen ? 'text-purple-700 bg-purple-50 border-purple-200' : 'text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100'
+              }`}
+            >
+              <Figma size={11} /> Importar do Figma
+            </button>
+            <button
+              onClick={() => !uploading && inputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-lg hover:bg-orange-100 transition-all disabled:opacity-50"
+            >
+              {uploading ? <><Loader2 size={11} className="animate-spin" /> Enviando...</> : <><Upload size={11} /> Adicionar fundo</>}
+            </button>
+          </div>
           <input
             ref={inputRef}
             type="file"
@@ -226,8 +334,83 @@ function TemplateForm({ template, onSave, onCancel }) {
           />
         </div>
         <p className="text-[10px] text-gray-400 mb-3">
-          Suba as imagens de fundo já com a sua identidade visual (Canva, Figma, PDF exportado como imagem...). O carrossel gerado alterna entre os fundos que você adicionar aqui, na ordem em que aparecem.
+          Suba as imagens de fundo já com a sua identidade visual (Canva, Figma, PDF exportado como imagem...), ou importe direto de um arquivo do Figma. O carrossel gerado alterna entre os fundos que você adicionar aqui, na ordem em que aparecem.
         </p>
+
+        {figmaOpen && (
+          <div className="border border-purple-200 bg-purple-50/40 rounded-xl p-3 space-y-3 mb-3">
+            <div className="flex gap-2">
+              <input
+                value={figmaFileInput}
+                onChange={(e) => setFigmaFileInput(e.target.value)}
+                placeholder="Cole o link do arquivo do Figma (figma.com/design/...)"
+                className="input flex-1 text-xs"
+              />
+              <button
+                onClick={handleFigmaSearch}
+                disabled={figmaLoading || !figmaFileInput.trim()}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-700 bg-white border border-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-all disabled:opacity-50 shrink-0"
+              >
+                {figmaLoading ? <><Loader2 size={11} className="animate-spin" /> Buscando...</> : 'Buscar frames'}
+              </button>
+            </div>
+
+            {figmaData && (
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {figmaData.pages.map((page) => {
+                  const allSelected = page.frames.every((f) => selectedNodeIds.has(f.id))
+                  return (
+                    <div key={page.id}>
+                      <button
+                        onClick={() => toggleAllInPage(page)}
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1.5 hover:text-purple-700"
+                      >
+                        {allSelected ? <CheckSquare size={12} className="text-purple-600" /> : <Square size={12} />}
+                        {page.name}
+                      </button>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                        {page.frames.map((frame) => {
+                          const selected = selectedNodeIds.has(frame.id)
+                          return (
+                            <button
+                              key={frame.id}
+                              onClick={() => toggleFrame(frame.id)}
+                              className={`flex items-center gap-1.5 text-left text-[11px] px-2 py-1.5 rounded-lg border transition-all truncate ${
+                                selected ? 'border-purple-300 bg-purple-100 text-purple-800' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                              }`}
+                              title={frame.name}
+                            >
+                              {selected ? <Check size={11} className="shrink-0" /> : <Square size={11} className="shrink-0 text-gray-300" />}
+                              <span className="truncate">{frame.name}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {figmaError && (
+              <p className="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">{figmaError}</p>
+            )}
+
+            {figmaData && (
+              <div className="flex justify-end">
+                <button
+                  onClick={handleFigmaImport}
+                  disabled={!selectedNodeIds.size || figmaImporting}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-purple-600 px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-all disabled:opacity-40"
+                >
+                  {figmaImporting
+                    ? <><Loader2 size={11} className="animate-spin" /> Importando...</>
+                    : `Importar ${selectedNodeIds.size || ''} selecionado(s)`}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {backgrounds.length === 0 ? (
           <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
