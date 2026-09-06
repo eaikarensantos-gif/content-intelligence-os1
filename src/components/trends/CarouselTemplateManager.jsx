@@ -85,6 +85,12 @@ function BackgroundEditor({ bg, onChange, onRemove }) {
         </button>
       </div>
 
+      {bg.layout && (
+        <p className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1">
+          ⚡ Auto layout do Figma detectado — a posição vertical do título/subtítulo é recalculada automaticamente ao gerar, então arrastar a caixa aqui não muda o resultado final (só a largura/cor/alinhamento importam).
+        </p>
+      )}
+
       <div
         ref={containerRef}
         className="relative w-full max-w-[220px] mx-auto aspect-[4/5] rounded-lg overflow-hidden bg-gray-900 select-none"
@@ -185,6 +191,7 @@ function TemplateForm({ template, onSave, onCancel }) {
       headline: overrides.headline || { ...DEFAULT_HEADLINE_ZONE },
       subtext: overrides.subtext || { ...DEFAULT_SUBTEXT_ZONE },
       ...(overrides.maskColor ? { maskColor: overrides.maskColor } : {}),
+      ...(overrides.layout ? { layout: overrides.layout } : {}),
     }])
 
   const handleUpload = async (file) => {
@@ -275,6 +282,7 @@ function TemplateForm({ template, onSave, onCancel }) {
           headline: img.headline || null,
           subtext: img.subtext || null,
           maskColor: img.backgroundColor || null,
+          layout: img.layout || null,
         })
       }
       setFigmaOpen(false)

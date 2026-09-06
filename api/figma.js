@@ -38,26 +38,36 @@ function figmaColorToCss({ r, g, b, a = 1 }) {
   return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${a})`
 }
 
+function extractTextLayer(node, frameBox) {
+  const box = node.absoluteBoundingBox
+  const fill = solidFill(node.fills)
+  return {
+    fontSize: node.style?.fontSize || 24,
+    align: node.style?.textAlignHorizontal === 'CENTER' ? 'center' : 'left',
+    color: fill ? figmaColorToCss(fill.color) : '#1a1a1a',
+    xPct: ((box.x - frameBox.x) / frameBox.width) * 100,
+    yPct: ((box.y - frameBox.y) / frameBox.height) * 100,
+    wPct: (box.width / frameBox.width) * 100,
+    hPct: (box.height / frameBox.height) * 100,
+  }
+}
+
 function collectTextLayers(node, frameBox, out) {
   if (node.type === 'TEXT' && node.visible !== false && node.absoluteBoundingBox && node.characters?.trim()) {
-    const box = node.absoluteBoundingBox
-    const fill = solidFill(node.fills)
-    out.push({
-      fontSize: node.style?.fontSize || 24,
-      align: node.style?.textAlignHorizontal === 'CENTER' ? 'center' : 'left',
-      color: fill ? figmaColorToCss(fill.color) : '#1a1a1a',
-      xPct: ((box.x - frameBox.x) / frameBox.width) * 100,
-      yPct: ((box.y - frameBox.y) / frameBox.height) * 100,
-      wPct: (box.width / frameBox.width) * 100,
-      hPct: (box.height / frameBox.height) * 100,
-    })
+    out.push(extractTextLayer(node, frameBox))
   }
   for (const child of node.children || []) collectTextLayers(child, frameBox, out)
 }
 
+function pctFromPx(px, total) {
+  return total ? (px / total) * 100 : 0
+}
+
 // Devolve, por frame: a cor de fundo do próprio frame (pra "apagar" o texto
-// placeholder original antes de escrever o texto gerado por cima) e as 2
-// camadas de texto de maior fonte, viradas zona de título/subtítulo.
+// placeholder original antes de escrever o texto gerado por cima), as 2
+// camadas de texto de maior fonte (título/subtítulo), e — se o frame usa
+// Auto Layout no Figma — o espaçamento/padding/alinhamento dele, pra permitir
+// empilhar os textos dinamicamente em vez de usar posição fixa.
 async function fetchFrameDetails(figmaToken, fileKey, nodeIds) {
   const data = await figmaFetch(`/files/${fileKey}/nodes?ids=${nodeIds.map(encodeURIComponent).join(',')}`, figmaToken)
   const details = {}
@@ -66,18 +76,44 @@ async function fetchFrameDetails(figmaToken, fileKey, nodeIds) {
     if (!doc?.absoluteBoundingBox) continue
     const frameBox = doc.absoluteBoundingBox
     const bgFill = solidFill(doc.fills)
-    const textLayers = []
-    collectTextLayers(doc, frameBox, textLayers)
-    textLayers.sort((a, b) => b.fontSize - a.fontSize)
+
+    let layout = null
+    let headline = null
+    let subtext = null
+
+    if (doc.layoutMode && doc.layoutMode !== 'NONE') {
+      // Auto Layout: os filhos diretos de texto já vêm na ordem de empilhamento
+      // do próprio Figma — a posição Y deles será recalculada no render, não
+      // usamos a Y original aqui.
+      const stackChildren = (doc.children || [])
+        .filter((c) => c.type === 'TEXT' && c.visible !== false && c.characters?.trim())
+        .map((c) => extractTextLayer(c, frameBox))
+      layout = {
+        mode: doc.layoutMode,
+        itemSpacingPct: pctFromPx(doc.itemSpacing || 0, frameBox.height),
+        paddingTopPct: pctFromPx(doc.paddingTop || 0, frameBox.height),
+        paddingBottomPct: pctFromPx(doc.paddingBottom || 0, frameBox.height),
+        primaryAlign: doc.primaryAxisAlignItems || 'MIN',
+      }
+      headline = stackChildren[0] || null
+      subtext = stackChildren[1] || null
+    } else {
+      const textLayers = []
+      collectTextLayers(doc, frameBox, textLayers)
+      textLayers.sort((a, b) => b.fontSize - a.fontSize)
+      headline = textLayers[0] || null
+      subtext = textLayers[1] || null
+    }
 
     const toZone = (layer) => layer && {
       xPct: layer.xPct, yPct: layer.yPct, wPct: layer.wPct, hPct: layer.hPct,
-      color: layer.color, align: layer.align,
+      color: layer.color, align: layer.align, fontSize: layer.fontSize,
     }
     details[nodeId] = {
       backgroundColor: bgFill ? figmaColorToCss(bgFill.color) : null,
-      headline: toZone(textLayers[0]) || null,
-      subtext: toZone(textLayers[1]) || null,
+      headline: toZone(headline) || null,
+      subtext: toZone(subtext) || null,
+      layout,
     }
   }
   return details
@@ -133,6 +169,7 @@ async function renderFrames(figmaToken, fileKeyInput, nodeIds) {
       headline: details.headline || null,
       subtext: details.subtext || null,
       backgroundColor: details.backgroundColor || null,
+      layout: details.layout || null,
     })
   }
   return { images }
