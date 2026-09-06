@@ -142,23 +142,18 @@ export default function SupabaseSettings() {
       alert('A chave da OpenAI parece inválida. Ela deve começar com sk-.')
       return
     }
+    // Salvar nunca apaga uma chave já configurada — um campo vazio aqui só
+    // significa "não mexer nessa chave agora", nunca "remover". Se precisar
+    // remover uma chave de propósito, isso é uma ação separada, explícita.
     if (normalizedOpenaiKey) localStorage.setItem(LS_OPENAI, normalizedOpenaiKey)
-    else localStorage.removeItem(LS_OPENAI)
-    localStorage.setItem(LS_GROQ, groqKey.trim())
+    if (groqKey.trim()) localStorage.setItem(LS_GROQ, groqKey.trim())
     if (youtubeKey.trim()) localStorage.setItem(LS_YOUTUBE, youtubeKey.trim())
-    else localStorage.removeItem(LS_YOUTUBE)
     if (vimeoToken.trim()) localStorage.setItem(LS_VIMEO, vimeoToken.trim())
-    else localStorage.removeItem(LS_VIMEO)
     if (rapidApiKey.trim()) localStorage.setItem(LS_RAPIDAPI, rapidApiKey.trim())
-    else localStorage.removeItem(LS_RAPIDAPI)
     if (rapidHost.trim()) localStorage.setItem(LS_RAPIDAPI_HOST, rapidHost.trim())
-    else localStorage.removeItem(LS_RAPIDAPI_HOST)
     if (apifyToken.trim()) localStorage.setItem(LS_APIFY, apifyToken.trim())
-    else localStorage.removeItem(LS_APIFY)
     if (apifyActor.trim()) localStorage.setItem(LS_APIFY_ACTOR, apifyActor.trim())
-    else localStorage.removeItem(LS_APIFY_ACTOR)
     if (figmaToken.trim()) localStorage.setItem(LS_FIGMA, figmaToken.trim())
-    else localStorage.removeItem(LS_FIGMA)
 
     // Sync to AI store so Video Swipe / Vídeos Virais reagem na hora (sem reload)
     useAIStore.getState().setYoutubeApiKey(youtubeKey.trim())

@@ -7,9 +7,11 @@ export const getGoogleClientId = () => localStorage.getItem(LS_CLIENT_ID) || ''
 export const getGoogleClientSecret = () => localStorage.getItem(LS_CLIENT_SECRET) || ''
 export const getGoogleCalendarRedirectUri = () => `${window.location.origin}/google-calendar-callback`
 
+// Um campo vazio aqui só significa "não mexer nessa credencial agora" —
+// nunca apaga uma credencial já salva.
 export function saveGoogleCredentials(clientId, clientSecret) {
-  if (clientId?.trim()) localStorage.setItem(LS_CLIENT_ID, clientId.trim()); else localStorage.removeItem(LS_CLIENT_ID)
-  if (clientSecret?.trim()) localStorage.setItem(LS_CLIENT_SECRET, clientSecret.trim()); else localStorage.removeItem(LS_CLIENT_SECRET)
+  if (clientId?.trim()) localStorage.setItem(LS_CLIENT_ID, clientId.trim())
+  if (clientSecret?.trim()) localStorage.setItem(LS_CLIENT_SECRET, clientSecret.trim())
 }
 
 export function getGoogleConnection() {
