@@ -23,7 +23,7 @@ function extractFileKey(input) {
   return trimmed // já era o file key
 }
 
-const FRAME_TYPES = new Set(['FRAME', 'COMPONENT', 'COMPONENT_SET', 'SECTION'])
+const FRAME_TYPES = new Set(['FRAME', 'COMPONENT', 'COMPONENT_SET'])
 
 // ─── Leitura das camadas de texto reais do frame (posição, fonte, cor) ───────
 // Em vez de inventar 2 zonas genéricas, lemos a estrutura real do Figma —
@@ -119,24 +119,45 @@ async function fetchFrameDetails(figmaToken, fileKey, nodeIds) {
   return details
 }
 
+function toFrameOption(node) {
+  return {
+    id: node.id,
+    name: node.name,
+    width: Math.round(node.absoluteBoundingBox?.width || 0),
+    height: Math.round(node.absoluteBoundingBox?.height || 0),
+  }
+}
+
+// Sections são só agrupadores organizacionais no Figma (comum pra separar
+// "biblioteca de templates" em blocos) — não são um template em si. Se
+// listássemos a Section como se fosse 1 frame, selecioná-la renderizaria
+// TODOS os templates de dentro achatados numa imagem só. Por isso entramos
+// um nível dentro de cada Section e listamos os frames reais de dentro dela.
+function extractFrameOptions(nodes) {
+  const out = []
+  for (const node of nodes || []) {
+    if (node.type === 'SECTION') {
+      out.push(...extractFrameOptions(node.children))
+    } else if (FRAME_TYPES.has(node.type)) {
+      out.push(toFrameOption(node))
+    }
+  }
+  return out
+}
+
 async function listFrames(figmaToken, fileKeyInput) {
   const fileKey = extractFileKey(fileKeyInput)
   if (!fileKey) throw new Error('Link ou file key do Figma inválido.')
 
-  const data = await figmaFetch(`/files/${fileKey}?depth=2`, figmaToken)
+  // depth=3 (em vez de 2) pra garantir que os filhos de uma Section venham
+  // populados — depth=2 só traz os filhos diretos da página.
+  const data = await figmaFetch(`/files/${fileKey}?depth=3`, figmaToken)
   const pages = (data.document?.children || [])
     .filter((page) => page.type === 'CANVAS')
     .map((page) => ({
       id: page.id,
       name: page.name,
-      frames: (page.children || [])
-        .filter((node) => FRAME_TYPES.has(node.type))
-        .map((node) => ({
-          id: node.id,
-          name: node.name,
-          width: Math.round(node.absoluteBoundingBox?.width || 0),
-          height: Math.round(node.absoluteBoundingBox?.height || 0),
-        })),
+      frames: extractFrameOptions(page.children),
     }))
     .filter((page) => page.frames.length > 0)
 
