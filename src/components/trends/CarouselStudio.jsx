@@ -310,12 +310,76 @@ function drawImageCover(ctx, img, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
 }
 
-function drawZoneText(ctx, zone, text, fontSize, weight) {
+function computeHeadlineFontSize(headline) {
+  const len = (headline || '').length
+  return len > 80 ? 52 : len > 50 ? 60 : 72
+}
+
+function measureWrappedText(ctx, text, fontSize, weight, wPx) {
+  ctx.font = `${weight} ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
+  const lines = wrapText(ctx, text, wPx, fontSize)
+  return { lines, height: lines.length * fontSize * 1.25 }
+}
+
+// Título + subtítulo empilhados dinamicamente, imitando o Auto Layout do
+// Figma: a posição Y de cada um é recalculada a partir da altura real do
+// texto gerado (que raramente tem o mesmo tamanho do texto placeholder),
+// em vez de usar a posição fixa capturada no design original.
+function drawStackedZones(ctx, bg, slide) {
+  const layout = bg.layout
+  const entries = [
+    { zone: bg.headline, text: slide.headline || '', weight: 'bold', fontSize: computeHeadlineFontSize(slide.headline) },
+    { zone: bg.subtext, text: slide.subtext || '', weight: '500', fontSize: 32 },
+  ].filter((e) => e.zone && e.text.trim())
+  if (!entries.length) return
+
+  const measured = entries.map((e) => {
+    const w = (e.zone.wPct / 100) * SLIDE_W
+    const { lines, height } = measureWrappedText(ctx, e.text, e.fontSize, e.weight, w)
+    return { ...e, w, lines, height }
+  })
+
+  const spacingPx = ((layout.itemSpacingPct || 0) / 100) * SLIDE_H
+  const totalHeight = measured.reduce((sum, m) => sum + m.height, 0) + spacingPx * (measured.length - 1)
+  const topPx = ((layout.paddingTopPct || 0) / 100) * SLIDE_H
+  const bottomPx = SLIDE_H - ((layout.paddingBottomPct || 0) / 100) * SLIDE_H
+  const available = Math.max(bottomPx - topPx, 0)
+
+  let cursorY = topPx
+  if (layout.primaryAlign === 'CENTER') cursorY = topPx + Math.max(available - totalHeight, 0) / 2
+  else if (layout.primaryAlign === 'MAX') cursorY = topPx + Math.max(available - totalHeight, 0)
+
+  for (const m of measured) {
+    const x = (m.zone.xPct / 100) * SLIDE_W
+    if (bg.maskColor) {
+      ctx.fillStyle = bg.maskColor
+      ctx.fillRect(x - 6, cursorY - 6, m.w + 12, m.height + 12)
+    }
+    ctx.font = `${m.weight} ${m.fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
+    ctx.fillStyle = m.zone.color || '#1a1a1a'
+    const align = m.zone.align === 'center' ? 'center' : 'left'
+    ctx.textAlign = align
+    const startX = align === 'center' ? x + m.w / 2 : x
+    m.lines.forEach((line, i) => ctx.fillText(line, startX, cursorY + m.fontSize + i * m.fontSize * 1.25))
+    cursorY += m.height + spacingPx
+  }
+}
+
+function drawZoneText(ctx, zone, text, fontSize, weight, maskColor) {
   if (!zone || !text?.trim()) return
   const x = (zone.xPct / 100) * SLIDE_W
   const y = (zone.yPct / 100) * SLIDE_H
   const w = (zone.wPct / 100) * SLIDE_W
+  const h = (zone.hPct / 100) * SLIDE_H
   const align = zone.align === 'center' ? 'center' : 'left'
+
+  // Template importado do Figma: a imagem de fundo já traz o texto original
+  // (placeholder) desenhado. Cobrimos essa área com a cor de fundo do próprio
+  // frame antes de escrever o texto gerado, senão os dois ficam sobrepostos.
+  if (maskColor) {
+    ctx.fillStyle = maskColor
+    ctx.fillRect(x - 6, y - 6, w + 12, h + 12)
+  }
 
   ctx.font = `${weight} ${fontSize}px "Inter", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif`
   const lines = wrapText(ctx, text, w, fontSize)
@@ -350,10 +414,14 @@ async function renderSlideToCanvasWithTemplate(canvas, slide, index, total, temp
   ctx.fillText(`${index + 1}/${total}`, SLIDE_W - 115, 69)
   ctx.restore()
 
-  const headline = slide.headline || ''
-  const fontSize = headline.length > 80 ? 52 : headline.length > 50 ? 60 : 72
-  drawZoneText(ctx, bg.headline, headline, fontSize, 'bold')
-  drawZoneText(ctx, bg.subtext, slide.subtext, 32, '500')
+  if (bg.layout) {
+    drawStackedZones(ctx, bg, slide)
+  } else {
+    const headline = slide.headline || ''
+    const fontSize = computeHeadlineFontSize(headline)
+    drawZoneText(ctx, bg.headline, headline, fontSize, 'bold', bg.maskColor)
+    drawZoneText(ctx, bg.subtext, slide.subtext, 32, '500', bg.maskColor)
+  }
 
   return canvas
 }

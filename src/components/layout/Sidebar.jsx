@@ -5,6 +5,7 @@ import {
   Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
   ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin,
+  Layers,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -21,6 +22,7 @@ const NAV_GROUPS = [
     label: 'Studio de Criação',
     children: [
       { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
+      { to: '/carousel', icon: Layers, label: 'Carousel Studio' },
       { to: '/pdf-studio', icon: FileText, label: 'Conteúdo de PDF' },
       { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
       { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
@@ -168,7 +170,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   // Shared NavLink renderer
   const renderNavItem = ({ to, icon: Icon, label }, indent = false) => {
-    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation', '/carousel']
+    const createSubRoutes = ['/create', '/thoughts', '/generate', '/text', '/presentation']
     const isCreateGroup = to === '/create'
     const forceActive = isCreateGroup && createSubRoutes.includes(location.pathname)
     const isPinned = pinnedPages.includes(to)

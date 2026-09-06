@@ -27,14 +27,14 @@ const TITLES = {
   '/community': { title: 'Community Studio', sub: 'Engajamento e recursos para a sua comunidade' },
   '/clipper': { title: 'Web Clipper', sub: 'Salve referências da web no seu segundo cérebro' },
   '/pdf-studio': { title: 'PDF Studio', sub: 'Gere conteúdo estruturado a partir de PDFs' },
-  '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
+  '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },
   '/generate': { title: 'Gerador de Ideias', sub: 'Ideias autênticas com estrutura narrativa e controle criativo', parent: '/create' },
   '/presentation': { title: 'Modo Apresentação', sub: 'Transforme ideias em talks com roteiro em linguagem falada', parent: '/create' },
 }
 
-const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])
+const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation'])
 
 export default function Header({ onMenuClick, onSearchClick }) {
   const { pathname } = useLocation()
