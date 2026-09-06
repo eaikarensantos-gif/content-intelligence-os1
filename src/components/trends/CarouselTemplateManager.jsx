@@ -93,6 +93,7 @@ function BackgroundEditor({ bg, onChange, onRemove }) {
           alt="Fundo do template"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           draggable={false}
+          crossOrigin="anonymous"
         />
         <ZoneBox label="Título" zone={bg.headline} onChange={(u) => updateZone('headline', u)} containerRef={containerRef} />
         <ZoneBox label="Subtexto" zone={bg.subtext} onChange={(u) => updateZone('subtext', u)} containerRef={containerRef} />
@@ -330,7 +331,7 @@ export default function CarouselTemplateManager({ onClose }) {
                     <div key={t.id} className="border border-gray-200 rounded-xl overflow-hidden group">
                       <div className="aspect-[4/5] bg-gray-100 relative">
                         {t.backgrounds?.[0]?.imageUrl && (
-                          <img src={t.backgrounds[0].imageUrl} alt={t.name} className="w-full h-full object-cover" />
+                          <img src={t.backgrounds[0].imageUrl} alt={t.name} className="w-full h-full object-cover" crossOrigin="anonymous" />
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                           <button
