@@ -12,6 +12,7 @@ import {
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import CarouselTemplateManager from './CarouselTemplateManager'
+import FigmaCarouselPanel from './FigmaCarouselPanel'
 
 const LS_KEY = 'cio-openai-key'
 
@@ -1217,6 +1218,8 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
             </button>
           </div>
         </div>
+
+        <FigmaCarouselPanel result={result} />
 
         {/* Generated images gallery */}
         {slideImages.length > 0 && (
