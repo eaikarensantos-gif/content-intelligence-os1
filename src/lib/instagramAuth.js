@@ -15,9 +15,11 @@ const SCOPES = 'instagram_business_basic,instagram_business_manage_insights,inst
 export function getAppId()     { return localStorage.getItem(LS_APP_ID) || '' }
 export function getAppSecret() { return localStorage.getItem(LS_APP_SECRET) || '' }
 
+// Um campo vazio aqui só significa "não mexer nessa credencial agora" —
+// nunca apaga uma credencial já salva.
 export function saveCredentials(appId, appSecret) {
-  if (appId?.trim())     localStorage.setItem(LS_APP_ID, appId.trim());     else localStorage.removeItem(LS_APP_ID)
-  if (appSecret?.trim()) localStorage.setItem(LS_APP_SECRET, appSecret.trim()); else localStorage.removeItem(LS_APP_SECRET)
+  if (appId?.trim())     localStorage.setItem(LS_APP_ID, appId.trim())
+  if (appSecret?.trim()) localStorage.setItem(LS_APP_SECRET, appSecret.trim())
 }
 
 export function getRedirectUri() {
