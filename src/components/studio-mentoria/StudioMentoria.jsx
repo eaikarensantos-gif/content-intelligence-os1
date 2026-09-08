@@ -6,8 +6,22 @@ import {
   validarGates,
   FORMATOS,
 } from '../../data/studioMentoriaPrompt';
-import useAIStore from '../../store/useAIStore';
-import { callAI } from '../../lib/aiService';
+import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson';
+
+const LS_KEY = 'cio-openai-key';
+
+async function callAI(apiKey, body) {
+  const res = await fetch('/api/ai?action=openai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erro na API: ${res.status}`);
+  }
+  return res.json();
+}
 
 /**
  * Studio Mentoria
@@ -22,14 +36,6 @@ import { callAI } from '../../lib/aiService';
  */
 
 const FORMATO_LABEL = { contagem: 'Contagem', cpf: 'CPF', react: 'React' };
-
-function parseJSON(text) {
-  const cleaned = String(text)
-    .replace(/^```(?:json)?\s*/im, '')
-    .replace(/\s*```\s*$/im, '')
-    .trim();
-  return JSON.parse(cleaned);
-}
 
 function Badge({ children, tone = 'neutro' }) {
   const tones = {
@@ -53,8 +59,6 @@ function temaCompleto(t) {
 }
 
 export default function StudioMentoria() {
-  const isAIConfigured = useAIStore((s) => s.isConfigured());
-
   const [pilar, setPilar] = useState('todos');
   const [somentePendentes, setSomentePendentes] = useState(false);
   const [selecionado, setSelecionado] = useState(null);
@@ -76,7 +80,8 @@ export default function StudioMentoria() {
     setErro(null);
     setSaida(null);
     try {
-      if (!isAIConfigured) {
+      const apiKey = localStorage.getItem(LS_KEY) || '';
+      if (!apiKey) {
         throw new Error('Nenhuma chave de API configurada. Vá em Configurações para adicionar.');
       }
       const prompt = buildStudioMentoriaPrompt({
@@ -84,13 +89,15 @@ export default function StudioMentoria() {
         formato: tema.formato || 'contagem',
         extra: instrucaoExtra,
       });
-      const messages = [
-        { role: 'system', content: 'Responda APENAS com JSON válido, sem explicações, sem markdown.' },
-        { role: 'user', content: prompt },
-      ];
-      const aiSettings = useAIStore.getState().getSettings();
-      const text = await callAI(aiSettings, messages, { temperature: 0.8, maxTokens: 3000 });
-      const parsed = parseJSON(text);
+      const res = await callAI(apiKey, {
+        model: 'gpt-5.6-terra',
+        max_tokens: 3000,
+        system: 'Responda APENAS com JSON válido, sem explicações, sem markdown. Comece com { e termine com }.',
+        messages: [{ role: 'user', content: prompt }],
+      });
+      assertNotTruncated(res);
+      const text = res.content?.find(b => b.type === 'text')?.text || '';
+      const parsed = extractJsonObject(text, 'A IA não retornou um rascunho válido.');
 
       // Segunda barreira: a IA pode escorregar, o linter não.
       const textoInteiro = JSON.stringify(parsed.slides || {}) + ' ' + (parsed.legenda || '');
