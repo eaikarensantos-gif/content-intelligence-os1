@@ -53,7 +53,6 @@ function temaCompleto(t) {
 }
 
 export default function StudioMentoria() {
-  const aiSettings = useAIStore((s) => s.getSettings());
   const isAIConfigured = useAIStore((s) => s.isConfigured());
 
   const [pilar, setPilar] = useState('todos');
@@ -89,6 +88,7 @@ export default function StudioMentoria() {
         { role: 'system', content: 'Responda APENAS com JSON válido, sem explicações, sem markdown.' },
         { role: 'user', content: prompt },
       ];
+      const aiSettings = useAIStore.getState().getSettings();
       const text = await callAI(aiSettings, messages, { temperature: 0.8, maxTokens: 3000 });
       const parsed = parseJSON(text);
 
