@@ -41,7 +41,6 @@ const WebClipper = lazy(() => import('./components/clipper/WebClipper'))
 const NewsGenerator = lazy(() => import('./components/news/NewsGenerator'))
 const PDFContentGenerator = lazy(() => import('./components/pdf/PDFContentGenerator'))
 const CommunityStudio = lazy(() => import('./components/community/CommunityStudio'))
-const StudioMentoria = lazy(() => import('./components/studio-mentoria/StudioMentoria'))
 
 // As antigas rotas soltas (/thoughts, /generate, /text, /briefing) agora vivem
 // como abas dentro do Studio de Criação — isso preserva links e favoritos
@@ -171,7 +170,6 @@ export default function App() {
             <Route path="/community" element={<CommunityStudio />} />
             <Route path="/swipe" element={<VideoSwipe />} />
             <Route path="/desafio" element={<DesafioSorteador />} />
-            <Route path="/studio-mentoria" element={<StudioMentoria />} />
             {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
