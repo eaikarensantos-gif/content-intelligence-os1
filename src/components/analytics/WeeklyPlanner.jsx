@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   Sparkles, Loader2, Calendar, TrendingUp, Zap, AlertCircle,
-  ChevronRight, Trophy, Lightbulb, Target, Key, Check,
+  ChevronRight, Trophy, Lightbulb, Target, Key, Check, Plus,
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
@@ -14,6 +14,24 @@ function getLastNDays(n) {
   const from = new Date()
   from.setDate(from.getDate() - n)
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
+}
+
+const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+/** Próxima data (YYYY-MM-DD) pro dia da semana sugerido, a partir de hoje — nunca hoje mesmo, sempre a próxima ocorrência. */
+function nextDateForWeekday(dayLabel) {
+  const idx = WEEKDAYS.indexOf(dayLabel)
+  if (idx === -1) return null
+  const today = new Date()
+  let diff = idx - today.getDay()
+  if (diff <= 0) diff += 7
+  const d = new Date(today)
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().slice(0, 10)
+}
+
+const SUGGESTION_FORMAT_MAP = {
+  'reel': 'reel', 'carrossel': 'carrossel', 'stories': 'stories', 'story': 'stories', 'post estático': 'post', 'post': 'post',
 }
 
 function buildPrompt(topPosts, allPosts, period, topHours) {
@@ -128,10 +146,12 @@ const PRIORITY_LABELS = { high: 'Alta', medium: 'Média', low: 'Baixa' }
 
 export default function WeeklyPlanner() {
   const metrics = useStore((s) => s.metrics)
+  const addIdea = useStore((s) => s.addIdea)
   const enriched = metrics.map(enrichMetric)
 
   const [period, setPeriod] = useState(28) // número de dias, ou 'all' pra todo o histórico
   const [plan, setPlan] = useState(null)
+  const [savedSuggestions, setSavedSuggestions] = useState(new Set())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('cio-openai-key') || '')
@@ -171,6 +191,7 @@ export default function WeeklyPlanner() {
     setLoading(true)
     setError(null)
     setPlan(null)
+    setSavedSuggestions(new Set())
 
     try {
       if (!apiKey) throw new Error('Configure sua API key clicando no ícone de chave.')
@@ -213,6 +234,23 @@ export default function WeeklyPlanner() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSaveSuggestion = (s, idx) => {
+    addIdea({
+      title: s.title,
+      topic: s.theme,
+      format: SUGGESTION_FORMAT_MAP[(s.format || '').toLowerCase()] || (s.format || '').toLowerCase(),
+      platform: 'instagram',
+      priority: s.priority || 'medium',
+      status: 'idea',
+      scheduled_date: nextDateForWeekday(s.day),
+      editorial_function: s.editorial_function || null,
+      description: [s.objetivo && `Objetivo: ${s.objetivo}`, s.duracao && `Duração: ${s.duracao}`, s.why && `Por quê: ${s.why}`]
+        .filter(Boolean).join('\n\n'),
+      tags: ['planejador-semanal'],
+    })
+    setSavedSuggestions((prev) => new Set(prev).add(idx))
   }
 
   return (
@@ -380,8 +418,19 @@ export default function WeeklyPlanner() {
                       {s.day}
                       {s.time && <div className="text-pink-600">{s.time}</div>}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <div className="flex-1 min-w-0 relative">
+                      <button
+                        onClick={() => handleSaveSuggestion(s, idx)}
+                        disabled={savedSuggestions.has(idx)}
+                        className={`absolute top-0 right-0 text-[11px] font-medium flex items-center gap-1 px-2.5 py-1 rounded-lg transition-colors ${
+                          savedSuggestions.has(idx)
+                            ? 'text-emerald-600 bg-emerald-50 cursor-default'
+                            : 'text-orange-600 hover:bg-orange-100'
+                        }`}
+                      >
+                        {savedSuggestions.has(idx) ? <><Check size={11} /> Salvo no Hub</> : <><Plus size={11} /> Salvar no Hub</>}
+                      </button>
+                      <div className="flex items-center gap-2 flex-wrap mb-1 pr-24">
                         <h4 className="text-sm font-semibold text-gray-900">{s.title}</h4>
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200">{s.format}</span>
                         {s.editorial_function && (
