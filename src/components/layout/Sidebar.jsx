@@ -5,6 +5,7 @@ import {
   Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
   ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin,
+  GraduationCap,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -25,6 +26,7 @@ const NAV_GROUPS = [
       { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
       { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
       { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
+      { to: '/studio-mentoria', icon: GraduationCap, label: 'Studio Mentoria' },
       { to: '/create', icon: PenTool, label: 'Studio de Criação' },
       { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
       { to: '/swipe', icon: Flame, label: 'Video Swipe' },
