@@ -19,6 +19,7 @@ import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson'
 import { CDN, LS_KEY, LS_KEY_GROQ, TABS, MY_VIDEO_TABS, TYPE_OPTIONS, ARCHETYPE_COLORS, ARCHETYPE_LABELS } from './constants'
 import { GroqKeyModal, ApiKeyModal, ScriptModal } from './modals'
 import CommentAnalyzer from './CommentAnalyzer'
+import { IMPROVED_SCRIPT_SYSTEM, generateCompleteScript } from '../../utils/improvedScript'
 
 
 // ── YouTube oEmbed ────────────────────────────────────────────────────────────
@@ -202,7 +203,7 @@ async function transcribeLargeFile(groqKey, videoFile, lang = 'pt', onStatus) {
 }
 
 // ── Claude API — supports image frames via Vision ─────────────────────────────
-async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000) {
+async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000, systemPrompt = null) {
   const content = frames.length > 0
     ? [
         { type: 'text', text: prompt },
@@ -225,7 +226,7 @@ async function callClaudeAPI(apiKey, prompt, frames = [], maxTokens = 8000) {
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: maxTokens,
-      system: 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown. STRICT RULE: When given a real transcript, every quote in hook.text, promise.text, cta.text, patterns[].example, retention[].example must be an EXACT verbatim quote from that transcript — never paraphrase, never invent. When given video frames, describe only what you actually see in the images. NEVER fabricate quotes, invented sentences, or fictional examples. If a field requires a quote and you cannot find one in the data, use null. Your response must start with { and end with } and be parseable by JSON.parse().',
+      system: systemPrompt || 'You are a video content analysis API for content creators. You ALWAYS respond with a valid JSON object only — no text before, no text after, no markdown. STRICT RULE: When given a real transcript, every quote in hook.text, promise.text, cta.text, patterns[].example, retention[].example must be an EXACT verbatim quote from that transcript — never paraphrase, never invent. When given video frames, describe only what you actually see in the images. NEVER fabricate quotes, invented sentences, or fictional examples. If a field requires a quote and you cannot find one in the data, use null. Your response must start with { and end with } and be parseable by JSON.parse().',
       messages: [{ role: 'user', content }],
     }),
   })
@@ -865,6 +866,7 @@ export default function VideoAnalyzer() {
   const handleGenerateImproved = async () => {
     if (!analysis || !apiKey) return
     setGeneratingImproved(true)
+    setError('')
     setImprovedScript(null)
     try {
       const fb = analysis
@@ -934,8 +936,8 @@ Responda APENAS com este JSON:
   "what_changed": ["Mudança 1 aplicada", "Mudança 2 aplicada", "Mudança 3 aplicada"]
 }`
 
-      const raw = await callClaudeAPI(apiKey, prompt)
-      setImprovedScript(extractJsonObject(raw, 'A IA não retornou um roteiro estruturado.'))
+      const script = await generateCompleteScript((request) => callClaudeAPI(apiKey, request, [], 8000, IMPROVED_SCRIPT_SYSTEM), prompt)
+      setImprovedScript(script)
     } catch (e) {
       setError(e.message)
     } finally {
