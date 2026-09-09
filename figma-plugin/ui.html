@@ -1,0 +1,17 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8">
+<style>body{font:14px system-ui;margin:24px;color:#242424}button{background:#b94700;color:white;border:0;padding:12px;border-radius:8px;cursor:pointer}button:disabled{opacity:.5}textarea{width:100%;height:120px;box-sizing:border-box;margin:12px 0}a{display:block;margin:12px 0;color:#963e00}img{width:100%;border-radius:8px}#status{white-space:pre-wrap;line-height:1.5}p{line-height:1.5}</style>
+<h2>Content Carousel</h2><p>Abra a biblioteca original. Importe o roteiro baixado do Content ou cole seu conteúdo abaixo. Os componentes originais serão preservados.</p>
+<input aria-label="Arquivo de roteiro" id="file" type="file" accept=".json,application/json"><textarea aria-label="Roteiro JSON" id="job" placeholder="Cole o roteiro JSON"></textarea>
+<button id="run">Montar e validar no Figma</button><p id="status" role="status"></p><div id="images"></div>
+<script>
+const job=document.getElementById('job'), run=document.getElementById('run'), status=document.getElementById('status'), images=document.getElementById('images');
+const urls=[];
+document.getElementById('file').onchange=async e=>{if(e.target.files[0]) job.value=await e.target.files[0].text()};
+run.onclick=()=>{try{const data=JSON.parse(job.value);run.disabled=true;status.textContent='Carregando fontes e montando…';images.replaceChildren();urls.splice(0).forEach(URL.revokeObjectURL);parent.postMessage({pluginMessage:{type:'assemble',job:data}},'*')}catch(e){status.textContent='JSON inválido: '+e.message}};
+window.onmessage=e=>{const m=e.data.pluginMessage;if(!m)return;
+if(m.type==='report')status.textContent=m.report.issues.length?'Instâncias criadas para revisão. Exportação bloqueada:\n'+m.report.issues.map(i=>'Slide '+i.slide+' · '+i.field+': '+i.message).join('\n'):'Montagem validada. Preparando PNGs…';
+if(m.type==='error')status.textContent=m.message;
+if(m.type==='done'){run.disabled=false;if(status.textContent==='Montagem validada. Preparando PNGs…')status.textContent='Concluído. As instâncias continuam editáveis no Figma.'}
+if(m.type==='image'){const url=URL.createObjectURL(new Blob([m.bytes],{type:'image/png'}));urls.push(url);const a=document.createElement('a');a.href=url;a.download='slide-'+String(m.index+1).padStart(2,'0')+'.png';a.textContent='Baixar slide '+(m.index+1);const img=document.createElement('img');img.src=url;images.append(img,a)}
+};
+</script></html>

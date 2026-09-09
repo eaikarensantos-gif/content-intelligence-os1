@@ -1,355 +1,152 @@
-import { useState, useMemo, useCallback } from "react";
-import { Dices, Lock, Unlock, RefreshCw, Copy, Check, Trash2, Zap } from "lucide-react";
-import useStore from "../../store/useStore";
-import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from "../../data/temasCarrossel";
+import { useMemo, useState } from 'react'
+import { CalendarDays, Check, Clipboard, Copy, ListChecks } from 'lucide-react'
+import useStore from '../../store/useStore'
 
-/* ============================================================
-   DESAFIO DE FORMATO — Content Intelligence OS
-   Sorteia: subtema (ponderado por pilar) + formato + restrição.
-   Regras:
-   - Nunca repete a mesma combinação subtema+formato.
-   - Mantém um eixo do sorteio anterior e troca o outro (alternando).
-   - A cada 3 sorteios, força combinação fora da zona:
-     formato de vídeo com pilar que não seja de IA.
-   - Eixos podem ser travados individualmente antes de re-sortear.
-   PILARES: derivados do Banco de Temas compartilhado (temasCarrossel.js)
-   em vez de uma lista própria — mesma fonte usada pelo Protocolo de
-   Carrossel e pelo Captura de Pensamento, pra não divergir com o tempo.
-   PERSISTÊNCIA: o histórico vive no store global (zustand + persist),
-   junto com o restante dos dados do Content OS.
-   ============================================================ */
+const EMPTY_DRAFT = {
+  perguntaContagem: '', conta: '', naoConta: '', faixaBaixa: '', faixaMedia: '',
+  faixaAlta: '', ponte: '', fissura: '', dataPublicacao: '',
+}
 
-// Categorias do Banco de Temas cujo assunto é especificamente IA (usado pra
-// forçar combinações "fora da zona" com pilares não relacionados a IA).
-const CATEGORIAS_IA = new Set([
-  "Desmonte de hype",
-  "IA aplicada para pequenos negócios",
-  "IA para negócios digitais",
-  "IA para negócios físicos",
-  "IA para profissionais criativos",
-  "Temas Polêmicos — IA e mercado de trabalho",
-  "IA no comportamento humano",
-]);
+const COUNT_PATTERN = /\b(quant(?:o|a|os|as)|n[uú]mero|horas?|vezes|clientes?|projetos?|decis(?:ão|ões)|dias?|semanas?|meses?)\b/i
+const BRIDGE_PATTERN = /\b(perfil|bio|link|direct|dm|mensagem|baix|abr|agenda|lista|biblioteca|coment[aá]rio fixado)\b/i
+const csvList = (value) => value.split(',').map((item) => item.trim()).filter(Boolean)
 
-const NAOMI_TEMAS = PERSONAL_TEMAS_SUGESTOES.find((c) => c.categoria === "Vida com Naomi");
+function validateDraft(draft) {
+  const errors = {}
+  if (!COUNT_PATTERN.test(draft.perguntaContagem)) errors.perguntaContagem = 'A capa precisa ser respondível com um número.'
+  if (!csvList(draft.conta).length || !csvList(draft.naoConta).length) errors.regua = 'Defina o que conta e o que não conta.'
+  if (!draft.faixaBaixa.trim() || !draft.faixaMedia.trim() || !draft.faixaAlta.trim()) errors.faixas = 'Preencha as três leituras do resultado.'
+  if (!BRIDGE_PATTERN.test(draft.ponte)) errors.ponte = 'A ponte precisa mandar para uma ação fora do post.'
+  if (!draft.fissura.trim()) errors.fissura = 'Inclua uma fissura real em uma das leituras.'
+  if (!draft.dataPublicacao) errors.dataPublicacao = 'Defina a data de publicação.'
+  return errors
+}
 
-const PILARES = [...TEMAS_CARROSSEL, ...(NAOMI_TEMAS ? [NAOMI_TEMAS] : [])].map((c) => ({
-  id: c.categoria,
-  nome: c.categoria,
-  peso: c.temas.length,
-  ia: CATEGORIAS_IA.has(c.categoria),
-  subtemas: c.temas,
-}));
-
-const FORMATOS = [
-  { id: "car-info", nome: "Carrossel informativo", video: false },
-  { id: "car-story", nome: "Carrossel storytelling", video: false },
-  { id: "car-texto", nome: "Carrossel-texto", video: false },
-  { id: "talking", nome: "Talking head", video: true },
-  { id: "screencast", nome: "Screencast", video: true },
-  { id: "fundoverde", nome: "Fundo verde reagindo", video: true },
-  { id: "foto-legenda", nome: "Foto + legenda longa", video: false },
-  { id: "print", nome: "Print + comentário", video: false },
-  { id: "tbt", nome: "TBT com leitura atual", video: false },
-];
-
-const RESTRICOES = [
-  "Sem hook de pergunta. Abre com dado.",
-  "Máximo 6 slides ou 45 segundos.",
-  "Tem que admitir uma fissura explícita.",
-  "Zero primeira pessoa até a metade.",
-  "Fechar com número, não com frase.",
-  "Formato que você nunca usou com esse pilar.",
-];
-
-const MASTER_PROMPT = `Você escreve conteúdo para Karen Santos. Designer há mais de 10 anos, especialista em IA para negócios. Analítica, técnica, premium/minimalista. Não vende sonhos, vende estrutura e tomada de decisão.
-
-BRIEFING DESTE POST
-Pilar: {{pilar}}
-Subtema: {{subtema}}
-Formato: {{formato}}
-Restrição obrigatória: {{restricao}}
-
-REGRAS DE ESTILO (inegociáveis)
-1. Proibido "não é sobre X, é sobre Y" ou qualquer oposição estilizada. Contraste só com dado ou lógica causal.
-2. Proibido ritmo de sermão: frases curtas picotadas em sequência.
-3. Travessão só para interrupção de pensamento real, nunca para impacto.
-4. Termos proibidos: "braço", "mindset", "propósito", "transformação", "ecossistema" (uso vago).
-5. Vocabulário curto e simples. Se ficou bonito demais, simplifique. Clareza técnica, não poética.
-6. Misture frase longa de explicação técnica com curta de fechamento. Fuja da cadência 1-1-1.
-7. Oralidade real, como áudio para um par sênior: "O ponto é...", "Na prática...", "O que acontece aqui é...".
-8. Fissuras: se o raciocínio não estiver 100% fechado, admita. Fissura é racional e conversacional, nunca drama, metáfora decorativa ou apelo emocional.
-9. Fechamento seco: conclusão prática, dado ou observação. Proibido "Vamos juntos?", "Concorda?" ou frase de efeito.
-
-VALIDAÇÃO FINAL
-Antes de entregar, pergunte: "Esse texto poderia estar num print de posts saturados de IA?" Se sim, reescreva do zero ignorando boas práticas de engajamento.`;
-
-/* ---------- helpers ---------- */
-
-function sorteioPonderado(rng) {
-  const total = PILARES.reduce((s, p) => s + p.peso, 0);
-  let r = rng() * total;
-  for (const p of PILARES) {
-    r -= p.peso;
-    if (r <= 0) return p;
+function toBriefing(draft, ordem) {
+  return {
+    tipo: 'carrossel-contagem', ordem, status: 'fila',
+    perguntaContagem: draft.perguntaContagem.trim(),
+    regua: { conta: csvList(draft.conta), naoConta: csvList(draft.naoConta) },
+    faixas: { baixa: draft.faixaBaixa.trim(), media: draft.faixaMedia.trim(), alta: draft.faixaAlta.trim() },
+    ponte: draft.ponte.trim(), fissura: draft.fissura.trim(),
+    dataPublicacao: draft.dataPublicacao,
+    formato: 'Carrossel de exercício · 7 slides',
+    data: new Date().toLocaleDateString('pt-BR'),
   }
-  return PILARES[0];
 }
 
-function comboKey(subtema, formatoId) {
-  return `${subtema}::${formatoId}`;
+function buildPrompt(item) {
+  return `Crie um carrossel de exercício para Karen Santos usando apenas os dados deste briefing.
+
+BRIEFING
+${JSON.stringify(item, null, 2)}
+
+REGRAS
+- Entregue exatamente 7 slides em JSON.
+- Slide 1: pergunta de contagem, respondível com número.
+- Slide 2: por que a resposta não vem de cabeça, em até duas linhas.
+- Slide 3: régua com o que conta e o que não conta.
+- Slide 4: execução em cinco minutos, usando papel ou notas.
+- Slide 5: leitura da faixa baixa.
+- Slide 6: leitura das faixas média e alta. A fissura entra no slide 5 ou 6, sem dramatização.
+- Slide 7: ponte com ação fora do post. Não use pergunta aberta.
+- Não invente dado, caso ou experiência de Karen.
+- Evite oposição estilizada, ritmo de sermão, travessão dramático e fechamento motivacional.
+
+Responda apenas com este JSON:
+{"capa":"","porQueNinguemSabe":"","regua":{"conta":[],"naoConta":[]},"execucao":"","faixaBaixa":{"leitura":"","fissura":""},"faixaMediaAlta":{"media":"","alta":"","fissura":""},"ponte":""}`
 }
 
-function Eixo({ label, valor, extra, locked, rolling, onToggleLock }) {
+function Field({ label, error, ...props }) {
   return (
-    <div className={`p-4 flex items-start justify-between gap-3 transition-opacity duration-300 ${rolling ? "opacity-30" : ""}`}>
-      <div className="min-w-0">
-        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
-        <p className="text-base font-semibold text-gray-900 mt-1 leading-snug">{valor || "—"}</p>
-        {extra && <p className="text-xs text-gray-400 mt-0.5">{extra}</p>}
-      </div>
-      <button
-        onClick={onToggleLock}
-        title={locked ? "Destravar eixo" : "Travar eixo no próximo sorteio"}
-        className={`shrink-0 flex items-center gap-1 text-[10px] font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
-          locked
-            ? "bg-orange-50 border-orange-200 text-orange-700"
-            : "border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600"
-        }`}
-      >
-        {locked ? <Lock size={11} /> : <Unlock size={11} />} {locked ? "travado" : "travar"}
-      </button>
-    </div>
-  );
-}
-
-function HistItem({ item, index }) {
-  return (
-    <div className="p-3 flex items-start gap-3">
-      <span className="text-[10px] text-gray-300 font-mono mt-0.5 shrink-0">{String(index).padStart(2, "0")}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-800 leading-snug">{item.subtema}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{item.formato} · {item.restricao} · {item.data}</p>
-      </div>
-      {item.foraDaZona && (
-        <span className="chip bg-violet-50 text-violet-600 border border-violet-200 text-[10px] shrink-0">fora da zona</span>
-      )}
-    </div>
-  );
+    <label className="space-y-1.5 block">
+      <span className="text-xs font-semibold text-gray-700">{label}</span>
+      <textarea {...props} className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 ${error ? 'border-red-300' : 'border-gray-200 focus:border-orange-300'}`} />
+      {error && <span className="text-[11px] text-red-600">{error}</span>}
+    </label>
+  )
 }
 
 export default function DesafioSorteador() {
-  // Persistência via store global (zustand + persist + sync Supabase)
-  const history = useStore((s) => s.desafioHistory);
-  const addDesafio = useStore((s) => s.addDesafio);
-  const clearDesafioHistory = useStore((s) => s.clearDesafioHistory);
+  const history = useStore((s) => s.desafioHistory)
+  const addDesafio = useStore((s) => s.addDesafio)
+  const [draft, setDraft] = useState(EMPTY_DRAFT)
+  const [errors, setErrors] = useState({})
+  const [copied, setCopied] = useState(null)
 
-  const [atual, setAtual] = useState(null);
-  const [locks, setLocks] = useState({ subtema: false, formato: false, restricao: false });
-  const [copiado, setCopiado] = useState(false);
-  const [rolling, setRolling] = useState(false);
+  const queue = useMemo(() => history.filter((item) => item.tipo === 'carrossel-contagem'), [history])
+  const complete = queue.length >= 8
+  const update = (field, value) => setDraft((current) => ({ ...current, [field]: value }))
 
-  const usadas = useMemo(
-    () => new Set(history.map((h) => comboKey(h.subtema, h.formatoId))),
-    [history]
-  );
+  const addToQueue = () => {
+    const nextErrors = validateDraft(draft)
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length || complete) return
+    addDesafio(toBriefing(draft, queue.length + 1))
+    setDraft(EMPTY_DRAFT)
+  }
 
-  const foraDaZona = history.length > 0 && (history.length + 1) % 3 === 0;
-
-  const sortear = useCallback(() => {
-    const rng = Math.random;
-    const anterior = history[history.length - 1] || null;
-    let tentativa = 0;
-    let novo = null;
-
-    while (tentativa < 300) {
-      tentativa++;
-
-      // eixo subtema
-      let pilar, subtema;
-      if (locks.subtema && atual) {
-        pilar = PILARES.find((p) => p.nome === atual.pilar);
-        subtema = atual.subtema;
-      } else if (foraDaZona) {
-        const naoIA = PILARES.filter((p) => !p.ia);
-        pilar = naoIA[Math.floor(rng() * naoIA.length)];
-        subtema = pilar.subtemas[Math.floor(rng() * pilar.subtemas.length)];
-      } else {
-        pilar = sorteioPonderado(rng);
-        subtema = pilar.subtemas[Math.floor(rng() * pilar.subtemas.length)];
-      }
-
-      // eixo formato
-      let formato;
-      if (locks.formato && atual) {
-        formato = FORMATOS.find((f) => f.id === atual.formatoId);
-      } else if (foraDaZona) {
-        const videos = FORMATOS.filter((f) => f.video);
-        formato = videos[Math.floor(rng() * videos.length)];
-      } else {
-        formato = FORMATOS[Math.floor(rng() * FORMATOS.length)];
-      }
-
-      // eixo restrição
-      const restricao =
-        locks.restricao && atual
-          ? atual.restricao
-          : RESTRICOES[Math.floor(rng() * RESTRICOES.length)];
-
-      // regra: nunca repetir combinação subtema+formato
-      if (usadas.has(comboKey(subtema, formato.id))) continue;
-
-      // regra: manter um eixo e trocar o outro em relação ao anterior
-      if (anterior && !foraDaZona && !locks.subtema && !locks.formato) {
-        const mesmoSub = anterior.subtema === subtema;
-        const mesmoFmt = anterior.formatoId === formato.id;
-        if (mesmoSub === mesmoFmt) continue; // ou repete os dois, ou nenhum: inválido
-      }
-
-      novo = {
-        pilar: pilar.nome,
-        subtema,
-        formato: formato.nome,
-        formatoId: formato.id,
-        restricao,
-        foraDaZona,
-        data: new Date().toLocaleDateString("pt-BR"),
-      };
-      break;
-    }
-
-    if (!novo) return; // esgotou combinações válidas
-
-    setRolling(true);
-    setTimeout(() => {
-      setAtual(novo);
-      setRolling(false);
-    }, 350);
-  }, [history, atual, locks, usadas, foraDaZona]);
-
-  const confirmar = () => {
-    if (!atual) return;
-    addDesafio(atual);
-    setLocks({ subtema: false, formato: false, restricao: false });
-  };
-
-  const jaConfirmado =
-    atual && usadas.has(comboKey(atual.subtema, atual.formatoId));
-
-  const copiarBriefing = async () => {
-    if (!atual) return;
-    const texto = MASTER_PROMPT.replace("{{pilar}}", atual.pilar)
-      .replace("{{subtema}}", atual.subtema)
-      .replace("{{formato}}", atual.formato)
-      .replace("{{restricao}}", atual.restricao);
-    try {
-      await navigator.clipboard.writeText(texto);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 1800);
-    } catch {
-      /* clipboard indisponível */
-    }
-  };
-
-  const toggleLock = (eixo) =>
-    setLocks((l) => ({ ...l, [eixo]: !l[eixo] }));
+  const copyBriefing = async (item) => {
+    await navigator.clipboard.writeText(buildPrompt(item))
+    setCopied(item.ordem)
+    setTimeout(() => setCopied(null), 1600)
+  }
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border border-orange-200 p-6">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5 animate-fade-in">
+      <div className="rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border border-orange-200 p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 rounded-lg bg-amber-100">
-                <Dices size={16} className="text-amber-500" />
-              </div>
-              <h2 className="text-base font-bold text-gray-900">Desafio de Formato</h2>
-            </div>
-            <p className="text-sm text-gray-500 max-w-lg">
-              Sorteia subtema, formato e restrição pra te tirar da zona de conforto. Trave um eixo se quiser mantê-lo no próximo sorteio.
-            </p>
+            <div className="flex items-center gap-2 mb-2"><ListChecks size={17} className="text-orange-500" /><h2 className="text-base font-bold text-gray-900">Esteira de exercícios · 8 semanas</h2></div>
+            <p className="text-sm text-gray-500 max-w-2xl">A pauta entra manualmente, com a régua que veio do seu trabalho real. Sem sorteio de formato: durante oito semanas, a amostra fica comparável.</p>
           </div>
-          <span className="chip bg-white border border-orange-200 text-orange-700 text-xs shrink-0">{history.length} feitos</span>
+          <span className="chip bg-white border border-orange-200 text-orange-700 text-xs">{queue.length}/8 na fila</span>
         </div>
       </div>
 
-      {foraDaZona && (
-        <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs text-violet-700 font-medium">
-          <Zap size={14} className="shrink-0" /> Sorteio fora da zona: vídeo obrigatório com pilar fora de IA.
+      {!complete && (
+        <div className="card p-5 space-y-4">
+          <Field label="Pergunta de contagem · capa" rows={2} value={draft.perguntaContagem} onChange={(e) => update('perguntaContagem', e.target.value)} error={errors.perguntaContagem} placeholder="Quantas das suas últimas 10 decisões de trabalho foram tomadas com informação?" />
+          <div className="grid md:grid-cols-2 gap-3">
+            <Field label="O que conta · separe por vírgula" rows={3} value={draft.conta} onChange={(e) => update('conta', e.target.value)} error={errors.regua} />
+            <Field label="O que não conta · separe por vírgula" rows={3} value={draft.naoConta} onChange={(e) => update('naoConta', e.target.value)} error={errors.regua} />
+          </div>
+          <div className="grid md:grid-cols-3 gap-3">
+            <Field label="Leitura · faixa baixa" rows={3} value={draft.faixaBaixa} onChange={(e) => update('faixaBaixa', e.target.value)} error={errors.faixas} />
+            <Field label="Leitura · faixa média" rows={3} value={draft.faixaMedia} onChange={(e) => update('faixaMedia', e.target.value)} error={errors.faixas} />
+            <Field label="Leitura · faixa alta" rows={3} value={draft.faixaAlta} onChange={(e) => update('faixaAlta', e.target.value)} error={errors.faixas} />
+          </div>
+          <Field label="Fissura real" rows={2} value={draft.fissura} onChange={(e) => update('fissura', e.target.value)} error={errors.fissura} placeholder="Uma frase curta sobre onde a sua própria contagem não fechou bem." />
+          <Field label="Ponte · ação fora do post" rows={2} value={draft.ponte} onChange={(e) => update('ponte', e.target.value)} error={errors.ponte} placeholder="A planilha completa está no link da bio." />
+          <label className="space-y-1.5 block max-w-xs">
+            <span className="text-xs font-semibold text-gray-700">Data de publicação</span>
+            <input type="date" value={draft.dataPublicacao} onChange={(e) => update('dataPublicacao', e.target.value)} className={`w-full rounded-xl border px-3 py-2.5 text-sm ${errors.dataPublicacao ? 'border-red-300' : 'border-gray-200'}`} />
+            {errors.dataPublicacao && <span className="text-[11px] text-red-600">{errors.dataPublicacao}</span>}
+          </label>
+          <button onClick={addToQueue} className="btn-primary"><Clipboard size={14} /> Adicionar à fila</button>
         </div>
       )}
 
-      {/* Eixos */}
-      <div className="card divide-y divide-gray-100">
-        <Eixo
-          label="Subtema"
-          valor={atual?.subtema}
-          extra={atual?.pilar}
-          locked={locks.subtema}
-          rolling={rolling}
-          onToggleLock={() => toggleLock("subtema")}
-        />
-        <Eixo
-          label="Formato"
-          valor={atual?.formato}
-          locked={locks.formato}
-          rolling={rolling}
-          onToggleLock={() => toggleLock("formato")}
-        />
-        <Eixo
-          label="Restrição"
-          valor={atual?.restricao}
-          locked={locks.restricao}
-          rolling={rolling}
-          onToggleLock={() => toggleLock("restricao")}
-        />
-      </div>
-
-      {/* Ações */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={sortear} className="btn-primary">
-          {rolling ? <><RefreshCw size={14} className="animate-spin" /> Sorteando...</> : <><Dices size={14} /> Gerar nova ideia</>}
-        </button>
-        <button
-          onClick={copiarBriefing}
-          disabled={!atual}
-          className="btn-secondary disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {copiado ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar briefing</>}
-        </button>
-        <button
-          onClick={confirmar}
-          disabled={!atual || jaConfirmado}
-          className="btn-ghost text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {jaConfirmado ? <><Check size={13} /> Registrado</> : "Aceitar desafio"}
-        </button>
-      </div>
-
-      {/* Histórico */}
-      {history.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Histórico</span>
-            <button
-              onClick={() => {
-                if (window.confirm("Limpar todo o histórico de desafios?")) {
-                  clearDesafioHistory();
-                }
-              }}
-              className="btn-ghost text-xs"
-            >
-              <Trash2 size={12} /> Limpar
-            </button>
-          </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ordem de publicação</span>
+        </div>
+        {queue.length === 0 ? <div className="card p-8 text-center text-sm text-gray-400">A fila começa vazia. O app não inventa as perguntas.</div> : (
           <div className="card divide-y divide-gray-100">
-            {[...history].reverse().map((h, i) => (
-              <HistItem key={`${h.subtema}-${h.formatoId}`} item={h} index={history.length - i} />
+            {queue.map((item) => (
+              <div key={`${item.ordem}-${item.dataPublicacao}`} className="p-4 flex items-start gap-3">
+                <span className="w-7 h-7 rounded-lg bg-orange-50 text-orange-700 text-xs font-bold flex items-center justify-center shrink-0">{item.ordem}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{item.perguntaContagem}</p>
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><CalendarDays size={11} /> {item.dataPublicacao}</p>
+                </div>
+                <button onClick={() => copyBriefing(item)} className="btn-secondary text-xs">{copied === item.ordem ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar prompt</>}</button>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  );
+  )
 }
+
