@@ -111,7 +111,8 @@ Responda APENAS com JSON válido, sem texto antes ou depois:
     body: JSON.stringify({
       model: 'gpt-5.6-terra',
       thinking: { type: 'adaptive' },
-      output_config: { effort: 'medium' },
+      effort: 'high',
+      verbosity: 'high',
       max_tokens: 4000,
       system: withManualOperacional(withAntiAIFilter('You are a sharp, curious Brazilian content creator. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. You can be reflective but always land on something constructive, interesting, or energizing. For brand content: enthusiastic and genuine. For reflective content: curious and intelligent. NEVER default to sad or heavy tone. Respond ONLY with valid JSON — no markdown, no code blocks. Your entire response must start with "{" — no reasoning, drafts, or commentary outside the JSON.')),
       messages: [{ role: 'user', content: prompt }],
