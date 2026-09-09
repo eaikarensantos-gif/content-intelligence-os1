@@ -7,6 +7,7 @@ import useStore from '../../store/useStore'
 import { enrichMetric } from '../../utils/analytics'
 import { getConnection } from '../../lib/instagramAuth'
 import { instagramAccountOverview } from '../../lib/aiService'
+import { EDITORIAL_FUNCTIONS } from '../../data/editorialStrategy'
 
 function getLastNDays(n) {
   const to = new Date()
@@ -47,9 +48,11 @@ function buildPrompt(topPosts, allPosts, period, topHours) {
     .map(([day, d]) => `- ${day}: ${d.count} posts, ER médio: ${(d.er_sum / d.count * 100).toFixed(2)}%`)
     .join('\n')
 
-  return `Você é um estrategista de conteúdo digital. Analise os posts que mais performaram nos últimos ${period} dias e sugira um plano de conteúdo para a PRÓXIMA SEMANA (7 dias).
+  const periodLabel = period === 'all' ? 'em todo o histórico' : `nos últimos ${period} dias`
 
-═══ TOP POSTS DO PERÍODO (${period} dias) ═══
+  return `Você é um estrategista de conteúdo digital. Analise os posts que mais performaram ${periodLabel} e sugira um plano de conteúdo para a PRÓXIMA SEMANA (7 dias).
+
+═══ TOP POSTS DO PERÍODO (${periodLabel}) ═══
 ${topData}
 
 ═══ PERFORMANCE POR FORMATO ═══
@@ -69,14 +72,18 @@ ${topHours ? `\n═══ HORÁRIOS REAIS EM QUE A AUDIÊNCIA ESTÁ ONLINE (dado
 - Vídeo reaproveitando conteúdo existente: duração variável — objetivo: otimizar produção
 - Vídeo opcional: duração e objetivo livres, conforme a necessidade da semana
 
+═══ FUNÇÕES EDITORIAIS (toda sugestão precisa se encaixar em uma) ═══
+${EDITORIAL_FUNCTIONS.map((f) => `- ${f.id}: ${f.label} — ${f.goal}`).join('\n')}
+
 REGRAS:
 1. Baseie CADA sugestão em dados concretos dos top posts
 2. Indique o MELHOR DIA e FORMATO para cada post baseado nos dados
 3. Explique POR QUÊ aquele tema/formato vai funcionar (cite números)
 4. Sugira de 5 a 7 posts para a semana
-5. Inclua variações dos temas que mais performaram + 1-2 temas novos para testar
+5. Os TOP POSTS acima são referência de PADRÃO — formato, horário, tipo de gancho, tema geral que funcionou — não são texto pra copiar. PROIBIDO sugerir um post com o mesmo título, mesma frase de abertura ou mesmo recorte específico de um post que já foi publicado (listado em TOP POSTS ou citado como "reference_post"). "Variação" significa ângulo, recorte ou pergunta diferente dentro do mesmo tema geral — não é reescrever o post antigo com outras palavras. Pelo menos 1-2 sugestões precisam ser tema novo, nunca testado no período.
 6. Pra cada sugestão, preencha "duracao" e "objetivo" usando a estrutura de rotação de formatos acima como referência
-${topHours ? '7. Pra cada sugestão, indique também um HORÁRIO baseado nos horários reais de audiência online listados acima (não invente outro horário).' : ''}
+7. Pra cada sugestão, preencha "editorial_function" com o id de uma das funções listadas acima. NÃO agende dois "critical_reading" em dias seguidos — alterne autoridade (critical_reading), aplicação (practical_utility), bastidor (decision_backstage) e proximidade (community_connection) ao longo da semana.
+${topHours ? '8. Pra cada sugestão, indique também um HORÁRIO baseado nos horários reais de audiência online listados acima (não invente outro horário).' : ''}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
@@ -92,10 +99,11 @@ Responda EXCLUSIVAMENTE com JSON válido:
       ${topHours ? '"time": "horário sugerido, ex: 19h",' : ''}
       "title": "Título curto do post sugerido",
       "format": "Reel|Carrossel|Story|Post estático",
-      "theme": "Tema baseado nos dados",
+      "theme": "Tema baseado nos dados — recorte novo, nunca o mesmo já publicado",
       "duracao": "Duração sugerida do vídeo, ex: 5-7 seg",
       "objetivo": "O que esse vídeo deve alcançar, ex: vender e fechar clientes",
-      "why": "Por que vai funcionar (com números do período)",
+      "editorial_function": "critical_reading|practical_utility|decision_backstage|community_connection",
+      "why": "Por que vai funcionar (com números do período). Se o período tiver poucos posts, deixe explícito que é hipótese, não padrão confirmado.",
       "reference_post": "Qual top post inspirou esta sugestão",
       "priority": "high|medium|low"
     }
@@ -122,7 +130,7 @@ export default function WeeklyPlanner() {
   const metrics = useStore((s) => s.metrics)
   const enriched = metrics.map(enrichMetric)
 
-  const [period, setPeriod] = useState(28)
+  const [period, setPeriod] = useState(28) // número de dias, ou 'all' pra todo o histórico
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -148,12 +156,14 @@ export default function WeeklyPlanner() {
   const sortedByDate = [...enriched].filter(m => m.date).sort((a, b) => b.date.localeCompare(a.date))
   const latestDate = sortedByDate[0]?.date || new Date().toISOString().slice(0, 10)
   const cutoff = (() => {
+    if (period === 'all') return null
     const d = new Date(latestDate + 'T12:00:00')
     d.setDate(d.getDate() - period)
     return d.toISOString().slice(0, 10)
   })()
-  const postsInPeriod = enriched.filter(m => m.date && m.date >= cutoff)
+  const postsInPeriod = enriched.filter(m => m.date && (cutoff === null || m.date >= cutoff))
   const topPosts = [...postsInPeriod].sort((a, b) => b.engagement_rate - a.engagement_rate).slice(0, 10)
+  const periodText = period === 'all' ? 'em todo o histórico' : `nos últimos ${period} dias`
 
   const canGenerate = topPosts.length >= 2
 
@@ -225,7 +235,7 @@ export default function WeeklyPlanner() {
           <div className="flex items-center gap-3 flex-wrap">
             {/* Period selector */}
             <div className="flex gap-1 bg-white/10 rounded-xl p-1">
-              {[7, 14, 28].map(d => (
+              {[7, 14, 28, 'all'].map(d => (
                 <button
                   key={d}
                   onClick={() => setPeriod(d)}
@@ -233,7 +243,7 @@ export default function WeeklyPlanner() {
                     period === d ? 'bg-white text-orange-700' : 'text-gray-300 hover:text-white'
                   }`}
                 >
-                  {d}d
+                  {d === 'all' ? 'Tudo' : `${d}d`}
                 </button>
               ))}
             </div>
@@ -260,11 +270,11 @@ export default function WeeklyPlanner() {
 
             {!canGenerate && (
               <span className="text-xs text-amber-300 flex items-center gap-1">
-                <AlertCircle size={12} /> Mínimo 2 posts nos últimos {period} dias
+                <AlertCircle size={12} /> Mínimo 2 posts {periodText}
               </span>
             )}
 
-            <span className="text-xs text-gray-400 ml-auto">{postsInPeriod.length} posts nos últimos {period} dias</span>
+            <span className="text-xs text-gray-400 ml-auto">{postsInPeriod.length} posts {periodText}</span>
           </div>
 
           {showKeyInput && (
@@ -339,6 +349,23 @@ export default function WeeklyPlanner() {
             </div>
           )}
 
+          {/* Equilíbrio editorial da semana — ver src/data/editorialStrategy.js */}
+          {plan.suggestions?.length > 0 && (
+            <div className="card p-4">
+              <p className="text-xs font-semibold text-gray-700 mb-2">Equilíbrio editorial da semana</p>
+              <div className="flex flex-wrap gap-2">
+                {EDITORIAL_FUNCTIONS.map((f) => {
+                  const count = plan.suggestions.filter((s) => s.editorial_function === f.id).length
+                  return (
+                    <span key={f.id} className={`text-[10px] font-medium px-2 py-1 rounded-lg border ${count > 0 ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-gray-50 text-gray-300 border-gray-100'}`}>
+                      {f.label}: {count}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Suggestions */}
           {plan.suggestions?.length > 0 && (
             <div className="space-y-3">
@@ -357,6 +384,11 @@ export default function WeeklyPlanner() {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <h4 className="text-sm font-semibold text-gray-900">{s.title}</h4>
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200">{s.format}</span>
+                        {s.editorial_function && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            {EDITORIAL_FUNCTIONS.find((f) => f.id === s.editorial_function)?.label || s.editorial_function}
+                          </span>
+                        )}
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${PRIORITY_COLORS[s.priority] || PRIORITY_COLORS.medium}`}>
                           {PRIORITY_LABELS[s.priority] || s.priority}
                         </span>
@@ -427,7 +459,7 @@ export default function WeeklyPlanner() {
           </div>
           <h3 className="text-gray-700 font-semibold mb-2">Dados insuficientes</h3>
           <p className="text-gray-400 text-sm max-w-sm">
-            Adicione pelo menos 2 posts com métricas nos últimos {period} dias para gerar o plano semanal — importe um CSV ou sincronize direto do Instagram em Analytics → Adicionar Métricas.
+            Adicione pelo menos 2 posts com métricas {periodText} para gerar o plano semanal — importe um CSV ou sincronize direto do Instagram em Analytics → Adicionar Métricas.
           </p>
         </div>
       )}

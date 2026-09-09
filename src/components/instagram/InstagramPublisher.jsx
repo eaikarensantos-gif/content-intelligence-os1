@@ -6,6 +6,13 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase'
 
 const BUCKET = 'cio-media'
 
+const GATE_QUESTIONS = [
+  { id: 'reach', label: 'Esse post traz gente de fora (alcance, novos seguidores)?' },
+  { id: 'saves', label: 'Esse post traz salvamento?' },
+  { id: 'clicks', label: 'Esse post traz clique (link, DM)?' },
+  { id: 'conversation', label: 'Esse post gera conversa — comentários genuínos de vivência das pessoas?' },
+]
+
 export default function InstagramPublisher() {
   const connection = getConnection()
   const [caption, setCaption] = useState('')
@@ -15,6 +22,8 @@ export default function InstagramPublisher() {
   const [step, setStep] = useState(null)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  const [gate, setGate] = useState({ reach: '', saves: '', clicks: '', conversation: '' })
+  const gateAnswered = Object.values(gate).some((v) => v.trim().length > 0)
 
   const handleFile = (e) => {
     const f = e.target.files?.[0]
@@ -30,6 +39,7 @@ export default function InstagramPublisher() {
 
   const handlePublish = async () => {
     if (!file) { setError('Selecione uma imagem para publicar.'); return }
+    if (!gateAnswered) { setError('Responda pelo menos uma pergunta do gate antes de publicar. Se nenhuma resposta ficar clara, não publica.'); return }
     if (!isSupabaseConfigured()) {
       setError('Configure o Supabase em Configurações — é usado para hospedar a imagem numa URL pública, que a API do Instagram exige antes de publicar.')
       return
@@ -59,6 +69,7 @@ export default function InstagramPublisher() {
       setResult(published)
       clearFile()
       setCaption('')
+      setGate({ reach: '', saves: '', clicks: '', conversation: '' })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -129,9 +140,32 @@ export default function InstagramPublisher() {
           />
         </div>
 
+      </div>
+
+      {/* Gate de publicação */}
+      <div className="card p-5 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700">Antes de publicar</h3>
+          <p className="text-xs text-gray-400 mt-0.5">Responda pelo menos uma. Se nenhuma resposta ficar clara, não publica.</p>
+        </div>
+        {GATE_QUESTIONS.map((q) => (
+          <div key={q.id}>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">{q.label}</label>
+            <input
+              type="text"
+              value={gate[q.id]}
+              onChange={(e) => setGate((g) => ({ ...g, [q.id]: e.target.value }))}
+              placeholder="Como? (deixe em branco se não se aplica)"
+              className="input w-full text-sm"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="card p-5">
         <button
           onClick={handlePublish}
-          disabled={publishing || !file}
+          disabled={publishing || !file || !gateAnswered}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-40 transition-colors"
         >
           {publishing ? (

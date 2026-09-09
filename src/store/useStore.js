@@ -72,6 +72,26 @@ export function mergeById(dbList, localList) {
   return [...dbList, ...localOnly]
 }
 
+/**
+ * Campos editoriais copiados de uma ideia pro post que nasce dela — ver
+ * src/data/editorialStrategy.js. Retrocompatível: ideia antiga sem nenhum
+ * desses campos devolve tudo null/[], sem lançar erro.
+ */
+export function copyEditorialFields(idea) {
+  return {
+    editorial_function: idea?.editorial_function ?? null,
+    editorial_series: idea?.editorial_series ?? null,
+    audience_cut: idea?.audience_cut ?? null,
+    observed_situation: idea?.observed_situation ?? null,
+    evidence: idea?.evidence ?? null,
+    material_cost: idea?.material_cost ?? null,
+    decision_supported: idea?.decision_supported ?? null,
+    desired_response: idea?.desired_response ?? null,
+    source_comment_ids: idea?.source_comment_ids ?? [],
+    editorial_confidence: idea?.editorial_confidence ?? null,
+  }
+}
+
 const useStore = create(
   persist(
     (set, get) => ({
@@ -121,6 +141,28 @@ const useStore = create(
 
       setCreatorProfile: (profile) =>
         set((s) => ({ creatorProfile: { ...s.creatorProfile, ...profile } })),
+
+      // ── Templates visuais de carrossel (Carousel Studio) ────────────────
+      carouselTemplates: [],
+
+      addCarouselTemplate: (template) =>
+        set((s) => ({
+          carouselTemplates: [...s.carouselTemplates, {
+            id: uuidv4(),
+            created_at: new Date().toISOString(),
+            name: '',
+            backgrounds: [],
+            ...template,
+          }],
+        })),
+
+      updateCarouselTemplate: (id, updates) =>
+        set((s) => ({
+          carouselTemplates: s.carouselTemplates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        })),
+
+      deleteCarouselTemplate: (id) =>
+        set((s) => ({ carouselTemplates: s.carouselTemplates.filter((t) => t.id !== id) })),
 
       // ── Desafio de Formato (sorteador) ───────────────────────────────────
       addDesafio: (desafio) =>
@@ -365,18 +407,7 @@ const useStore = create(
         const idea = get().ideas.find((i) => i.id === ideaId)
         if (!idea) return
         const postId = uuidv4()
-        const newPost = {
-          id: postId,
-          idea_id: ideaId,
-          title: idea.title,
-          content: idea.description,
-          platform: idea.platform,
-          format: idea.format,
-          hook_type: idea.hook_type,
-          status: 'draft',
-          published_at: null,
-          created_at: new Date().toISOString(),
-        }
+        const editorialFields = copyEditorialFields(idea)
         set((s) => ({
           posts: [
             ...s.posts,
@@ -392,6 +423,7 @@ const useStore = create(
               client_id: idea.client_id || null,
               published_at: null,
               created_at: new Date().toISOString(),
+              ...editorialFields,
             },
           ],
           ideas: s.ideas.map((i) =>
@@ -500,6 +532,18 @@ const useStore = create(
           priority: genIdea.priority || 'medium',
           status: 'idea',
           tags: [genIdea.source_type, genIdea.topic].filter(Boolean),
+          // Campos editoriais — ver src/data/editorialStrategy.js. Só chegam
+          // aqui quando o gerador (aiGenerateIdeas) já os devolveu; ficam
+          // undefined em ideias de fontes antigas, sem quebrar nada.
+          editorial_function: genIdea.editorial_function ?? null,
+          editorial_series: genIdea.editorial_series ?? null,
+          audience_cut: genIdea.audience_cut ?? null,
+          observed_situation: genIdea.observed_situation ?? null,
+          evidence: genIdea.evidence_needed ?? null,
+          material_cost: genIdea.material_cost ?? null,
+          decision_supported: genIdea.decision_supported ?? null,
+          desired_response: genIdea.desired_response ?? null,
+          editorial_confidence: genIdea.confidence ?? null,
         })
       },
 
@@ -656,6 +700,7 @@ const useStore = create(
             archetypes:        mergeById(data.archetypes, local.archetypes),
             hybridArchetypes:  mergeById(data.hybridArchetypes, local.hybridArchetypes),
             viralReferences:   mergeById(data.viralReferences, local.viralReferences),
+            carouselTemplates: mergeById(data.carouselTemplates, local.carouselTemplates),
             thoughtCaptures:   mergeById(data.thoughtCaptures, local.thoughtCaptures),
             commentContexts:   mergeById(data.commentContexts, local.commentContexts),
             videoAnalyses:     mergeById(data.videoAnalyses, local.videoAnalyses),
@@ -747,6 +792,7 @@ const useStore = create(
         audienceProfiles: s.audienceProfiles,
         audienceWeights: s.audienceWeights,
         audienceCuts: s.audienceCuts,
+        carouselTemplates: s.carouselTemplates,
         // brandVoice ficava de fora do partialize — sem Supabase configurado,
         // o questionário de voz da marca se perdia a cada reload. Corrigido aqui.
         brandVoice: s.brandVoice,

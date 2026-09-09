@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
@@ -21,6 +21,8 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { buildVoiceContext, buildRegenerateInstruction, buildBannedWordsBlock, buildPositioningBlock } from '../../utils/voiceContext'
+import { buildEditorialContext, classifyEditorialFunction, getCompatibleSeries } from '../../utils/editorialContext'
+import { EDITORIAL_FUNCTIONS, DEFAULT_AUDIENCE_CUTS } from '../../data/editorialStrategy'
 import { assertNotTruncated } from '../../utils/aiJson'
 import { TEMAS_CARROSSEL, PERSONAL_TEMAS_SUGESTOES } from '../../data/temasCarrossel'
 import { checkCoherence } from '../../lib/coherenceCheck'
@@ -29,6 +31,7 @@ import {
   WORK_CATEGORIES, PERSONAL_CATEGORIES, migrateWorkCategory, migratePersonalCategory,
   categorizeTheme as classifyTheme,
   WORK_NICHE, WORK_CATEGORY_BRIEF, isCltFramed,
+  WORK_CLT_GUIDE,
 } from '../../utils/themeCategories'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
@@ -37,6 +40,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 const LS_KEY = 'cio-openai-key'
 const DISMISSED_MICROTHEMES_KEY = 'cio-dismissed-personal-microthemes'
+const WORK_MODE_BY_CATEGORY_KEY = 'cio-work-mode-by-category'
 
 /* ── Master Prompt Karen (do PDF) ── */
 const MASTER_PROMPT = `Você é um assistente especializado em criar conteúdo para Karen Santos (@karensantosperfil).
@@ -1576,6 +1580,21 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [banCandidate, setBanCandidate] = useState(null)
   const [banPosition, setBanPosition] = useState({ x: 0, y: 0 })
 
+  // ── Briefing editorial — compartilhado por todos os modos abaixo ──
+  // Ver src/data/editorialStrategy.js. null/'' em qualquer campo = automático
+  // (a IA decide); Karen sempre vê e pode sobrescrever a classificação.
+  const [edOpen, setEdOpen] = useState(false)
+  const [edFunction, setEdFunction] = useState(null)
+  const [edSeries, setEdSeries] = useState(null)
+  const [edAudienceCut, setEdAudienceCut] = useState(null)
+  const [edSituation, setEdSituation] = useState('')
+  const [edEvidence, setEdEvidence] = useState('')
+  const [edCost, setEdCost] = useState('')
+  const [edDecision, setEdDecision] = useState('')
+  const [edDesiredResponse, setEdDesiredResponse] = useState('')
+
+  const edCompatibleSeries = useMemo(() => getCompatibleSeries(edFunction), [edFunction])
+
   /* Selecionar um trecho em QUALQUER bloco de texto gerado — Studio Livre,
      Reels, Carrossel ou Stories — abre o popup de banir. Estado compartilhado,
      handler compartilhado, popup renderizado uma vez só no fim do componente. */
@@ -1613,6 +1632,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
+  const [engTemaCategoria, setEngTemaCategoria] = useState(null) // pilar de origem, pra saber o modo PJ/CLT
   const [engTemplate, setEngTemplate] = useState(null)
   const [engIdeia, setEngIdeia] = useState('')
   const [engTexto, setEngTexto] = useState('')
@@ -1632,6 +1652,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   // Carrossel
 
   const [carTema, setCarTema] = useState('')
+  const [carTemaCategoria, setCarTemaCategoria] = useState(null) // pilar de origem, pra saber o modo PJ/CLT
   const [carHooks, setCarHooks] = useState([])
   const [carHooksLoading, setCarHooksLoading] = useState(false)
   const [carHooksError, setCarHooksError] = useState('')
@@ -1652,6 +1673,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [strSavedHub, setStrSavedHub] = useState(false)
   // Stories
   const [strTema, setStrTema] = useState('')
+  const [strTemaCategoria, setStrTemaCategoria] = useState(null) // pilar de origem, pra saber o modo PJ/CLT
   const [strEstrutura, setStrEstrutura] = useState('observacao')
   const [strLoading, setStrLoading] = useState(false)
   const [strResult, setStrResult] = useState(null)
@@ -1674,6 +1696,15 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
 
   // ── Banco de Temas ──
   const [bankOpenCategory, setBankOpenCategory] = useState(null)
+
+  // Modo PJ autônomo vs CLT por pilar — só existe no banco de trabalho, cada
+  // categoria guarda o próprio modo (não é um interruptor global).
+  const [workModeByCategory, setWorkModeByCategory] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(WORK_MODE_BY_CATEGORY_KEY) || '{}')
+      return stored && typeof stored === 'object' ? stored : {}
+    } catch { return {} }
+  })
 
   const categorizeTheme = (tema) => classifyTheme(tema, isPessoal)
 
@@ -1736,6 +1767,10 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   useEffect(() => {
     localStorage.setItem(DISMISSED_MICROTHEMES_KEY, JSON.stringify(dismissedPersonalSuggestions))
   }, [dismissedPersonalSuggestions])
+
+  useEffect(() => {
+    localStorage.setItem(WORK_MODE_BY_CATEGORY_KEY, JSON.stringify(workModeByCategory))
+  }, [workModeByCategory])
 
   // ── Brand Linter com debounce ──
   useEffect(() => {
@@ -1845,7 +1880,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
     if (overrides.adjustment) setAdjusting(overrides.adjustment)
 
     // No modo pessoal a voz de marca profissional fica de fora; frases proibidas e dislikes continuam
-    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)
+    const voiceCtx = buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)
     const regenInstr = overrides.regen ? buildRegenerateInstruction(history.length) : ''
     const selectedFormat = overrides.format || format
 
@@ -2139,7 +2174,7 @@ ${revText.trim()}`
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: isPessoal
             ? buildPersonalReelsPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, template: engTemplate ? PERSONAL_ENGAGEMENT_TEMPLATES[engTemplate] : null })
             : buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
@@ -2195,7 +2230,7 @@ ${revText.trim()}`
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
         }),
       })
@@ -2281,7 +2316,7 @@ REGRAS:
 - Proibido: abstração sem cena ("a pressão do ambiente", "o peso das decisões")
 - Cada hook tem que passar no teste: "isso parece algo que alguém viveu… ou algo que alguém escreveu?" — só entrega se parecer vivido
 
-Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"hooks": ["hook1","hook2","hook3","hook4","hook5"]}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: `Tema: ${tema}` }],
         }),
       })
@@ -2322,7 +2357,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: isPessoal
             ? buildPersonalCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto })
             : buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
@@ -2555,7 +2590,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     try {
       const structuresMap = isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES
       const estrutura = structuresMap[strEstrutura] || structuresMap.observacao
-      const systemPrompt = `${buildStoriesSystem(isPessoal)}${isPessoal && isNaomiTheme(strTema) ? `\n${NAOMI_EDITORIAL_GUIDE}` : ''}`
+      const systemPrompt = `${buildStoriesSystem(isPessoal)}${isPessoal && isNaomiTheme(strTema) ? `\n${NAOMI_EDITORIAL_GUIDE}` : ''}${workModeFor(strTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}`
         .replace('{tema}', strTema)
         .replace('{estrutura}', estrutura.prompt)
       const res = await fetch('/api/ai?action=openai', {
@@ -2566,7 +2601,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: 'Gere o stories agora.' }],
         }),
       })
@@ -2598,12 +2633,20 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     }
   }
 
-  const applyTheme = (tema) => {
-    if (mode === 'engagement') setEngTema(tema)
-    else if (mode === 'carousel') setCarTema(tema)
-    else if (mode === 'stories') setStrTema(tema)
+  const applyTheme = (tema, categoria) => {
+    if (mode === 'engagement') { setEngTema(tema); setEngTemaCategoria(categoria || null) }
+    else if (mode === 'carousel') { setCarTema(tema); setCarTemaCategoria(categoria || null) }
+    else if (mode === 'stories') { setStrTema(tema); setStrTemaCategoria(categoria || null) }
     else setInput(tema)
   }
+
+  const workModeFor = (categoria) => (!isPessoal && categoria && workModeByCategory[categoria] === 'clt') ? 'clt' : 'pj'
+
+  // isCltFramed() sinaliza vocabulário de empregado (gestor, cargo, emprego...)
+  // como sobra do posicionamento antigo — mas é o mesmo vocabulário que o modo
+  // CLT gera de propósito agora. Tema marcado com modoTrabalho: 'clt' foi
+  // escolhido assim por quem usa o app, não é sobra pra reescrever ou remover.
+  const isLegacyCltFramed = (t) => t.modoTrabalho !== 'clt' && isCltFramed(t.tema)
 
   const analyzeTemperatures = async (targets) => {
     if (!apiKey || targets.length === 0) return
@@ -2748,10 +2791,16 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
     return prev.filter(t => t.id !== id)
   })
 
+  // tema já vem no texto certo (PJ ou CLT) — quem escolhe a fonte é o accordion,
+  // que lê categoria.temas ou categoria.temasClt conforme o modo do pilar.
   const addThemeFromSuggestion = (tema, categoria) => {
+    const modoTrabalho = workModeFor(categoria)
     const existing = new Set(savedThemes.map(s => s.tema))
     if (existing.has(tema)) return
-    const entry = { id: Date.now(), tema, categoria, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10) }
+    const entry = {
+      id: Date.now(), tema, categoria, fonte: 'manual', criadoEm: new Date().toISOString().slice(0, 10),
+      ...(modoTrabalho === 'clt' ? { modoTrabalho } : {}),
+    }
     setSavedThemes(prev => [entry, ...prev])
   }
 
@@ -2773,8 +2822,8 @@ ATENÇÃO: isto não é mais sobre operação de negócio pequeno pelo celular n
           .flatMap(grupo => grupo.temas.map(tema => ({ tema, categoria: grupo.categoria })))
         : []
       const base = categoria ? [...temasNaCategoria, ...sugestoesBase] : [...savedThemes, ...sugestoesBase]
-      const noPosicionamento = isPessoal ? base : base.filter(t => !isCltFramed(t.tema))
-      const foraDoPosicionamento = isPessoal ? [] : base.filter(t => isCltFramed(t.tema))
+      const noPosicionamento = isPessoal ? base : base.filter(t => !isLegacyCltFramed(t))
+      const foraDoPosicionamento = isPessoal ? [] : base.filter(t => isLegacyCltFramed(t))
 
       const contextoCategoria = [
         categoria ? `Categoria focada: "${categoria}"` : null,
@@ -2864,6 +2913,23 @@ Responda EXCLUSIVAMENTE com JSON válido:
     cotidiano: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', label: 'Cotidiano' },
     observacao: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', label: 'Observação' },
   }
+
+  // Classificação automática de função editorial (fallback heurístico, sem
+  // IA) — só usada quando Karen não escolheu manualmente no briefing acima.
+  // Calculado aqui porque depende de estado (engTema, carTema) declarado
+  // mais abaixo no componente.
+  const edAutoFunction = edFunction || classifyEditorialFunction(`${input} ${briefing} ${engTema} ${carTema}`)
+
+  const editorialContextBlock = buildEditorialContext({
+    editorialFunction: edFunction || edAutoFunction || undefined,
+    editorialSeries: edSeries || undefined,
+    audienceCut: edAudienceCut || undefined,
+    observedSituation: edSituation.trim() || undefined,
+    evidence: edEvidence.trim() || undefined,
+    materialCost: edCost.trim() || undefined,
+    decisionSupported: edDecision.trim() || undefined,
+    desiredResponse: edDesiredResponse.trim() || undefined,
+  })
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
@@ -2984,7 +3050,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
             )}
 
             {!isPessoal && (() => {
-              const clt = savedThemes.filter(t => isCltFramed(t.tema))
+              const clt = savedThemes.filter(t => isLegacyCltFramed(t))
               if (clt.length === 0) return null
               return (
                 <div className="flex items-center gap-2 flex-wrap text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2">
@@ -3019,28 +3085,55 @@ Responda EXCLUSIVAMENTE com JSON válido:
             {/* Accordion por categoria — temas salvos + sugestões (lista de categorias
                 muda por persona: Studio Pessoal nunca deve mostrar seções profissionais) */}
             <div className="px-4 py-3 space-y-1.5">
-              {(isPessoal ? PERSONAL_TEMAS_SUGESTOES : TEMAS_CARROSSEL).map(({ categoria, temas: sugestoes }) => {
+              {(isPessoal ? PERSONAL_TEMAS_SUGESTOES : TEMAS_CARROSSEL).map(({ categoria, temas, temasClt }) => {
                 const isOpen = bankOpenCategory === categoria
                 const savedInCat = savedThemes.filter(s => s.categoria === categoria)
                 const savedSet = new Set(savedThemes.map(s => s.tema))
+                const categoryWorkMode = workModeFor(categoria)
+                // Cada pilar de trabalho tem duas listas autorais (temas/temasClt) —
+                // o modo do pilar escolhe qual delas vira sugestão, não é uma
+                // transformação em cima do texto PJ.
+                const sugestoes = categoryWorkMode === 'clt' && temasClt ? temasClt : temas
                 const sugestoesNaoSalvas = isPessoal && !showPersonalSuggestions
                   ? []
                   : sugestoes.filter(t => !savedSet.has(t) && (!isPessoal || !dismissedPersonalSuggestions.includes(t)))
                 const totalCount = savedInCat.length
                 return (
                   <div key={categoria} className="border border-gray-200 rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors text-left"
-                    >
-                      <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                    <div className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-orange-50 transition-colors">
+                      <button
+                        onClick={() => setBankOpenCategory(isOpen ? null : categoria)}
+                        className="flex-1 text-left"
+                      >
+                        <span className="text-xs font-semibold text-gray-700">{categoria}</span>
+                      </button>
                       <div className="flex items-center gap-2">
+                        {!isPessoal && (
+                          <div className="flex items-center gap-0.5 bg-gray-200/70 rounded-md p-0.5" title="Ideias e roteiro gerados a partir deste pilar seguem esse modo">
+                            <button
+                              onClick={() => setWorkModeByCategory(prev => ({ ...prev, [categoria]: 'pj' }))}
+                              className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors',
+                                categoryWorkMode === 'pj' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600')}
+                            >
+                              PJ
+                            </button>
+                            <button
+                              onClick={() => setWorkModeByCategory(prev => ({ ...prev, [categoria]: 'clt' }))}
+                              className={clsx('px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors',
+                                categoryWorkMode === 'clt' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600')}
+                            >
+                              CLT
+                            </button>
+                          </div>
+                        )}
                         {totalCount > 0 && (
                           <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{totalCount}</span>
                         )}
-                        {isOpen ? <ChevronUp size={13} className="text-orange-500" /> : <ChevronDown size={13} className="text-gray-400" />}
+                        <button onClick={() => setBankOpenCategory(isOpen ? null : categoria)} aria-label={isOpen ? `Fechar ${categoria}` : `Abrir ${categoria}`}>
+                          {isOpen ? <ChevronUp size={13} className="text-orange-500" /> : <ChevronDown size={13} className="text-gray-400" />}
+                        </button>
                       </div>
-                    </button>
+                    </div>
 
                     {isOpen && (
                       <div className="bg-white px-3 py-2 space-y-1">
@@ -3053,16 +3146,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
                         {savedInCat.map(item => (
                           <div key={item.id} className="flex items-center gap-1.5 group">
                             <button
-                              onClick={() => applyTheme(item.tema)}
+                              onClick={() => applyTheme(item.tema, item.categoria)}
                               className="flex-1 text-left text-xs text-gray-800 font-medium hover:text-orange-600 px-2.5 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
                             >
                               {item.tema}
-                              {!isPessoal && isCltFramed(item.tema) && (
+                              {!isPessoal && item.modoTrabalho === 'clt' && (
+                                <span
+                                  className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200"
+                                  title="Adaptado pro modo CLT — não é sobra de posicionamento antigo."
+                                >
+                                  CLT
+                                </span>
+                              )}
+                              {!isPessoal && isLegacyCltFramed(item) && (
                                 <span
                                   className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200"
                                   title="Tema escrito do lugar de empregado — veio do posicionamento antigo. Reescreva do lado de quem é dono ou remova."
                                 >
-                                  CLT
+                                  Antigo
                                 </span>
                               )}
                             </button>
@@ -3165,6 +3266,63 @@ Responda EXCLUSIVAMENTE com JSON válido:
           <Building2 size={13} /> IA no Negócio
         </button>
       </div>
+
+      {/* ── Briefing editorial — função, série e público deste conteúdo ── */}
+      {mode !== 'revisor' && (
+        <div className="card p-3 space-y-2">
+          <button
+            type="button"
+            onClick={() => setEdOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 text-xs font-semibold text-gray-700"
+          >
+            <span className="flex items-center gap-1.5">
+              <Target size={13} className="text-gray-400" />
+              Função editorial: {(EDITORIAL_FUNCTIONS.find(f => f.id === edAutoFunction)?.label) || 'automático'}
+              {!edFunction && <span className="text-[10px] font-normal text-gray-400">(classificação automática — revise abaixo)</span>}
+            </span>
+            {edOpen ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />}
+          </button>
+
+          {edOpen && (
+            <div className="space-y-2.5 pt-1 animate-fade-in">
+              <div className="flex flex-wrap gap-1.5">
+                {EDITORIAL_FUNCTIONS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => { setEdFunction((cur) => cur === f.id ? null : f.id); setEdSeries(null) }}
+                    className={clsx('chip border text-[11px]',
+                      edFunction === f.id ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                    )}
+                    title={f.goal}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <select className="select text-xs flex-1 min-w-[160px]" value={edSeries || ''} onChange={(e) => setEdSeries(e.target.value || null)}>
+                  <option value="">Série (opcional)</option>
+                  {edCompatibleSeries.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+                <select className="select text-xs flex-1 min-w-[160px]" value={edAudienceCut || ''} onChange={(e) => setEdAudienceCut(e.target.value || null)}>
+                  <option value="">Público específico (opcional)</option>
+                  {DEFAULT_AUDIENCE_CUTS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input className="input text-xs" placeholder="Situação observada" value={edSituation} onChange={(e) => setEdSituation(e.target.value)} />
+                <input className="input text-xs" placeholder="Evidência/dado disponível" value={edEvidence} onChange={(e) => setEdEvidence(e.target.value)} />
+                <input className="input text-xs" placeholder="Custo, risco ou consequência" value={edCost} onChange={(e) => setEdCost(e.target.value)} />
+                <input className="input text-xs" placeholder="Decisão que o conteúdo ajuda a tomar" value={edDecision} onChange={(e) => setEdDecision(e.target.value)} />
+                <input className="input text-xs sm:col-span-2" placeholder="Tipo de conversa/resposta desejada" value={edDesiredResponse} onChange={(e) => setEdDesiredResponse(e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Revisor de Texto ── */}
       {mode === 'revisor' && (
@@ -3432,7 +3590,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </label>
               <input
                 value={engTema}
-                onChange={e => setEngTema(e.target.value)}
+                onChange={e => { setEngTema(e.target.value); setEngTemaCategoria(null) }}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateEngagement()}
                 placeholder={isPessoal ? 'Ex: a Naomi e o sofá, comprinha de domingo, mania que herdei da minha mãe...' : 'Ex: solidão na carreira, síndrome da impostora, burnout disfarçado de produtividade...'}
                 className="input text-sm w-full"
@@ -3926,7 +4084,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
               <input
                 value={carTema}
-                onChange={e => { setCarTema(e.target.value); setCarHooks([]) }}
+                onChange={e => { setCarTema(e.target.value); setCarTemaCategoria(null); setCarHooks([]) }}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateCarousel()}
                 placeholder={isPessoal ? 'Ex: a mania que herdei da minha mãe, achado da Shopee, domingo na feira...' : 'Ex: procrastinação, medo de ser demitido, perfeccionismo no trabalho...'}
                 className="input text-sm w-full"
@@ -3940,7 +4098,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                   {carHooks.map((hook, i) => (
                     <button
                       key={i}
-                      onClick={() => { setCarTema(hook); setCarHooks([]) }}
+                      onClick={() => { setCarTema(hook); setCarTemaCategoria(null); setCarHooks([]) }}
                       className="w-full text-left text-xs text-gray-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 px-3 py-2 rounded-lg transition-colors leading-snug"
                     >
                       {hook}
@@ -4282,7 +4440,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </label>
               <input
                 value={strTema}
-                onChange={e => setStrTema(e.target.value)}
+                onChange={e => { setStrTema(e.target.value); setStrTemaCategoria(null) }}
                 onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateStories()}
                 placeholder={isPessoal ? 'Ex: passeio com a Naomi, jogo de búzios, achado que virou queridinho...' : 'Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento...'}
                 className="input text-sm w-full"
