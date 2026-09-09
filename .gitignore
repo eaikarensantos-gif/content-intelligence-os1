@@ -11,3 +11,4 @@ test-results/
 # build artifacts
 index.zip
 *.zip
+!public/figma-carousel-plugin.zip
