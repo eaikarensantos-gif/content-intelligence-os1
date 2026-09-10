@@ -554,9 +554,34 @@ export default function AdManager() {
   const handleEditAd = (ad) => { setEditingAd(ad); setShowForm(true) }
 
   // ── Lead handlers ──
+  const convertLeadToClient = (lead) => {
+    const alreadyClient = clients.some(c => c.name.toLowerCase() === (lead.name || '').toLowerCase())
+    if (!alreadyClient && lead.name) {
+      addClient({
+        name: lead.name,
+        hashtags: '',
+        company: lead.company || '',
+        contact: lead.contact || '',
+        email: lead.email || '',
+        value: lead.value || '',
+        service: lead.service || '',
+        notes: lead.notes || '',
+        source: lead.source || '',
+      })
+    }
+  }
+
   const handleSaveLead = (data) => {
-    if (editingLead?.id) updateLead(editingLead.id, data)
-    else addLead(data)
+    if (editingLead?.id) {
+      if (data.stage === 'won' && editingLead.stage !== 'won') {
+        convertLeadToClient({ ...editingLead, ...data })
+        deleteLead(editingLead.id)
+      } else {
+        updateLead(editingLead.id, data)
+      }
+    } else {
+      addLead(data)
+    }
     setEditingLead(null)
   }
 
@@ -566,20 +591,7 @@ export default function AdManager() {
     if (stage === 'won') {
       const lead = leads.find(l => l.id === id)
       if (lead) {
-        const alreadyClient = clients.some(c => c.name.toLowerCase() === (lead.name || '').toLowerCase())
-        if (!alreadyClient && lead.name) {
-          addClient({
-            name: lead.name,
-            hashtags: '',
-            company: lead.company || '',
-            contact: lead.contact || '',
-            email: lead.email || '',
-            value: lead.value || '',
-            service: lead.service || '',
-            notes: lead.notes || '',
-            source: lead.source || '',
-          })
-        }
+        convertLeadToClient(lead)
         deleteLead(id)
       }
     } else {
@@ -608,7 +620,7 @@ export default function AdManager() {
   const activeCount = (ads || []).filter(a => a.status === 'active').length
 
   const pipelineValue = leads.filter(l => !['won', 'lost'].includes(l.stage)).reduce((s, l) => s + (Number(l.value) || 0), 0)
-  const wonValue = leads.filter(l => l.stage === 'won').reduce((s, l) => s + (Number(l.value) || 0), 0)
+  const totalClientValue = clients.reduce((s, c) => s + (Number(c.value) || 0), 0)
   const activeLeads = leads.filter(l => !['won', 'lost'].includes(l.stage)).length
   const overdueLeads = leads.filter(l => {
     if (!l.next_followup || ['won', 'lost'].includes(l.stage)) return false
@@ -617,6 +629,22 @@ export default function AdManager() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5">
+      {/* Valor total acumulado (clientes fechados) */}
+      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <DollarSign size={20} className="text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-emerald-50 font-semibold uppercase tracking-wider">Valor Total Acumulado</p>
+            <p className="text-xl sm:text-2xl font-bold text-white truncate">{fmtMoney(totalClientValue)}</p>
+          </div>
+        </div>
+        <p className="text-[10px] sm:text-xs text-emerald-50 shrink-0">
+          {clients.length} cliente{clients.length !== 1 ? 's' : ''} fechado{clients.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
       {/* Tab switcher */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 max-w-lg">
         <button onClick={() => setTab('leads')}
@@ -657,7 +685,7 @@ export default function AdManager() {
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><CheckCircle2 size={16} className="text-emerald-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(wonValue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Fechados</div></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(totalClientValue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Fechados</div></div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', overdueLeads > 0 ? 'bg-red-50' : 'bg-gray-50')}>
