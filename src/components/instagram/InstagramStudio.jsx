@@ -21,10 +21,10 @@ function StatChip({ icon: Icon, value, label }) {
 }
 
 const engagementOf = (p) => (p.likes || 0) + (p.comments || 0) + (p.shares || 0) + (p.saves || 0)
-const impressionsOf = (p) => p.views || p.reach || 0
+const impressionsOf = (p) => p.views ?? null
 const engagementRateOf = (p) => {
-  const imp = impressionsOf(p)
-  return imp ? engagementOf(p) / imp : 0
+  const reach = p.reach
+  return reach ? engagementOf(p) / reach : 0
 }
 
 const SORT_COLS = [
@@ -57,7 +57,7 @@ export default function InstagramStudio() {
   const [posts, setPosts] = useState(null)
   const [insightsAvailable, setInsightsAvailable] = useState(true)
   const [selected, setSelected] = useState(null)
-  const [tab, setTab] = useState('posts')
+  const [tab, setTab] = useState('overview')
   const [view, setView] = useState('grid')
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -102,12 +102,12 @@ export default function InstagramStudio() {
       p.timestamp ? new Date(p.timestamp).toLocaleString('pt-BR') : '',
       POST_TYPE_LABEL[p.postType] || p.postType || '',
       (p.caption || '').replace(/"/g, '""'),
-      impressionsOf(p),
-      p.reach || 0,
+      impressionsOf(p) ?? 'Não disponível',
+      p.reach ?? 'Não disponível',
       p.likes || 0,
       p.comments || 0,
-      p.shares || 0,
-      p.saves || 0,
+      p.shares ?? 'Não disponível',
+      p.saves ?? 'Não disponível',
       p.followsAvailable ? p.follows : 'Não disponível',
       engagementOf(p),
       (engagementRateOf(p) * 100).toFixed(2),
@@ -157,7 +157,7 @@ export default function InstagramStudio() {
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
         <div>
           <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Instagram size={18} className="text-pink-500" /> Posts do Instagram
+            <Instagram size={18} className="text-pink-500" /> Instagram
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">
             @{connection.accounts?.[0]?.username || connection.accounts?.[0]?.id}
@@ -188,10 +188,8 @@ export default function InstagramStudio() {
         )}
       </div>
 
-      <AccountOverview accessToken={connection.accessToken} posts={posts} />
-
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5 w-fit">
-        {[['posts', 'Posts'], ['stories', 'Stories']].map(([id, label]) => (
+        {[['overview', 'Visão geral'], ['posts', 'Publicações'], ['stories', 'Stories ativos']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -203,6 +201,8 @@ export default function InstagramStudio() {
           </button>
         ))}
       </div>
+
+      {tab === 'overview' && <AccountOverview accessToken={connection.accessToken} posts={posts} />}
 
       {tab === 'stories' && <StoriesGrid accessToken={connection.accessToken} />}
 
@@ -303,14 +303,14 @@ export default function InstagramStudio() {
                   <p className="text-xs text-gray-600 line-clamp-2">{post.caption}</p>
                 )}
                 <div className="flex flex-wrap gap-x-2.5 gap-y-1 pt-1 border-t border-gray-100">
-                  <StatChip icon={Eye} value={post.views || post.reach} label="Visualizações" />
-                  <StatChip icon={Users} value={post.reach} label="Alcance" />
+                  {post.views != null && <StatChip icon={Eye} value={post.views} label="Visualizações" />}
+                  {post.reach != null && <StatChip icon={Users} value={post.reach} label="Alcance" />}
                   <StatChip icon={Heart} value={post.likes} label="Curtidas" />
                   <StatChip icon={MessageCircle} value={post.comments} label="Comentários" />
-                  <StatChip icon={Bookmark} value={post.saves} label="Salvamentos" />
-                  <StatChip icon={Repeat2} value={post.shares} label="Compartilhamentos" />
+                  {post.saves != null && <StatChip icon={Bookmark} value={post.saves} label="Salvamentos" />}
+                  {post.shares != null && <StatChip icon={Repeat2} value={post.shares} label="Compartilhamentos" />}
                   {post.followsAvailable && <StatChip icon={UserPlus} value={post.follows} label="Seguidores gerados" />}
-                  {post.avgWatchTimeSec > 0 && (
+                  {post.avgWatchTimeSec != null && (
                     <StatChip icon={Clock} value={post.avgWatchTimeSec} label="Tempo médio assistido (s)" />
                   )}
                 </div>
@@ -378,12 +378,12 @@ export default function InstagramStudio() {
                         )}
                       </div>
                     </td>
-                    <td className="py-2 px-2.5 text-gray-700">{impressionsOf(post).toLocaleString('pt-BR')}</td>
-                    <td className="py-2 px-2.5 text-gray-500">{(post.reach || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-700">{impressionsOf(post) == null ? '—' : impressionsOf(post).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{post.reach == null ? '—' : post.reach.toLocaleString('pt-BR')}</td>
                     <td className="py-2 px-2.5 text-gray-500">{(post.likes || 0).toLocaleString('pt-BR')}</td>
                     <td className="py-2 px-2.5 text-gray-500">{(post.comments || 0).toLocaleString('pt-BR')}</td>
-                    <td className="py-2 px-2.5 text-gray-500">{(post.shares || 0).toLocaleString('pt-BR')}</td>
-                    <td className="py-2 px-2.5 text-gray-500">{(post.saves || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{post.shares == null ? '—' : post.shares.toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 text-gray-500">{post.saves == null ? '—' : post.saves.toLocaleString('pt-BR')}</td>
                     <td className="py-2 px-2.5 font-medium text-pink-600">
                       {post.followsAvailable ? `+${(post.follows || 0).toLocaleString('pt-BR')}` : '—'}
                     </td>
@@ -434,14 +434,14 @@ function PostDetailModal({ post, accessToken, onClose }) {
         {post.caption && <p className="text-sm text-gray-700 whitespace-pre-wrap">{post.caption}</p>}
 
         <div className="flex flex-wrap gap-3 py-2 border-y border-gray-100">
-          <StatChip icon={Eye} value={post.views || post.reach} label="Visualizações" />
-          <StatChip icon={Users} value={post.reach} label="Alcance" />
+          {post.views != null && <StatChip icon={Eye} value={post.views} label="Visualizações" />}
+          {post.reach != null && <StatChip icon={Users} value={post.reach} label="Alcance" />}
           <StatChip icon={Heart} value={post.likes} label="Curtidas" />
           <StatChip icon={MessageCircle} value={post.comments} label="Comentários" />
-          <StatChip icon={Bookmark} value={post.saves} label="Salvamentos" />
-          <StatChip icon={Repeat2} value={post.shares} label="Compartilhamentos" />
+          {post.saves != null && <StatChip icon={Bookmark} value={post.saves} label="Salvamentos" />}
+          {post.shares != null && <StatChip icon={Repeat2} value={post.shares} label="Compartilhamentos" />}
           {post.followsAvailable && <StatChip icon={UserPlus} value={post.follows} label="Seguidores gerados" />}
-          {post.avgWatchTimeSec > 0 && (
+          {post.avgWatchTimeSec != null && (
             <StatChip icon={Clock} value={post.avgWatchTimeSec} label="Tempo médio assistido (s)" />
           )}
         </div>
@@ -467,11 +467,14 @@ function PostDetailModal({ post, accessToken, onClose }) {
             <div className="space-y-2.5 max-h-56 overflow-y-auto">
               {comments.map((c) => (
                 <div key={c.id} className="text-xs bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-                  <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center justify-between gap-3 mb-0.5">
                     <span className="font-medium text-gray-700">@{c.username || 'usuário'}</span>
-                    <span className="text-gray-400">{c.timestamp ? new Date(c.timestamp).toLocaleDateString('pt-BR') : ''}</span>
+                    <span className="text-gray-400 shrink-0">{c.timestamp ? new Date(c.timestamp).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}</span>
                   </div>
                   <p className="text-gray-600">{c.text}</p>
+                  <p className="inline-flex items-center gap-1 text-[10px] text-gray-400 mt-1.5" title="Curtidas no comentário">
+                    <Heart size={10} /> {c.likeCount.toLocaleString('pt-BR')}
+                  </p>
                 </div>
               ))}
             </div>

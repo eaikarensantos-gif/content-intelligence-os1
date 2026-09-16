@@ -106,11 +106,14 @@ export default function AccountOverview({ accessToken, posts }) {
       {/* Métricas do período (30 dias) */}
       {periodStats ? (
         <div>
-          <p className="text-xs font-semibold text-gray-700 mb-2">Últimos 30 dias</p>
+          <div className="mb-2">
+            <p className="text-xs font-semibold text-gray-700">Últimos 30 dias</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Soma das séries diárias devolvidas pela Meta. Em alcance, a mesma conta pode aparecer em dias diferentes.</p>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {periodStats.reach != null && <StatCard icon={Eye} label="Alcance" value={periodStats.reach} />}
             {periodStats.profile_views != null && <StatCard icon={TrendingUp} label="Visitas ao perfil" value={periodStats.profile_views} />}
-            {periodStats.website_clicks != null && <StatCard icon={MousePointerClick} label="Cliques no site" value={periodStats.website_clicks} />}
+            {periodStats.website_clicks != null && <StatCard icon={MousePointerClick} label={periodStats.website_clicks_label || 'Cliques no site'} value={periodStats.website_clicks} />}
             {periodStats.accounts_engaged != null && <StatCard icon={Users} label="Contas engajadas" value={periodStats.accounts_engaged} />}
             {periodStats.total_interactions != null && <StatCard icon={TrendingUp} label="Interações totais" value={periodStats.total_interactions} />}
           </div>
@@ -248,6 +251,35 @@ export default function AccountOverview({ accessToken, posts }) {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Seguidores online por hora — exibido somente quando a API devolve a série. */}
+      {data.onlineFollowers?.some((hour) => hour.count > 0) ? (
+        <div className="card p-4">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <p className="text-xs font-semibold text-gray-700">Seguidores online por hora</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Distribuição agregada da audiência ao longo do dia.</p>
+            </div>
+            <p className="text-[9px] text-gray-400">Horário da conta</p>
+          </div>
+          <div className="flex items-end gap-1 h-28">
+            {(() => {
+              const max = Math.max(...data.onlineFollowers.map((hour) => hour.count), 1)
+              return data.onlineFollowers.map(({ hour, count }) => (
+                <div key={hour} className="flex-1 flex flex-col items-center justify-end h-full gap-1" title={`${hour}h: ${count.toLocaleString('pt-BR')} seguidores online`}>
+                  <span className="text-[8px] text-gray-400 opacity-0 hover:opacity-100">{count}</span>
+                  <div className="w-full bg-pink-400 rounded-t" style={{ height: `${Math.max((count / max) * 100, count > 0 ? 4 : 0)}%` }} />
+                  {hour % 3 === 0 && <span className="text-[8px] text-gray-400">{hour}h</span>}
+                </div>
+              ))
+            })()}
+          </div>
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-400 bg-gray-50 rounded-lg p-3 border border-gray-100">
+          Seguidores online por hora não foram disponibilizados pela API para esta conta.
+        </p>
       )}
 
       {/* Melhores dias da semana pra postar */}

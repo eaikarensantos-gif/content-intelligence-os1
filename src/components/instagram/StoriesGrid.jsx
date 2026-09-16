@@ -107,15 +107,20 @@ export default function StoriesGrid({ accessToken }) {
                     </span>
                   )}
                 </div>
-                <div className="p-2.5 flex flex-wrap gap-x-2 gap-y-1">
-                  <StatChip icon={Eye} value={story.reach} label="Alcance" />
-                  <StatChip icon={MessageCircle} value={story.replies} label="Respostas" />
+                <div className="p-2.5">
+                  <p className="text-[9px] text-gray-400 mb-1.5">
+                    {story.timestamp ? new Date(story.timestamp).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                  </p>
+                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                  {story.reach != null && <StatChip icon={Eye} value={story.reach} label="Alcance" />}
+                  {story.replies != null && <StatChip icon={MessageCircle} value={story.replies} label="Respostas" />}
                   {story.linkClicks !== null && story.linkClicks !== undefined && (
                     <StatChip icon={MousePointerClick} value={story.linkClicks} label="Cliques no link" />
                   )}
-                  <StatChip icon={LogOut} value={story.exits} label="Saídas" />
-                  <StatChip icon={ChevronRight} value={story.tapsForward} label="Avançou" />
-                  <StatChip icon={ChevronLeft} value={story.tapsBack} label="Voltou" />
+                  {story.exits != null && <StatChip icon={LogOut} value={story.exits} label="Saídas" />}
+                  {story.tapsForward != null && <StatChip icon={ChevronRight} value={story.tapsForward} label="Avançou" />}
+                  {story.tapsBack != null && <StatChip icon={ChevronLeft} value={story.tapsBack} label="Voltou" />}
+                  </div>
                 </div>
               </a>
             )

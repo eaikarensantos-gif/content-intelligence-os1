@@ -432,7 +432,6 @@ async function instagramFetchMetrics(accessToken, limit) {
 
   const items = mediaData.data || []
   let insightsAvailable = true
-  let linkClicksAvailable = true
 
   const postTypeMap = { REELS: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: 'image', VIDEO: 'video' }
 
@@ -529,8 +528,7 @@ async function instagramFetchPosts(accessToken, limit) {
 
   const posts = []
   for (const m of items) {
-    let reach = 0, saves = 0, shares = 0, views = 0, follows = 0, avgWatchTimeMs = 0
-    let followsAvailable = false
+    let reach = null, saves = null, shares = null, views = null, follows = null, avgWatchTimeMs = null
 
     if (insightsAvailable) {
       // Tenta do conjunto mais completo pro mais básico — "ig_reels_avg_watch_time"
@@ -563,7 +561,7 @@ async function instagramFetchPosts(accessToken, limit) {
           if (metric.name === 'saved')  saves = val
           if (metric.name === 'shares') shares = val
           if (metric.name === 'views')  views = val
-          if (metric.name === 'follows') { follows = val; followsAvailable = true }
+          if (metric.name === 'follows') follows = val
           if (metric.name === 'ig_reels_avg_watch_time') avgWatchTimeMs = val
         }
       } else if (result?.status === 400 || result?.status === 403) {
@@ -580,8 +578,9 @@ async function instagramFetchPosts(accessToken, limit) {
       timestamp:       m.timestamp || '',
       likes:           m.like_count || 0,
       comments:        m.comments_count || 0,
-      reach, saves, shares, views, follows, followsAvailable,
-      avgWatchTimeSec: avgWatchTimeMs ? Math.round(avgWatchTimeMs / 1000) : 0,
+      reach, saves, shares, views, follows,
+      followsAvailable: follows !== null,
+      avgWatchTimeSec: avgWatchTimeMs === null ? null : Math.round(avgWatchTimeMs / 1000),
     })
   }
 
@@ -618,7 +617,7 @@ async function instagramFetchStories(accessToken) {
 
   const stories = []
   for (const m of items) {
-    let reach = 0, replies = 0, exits = 0, tapsForward = 0, tapsBack = 0, linkClicks = null
+    let reach = null, replies = null, exits = null, tapsForward = null, tapsBack = null, linkClicks = null
 
     if (insightsAvailable) {
       const tiers = ['reach,replies,exits,taps_forward,taps_back', 'reach,replies', 'reach']
@@ -772,25 +771,38 @@ async function instagramFetchAccountOverview(accessToken) {
     return { ok: res.ok, status: res.status, data }
   }
 
-  // Totais do período (soma os valores diários de cada métrica)
+  // Métricas do período são buscadas separadamente. Assim, uma métrica não
+  // suportada não apaga as demais e a UI nunca precisa preencher ausência com 0.
   let periodStats = null
   {
-    const tiers = [
-      'reach,profile_views,website_clicks,accounts_engaged,total_interactions',
-      'reach,profile_views,accounts_engaged',
-      'reach',
-    ]
-    let result = null
-    for (const metricNames of tiers) {
-      result = await fetchInsights(metricNames)
-      if (result.ok || result.status !== 400) break
+    async function fetchAccountMetric(metricName) {
+      const result = await fetchInsights(metricName)
+      if (!result.ok) return null
+      const metric = (result.data.data || []).find((item) => item.name === metricName)
+      if (!metric) return null
+      if (metric.total_value?.value != null) return metric.total_value.value
+      if (Array.isArray(metric.values)) return metric.values.reduce((sum, value) => sum + (value.value || 0), 0)
+      return null
     }
-    if (result?.ok) {
-      periodStats = {}
-      for (const metric of result.data.data || []) {
-        periodStats[metric.name] = (metric.values || []).reduce((sum, v) => sum + (v.value || 0), 0)
-      }
+
+    const [reach, profileViews, websiteClicks, profileLinkTaps, accountsEngaged, totalInteractions] = await Promise.all([
+      fetchAccountMetric('reach'),
+      fetchAccountMetric('profile_views'),
+      fetchAccountMetric('website_clicks'),
+      fetchAccountMetric('profile_links_taps'),
+      fetchAccountMetric('accounts_engaged'),
+      fetchAccountMetric('total_interactions'),
+    ])
+
+    periodStats = {
+      reach,
+      profile_views: profileViews,
+      website_clicks: websiteClicks ?? profileLinkTaps,
+      website_clicks_label: websiteClicks != null ? 'Cliques no site' : 'Cliques nos links do perfil',
+      accounts_engaged: accountsEngaged,
+      total_interactions: totalInteractions,
     }
+    if (Object.entries(periodStats).every(([key, value]) => key === 'website_clicks_label' || value == null)) periodStats = null
   }
 
   // Crescimento de seguidores dia a dia
