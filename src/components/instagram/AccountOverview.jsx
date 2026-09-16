@@ -68,7 +68,6 @@ export default function AccountOverview({ accessToken, posts }) {
     .filter((post) => post.follows > 0)
     .sort((a, b) => b.follows - a.follows)
   const selectedGrowthPoint = followerGrowth?.find((point) => point.date === selectedGrowthDate)
-  const selectedDatePosts = (posts || []).filter((post) => (post.timestamp || '').slice(0, 10) === selectedGrowthDate)
 
   const GrowthDot = ({ cx, cy, payload }) => {
     if (!payload || payload.value <= 0) return null
@@ -77,7 +76,7 @@ export default function AccountOverview({ accessToken, posts }) {
       <g
         role="button"
         tabIndex="0"
-        aria-label={`${payload.date}: ${payload.value} seguidores. Clique para ver os posts publicados nesse dia.`}
+        aria-label={`${payload.date}: ${payload.value} novos seguidores. Clique para ver o total do dia.`}
         className="cursor-pointer outline-none"
         onClick={() => setSelectedGrowthDate(payload.date)}
         onKeyDown={(event) => {
@@ -133,8 +132,8 @@ export default function AccountOverview({ accessToken, posts }) {
       {followerGrowth?.length > 1 && (
         <div className="card p-4">
           <div className="flex items-start justify-between gap-3 mb-3">
-            <p className="text-xs font-semibold text-gray-700">Crescimento de seguidores (30 dias)</p>
-            <p className="text-[10px] text-gray-400">Clique numa bolinha para ver os posts do dia</p>
+            <p className="text-xs font-semibold text-gray-700">Novos seguidores por dia (30 dias)</p>
+            <p className="text-[10px] text-gray-400">Clique numa bolinha para ver o total do dia</p>
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={followerGrowth}>
@@ -147,7 +146,7 @@ export default function AccountOverview({ accessToken, posts }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} width={32} />
-              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} labelFormatter={(date) => `${date} · clique para ver os posts`} />
+              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} labelFormatter={(date) => `${date} · total diário`} />
               <Area type="monotone" dataKey="value" name="Seguidores" stroke="#ec4899" strokeWidth={2} fill="url(#gFollowers)" dot={<GrowthDot />} activeDot={false} />
             </AreaChart>
           </ResponsiveContainer>
@@ -164,38 +163,16 @@ export default function AccountOverview({ accessToken, posts }) {
                 <button onClick={() => setSelectedGrowthDate(null)} className="text-[10px] text-gray-400 hover:text-gray-600">Fechar</button>
               </div>
 
-              {selectedDatePosts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {selectedDatePosts.map((post) => (
-                    <a
-                      key={post.id}
-                      href={post.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 rounded-lg border border-gray-100 p-2 hover:border-pink-200 hover:bg-pink-50/40 transition-colors"
-                    >
-                      <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden shrink-0">
-                        {post.thumbnailUrl ? (
-                          <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300"><Grid3x3 size={16} /></div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-700 line-clamp-2">{post.caption || 'Publicação sem legenda'}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {post.followsAvailable ? `${post.follows.toLocaleString('pt-BR')} seguidores atribuídos ao post` : 'Abrir no Instagram'}
-                        </p>
-                      </div>
-                      <ExternalLink size={12} className="text-gray-300 shrink-0" />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-gray-500 bg-gray-50 rounded-lg p-2.5">
-                  Nenhum post foi publicado nessa data entre as publicações recentes carregadas.
+              <div className="text-[11px] text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <p>
+                  Esse número é o total de seguidores ganhos na conta nesse dia. O Instagram não informa, nessa série diária, qual publicação originou cada seguidor.
                 </p>
-              )}
+                {followerDrivingPosts.length > 0 && (
+                  <a href="#instagram-posts-with-follows" className="inline-flex items-center gap-1 mt-2 text-pink-600 hover:underline">
+                    Ver posts com atribuição direta do Instagram
+                  </a>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -203,7 +180,7 @@ export default function AccountOverview({ accessToken, posts }) {
 
       {/* Posts que geraram seguidores — atribuição direta do insight da mídia. */}
       {posts?.length > 0 && (
-        <div className="card p-4">
+        <div id="instagram-posts-with-follows" className="card p-4 scroll-mt-4">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <p className="text-xs font-semibold text-gray-700">Posts que geraram seguidores</p>
