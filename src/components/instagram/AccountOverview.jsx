@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Users, UserPlus, Grid3x3, Eye, TrendingUp, MousePointerClick, Loader2, ExternalLink } from 'lucide-react'
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
+import { Users, UserPlus, Grid3x3, Eye, TrendingUp, MousePointerClick, Loader2 } from 'lucide-react'
 import { instagramAccountOverview } from '../../lib/aiService'
 
 function StatCard({ icon: Icon, label, value }) {
@@ -36,12 +36,10 @@ function DemographicsList({ title, items }) {
   )
 }
 
-export default function AccountOverview({ accessToken, posts }) {
+export default function AccountOverview({ accessToken }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [selectedGrowthDate, setSelectedGrowthDate] = useState(null)
-  const [showDirectPosts, setShowDirectPosts] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -64,34 +62,19 @@ export default function AccountOverview({ accessToken, posts }) {
   if (!data) return null
 
   const { profile, periodStats, followerGrowth, demographics, dayPeaks } = data
-  const postsWithFollowerData = (posts || []).filter((post) => post.followsAvailable)
-  const followerDrivingPosts = postsWithFollowerData
-    .filter((post) => post.follows > 0)
-    .sort((a, b) => b.follows - a.follows)
-  const selectedGrowthPoint = followerGrowth?.find((point) => point.date === selectedGrowthDate)
-
-  const GrowthDot = ({ cx, cy, payload }) => {
-    if (!payload || payload.value <= 0) return null
-    const selected = payload.date === selectedGrowthDate
-    return (
-      <g
-        role="button"
-        tabIndex="0"
-        aria-label={`${payload.date}: ${payload.value} novos seguidores. Clique para ver o total do dia.`}
-        className="cursor-pointer outline-none"
-        onClick={() => { setSelectedGrowthDate(payload.date); setShowDirectPosts(false) }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            setSelectedGrowthDate(payload.date)
-            setShowDirectPosts(false)
-          }
-        }}
-      >
-        <circle cx={cx} cy={cy} r={10} fill="transparent" />
-        <circle cx={cx} cy={cy} r={selected ? 5 : 3} fill="#ec4899" stroke="white" strokeWidth={selected ? 2 : 1} />
-      </g>
-    )
-  }
+  const growthTotal = (followerGrowth || []).reduce((sum, point) => sum + (point.value || 0), 0)
+  const growthAverage = followerGrowth?.length ? growthTotal / followerGrowth.length : 0
+  const bestGrowthDay = (followerGrowth || []).reduce(
+    (best, point) => (!best || point.value > best.value ? point : best),
+    null,
+  )
+  const topGrowthDates = new Set(
+    [...(followerGrowth || [])]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3)
+      .map((point) => point.date),
+  )
+  const formatGrowthDate = (date, options = {}) => new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', options)
 
   return (
     <div className="space-y-4 mb-6">
@@ -135,171 +118,59 @@ export default function AccountOverview({ accessToken, posts }) {
       {/* Crescimento de seguidores */}
       {followerGrowth?.length > 1 && (
         <div className="card p-4">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <p className="text-xs font-semibold text-gray-700">Novos seguidores por dia (30 dias)</p>
-            <p className="text-[10px] text-gray-400">Clique numa bolinha para ver o total do dia</p>
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-gray-700">Novos seguidores por dia</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Entradas diárias registradas pelo Instagram nos últimos 30 dias.</p>
           </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={followerGrowth}>
-              <defs>
-                <linearGradient id="gFollowers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ec4899" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="#ec4899" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <p className="text-[10px] text-gray-400">Novos seguidores no período</p>
+              <p className="text-xl font-bold text-gray-900 mt-1">{growthTotal.toLocaleString('pt-BR')}</p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <p className="text-[10px] text-gray-400">Média diária</p>
+              <p className="text-xl font-bold text-gray-900 mt-1">{growthAverage.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <p className="text-[10px] text-gray-400">Melhor dia</p>
+              <p className="text-xl font-bold text-gray-900 mt-1">{bestGrowthDay?.value.toLocaleString('pt-BR') || 0}</p>
+              {bestGrowthDay && <p className="text-[10px] text-gray-400 mt-0.5">{formatGrowthDate(bestGrowthDay.date, { day: '2-digit', month: 'short' })}</p>}
+            </div>
+          </div>
+
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={followerGrowth} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(date) => formatGrowthDate(date, { day: '2-digit', month: '2-digit' })}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+              />
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} width={32} />
-              <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} labelFormatter={(date) => `${date} · total diário`} />
-              <Area type="monotone" dataKey="value" name="Seguidores" stroke="#ec4899" strokeWidth={2} fill="url(#gFollowers)" dot={<GrowthDot />} activeDot={false} />
-            </AreaChart>
+              <Tooltip
+                contentStyle={{ fontSize: 11, borderRadius: 8, borderColor: '#f3f4f6' }}
+                labelFormatter={(date) => formatGrowthDate(date, { day: '2-digit', month: 'long', year: 'numeric' })}
+                formatter={(value) => [value.toLocaleString('pt-BR'), 'Novos seguidores']}
+              />
+              <ReferenceLine
+                y={growthAverage}
+                stroke="#6b7280"
+                strokeDasharray="4 4"
+                label={{ value: `Média ${growthAverage.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`, fill: '#6b7280', fontSize: 10, position: 'insideTopRight' }}
+              />
+              <Bar dataKey="value" name="Novos seguidores" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                {followerGrowth.map((point) => (
+                  <Cell key={point.date} fill={topGrowthDates.has(point.date) ? '#db2777' : '#f9a8d4'} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
 
-          {selectedGrowthPoint && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    {new Date(`${selectedGrowthDate}T12:00:00`).toLocaleDateString('pt-BR')} · {selectedGrowthPoint.value.toLocaleString('pt-BR')} seguidores
-                  </p>
-                  <p className="text-[10px] text-gray-400">Posts publicados nesse dia. A coincidência de data não prova que um post gerou todo o crescimento.</p>
-                </div>
-                <button onClick={() => setSelectedGrowthDate(null)} className="text-[10px] text-gray-400 hover:text-gray-600">Fechar</button>
-              </div>
-
-              <div className="text-[11px] text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <p>
-                  Esse número é o total de seguidores ganhos na conta nesse dia. O Instagram não informa, nessa série diária, qual publicação originou cada seguidor.
-                </p>
-                {followerDrivingPosts.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowDirectPosts((visible) => !visible)}
-                    className="inline-flex items-center gap-1 mt-2 text-pink-600 hover:underline"
-                  >
-                    {showDirectPosts ? 'Ocultar posts com atribuição direta' : 'Ver posts com atribuição direta do Instagram'}
-                  </button>
-                )}
-              </div>
-
-              {showDirectPosts && followerDrivingPosts.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  <p className="text-[10px] text-gray-400">
-                    Estes posts têm atribuição direta do Instagram, mas não estão vinculados ao dia selecionado no gráfico.
-                  </p>
-                  {followerDrivingPosts.slice(0, 8).map((post) => (
-                    <a
-                      key={post.id}
-                      href={post.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 rounded-lg border border-gray-100 p-2 hover:border-pink-200 hover:bg-pink-50/40 transition-colors"
-                    >
-                      <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden shrink-0">
-                        {post.thumbnailUrl ? (
-                          <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300"><Grid3x3 size={16} /></div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-700 line-clamp-2">{post.caption || 'Publicação sem legenda'}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {post.timestamp ? new Date(post.timestamp).toLocaleDateString('pt-BR') : ''}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-pink-600">+{post.follows.toLocaleString('pt-BR')}</p>
-                        <p className="text-[9px] text-gray-400">seguidores</p>
-                      </div>
-                      <ExternalLink size={12} className="text-gray-300 shrink-0" />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
-      )}
-
-      {/* Posts que geraram seguidores — atribuição direta do insight da mídia. */}
-      {posts?.length > 0 && (
-        <div id="instagram-posts-with-follows" className="card p-4 scroll-mt-4">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div>
-              <p className="text-xs font-semibold text-gray-700">Posts que geraram seguidores</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Seguidores atribuídos diretamente pelo Instagram a cada publicação.</p>
-            </div>
-            {followerDrivingPosts.length > 0 && (
-              <span className="text-xs font-bold text-pink-600 whitespace-nowrap">
-                +{followerDrivingPosts.reduce((sum, post) => sum + post.follows, 0).toLocaleString('pt-BR')}
-              </span>
-            )}
-          </div>
-
-          {followerDrivingPosts.length > 0 ? (
-            <div className="space-y-2">
-              {followerDrivingPosts.slice(0, 8).map((post) => (
-                <a
-                  key={post.id}
-                  href={post.permalink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-lg border border-gray-100 p-2 hover:border-pink-200 hover:bg-pink-50/40 transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden shrink-0">
-                    {post.thumbnailUrl ? (
-                      <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300"><Grid3x3 size={16} /></div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-700 line-clamp-2">{post.caption || 'Publicação sem legenda'}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
-                      {post.timestamp ? new Date(post.timestamp).toLocaleDateString('pt-BR') : ''}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-pink-600">+{post.follows.toLocaleString('pt-BR')}</p>
-                    <p className="text-[9px] text-gray-400">seguidores</p>
-                  </div>
-                  <ExternalLink size={12} className="text-gray-300 shrink-0" />
-                </a>
-              ))}
-            </div>
-          ) : postsWithFollowerData.length > 0 ? (
-            <p className="text-[11px] text-gray-500 bg-gray-50 rounded-lg p-2.5">
-              Nenhum dos posts recentes trouxe seguidores segundo a atribuição do Instagram.
-            </p>
-          ) : (
-            <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg p-2.5 border border-amber-200">
-              O Instagram não liberou o número de seguidores por publicação para esses posts. O gráfico geral continua válido, mas não dá para afirmar quais posts causaram o crescimento sem essa métrica.
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Seguidores online por hora */}
-      {data.onlineFollowers ? (
-        <div className="card p-4">
-          <p className="text-xs font-semibold text-gray-700 mb-3">Quando sua audiência está online (por hora do dia)</p>
-          <div className="flex items-end gap-1 h-20">
-            {(() => {
-              const max = Math.max(...data.onlineFollowers.map((h) => h.count), 1)
-              return data.onlineFollowers.map(({ hour, count }) => (
-                <div key={hour} className="flex-1 flex flex-col items-center justify-end h-full gap-1" title={`${hour}h: ${count} seguidores online`}>
-                  <div className="w-full bg-pink-400 rounded-t" style={{ height: `${Math.max((count / max) * 100, count > 0 ? 4 : 0)}%` }} />
-                  {hour % 3 === 0 && <span className="text-[8px] text-gray-400">{hour}h</span>}
-                </div>
-              ))
-            })()}
-          </div>
-        </div>
-      ) : (
-        <p className="text-[11px] text-gray-400 bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-          Horários de atividade da audiência não disponíveis nessa conexão.
-        </p>
       )}
 
       {/* Melhores dias da semana pra postar */}
