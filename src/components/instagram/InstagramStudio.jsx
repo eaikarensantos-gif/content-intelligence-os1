@@ -51,6 +51,8 @@ function sortValue(post, key) {
 }
 
 function FollowerAttribution({ posts, loading }) {
+  const [display, setDisplay] = useState('grid')
+
   if (loading && !posts) {
     return <div className="flex items-center justify-center py-20"><Loader2 size={28} className="animate-spin text-pink-400" /></div>
   }
@@ -65,6 +67,7 @@ function FollowerAttribution({ posts, loading }) {
     if ((a.follows || 0) !== (b.follows || 0)) return (b.follows || 0) - (a.follows || 0)
     return (b.timestamp || '').localeCompare(a.timestamp || '')
   })
+  const gridPosts = [...loadedPosts].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
 
   return (
     <div className="space-y-4">
@@ -96,7 +99,63 @@ function FollowerAttribution({ posts, loading }) {
         </div>
       </div>
 
-      {ordered.length > 0 ? (
+      {loadedPosts.length > 0 && (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-gray-400">{loadedPosts.length} publicações carregadas</p>
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg" aria-label="Visualização dos seguidores por post">
+            <button
+              type="button"
+              onClick={() => setDisplay('grid')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-all ${display === 'grid' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              title="Ver como grade do Instagram"
+            >
+              <LayoutGrid size={13} /> Grade
+            </button>
+            <button
+              type="button"
+              onClick={() => setDisplay('list')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-all ${display === 'list' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              title="Ver lista detalhada"
+            >
+              <List size={13} /> Lista
+            </button>
+          </div>
+        </div>
+      )}
+
+      {display === 'grid' && gridPosts.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-2">
+          {gridPosts.map((post) => (
+            <a
+              key={post.id}
+              href={post.permalink || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative aspect-square overflow-hidden rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-400"
+              title={`${post.caption || 'Publicação sem legenda'} — ${post.followsAvailable ? `+${post.follows} seguidores atribuídos` : 'métrica não disponível'}`}
+            >
+              {post.thumbnailUrl ? (
+                <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-300"><Instagram size={24} /></div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-2 pt-8 pb-2">
+                {post.followsAvailable ? (
+                  <p className="text-sm sm:text-base font-bold text-white">+{post.follows.toLocaleString('pt-BR')}</p>
+                ) : (
+                  <p className="text-[9px] sm:text-[10px] font-medium text-amber-200">Sem dado</p>
+                )}
+                <p className="text-[8px] text-white/70 hidden sm:block">seguidores atribuídos</p>
+              </div>
+              <span className="absolute top-1.5 left-1.5 rounded bg-black/55 px-1.5 py-0.5 text-[8px] font-medium text-white uppercase">
+                {POST_TYPE_LABEL[post.postType] || post.postType || 'Post'}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {display === 'list' && ordered.length > 0 ? (
         <div className="card p-0 overflow-hidden">
           <div className="divide-y divide-gray-100">
             {ordered.map((post) => (
@@ -139,9 +198,9 @@ function FollowerAttribution({ posts, loading }) {
             ))}
           </div>
         </div>
-      ) : (
+      ) : display === 'list' ? (
         <p className="text-sm text-gray-400 text-center py-12">Nenhuma publicação carregada.</p>
-      )}
+      ) : null}
     </div>
   )
 }
