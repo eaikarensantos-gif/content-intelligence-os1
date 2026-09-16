@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Users, UserPlus, Grid3x3, Eye, TrendingUp, MousePointerClick, Loader2 } from 'lucide-react'
+import { Users, UserPlus, Grid3x3, Eye, TrendingUp, MousePointerClick, Loader2, ExternalLink } from 'lucide-react'
 import { instagramAccountOverview } from '../../lib/aiService'
 
 function StatCard({ icon: Icon, label, value }) {
@@ -36,7 +36,7 @@ function DemographicsList({ title, items }) {
   )
 }
 
-export default function AccountOverview({ accessToken }) {
+export default function AccountOverview({ accessToken, posts }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -62,6 +62,10 @@ export default function AccountOverview({ accessToken }) {
   if (!data) return null
 
   const { profile, periodStats, followerGrowth, demographics, dayPeaks } = data
+  const postsWithFollowerData = (posts || []).filter((post) => post.followsAvailable)
+  const followerDrivingPosts = postsWithFollowerData
+    .filter((post) => post.follows > 0)
+    .sort((a, b) => b.follows - a.follows)
 
   return (
     <div className="space-y-4 mb-6">
@@ -121,6 +125,64 @@ export default function AccountOverview({ accessToken }) {
               <Area type="monotone" dataKey="value" name="Seguidores" stroke="#ec4899" strokeWidth={2} fill="url(#gFollowers)" dot={{ r: 2, fill: '#ec4899' }} />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Posts que geraram seguidores — atribuição direta do insight da mídia. */}
+      {posts?.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-700">Posts que geraram seguidores</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Seguidores atribuídos diretamente pelo Instagram a cada publicação.</p>
+            </div>
+            {followerDrivingPosts.length > 0 && (
+              <span className="text-xs font-bold text-pink-600 whitespace-nowrap">
+                +{followerDrivingPosts.reduce((sum, post) => sum + post.follows, 0).toLocaleString('pt-BR')}
+              </span>
+            )}
+          </div>
+
+          {followerDrivingPosts.length > 0 ? (
+            <div className="space-y-2">
+              {followerDrivingPosts.slice(0, 8).map((post) => (
+                <a
+                  key={post.id}
+                  href={post.permalink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-lg border border-gray-100 p-2 hover:border-pink-200 hover:bg-pink-50/40 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden shrink-0">
+                    {post.thumbnailUrl ? (
+                      <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300"><Grid3x3 size={16} /></div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-700 line-clamp-2">{post.caption || 'Publicação sem legenda'}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {post.timestamp ? new Date(post.timestamp).toLocaleDateString('pt-BR') : ''}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-pink-600">+{post.follows.toLocaleString('pt-BR')}</p>
+                    <p className="text-[9px] text-gray-400">seguidores</p>
+                  </div>
+                  <ExternalLink size={12} className="text-gray-300 shrink-0" />
+                </a>
+              ))}
+            </div>
+          ) : postsWithFollowerData.length > 0 ? (
+            <p className="text-[11px] text-gray-500 bg-gray-50 rounded-lg p-2.5">
+              Nenhum dos posts recentes trouxe seguidores segundo a atribuição do Instagram.
+            </p>
+          ) : (
+            <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg p-2.5 border border-amber-200">
+              O Instagram não liberou o número de seguidores por publicação para esses posts. O gráfico geral continua válido, mas não dá para afirmar quais posts causaram o crescimento sem essa métrica.
+            </p>
+          )}
         </div>
       )}
 

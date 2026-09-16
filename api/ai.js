@@ -529,7 +529,8 @@ async function instagramFetchPosts(accessToken, limit) {
 
   const posts = []
   for (const m of items) {
-    let reach = 0, saves = 0, shares = 0, views = 0, avgWatchTimeMs = 0
+    let reach = 0, saves = 0, shares = 0, views = 0, follows = 0, avgWatchTimeMs = 0
+    let followsAvailable = false
 
     if (insightsAvailable) {
       // Tenta do conjunto mais completo pro mais básico — "ig_reels_avg_watch_time"
@@ -537,8 +538,17 @@ async function instagramFetchPosts(accessToken, limit) {
       // originalmente pro fluxo via Página do Facebook), então cada tier cai
       // pro anterior se a API rejeitar um nome de métrica específico (400).
       const tiers = m.media_product_type === 'REELS'
-        ? ['reach,saved,shares,views,ig_reels_avg_watch_time', 'reach,saved,shares,views', 'reach,saved,shares']
-        : ['reach,saved,shares,views', 'reach,saved,shares']
+        ? [
+            'reach,saved,shares,views,follows,ig_reels_avg_watch_time',
+            'reach,saved,shares,views,ig_reels_avg_watch_time',
+            'reach,saved,shares,views',
+            'reach,saved,shares',
+          ]
+        : [
+            'reach,saved,shares,views,follows',
+            'reach,saved,shares,views',
+            'reach,saved,shares',
+          ]
 
       let result = null
       for (const metricNames of tiers) {
@@ -553,6 +563,7 @@ async function instagramFetchPosts(accessToken, limit) {
           if (metric.name === 'saved')  saves = val
           if (metric.name === 'shares') shares = val
           if (metric.name === 'views')  views = val
+          if (metric.name === 'follows') { follows = val; followsAvailable = true }
           if (metric.name === 'ig_reels_avg_watch_time') avgWatchTimeMs = val
         }
       } else if (result?.status === 400 || result?.status === 403) {
@@ -569,7 +580,7 @@ async function instagramFetchPosts(accessToken, limit) {
       timestamp:       m.timestamp || '',
       likes:           m.like_count || 0,
       comments:        m.comments_count || 0,
-      reach, saves, shares, views,
+      reach, saves, shares, views, follows, followsAvailable,
       avgWatchTimeSec: avgWatchTimeMs ? Math.round(avgWatchTimeMs / 1000) : 0,
     })
   }

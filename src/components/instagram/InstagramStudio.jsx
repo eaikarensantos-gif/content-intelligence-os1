@@ -37,6 +37,7 @@ const SORT_COLS = [
   { key: 'comments', label: 'Coment.' },
   { key: 'shares', label: 'Compart.' },
   { key: 'saves', label: 'Salvam.' },
+  { key: 'follows', label: 'Seguidores' },
   { key: 'engagement', label: 'Eng.' },
   { key: 'engagementRate', label: 'Taxa Eng.' },
 ]
@@ -96,7 +97,7 @@ export default function InstagramStudio() {
   }
 
   const exportCSV = () => {
-    const headers = ['Data', 'Tipo', 'Descrição', 'Visualizações', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Engajamento', 'Taxa Eng.%', 'Link']
+    const headers = ['Data', 'Tipo', 'Descrição', 'Visualizações', 'Alcance', 'Curtidas', 'Comentários', 'Compartilhamentos', 'Salvamentos', 'Seguidores', 'Engajamento', 'Taxa Eng.%', 'Link']
     const rows = filteredSorted.map((p) => [
       p.timestamp ? new Date(p.timestamp).toLocaleString('pt-BR') : '',
       POST_TYPE_LABEL[p.postType] || p.postType || '',
@@ -107,6 +108,7 @@ export default function InstagramStudio() {
       p.comments || 0,
       p.shares || 0,
       p.saves || 0,
+      p.followsAvailable ? p.follows : 'Não disponível',
       engagementOf(p),
       (engagementRateOf(p) * 100).toFixed(2),
       p.permalink || '',
@@ -186,7 +188,7 @@ export default function InstagramStudio() {
         )}
       </div>
 
-      <AccountOverview accessToken={connection.accessToken} />
+      <AccountOverview accessToken={connection.accessToken} posts={posts} />
 
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5 w-fit">
         {[['posts', 'Posts'], ['stories', 'Stories']].map(([id, label]) => (
@@ -307,6 +309,7 @@ export default function InstagramStudio() {
                   <StatChip icon={MessageCircle} value={post.comments} label="Comentários" />
                   <StatChip icon={Bookmark} value={post.saves} label="Salvamentos" />
                   <StatChip icon={Repeat2} value={post.shares} label="Compartilhamentos" />
+                  {post.followsAvailable && <StatChip icon={UserPlus} value={post.follows} label="Seguidores gerados" />}
                   {post.avgWatchTimeSec > 0 && (
                     <StatChip icon={Clock} value={post.avgWatchTimeSec} label="Tempo médio assistido (s)" />
                   )}
@@ -381,6 +384,9 @@ export default function InstagramStudio() {
                     <td className="py-2 px-2.5 text-gray-500">{(post.comments || 0).toLocaleString('pt-BR')}</td>
                     <td className="py-2 px-2.5 text-gray-500">{(post.shares || 0).toLocaleString('pt-BR')}</td>
                     <td className="py-2 px-2.5 text-gray-500">{(post.saves || 0).toLocaleString('pt-BR')}</td>
+                    <td className="py-2 px-2.5 font-medium text-pink-600">
+                      {post.followsAvailable ? `+${(post.follows || 0).toLocaleString('pt-BR')}` : '—'}
+                    </td>
                     <td className="py-2 px-2.5 text-gray-700 font-medium">{engagementOf(post).toLocaleString('pt-BR')}</td>
                     <td className="py-2 px-2.5">
                       <span className={`font-semibold ${engagementRateOf(post) > 0.04 ? 'text-emerald-600' : engagementRateOf(post) > 0.02 ? 'text-amber-600' : 'text-gray-400'}`}>
@@ -434,6 +440,7 @@ function PostDetailModal({ post, accessToken, onClose }) {
           <StatChip icon={MessageCircle} value={post.comments} label="Comentários" />
           <StatChip icon={Bookmark} value={post.saves} label="Salvamentos" />
           <StatChip icon={Repeat2} value={post.shares} label="Compartilhamentos" />
+          {post.followsAvailable && <StatChip icon={UserPlus} value={post.follows} label="Seguidores gerados" />}
           {post.avgWatchTimeSec > 0 && (
             <StatChip icon={Clock} value={post.avgWatchTimeSec} label="Tempo médio assistido (s)" />
           )}
