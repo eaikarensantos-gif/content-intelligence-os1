@@ -41,6 +41,7 @@ export default function AccountOverview({ accessToken, posts }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedGrowthDate, setSelectedGrowthDate] = useState(null)
+  const [showDirectPosts, setShowDirectPosts] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -78,9 +79,12 @@ export default function AccountOverview({ accessToken, posts }) {
         tabIndex="0"
         aria-label={`${payload.date}: ${payload.value} novos seguidores. Clique para ver o total do dia.`}
         className="cursor-pointer outline-none"
-        onClick={() => setSelectedGrowthDate(payload.date)}
+        onClick={() => { setSelectedGrowthDate(payload.date); setShowDirectPosts(false) }}
         onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') setSelectedGrowthDate(payload.date)
+          if (event.key === 'Enter' || event.key === ' ') {
+            setSelectedGrowthDate(payload.date)
+            setShowDirectPosts(false)
+          }
         }}
       >
         <circle cx={cx} cy={cy} r={10} fill="transparent" />
@@ -168,11 +172,51 @@ export default function AccountOverview({ accessToken, posts }) {
                   Esse número é o total de seguidores ganhos na conta nesse dia. O Instagram não informa, nessa série diária, qual publicação originou cada seguidor.
                 </p>
                 {followerDrivingPosts.length > 0 && (
-                  <a href="#instagram-posts-with-follows" className="inline-flex items-center gap-1 mt-2 text-pink-600 hover:underline">
-                    Ver posts com atribuição direta do Instagram
-                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowDirectPosts((visible) => !visible)}
+                    className="inline-flex items-center gap-1 mt-2 text-pink-600 hover:underline"
+                  >
+                    {showDirectPosts ? 'Ocultar posts com atribuição direta' : 'Ver posts com atribuição direta do Instagram'}
+                  </button>
                 )}
               </div>
+
+              {showDirectPosts && followerDrivingPosts.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-[10px] text-gray-400">
+                    Estes posts têm atribuição direta do Instagram, mas não estão vinculados ao dia selecionado no gráfico.
+                  </p>
+                  {followerDrivingPosts.slice(0, 8).map((post) => (
+                    <a
+                      key={post.id}
+                      href={post.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 rounded-lg border border-gray-100 p-2 hover:border-pink-200 hover:bg-pink-50/40 transition-colors"
+                    >
+                      <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden shrink-0">
+                        {post.thumbnailUrl ? (
+                          <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><Grid3x3 size={16} /></div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-700 line-clamp-2">{post.caption || 'Publicação sem legenda'}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {post.timestamp ? new Date(post.timestamp).toLocaleDateString('pt-BR') : ''}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-pink-600">+{post.follows.toLocaleString('pt-BR')}</p>
+                        <p className="text-[9px] text-gray-400">seguidores</p>
+                      </div>
+                      <ExternalLink size={12} className="text-gray-300 shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
