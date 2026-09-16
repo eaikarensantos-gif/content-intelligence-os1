@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
-import { Users, UserPlus, Grid3x3, Eye, TrendingUp, MousePointerClick, Loader2, ExternalLink } from 'lucide-react'
+import { Users, UserPlus, Grid3x3, Eye, TrendingUp, MousePointerClick, Loader2 } from 'lucide-react'
 import { instagramAccountOverview } from '../../lib/aiService'
 
 function StatCard({ icon: Icon, label, value }) {
@@ -36,7 +36,7 @@ function DemographicsList({ title, items }) {
   )
 }
 
-export default function AccountOverview({ accessToken, posts }) {
+export default function AccountOverview({ accessToken }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -74,12 +74,6 @@ export default function AccountOverview({ accessToken, posts }) {
       .slice(0, 3)
       .map((point) => point.date),
   )
-  const postsWithFollowerData = (posts || []).filter((post) => post.followsAvailable)
-  const attributedPosts = postsWithFollowerData
-    .filter((post) => post.follows > 0)
-    .sort((a, b) => b.follows - a.follows)
-  const attributedTotal = attributedPosts.reduce((sum, post) => sum + post.follows, 0)
-  const maxAttributedFollows = attributedPosts[0]?.follows || 1
   const formatGrowthDate = (date, options = {}) => new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', options)
 
   return (
@@ -179,77 +173,6 @@ export default function AccountOverview({ accessToken, posts }) {
             </BarChart>
           </ResponsiveContainer>
 
-          <div className="mt-5 pt-4 border-t border-gray-100">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
-              <div>
-                <p className="text-xs font-semibold text-gray-700">Seguidores atribuídos por publicação</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  O gráfico mostra quando o seguidor entrou. Esta lista mostra a publicação à qual o Instagram atribuiu a entrada.
-                </p>
-              </div>
-              {attributedPosts.length > 0 && (
-                <div className="sm:text-right shrink-0">
-                  <p className="text-lg font-bold text-pink-600">+{attributedTotal.toLocaleString('pt-BR')}</p>
-                  <p className="text-[9px] text-gray-400">em {attributedPosts.length} {attributedPosts.length === 1 ? 'publicação' : 'publicações'}</p>
-                </div>
-              )}
-            </div>
-
-            {attributedPosts.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                {attributedPosts.slice(0, 6).map((post) => (
-                  <a
-                    key={post.id}
-                    href={post.permalink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center gap-3 rounded-xl border border-gray-100 p-2.5 hover:border-pink-200 hover:bg-pink-50/30 transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0">
-                      {post.thumbnailUrl ? (
-                        <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300"><Grid3x3 size={16} /></div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-[11px] text-gray-700 line-clamp-2 leading-4">{post.caption || 'Publicação sem legenda'}</p>
-                        <p className="text-sm font-bold text-pink-600 shrink-0">+{post.follows.toLocaleString('pt-BR')}</p>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-pink-400"
-                            style={{ width: `${Math.max((post.follows / maxAttributedFollows) * 100, 4)}%` }}
-                          />
-                        </div>
-                        <span className="text-[9px] text-gray-400 shrink-0">
-                          {post.timestamp ? new Date(post.timestamp).toLocaleDateString('pt-BR') : ''}
-                        </span>
-                      </div>
-                    </div>
-                    <ExternalLink size={12} className="text-gray-300 group-hover:text-pink-400 shrink-0" />
-                  </a>
-                ))}
-              </div>
-            ) : postsWithFollowerData.length > 0 ? (
-              <p className="text-[11px] text-gray-500 bg-gray-50 rounded-lg p-3">
-                Nenhuma das publicações recentes recebeu seguidores atribuídos pelo Instagram.
-              </p>
-            ) : (
-              <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg p-3 border border-amber-200">
-                A conta informou o total diário, mas não liberou a atribuição por publicação para os posts carregados.
-              </p>
-            )}
-
-            {attributedPosts.length > 6 && (
-              <p className="text-[10px] text-gray-400 mt-2 text-right">Mostrando as 6 publicações com mais seguidores atribuídos.</p>
-            )}
-            <p className="text-[9px] text-gray-400 mt-3">
-              As duas leituras têm janelas diferentes e não devem ser somadas nem comparadas como se fossem o mesmo total.
-            </p>
-          </div>
         </div>
       )}
 
@@ -282,25 +205,38 @@ export default function AccountOverview({ accessToken, posts }) {
         </p>
       )}
 
-      {/* Melhores dias da semana pra postar */}
+      {/* Desempenho histórico por dia e horário de publicação. */}
       {dayPeaks?.length > 0 ? (
         <div className="card p-4">
-          <p className="text-xs font-semibold text-gray-700 mb-3">Melhores dias para postar (engajamento médio por post)</p>
-          <div className="flex items-end gap-2 h-20">
-            {(() => {
-              const max = Math.max(...dayPeaks.map((d) => d.avgEngagement), 1)
-              return dayPeaks.map(({ day, avgEngagement, count }) => (
-                <div key={day} className="flex-1 flex flex-col items-center justify-end h-full gap-1" title={`${day}: ${avgEngagement} de engajamento médio (${count} posts)`}>
-                  <div className="w-full bg-pink-400 rounded-t" style={{ height: `${Math.max((avgEngagement / max) * 100, avgEngagement > 0 ? 4 : 0)}%` }} />
-                  <span className="text-[8px] text-gray-400">{day.slice(0, 3)}</span>
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-gray-700">Desempenho por dia e horário de publicação</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              Histórico dos últimos 50 posts, calculado por curtidas + comentários. Isso mede desempenho publicado, não audiência online.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+            {[...dayPeaks]
+              .sort((a, b) => b.avgEngagement - a.avgEngagement)
+              .map(({ day, avgEngagement, count, bestHour }, index) => (
+                <div key={day} className={`rounded-xl border p-3 ${index === 0 ? 'border-pink-200 bg-pink-50/50' : 'border-gray-100 bg-gray-50'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-gray-700">{day}</p>
+                    {index === 0 && <span className="text-[9px] font-medium text-pink-600">Melhor média</span>}
+                  </div>
+                  <p className="text-lg font-bold text-gray-900 mt-2">{bestHour ? `${String(bestHour.hour).padStart(2, '0')}h` : '—'}</p>
+                  <p className="text-[10px] text-gray-500">melhor horário observado</p>
+                  <div className="mt-2 pt-2 border-t border-gray-200/70 flex items-center justify-between gap-2 text-[9px] text-gray-400">
+                    <span>{avgEngagement.toLocaleString('pt-BR')} interações/post</span>
+                    <span>{count} {count === 1 ? 'post' : 'posts'}</span>
+                  </div>
+                  {bestHour && <p className="text-[9px] text-gray-400 mt-1">Amostra do horário: {bestHour.count}</p>}
                 </div>
-              ))
-            })()}
+              ))}
           </div>
         </div>
       ) : (
         <p className="text-[11px] text-gray-400 bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-          Melhores dias para postar não disponíveis ainda — publique mais posts pra calcular.
+          Histórico por dia e horário ainda não disponível — publique mais posts para formar uma amostra.
         </p>
       )}
 

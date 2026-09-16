@@ -865,15 +865,37 @@ async function instagramFetchAccountOverview(accessToken) {
     const data = await res.json().catch(() => ({}))
     if (res.ok) {
       const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-      const byDay = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }))
+      const byDay = Array.from({ length: 7 }, () => ({
+        sum: 0,
+        count: 0,
+        hours: Array.from({ length: 24 }, () => ({ sum: 0, count: 0 })),
+      }))
       for (const m of data.data || []) {
         if (!m.timestamp) continue
-        const d = new Date(m.timestamp).getDay()
-        byDay[d].sum += (m.like_count || 0) + (m.comments_count || 0)
+        const datePart = m.timestamp.slice(0, 10)
+        const d = new Date(`${datePart}T12:00:00Z`).getUTCDay()
+        const hour = Number(m.timestamp.slice(11, 13))
+        const engagement = (m.like_count || 0) + (m.comments_count || 0)
+        byDay[d].sum += engagement
         byDay[d].count += 1
+        if (Number.isInteger(hour) && hour >= 0 && hour < 24) {
+          byDay[d].hours[hour].sum += engagement
+          byDay[d].hours[hour].count += 1
+        }
       }
       const withPosts = byDay
-        .map((d, i) => ({ day: DAY_NAMES[i], avgEngagement: d.count ? Math.round(d.sum / d.count) : 0, count: d.count }))
+        .map((d, i) => {
+          const bestHour = d.hours
+            .map((slot, hour) => ({ hour, count: slot.count, avgEngagement: slot.count ? Math.round(slot.sum / slot.count) : 0 }))
+            .filter((slot) => slot.count > 0)
+            .sort((a, b) => b.avgEngagement - a.avgEngagement || b.count - a.count)[0] || null
+          return {
+            day: DAY_NAMES[i],
+            avgEngagement: d.count ? Math.round(d.sum / d.count) : 0,
+            count: d.count,
+            bestHour,
+          }
+        })
         .filter((d) => d.count > 0)
       if (withPosts.length) dayPeaks = withPosts
     }

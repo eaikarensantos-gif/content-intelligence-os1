@@ -50,6 +50,102 @@ function sortValue(post, key) {
   return post[key] ?? 0
 }
 
+function FollowerAttribution({ posts, loading }) {
+  if (loading && !posts) {
+    return <div className="flex items-center justify-center py-20"><Loader2 size={28} className="animate-spin text-pink-400" /></div>
+  }
+
+  const loadedPosts = posts || []
+  const withMetric = loadedPosts.filter((post) => post.followsAvailable)
+  const withFollowers = withMetric.filter((post) => post.follows > 0)
+  const unavailable = loadedPosts.length - withMetric.length
+  const attributedTotal = withFollowers.reduce((sum, post) => sum + post.follows, 0)
+  const ordered = [...loadedPosts].sort((a, b) => {
+    if (a.followsAvailable !== b.followsAvailable) return a.followsAvailable ? -1 : 1
+    if ((a.follows || 0) !== (b.follows || 0)) return (b.follows || 0) - (a.follows || 0)
+    return (b.timestamp || '').localeCompare(a.timestamp || '')
+  })
+
+  return (
+    <div className="space-y-4">
+      <div className="card p-4">
+        <div className="mb-4">
+          <p className="text-sm font-semibold text-gray-800">Atribuição por publicação</p>
+          <p className="text-[11px] text-gray-500 mt-1 max-w-3xl">
+            Esta aba não está ligada às barras de crescimento diário. A data abaixo é a publicação do conteúdo; o Instagram informa apenas quantos seguidores atribuiu ao post, sem informar em qual dia cada pessoa seguiu a conta.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+            <p className="text-[10px] text-gray-400">Posts carregados</p>
+            <p className="text-xl font-bold text-gray-900 mt-1">{loadedPosts.length}</p>
+          </div>
+          <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+            <p className="text-[10px] text-gray-400">Com métrica disponível</p>
+            <p className="text-xl font-bold text-gray-900 mt-1">{withMetric.length}</p>
+          </div>
+          <div className="rounded-lg bg-pink-50 border border-pink-100 p-3">
+            <p className="text-[10px] text-pink-500">Seguidores atribuídos</p>
+            <p className="text-xl font-bold text-pink-600 mt-1">+{attributedTotal.toLocaleString('pt-BR')}</p>
+            <p className="text-[9px] text-pink-400 mt-0.5">em {withFollowers.length} {withFollowers.length === 1 ? 'post' : 'posts'}</p>
+          </div>
+          <div className="rounded-lg bg-amber-50 border border-amber-100 p-3">
+            <p className="text-[10px] text-amber-600">Sem métrica da Meta</p>
+            <p className="text-xl font-bold text-amber-700 mt-1">{unavailable}</p>
+          </div>
+        </div>
+      </div>
+
+      {ordered.length > 0 ? (
+        <div className="card p-0 overflow-hidden">
+          <div className="divide-y divide-gray-100">
+            {ordered.map((post) => (
+              <div key={post.id} className="flex items-center gap-3 p-3">
+                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                  {post.thumbnailUrl ? (
+                    <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300"><Instagram size={17} /></div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[9px] font-medium text-pink-600 uppercase">{POST_TYPE_LABEL[post.postType] || post.postType || 'Post'}</span>
+                    <span className="text-[9px] text-gray-400">
+                      Publicado em {post.timestamp ? new Date(post.timestamp).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'data indisponível'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 truncate" title={post.caption}>{post.caption || 'Publicação sem legenda'}</p>
+                </div>
+                <div className="text-right shrink-0 min-w-24">
+                  {post.followsAvailable ? (
+                    <>
+                      <p className={`text-base font-bold ${post.follows > 0 ? 'text-pink-600' : 'text-gray-500'}`}>+{post.follows.toLocaleString('pt-BR')}</p>
+                      <p className="text-[9px] text-gray-400">atribuídos ao post</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] font-medium text-amber-600">Não disponível</p>
+                      <p className="text-[9px] text-gray-400">Meta não devolveu</p>
+                    </>
+                  )}
+                </div>
+                {post.permalink && (
+                  <a href={post.permalink} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-pink-500" title="Abrir no Instagram">
+                    <ExternalLink size={13} />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 text-center py-12">Nenhuma publicação carregada.</p>
+      )}
+    </div>
+  )
+}
+
 export default function InstagramStudio() {
   const connection = getConnection()
   const [loading, setLoading] = useState(false)
@@ -189,7 +285,7 @@ export default function InstagramStudio() {
       </div>
 
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5 w-fit">
-        {[['overview', 'Visão geral'], ['posts', 'Publicações'], ['stories', 'Stories ativos']].map(([id, label]) => (
+        {[['overview', 'Visão geral'], ['attribution', 'Seguidores por post'], ['posts', 'Publicações'], ['stories', 'Stories ativos']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -202,7 +298,9 @@ export default function InstagramStudio() {
         ))}
       </div>
 
-      {tab === 'overview' && <AccountOverview accessToken={connection.accessToken} posts={posts} />}
+      {tab === 'overview' && <AccountOverview accessToken={connection.accessToken} />}
+
+      {tab === 'attribution' && <FollowerAttribution posts={posts} loading={loading} />}
 
       {tab === 'stories' && <StoriesGrid accessToken={connection.accessToken} />}
 
