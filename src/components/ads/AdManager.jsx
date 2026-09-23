@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, DollarSign, Calendar, TrendingUp, BarChart2, Edit3,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
+import { parseClientValue, summarizeClients } from '../../lib/clientValues'
 import PricingManager from '../pricing/PricingManager'
 
 /* ── Constants ──────────────────────────────────────────── */
@@ -542,7 +543,14 @@ export default function AdManager() {
   const [filterStage, setFilterStage] = useState('all')
   const [newClientName, setNewClientName] = useState('')
   const [newClientHashtags, setNewClientHashtags] = useState('')
+  const [newClientValue, setNewClientValue] = useState('')
+  const [clientError, setClientError] = useState('')
   const [editingClient, setEditingClient] = useState(null)
+
+  const clientFormRef = useRef(null)
+  useEffect(() => {
+    if (editingClient?.id) clientFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [editingClient?.id])
 
   // ── Campaign handlers ──
   const handleSaveAd = (data) => {
@@ -607,6 +615,7 @@ export default function AdManager() {
   const totalRevenue = (ads || []).reduce((s, a) => s + (Number(a.revenue) || 0), 0)
   const activeCount = (ads || []).filter(a => a.status === 'active').length
 
+  const clientSummary = summarizeClients(clients)
   const pipelineValue = leads.filter(l => !['won', 'lost'].includes(l.stage)).reduce((s, l) => s + (Number(l.value) || 0), 0)
   const wonValue = leads.filter(l => l.stage === 'won').reduce((s, l) => s + (Number(l.value) || 0), 0)
   const activeLeads = leads.filter(l => !['won', 'lost'].includes(l.stage)).length
@@ -767,19 +776,19 @@ export default function AdManager() {
       {/* ════════════════ CLIENTS TAB ════════════════ */}
       {tab === 'clients' && (
         <>
-          {/* Stats espelhados de Leads */}
+          {/* Valores dos clientes cadastrados */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><UserPlus size={16} className="text-orange-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{activeLeads}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Leads Ativos</div></div>
+              <div><div className="text-sm font-bold text-gray-900">{clients.length}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Clientes</div></div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center"><DollarSign size={16} className="text-amber-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(pipelineValue)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Pipeline</div></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(clientSummary.total)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Valor total dos clientes</div></div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><CheckCircle2 size={16} className="text-emerald-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{clients.length}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Clientes</div></div>
+              <div><div className="text-sm font-bold text-gray-900">{clientSummary.missing}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Sem valor informado</div></div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', overdueLeads > 0 ? 'bg-red-50' : 'bg-gray-50')}>
@@ -803,9 +812,11 @@ export default function AdManager() {
               </div>
             </div>
 
+            <p className="text-xs text-gray-500">O total soma os valores cadastrados dos clientes, independentemente do pagamento. Valores não informados ficam fora da soma.</p>
+            {clientError && <p role="alert" className="text-sm text-red-600">{clientError}</p>}
             {/* Add/Edit client form */}
             {editingClient ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+              <div ref={clientFormRef} className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-blue-800">Editando: {editingClient.name}</h4>
                   <button onClick={() => setEditingClient(null)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
@@ -839,7 +850,7 @@ export default function AdManager() {
                   </div>
                   <div>
                     <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor (R$)</label>
-                    <input type="text" value={editingClient.value || ''} onChange={e => setEditingClient({ ...editingClient, value: e.target.value })}
+                    <input type="text" inputMode="decimal" value={editingClient.value ?? ''} onChange={e => setEditingClient({ ...editingClient, value: e.target.value })}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                   </div>
                   <div>
@@ -863,6 +874,9 @@ export default function AdManager() {
                   <button
                     onClick={() => {
                       if (editingClient.name.trim()) {
+                        const value = parseClientValue(editingClient.value)
+                        if (value === null && String(editingClient.value ?? '').trim()) { setClientError('Informe um valor válido, como 1.500,00.'); return }
+                        setClientError('')
                         updateClient(editingClient.id, {
                           name: editingClient.name.trim(),
                           hashtags: (editingClient.hashtags || '').trim(),
@@ -870,7 +884,7 @@ export default function AdManager() {
                           contact: (editingClient.contact || '').trim(),
                           email: (editingClient.email || '').trim(),
                           service: (editingClient.service || '').trim(),
-                          value: (editingClient.value || '').trim(),
+                          value: value ?? '',
                           source: (editingClient.source || '').trim(),
                           notes: (editingClient.notes || '').trim(),
                         })
@@ -901,11 +915,20 @@ export default function AdManager() {
                     placeholder="Ex: #publi, @fiapoficial, #Fiap"
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                 </div>
+                <div className="sm:w-40">
+                  <label htmlFor="new-client-value" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Valor (R$)</label>
+                  <input id="new-client-value" inputMode="decimal" value={newClientValue} onChange={e => setNewClientValue(e.target.value)} placeholder="Ex: 1.500,00"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                </div>
                 <div className="flex items-end">
                   <button
                     onClick={() => {
                       if (newClientName.trim()) {
-                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim() })
+                        const value = parseClientValue(newClientValue)
+                        if (value === null && newClientValue.trim()) { setClientError('Informe um valor válido, como 1.500,00.'); return }
+                        setClientError('')
+                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim(), value: value ?? '' })
+                        setNewClientValue('')
                         setNewClientName('')
                         setNewClientHashtags('')
                       }
@@ -946,10 +969,12 @@ export default function AdManager() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <button onClick={() => setEditingClient({ id: client.id, name: client.name, hashtags: client.hashtags || '', company: client.company || '', contact: client.contact || '', email: client.email || '', service: client.service || '', value: client.value || '', source: client.source || '', notes: client.notes || '' })}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
-                        <Edit3 size={13} />
+                    <div className="flex gap-1 shrink-0">
+                      <button aria-label={`Editar ${client.name}`} onClick={() => {
+                        setClientError('')
+                        setEditingClient({ ...client, value: parseClientValue(client.value) === null ? (client.value ?? '') : parseClientValue(client.value).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) })
+                      }} className="px-2 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs flex items-center gap-1">
+                        <Edit3 size={13} /> Editar
                       </button>
                       <button onClick={() => { if (confirm(`Remover ${client.name}?`)) deleteClient(client.id) }}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
@@ -968,9 +993,9 @@ export default function AdManager() {
                     {client.service && (
                       <p className="text-[11px] text-gray-500"><span className="text-gray-400">Serviço:</span> {client.service}</p>
                     )}
-                    {client.value && (
-                      <p className="text-[11px] font-medium text-green-600">R$ {Number(client.value).toLocaleString('pt-BR')}</p>
-                    )}
+                    <p className="text-[11px] font-medium text-green-600">
+                      {parseClientValue(client.value) === null ? 'Valor não informado' : fmtMoney(parseClientValue(client.value))}
+                    </p>
                     {client.notes && (
                       <p className="text-[10px] text-gray-400 italic line-clamp-2">{client.notes}</p>
                     )}
