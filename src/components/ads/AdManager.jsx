@@ -10,6 +10,7 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import { parseClientValue, summarizeClients } from '../../lib/clientValues'
+import ClientLedger from './ClientLedger'
 import PricingManager from '../pricing/PricingManager'
 
 /* ── Constants ──────────────────────────────────────────── */
@@ -50,8 +51,10 @@ const LEAD_STAGES = [
 ]
 
 const LEAD_SOURCES = [
-  'Instagram DM', 'LinkedIn', 'Indicação', 'Email', 'WhatsApp', 'Site', 'Evento', 'Outro',
+  'Instagram DM', 'LinkedIn', 'Indicação', 'Email', 'Agência', 'WhatsApp', 'Site', 'Evento', 'Outro',
 ]
+
+const CLIENT_SOURCES = ['Email', 'Agência', 'Instagram', 'LinkedIn', 'Indicação', 'WhatsApp', 'Site', 'Evento', 'Outro']
 
 const EMPTY_AD = {
   title: '', client: '', platform: 'instagram', ad_type: 'publi', status: 'draft',
@@ -544,8 +547,11 @@ export default function AdManager() {
   const [newClientName, setNewClientName] = useState('')
   const [newClientHashtags, setNewClientHashtags] = useState('')
   const [newClientValue, setNewClientValue] = useState('')
+  const [newClientSource, setNewClientSource] = useState('')
   const [clientError, setClientError] = useState('')
   const [editingClient, setEditingClient] = useState(null)
+  const [ledgerClientId, setLedgerClientId] = useState('')
+  const ledgerRef = useRef(null)
 
   const clientFormRef = useRef(null)
   useEffect(() => {
@@ -788,16 +794,11 @@ export default function AdManager() {
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><CheckCircle2 size={16} className="text-emerald-500" /></div>
-              <div><div className="text-sm font-bold text-gray-900">{clientSummary.missing}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Sem valor informado</div></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(clientSummary.received)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Recebido</div></div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex items-center gap-3">
-              <div className={clsx('w-9 h-9 rounded-lg flex items-center justify-center', overdueLeads > 0 ? 'bg-red-50' : 'bg-gray-50')}>
-                <Clock size={16} className={overdueLeads > 0 ? 'text-red-500' : 'text-gray-400'} />
-              </div>
-              <div>
-                <div className={clsx('text-sm font-bold', overdueLeads > 0 ? 'text-red-600' : 'text-gray-900')}>{overdueLeads}</div>
-                <div className="text-[10px] text-gray-400 uppercase font-semibold">FUPs Atrasados</div>
-              </div>
+              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><Clock size={16} className="text-orange-500" /></div>
+              <div><div className="text-sm font-bold text-gray-900">{fmtMoney(clientSummary.outstanding)}</div><div className="text-[10px] text-gray-400 uppercase font-semibold">Falta receber</div></div>
             </div>
           </div>
 
@@ -812,7 +813,7 @@ export default function AdManager() {
               </div>
             </div>
 
-            <p className="text-xs text-gray-500">O total soma os valores cadastrados dos clientes, independentemente do pagamento. Valores não informados ficam fora da soma.</p>
+            <p className="text-xs text-gray-500">Valor total = valor inicial do cadastro + novos trabalhos. Se for detalhar um trabalho já incluído no valor inicial, ajuste esse valor no card para não somar duas vezes. Recebimentos diminuem o saldo a receber. {clientSummary.missing > 0 && `${clientSummary.missing} cliente(s) sem valor informado.`}</p>
             {clientError && <p role="alert" className="text-sm text-red-600">{clientError}</p>}
             {/* Add/Edit client form */}
             {editingClient ? (
@@ -855,8 +856,11 @@ export default function AdManager() {
                   </div>
                   <div>
                     <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
-                    <input type="text" value={editingClient.source || ''} onChange={e => setEditingClient({ ...editingClient, source: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                    <select value={editingClient.source || ''} onChange={e => setEditingClient({ ...editingClient, source: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300 bg-white">
+                      <option value="">Selecione a origem</option>
+                      {[...new Set([...CLIENT_SOURCES, editingClient.source].filter(Boolean))].map(source => <option key={source} value={source}>{source}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hashtags</label>
@@ -876,6 +880,8 @@ export default function AdManager() {
                       if (editingClient.name.trim()) {
                         const value = parseClientValue(editingClient.value)
                         if (value === null && String(editingClient.value ?? '').trim()) { setClientError('Informe um valor válido, como 1.500,00.'); return }
+                        const received = (editingClient.base_payments || []).reduce((sum, item) => sum + (parseClientValue(item.amount) ?? 0), 0)
+                        if (received > 0 && (value === null || Math.round(value * 100) < Math.round(received * 100))) { setClientError('O valor do cliente não pode ser menor que o valor já recebido.'); return }
                         setClientError('')
                         updateClient(editingClient.id, {
                           name: editingClient.name.trim(),
@@ -920,6 +926,13 @@ export default function AdManager() {
                   <input id="new-client-value" inputMode="decimal" value={newClientValue} onChange={e => setNewClientValue(e.target.value)} placeholder="Ex: 1.500,00"
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
                 </div>
+                <div className="sm:w-36">
+                  <label htmlFor="new-client-source" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Origem</label>
+                  <select id="new-client-source" value={newClientSource} onChange={e => setNewClientSource(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none bg-white">
+                    <option value="">Selecione</option>
+                    {CLIENT_SOURCES.map(source => <option key={source} value={source}>{source}</option>)}
+                  </select>
+                </div>
                 <div className="flex items-end">
                   <button
                     onClick={() => {
@@ -927,8 +940,9 @@ export default function AdManager() {
                         const value = parseClientValue(newClientValue)
                         if (value === null && newClientValue.trim()) { setClientError('Informe um valor válido, como 1.500,00.'); return }
                         setClientError('')
-                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim(), value: value ?? '' })
+                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim(), value: value ?? '', source: newClientSource })
                         setNewClientValue('')
+                        setNewClientSource('')
                         setNewClientName('')
                         setNewClientHashtags('')
                       }
@@ -993,41 +1007,23 @@ export default function AdManager() {
                     {client.service && (
                       <p className="text-[11px] text-gray-500"><span className="text-gray-400">Serviço:</span> {client.service}</p>
                     )}
-                    <p className="text-[11px] font-medium text-green-600">
-                      {parseClientValue(client.value) === null ? 'Valor não informado' : fmtMoney(parseClientValue(client.value))}
-                    </p>
+                    <p className="text-[11px] font-medium text-green-600">Total: {fmtMoney(summarizeClients([client]).total)}</p>
+                    <p className="text-[11px] text-gray-500">Recebido: {fmtMoney(summarizeClients([client]).received)} · Falta: {fmtMoney(summarizeClients([client]).outstanding)}</p>
+                    <button onClick={() => { setLedgerClientId(client.id); ledgerRef.current?.scrollIntoView({ behavior: 'smooth' }) }} className="text-[11px] text-blue-700 hover:underline">Ver financeiro</button>
                     {client.notes && (
                       <p className="text-[10px] text-gray-400 italic line-clamp-2">{client.notes}</p>
                     )}
                   </div>
                   {/* Status de pagamento */}
                   <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                    {['pago', 'em_aberto', 'emitir_nota'].map(st => {
-                      const active = client.payment_status === st
-                      const cfg = {
-                        pago: { label: 'Pago', style: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-                        em_aberto: { label: 'Em Aberto', style: 'bg-red-100 text-red-700 border-red-200' },
-                        emitir_nota: { label: 'Emitir Nota', style: 'bg-amber-100 text-amber-700 border-amber-200' },
-                      }[st]
-                      if (st === 'emitir_nota' && active) {
-                        return (
-                          <a key={st} href="https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2fEmissorNacional" target="_blank" rel="noopener noreferrer"
-                            className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border flex items-center gap-1 transition-all ring-1 ring-offset-1 ring-amber-300', cfg.style)}>
-                            {cfg.label} <ExternalLink size={9} />
-                          </a>
-                        )
-                      }
-                      return (
-                        <button key={st}
-                          onClick={(e) => { e.stopPropagation(); updateClient(client.id, { payment_status: active ? '' : st }) }}
-                          className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border transition-all',
-                            active ? cfg.style + ' ring-1 ring-offset-1' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
-                          )}>
-                          {cfg.label}
-                          {st === 'emitir_nota' && <ExternalLink size={9} className="inline ml-0.5" />}
-                        </button>
-                      )
-                    })}
+                    {summarizeClients([client]).total > 0 && <span className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border', summarizeClients([client]).outstanding === 0 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200')}>
+                      {summarizeClients([client]).outstanding === 0 ? 'Recebido' : 'Em aberto'}
+                    </span>}
+                    <button onClick={() => updateClient(client.id, { invoice_status: !(client.invoice_status ?? (client.payment_status === 'emitir_nota')) })}
+                      className={clsx('text-[10px] font-medium px-2 py-0.5 rounded-md border', (client.invoice_status ?? (client.payment_status === 'emitir_nota')) ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50')}>
+                      Emitir Nota <ExternalLink size={9} className="inline ml-0.5" />
+                    </button>
+                    {(client.invoice_status ?? (client.payment_status === 'emitir_nota')) && <a href="https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2fEmissorNacional" target="_blank" rel="noopener noreferrer" className="text-[10px] text-amber-700 hover:underline">Abrir emissor</a>}
                   </div>
                   {/* Anexo NF */}
                   <div className="mt-2">
@@ -1082,6 +1078,7 @@ export default function AdManager() {
               ))}
             </div>
           )}
+          <ClientLedger clients={clients} updateClient={updateClient} filter={ledgerClientId} setFilter={setLedgerClientId} ledgerRef={ledgerRef} />
         </>
       )}
 
