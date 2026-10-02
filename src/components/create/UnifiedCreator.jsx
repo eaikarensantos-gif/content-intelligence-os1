@@ -1,3 +1,4 @@
+import { CAROUSEL_STRUCTURES, CAROUSEL_GOALS, CAROUSEL_TONES, CAROUSEL_SYSTEM, buildProfessionalCarouselPrompt, validateCarouselResult, reviewCarousel, formatCarouselSlide } from '../../utils/carouselStudio'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
@@ -799,86 +800,6 @@ TESTE DE SANIDADE FINAL:
 Se você leu o output e pensou "ficou bonito" → provavelmente falhou.
 Se você leu e pensou "isso vai incomodar alguém" → provavelmente funcionou.`
 
-const buildCarouselPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto, template, targetER }) => `
-TEMA: ${tema}
-${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
-${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
-${gerarIdeia ? 'Crie uma ideia específica e concreta para este tema — não abstrata.' : ''}
-${gerarTexto ? 'Crie um texto base para este tema — como pensamento em voz alta, não como artigo.' : ''}
-${template ? `LENTE DE CONTEÚDO: ${template.label} (alavanca: ${template.alavanca})\n${template.estrutura}\nEssa lente define o CONTEÚDO de cada um dos 5 slides — a estrutura de abertura/desenvolvimento causal/virada sem resolução das 3 versões continua sendo exatamente a mesma. Não crie capa, lista resolvida, resumo ou CTA de "salva" fora dos campos legenda/exercicio_pratico/cta_fechado já definidos abaixo — isso duplicaria e achataria o carrossel.` : ''}
-${targetER ? `META DE E/R: ${targetER}%. Essa meta é resultado indireto da qualidade da tensão e da alavanca (${template?.alavanca || 'salvamento ou comentário'}) já embutida no cta_fechado e no exercicio_pratico — NÃO adicione frase de ação ("salva", "guarda isso", "comenta aí") dentro do texto de nenhum slide, principalmente o slide 5. O slide 5 continua sendo virada sem resolução, sem CTA embutido no texto.` : ''}
-
-Execute o protocolo completo:
-1. Identifique a tensão interna central do tema.
-2. Gere as 3 versões abaixo. Cada versão tem a MESMA tensão, ângulo diferente.
-3. Rode os 5 testes de validação nas 3 versões e nas 3 perguntas finais.
-   - Se alguma versão parecer "bonita" → reescreva
-   - Se as 3 perguntas finais forem variações da mesma frase → reescreva
-   - Se o exercício for genérico ou futuro → reescreva
-4. Gere o exercício prático e o CTA fechado.
-5. Entregue apenas versões aprovadas.
-
-IMPORTANTE: os passos acima (incluindo os 5 testes) são um processo mental, não texto de saída. Não escreva raciocínio, rascunho, autocrítica ou notas de validação na resposta — faça isso em silêncio e entregue direto o resultado final. A resposta inteira deve ser o objeto JSON abaixo, sem nenhum texto antes ou depois, começando direto com "{".
-
-ESTRUTURA DE CADA VERSÃO (slides do carrossel):
-- slide 1: abertura — estado interno (1 frase, a pessoa se reconhece)
-- slides 2-4: desenvolvimento causal (cada slide avança o raciocínio, não descreve)
-- slide 5: virada sem resolução (tensão máxima, não conclui)
-- pergunta_final: exige posicionamento, não confirmação
-
-VERSÃO PRINCIPAL → entrada direta, raciocínio progressivo
-VARIAÇÃO EMOCIONAL → mesma tensão, ângulo cotidiano, ritmo mais lento
-VARIAÇÃO PROVOCATIVA → mesma tensão, sem suavização, nomeia o problema diretamente
-
-Responda EXCLUSIVAMENTE com JSON válido:
-{
-  "versao_principal": {
-    "slides": [
-      { "numero": 1, "texto": "abertura — estado interno" },
-      { "numero": 2, "texto": "desenvolvimento causal" },
-      { "numero": 3, "texto": "aprofundamento" },
-      { "numero": 4, "texto": "tensão chegando" },
-      { "numero": 5, "texto": "virada sem resolução" }
-    ],
-    "pergunta_final": "pergunta que exige posicionamento"
-  },
-  "variacao_emocional": {
-    "slides": [
-      { "numero": 1, "texto": "abertura cotidiana" },
-      { "numero": 2, "texto": "desenvolvimento mais próximo, mais íntimo" },
-      { "numero": 3, "texto": "aprofundamento" },
-      { "numero": 4, "texto": "tensão implícita" },
-      { "numero": 5, "texto": "virada sem resolução" }
-    ],
-    "pergunta_final": "pergunta diferente da principal"
-  },
-  "variacao_provocativa": {
-    "slides": [
-      { "numero": 1, "texto": "abertura que nomeia o problema diretamente" },
-      { "numero": 2, "texto": "desenvolvimento sem suavização" },
-      { "numero": 3, "texto": "aprofundamento direto" },
-      { "numero": 4, "texto": "tensão máxima" },
-      { "numero": 5, "texto": "virada sem resolução — a mais incômoda das três" }
-    ],
-    "pergunta_final": "a pergunta mais exigente das três"
-  },
-  "legenda": "apenas 1 linha de observação seca — NÃO inclua o exercício aqui, ele vai só no campo exercicio_pratico",
-  "exercicio_pratico": "2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
-  "cta_fechado": "escolha binária sobre um comportamento ou preferência diferente da pergunta final — não pode ser a mesma pergunta reformulada",
-  "comentarios": [
-    { "comentario": "o que a pessoa provavelmente vai escrever", "resposta": "pergunta que puxa mais fundo" },
-    { "comentario": "segundo comentário provável", "resposta": "pergunta que puxa mais fundo" },
-    { "comentario": "terceiro comentário provável", "resposta": "pergunta que puxa mais fundo" }
-  ],
-  "validacao": {
-    "deixa_espaco": true,
-    "nao_parece_coach": true,
-    "so_karen_diria": true,
-    "exercicio_acessa_memoria": true,
-    "perguntas_diferentes": true
-  }
-}`
-
 const buildPersonalCarouselPrompt = ({ tema, ideia, texto }) => `
 Crie um carrossel pessoal para Karen Santos.
 
@@ -1115,49 +1036,6 @@ Use objetos, cômodos, gestos e pequenos cortes filmáveis. Naomi só entra se o
 4. Inclua exatamente uma caixa de pergunta pedindo um sinal, cena ou exemplo específico da pessoa.
 5. Encerre com uma constatação aberta, sem prescrever comportamento.
 Alterne texto sobre fundo, b-roll cotidiano e um trecho falando para a câmera. Sem aula, diagnóstico ou moral.`,
-  },
-}
-
-/* ── Templates de Slides — Carrossel Tech/IA (lente de conteúdo aplicada aos MESMOS 5 slides
-   do Protocolo de Carrossel: abertura/estado interno → 3 slides de desenvolvimento causal →
-   virada sem resolução. Cada template define O QUE cada slide fala, nunca uma estrutura
-   própria de capa/lista/resumo/CTA — isso contradiria o protocolo e achata o resultado. ── */
-const CAROUSEL_TEMPLATES = {
-  ferramentas: {
-    label: 'Ferramentas de IA',
-    alavanca: 'salvamento',
-    desc: 'Ferramentas de IA reveladas como resposta a limites reais, não como lista',
-    estrutura: 'Slide 1 (abertura — estado interno): a frustração real que te fez procurar ferramenta pra essa tarefa — não a lista, o motivo. Slides 2 a 4 (desenvolvimento causal): cada slide revela uma ferramenta como resposta ao limite da anterior — a ferramenta do slide 3 resolve o que a do slide 2 deixava manual, não é um item novo numa lista. CADA SLIDE PRECISA TER SEU JULGAMENTO: o que você decidiu, testou, rejeitou ou ainda desconfia daquela ferramenta — nunca só o que ela faz, como um manual de recursos. Slide 5 (virada sem resolução): a parte da tarefa que nenhuma dessas ferramentas resolve ainda — nomeie o limite, não feche a questão.',
-  },
-  passo_a_passo: {
-    label: 'Passo a passo',
-    alavanca: 'salvamento',
-    desc: 'Processo de IA onde cada passo só existe porque o anterior não bastou',
-    estrutura: 'Slide 1 (abertura — estado interno): o problema de negócio como ele trava antes de aplicar o processo. Slides 2 a 4 (desenvolvimento causal): um passo do processo por slide, e cada passo só existe porque o anterior, sozinho, não resolvia. CADA SLIDE PRECISA TER SEU JULGAMENTO: por que você escolheu fazer esse passo assim, o risco que ele evita ou o erro que ele corrige — nunca só a descrição do passo, como um manual. Slide 5 (virada sem resolução): o ponto do processo que ainda depende de julgamento humano e a IA não substitui — nomeie sem resolver.',
-  },
-  antes_depois: {
-    label: 'Antes e depois',
-    alavanca: 'salvamento e identificação',
-    desc: 'Comparação onde cada mudança de etapa é causa da próxima',
-    estrutura: 'Slide 1 (abertura — estado interno): o fluxo de trabalho como era antes, do jeito que cansava de verdade. Slides 2 a 4 (desenvolvimento causal): cada slide compara uma etapa antes/depois, e a mudança de uma etapa é a razão pela qual a etapa seguinte também mudou. CADA SLIDE PRECISA TER SEU JULGAMENTO: o que você ganhou e o que perdeu de controle em cada mudança — nunca só a comparação de recursos, como um manual. Slide 5 (virada sem resolução): a etapa que a IA ainda não resolve tão bem quanto o "antes" — o ganho tem um custo que ninguém fala.',
-  },
-  opiniao_tecnica: {
-    label: 'Opinião técnica',
-    alavanca: 'comentário e compartilhamento',
-    desc: 'Opinião sustentada por uma cadeia de argumentos, não uma lista de motivos',
-    estrutura: 'Slide 1 (abertura — estado interno): a opinião declarada sem suavizar, como reação a algo que você viu de verdade. Slides 2 a 4 (desenvolvimento causal): cada slide é um argumento que decorre do anterior — uma cadeia de raciocínio, não motivos soltos. Slide 5 (virada sem resolução): a consequência prática dessa opinião que ainda incomoda, sem fechar em conclusão confortável.',
-  },
-  limites_ia: {
-    label: 'O que a IA ainda erra',
-    alavanca: 'comentário',
-    desc: 'Falhas concretas em cadeia, cada uma mais profunda que a anterior',
-    estrutura: 'Slide 1 (abertura — estado interno): o momento em que você percebeu, na prática, que a IA errou nessa tarefa. Slides 2 a 4 (desenvolvimento causal): um caso concreto de falha por slide, e cada caso revela uma camada mais profunda do limite anterior — não uma lista de erros soltos. Slide 5 (virada sem resolução): o jeito que você contorna esse limite hoje, que ainda não é solução de verdade — só uma gambiarra que funciona.',
-  },
-  bastidor: {
-    label: 'Bastidor home office',
-    alavanca: 'identificação aspiracional',
-    desc: 'Rotina onde cada elemento existe porque o anterior não bastava',
-    estrutura: 'Slide 1 (abertura — estado interno): a cena real do setup ou da rotina, no momento exato, sem embelezar. Slides 2 a 4 (desenvolvimento causal): um elemento da rotina por slide, e cada elemento existe porque o anterior, sozinho, não bastava. Slide 5 (virada sem resolução): a parte da rotina que ainda não funciona direito, que você não resolveu — sem fingir que está tudo redondo.',
   },
 }
 
@@ -1661,8 +1539,10 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [carTexto, setCarTexto] = useState('')
   const [carGerarIdeia, setCarGerarIdeia] = useState(false)
   const [carGerarTexto, setCarGerarTexto] = useState(false)
-  const [carTemplate, setCarTemplate] = useState(null)
-  const [carTargetER, setCarTargetER] = useState('')
+  const [carTemplate, setCarTemplate] = useState('diagnostico')
+  const [carGoal, setCarGoal] = useState(CAROUSEL_GOALS[0])
+  const [carTone, setCarTone] = useState(CAROUSEL_TONES[0])
+  const [carAudience, setCarAudience] = useState('')
   const [carLoading, setCarLoading] = useState(false)
   const [carResult, setCarResult] = useState(null)
   const [carError, setCarError] = useState(null)
@@ -2357,10 +2237,10 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildCarouselSystem(isPessoal)}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
+          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? buildCarouselSystem(true) : `${CAROUSEL_SYSTEM}\n${WORK_NICHE}`}${workModeFor(carTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
           messages: [{ role: 'user', content: isPessoal
             ? buildPersonalCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto })
-            : buildCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, template: carTemplate ? CAROUSEL_TEMPLATES[carTemplate] : null, targetER: carTargetER }) }],
+            : buildProfessionalCarouselPrompt({ tema: carTema, ideia: carIdeia, texto: carTexto, gerarIdeia: carGerarIdeia, gerarTexto: carGerarTexto, structure: carTemplate, goal: carGoal, tone: carTone, audience: carAudience }) }],
         }),
       })
       if (!res.ok) {
@@ -2374,6 +2254,8 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       if (!match) throw new Error('Resposta inválida da IA')
       const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
 
+      if (!isPessoal) validateCarouselResult(parsed, carTemplate)
+
       // Varredura anti-clichê slide a slide, com verificação depois da reescrita
       let report = null
       try {
@@ -2381,6 +2263,12 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       } catch { /* se a correção falhar, mantém o texto original */ }
       setCarSweepReport(report)
 
+      if (!isPessoal) {
+        validateCarouselResult(parsed, carTemplate)
+        parsed.editorial = { structure: carTemplate, goal: carGoal, tone: carTone, audience: carAudience }
+        parsed.revisao = reviewCarousel(parsed)
+      }
+      setCarActiveVersion('principal')
       setCarResult(parsed)
     } catch (err) {
       setCarError(err.message)
@@ -2398,7 +2286,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
   const handleCarSaveHub = () => {
     if (!carResult) return
     const fmtSlides = (version) =>
-      (version?.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n')
+      (version?.slides || []).map(s => formatCarouselSlide(s, true)).join('\n\n')
     const scriptCompleto = [
       '=== VERSÃO PRINCIPAL ===\n' + fmtSlides(carResult.versao_principal),
       carResult.versao_principal?.pergunta_final
@@ -2411,6 +2299,7 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
         ? '\n=== VARIAÇÃO PROVOCATIVA ===\n' + fmtSlides(carResult.variacao_provocativa)
           + (carResult.variacao_provocativa.pergunta_final ? `\nPergunta: ${carResult.variacao_provocativa.pergunta_final}` : '')
         : '',
+      carResult.revisao?.length ? '\n--- REVISÃO PENDENTE ---\n' + carResult.revisao.join('\n') : '',
       carResult.legenda
         ? `\n--- LEGENDA ---\n${carResult.legenda}` : '',
       carResult.comentarios?.length
@@ -2428,14 +2317,14 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
       platform: 'instagram',
       platforms: ['instagram'],
       priority: 'medium',
-      status: 'ready',
+      status: carResult.revisao?.length ? 'draft' : 'ready',
       tags: [
         'protocolo-carrossel',
         carTema.toLowerCase().slice(0, 20),
-        ...(carTemplate ? [CAROUSEL_TEMPLATES[carTemplate].label.toLowerCase()] : []),
+        ...(carResult.editorial ? [CAROUSEL_STRUCTURES[carResult.editorial.structure].label.toLowerCase()] : []),
       ],
-      source: carTemplate
-        ? `Protocolo de Carrossel — ${CAROUSEL_TEMPLATES[carTemplate].label}${carTargetER ? ` — Meta E/R ${carTargetER}%` : ''}`
+      source: carResult.editorial
+        ? `Carrossel — ${CAROUSEL_STRUCTURES[carResult.editorial.structure].label} — ${carResult.editorial.goal} — ${carResult.editorial.tone}`
         : 'Protocolo de Carrossel',
     })
     setCarSavedHub(true)
@@ -4018,23 +3907,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Protocolo de Carrossel</p>
-                <p className="text-xs text-gray-400 mt-0.5">Raciocínio em sequência — não template. Cada slide puxa o próximo.</p>
+                <p className="text-xs text-gray-400 mt-0.5">{isPessoal ? 'Uma micro-história em sete slides.' : 'Oito slides com progressão, exemplos e uma conclusão útil.'}</p>
               </div>
             </div>
 
-            {/* Template de Slides — templates são de ferramentas/tech, não fazem sentido no Studio Pessoal */}
+            {/* Estruturas profissionais; o Studio Pessoal mantém a micro-história. */}
             {!isPessoal && (
               <div>
                 <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-                  Template de slides <span className="text-gray-300">(opcional)</span>
+                  Estrutura do roteiro
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {Object.entries(CAROUSEL_TEMPLATES).map(([key, t]) => (
+                  {Object.entries(CAROUSEL_STRUCTURES).map(([key, t]) => (
                     <button
                       key={key}
                       type="button"
-                      onClick={() => setCarTemplate(prev => prev === key ? null : key)}
+                      onClick={() => setCarTemplate(key)}
                       title={t.desc}
+                      aria-pressed={carTemplate === key}
                       className={clsx(
                         'text-left px-2.5 py-2 rounded-lg border transition-all',
                         carTemplate === key
@@ -4050,22 +3940,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
               </div>
             )}
 
-            {/* Meta de E/R */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-                Meta de E/R <span className="text-gray-300">(opcional)</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number" step="0.01" min="0"
-                  value={carTargetER}
-                  onChange={e => setCarTargetER(e.target.value)}
-                  placeholder="2,00"
-                  className="input text-sm w-full pr-8"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+            {!isPessoal && (
+              <div className="grid sm:grid-cols-2 gap-3">
+                <label className="text-xs text-gray-600">Objetivo
+                  <select className="input mt-1 w-full" value={carGoal} onChange={e => setCarGoal(e.target.value)}>
+                    {CAROUSEL_GOALS.map(goal => <option key={goal}>{goal}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-gray-600">Tom
+                  <select className="input mt-1 w-full" value={carTone} onChange={e => setCarTone(e.target.value)}>
+                    {CAROUSEL_TONES.map(tone => <option key={tone}>{tone}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-gray-600 sm:col-span-2">Público (opcional)
+                  <input className="input mt-1 w-full" value={carAudience} onChange={e => setCarAudience(e.target.value)} placeholder="Ex: profissionais que assumiram novas responsabilidades" />
+                </label>
+                <p className="text-xs text-gray-500 sm:col-span-2">{CAROUSEL_STRUCTURES[carTemplate].roles.join(' → ')}</p>
               </div>
-            </div>
+            )}
 
             {/* Tema */}
             <div>
@@ -4186,13 +4078,21 @@ Responda EXCLUSIVAMENTE com JSON válido:
                 posicionamento={posicionamento}
               />
 
+              {carResult.editorial && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900" role="status">
+                  <p className="font-semibold">Revisão editorial</p>
+                  <p className="mt-1">Confira a entrega da promessa, a progressão e as fontes antes de publicar. Esta checagem sinaliza extensão e repetição; não comprova fatos.</p>
+                  {!!carResult.revisao?.length && <ul className="list-disc pl-4 mt-2 space-y-1">{carResult.revisao.map((item, i) => <li key={i}>{item}</li>)}</ul>}
+                </div>
+              )}
+
               {/* Abas de versão */}
               {(() => {
                 const versions = [
-                  { key: 'principal',   label: 'Principal',   data: carResult.versao_principal },
+                  { key: 'principal',   label: carResult.editorial?.tone || 'Principal',   data: carResult.versao_principal },
                   { key: 'emocional',   label: isPessoal ? 'Afetiva' : 'Emocional',   data: carResult.variacao_emocional },
                   { key: 'provocativa', label: isPessoal ? 'Humor seco' : 'Provocativa', data: carResult.variacao_provocativa },
-                ]
+                ].filter(v => v.data)
                 const active = versions.find(v => v.key === carActiveVersion) || versions[0]
                 return (
                   <>
@@ -4214,7 +4114,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
                         <div className="flex items-center justify-between px-4 pt-3 pb-2">
                           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Slides</span>
                           <button onClick={() => handleCarCopy(
-                            (active.data.slides || []).map(s => `[${s.numero}] ${s.texto}`).join('\n\n'),
+                            (active.data.slides || []).map(s => formatCarouselSlide(s)).join('\n\n'),
                             `slides-${active.key}`
                           )} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
                             {carCopied === `slides-${active.key}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
@@ -4230,8 +4130,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
                               <div className="w-7 h-7 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0 mt-0.5 z-10">
                                 <span className="text-[10px] font-bold text-orange-500">{slide.numero}</span>
                               </div>
-                              <p className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5 select-text" onMouseUp={handleTextSelectionForBan}>{slide.texto}</p>
-                              <button onClick={() => handleCarCopy(slide.texto, `slide-${active.key}-${slide.numero}`)}
+                              <div className="flex-1 text-sm text-gray-800 leading-relaxed pt-0.5 select-text" onMouseUp={handleTextSelectionForBan}>
+                                {slide.funcao && <p className="text-[10px] uppercase text-orange-600 mb-1">{slide.funcao}</p>}
+                                {slide.titulo && <h3 className="font-semibold mb-1">{slide.titulo}</h3>}
+                                <p className="whitespace-pre-line">{slide.texto}</p>
+                                {slide.visual && <p className="text-xs text-gray-500 mt-2"><strong>Visual:</strong> {slide.visual}</p>}
+                              </div>
+                              <button onClick={() => handleCarCopy(formatCarouselSlide(slide), `slide-${active.key}-${slide.numero}`)}
                                 className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-orange-500 transition-all shrink-0 mt-1">
                                 {carCopied === `slide-${active.key}-${slide.numero}` ? <Check size={11} /> : <Copy size={11} />}
                               </button>
