@@ -26,7 +26,7 @@ const STATUS_COLORS = {
 const FORMAT_LABELS = {
   carousel: 'Carrossel', carrossel: 'Carrossel',
   thread: 'Thread', video: 'Vídeo',
-  reel: 'Reel', article: 'Artigo', artigo: 'Artigo',
+  reel: 'Reel', article: 'Artigo', artigo: 'Artigo', post: 'Post',
   story: 'Story', podcast: 'Podcast',
 }
 const FORMAT_COLORS = {
@@ -35,6 +35,7 @@ const FORMAT_COLORS = {
   thread: 'bg-sky-100 text-sky-700 border-sky-200',
   video: 'bg-red-100 text-red-700 border-red-200',
   reel: 'bg-pink-100 text-pink-700 border-pink-200',
+  post: 'bg-blue-100 text-blue-700 border-blue-200',
   article: 'bg-amber-100 text-amber-700 border-amber-200',
   artigo: 'bg-amber-100 text-amber-700 border-amber-200',
   story: 'bg-orange-100 text-orange-700 border-orange-200',

@@ -1,5 +1,7 @@
+import { SocialFormatOutput } from '../create/SocialFormatStudio'
+import { SOCIAL_LABELS, defaultSocialOptions, buildSocialPrompt, validateSocialResult, reviewSocialResult, formatSocialScript, socialIdea, socialPublishText, socialPersonaRules } from '../../utils/socialStudio'
 import { useState, useRef, useCallback, useMemo } from 'react'
-import { extractJsonObject } from '../../utils/aiJson.js'
+import { extractJsonObject, assertNotTruncated } from '../../utils/aiJson.js'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { useNavigate } from 'react-router-dom'
@@ -37,17 +39,8 @@ const PLATFORMS = [
   { id: 'youtube', label: 'YouTube', color: 'bg-red-100 text-red-700 border-red-300', activeColor: 'bg-red-600 text-white border-red-600' },
 ]
 
-async function generateTextVersions(apiKey, { text, sourceType, platforms, niche, voiceContext, regenInstruction }) {
+async function generateTextVersions(apiKey, { text, sourceType, platforms, niche, voiceContext, regenInstruction, persona = 'trabalho' }) {
   const platformInstructions = {
-    linkedin: `LINKEDIN POST:
-- Gancho poderoso nas primeiras 2 linhas (antes do "ver mais") — ESSENCIAL
-- Parágrafos curtos (1-3 linhas), bastante espaço branco
-- Tom profissional mas humano, sem corporativês
-- 300-600 palavras
-- Encerra com UMA pergunta que provoca comentários
-- 3-5 hashtags no final
-- Formato: { "hook": "...", "body": "...", "cta": "...", "hashtags": [] }`,
-
     instagram: `INSTAGRAM CAPTION:
 - Primeira linha: a frase mais forte do texto inteiro (aparece antes de "mais")
 - Corpo: 2-4 parágrafos curtos, emocionais, coloquiais
@@ -55,23 +48,6 @@ async function generateTextVersions(apiKey, { text, sourceType, platforms, niche
 - CTA que convida à ação (comentar, salvar, compartilhar)
 - 8-12 hashtags estratégicas no final
 - Formato: { "first_line": "...", "body": "...", "cta": "...", "hashtags": [] }`,
-
-    reels: `ROTEIRO PARA REELS (15-45 segundos):
-- Hook visual (0-2s): O QUE A CÂMERA MOSTRA + o que é falado/mostrado na tela
-- Falas em bullet points curtos como se você estivesse FALANDO, não escrevendo
-- Ritmo rápido, cada frase completa a anterior
-- CTA no final (salva, comenta, segue)
-- Legenda curta para o post
-- Hashtags
-- Formato: { "hook": "...", "falas": ["...", "..."], "cta": "...", "legenda": "...", "hashtags": [] }`,
-
-    stories: `SEQUÊNCIA DE STORIES (5-7 slides):
-- Cada slide = 1 ideia simples, máx 15 palavras de texto
-- Slide 1: Pergunta ou afirmação provocativa
-- Slides 2-5: Desenvolvimento, 1 insight por slide
-- Slide final: CTA (responda, arraste pra cima, comente)
-- Inclui sugestão de figurinha/enquete quando fizer sentido
-- Formato: { "slides": [{ "texto": "...", "visual_hint": "...", "sticker": "..." }] }`,
 
     tiktok: `ROTEIRO TIKTOK (30-60 segundos):
 - Hook nos primeiros 3 segundos: frase que interrompe o scroll (pode ser uma pergunta absurda ou afirmação polêmica)
@@ -97,9 +73,18 @@ async function generateTextVersions(apiKey, { text, sourceType, platforms, niche
 - Formato: { "titles": ["...", "...", "..."], "description": "...", "chapters": [{ "time": "0:00", "label": "..." }], "tags": [] }`,
   }
 
+  const nativeOptions = {}
+  for (const platform of platforms.filter(p => SOCIAL_LABELS[p])) {
+    const options = { ...defaultSocialOptions(platform, persona), topic: niche || 'Recorte do texto fornecido', material: text.slice(0, 8000) }
+    nativeOptions[platform] = options
+    platformInstructions[platform] = buildSocialPrompt(options)
+  }
+
   const selectedInstructions = platforms.map(p => platformInstructions[p]).filter(Boolean).join('\n\n')
 
-  const prompt = `Você é um especialista em repurposing de conteúdo para criadores digitais brasileiros. Você sabe exatamente como cada rede social funciona e o que performa em cada uma. Seu estilo é observacional, reflexivo e autenticamente humano.
+  const prompt = `Você é um especialista em repurposing de conteúdo para criadores digitais brasileiros. Você adapta cada formato ao objetivo sem prometer desempenho. Seu estilo é observacional, reflexivo e autenticamente humano.
+
+${socialPersonaRules(persona)}
 
 TEXTO ORIGINAL (tipo: ${SOURCE_TYPES.find(s => s.id === sourceType)?.label || sourceType}):
 ---
@@ -123,14 +108,7 @@ PROIBIDO (nunca use estas frases ou variações delas):
 - Conteúdo genérico que qualquer pessoa poderia escrever
 - Palestra motivacional, clickbait ou marketing genérico
 
-PREFERIDO (use este estilo de linguagem):
-- "Tenho notado uma coisa curiosa..."
-- "Depois de um tempo você percebe..."
-- "Talvez o problema não seja..."
-- "Existe um padrão que pouca gente observa..."
-- "O que me incomoda nessa conversa é..."
-
-OBRIGATÓRIO: Conteúdo que soa como um ser humano de verdade escreveu, com opinião, personalidade, tom reflexivo e insights reais do texto original. Linguagem observacional e conversacional em português brasileiro natural.
+Escreva em português brasileiro natural. O tom e a estrutura vêm do objetivo e da persona de cada formato abaixo; não force reflexão, entusiasmo, melancolia ou perguntas em todos os conteúdos.
 
 ${selectedInstructions}
 
@@ -155,7 +133,7 @@ Responda SOMENTE com um JSON válido neste formato:
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 8000,
-      system: withManualOperacional(withAntiAIFilter('You are a sharp Brazilian content repurposing expert. Write in natural, conversational Brazilian Portuguese. Your DEFAULT energy is curiosity, wit, and genuine enthusiasm — never melancholic, pessimistic, or defeatist. Adapt tone to the goal: brand content = enthusiastic and genuine, reflective = curious and intelligent, educational = clear and practical. NEVER use clickbait like "isso vai mudar tudo". PREFER energizing language: "A parte boa é que...", "Isso me surpreendeu...", "O mais interessante aqui é...". Always respond with valid JSON only — no markdown, no explanations. Start with { and end with }.')),
+      system: withManualOperacional(withAntiAIFilter(`Escreva em português brasileiro natural. Respeite o objetivo e a persona: ${socialPersonaRules(persona)} Não invente fatos ou prometa desempenho. Responda somente JSON válido, sem markdown.`)),
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -164,12 +142,22 @@ Responda SOMENTE com um JSON válido neste formato:
     await handleApiError(res)
   }
   const data = await res.json()
-  const raw = data.content.find(b => b.type === 'text')?.text
-  return extractJsonObject(raw, 'Resposta inválida da IA')
+  assertNotTruncated(data)
+  const raw = data.content?.find(b => b.type === 'text')?.text
+  const parsed = extractJsonObject(raw, 'Resposta inválida da IA')
+  if (!parsed.versions || platforms.some(p => !parsed.versions[p] || typeof parsed.versions[p] !== 'object')) throw new Error('A resposta não contém todas as plataformas selecionadas. Gere novamente.')
+  for (const [platform, options] of Object.entries(nativeOptions)) {
+    const version = parsed.versions[platform]
+    validateSocialResult(version, options)
+    version.editorial = options
+    version.revisao = reviewSocialResult(version, options)
+  }
+  return parsed
 }
 
 // ─── Platform output renderers ────────────────────────────────────────────────
 function LinkedInOutput({ data }) {
+  if (data.editorial && data.blocos) return <SocialFormatOutput result={data} options={data.editorial} />
   return (
     <div className="space-y-4">
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
@@ -223,6 +211,7 @@ function InstagramOutput({ data }) {
 }
 
 function ReelsOutput({ data }) {
+  if (data.editorial && data.blocos) return <SocialFormatOutput result={data} options={data.editorial} />
   return (
     <div className="space-y-4">
       <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
@@ -262,6 +251,7 @@ function ReelsOutput({ data }) {
 }
 
 function StoriesOutput({ data }) {
+  if (data.editorial && data.blocos) return <SocialFormatOutput result={data} options={data.editorial} />
   return (
     <div className="space-y-3">
       {(data.slides || []).map((slide, i) => (
@@ -392,6 +382,7 @@ const OUTPUT_COMPONENTS = {
 
 function buildCopyText(platform, data) {
   if (!data) return ''
+  if (data.editorial && data.blocos) return platform === 'linkedin' && data.editorial.presentation === 'texto' ? socialPublishText(data, data.editorial) : formatSocialScript(data, data.editorial, false)
   if (platform === 'linkedin') return [data.hook, '', data.body, '', data.cta, '', (data.hashtags || []).join(' ')].filter(x => x !== undefined).join('\n')
   if (platform === 'instagram') return [data.first_line, '', data.body, '', data.cta, '', (data.hashtags || []).join(' ')].join('\n')
   if (platform === 'reels') return [data.hook, '', ...(data.falas || []), '', data.cta, '', data.legenda].filter(Boolean).join('\n')
@@ -403,7 +394,7 @@ function buildCopyText(platform, data) {
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function TextStudio() {
+export default function TextStudio({ persona = 'trabalho' }) {
   const { addIdea, addFavorite, removeFavorite, favorites, brandVoice, dislikedContent, addDislike } = useStore()
   const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const posicionamento = useStore(s => s.posicionamento)
@@ -502,15 +493,17 @@ export default function TextStudio() {
       setLoadingMsg(msgs[i])
     }, 2000)
 
-    const voiceCtx = buildVoiceContext(brandVoice, dislikedContent, bannedWords, posicionamento)
+    const voiceCtx = buildVoiceContext(persona === 'pessoal' ? null : brandVoice, dislikedContent, bannedWords, persona === 'pessoal' ? null : posicionamento)
     const regenInstruction = regenAttempt > 0 ? buildRegenerateInstruction(regenAttempt) : ''
 
     try {
       const data = await generateTextVersions(apiKey, {
         text, sourceType, platforms: selectedPlatforms, niche,
-        voiceContext: voiceCtx, regenInstruction,
+        voiceContext: voiceCtx, regenInstruction, persona,
       })
       setResult(data)
+      setSavedVersions(new Set())
+      setCopied(null)
       setActiveTab(selectedPlatforms[0])
       setRegenAttempt(c => c + 1)
     } catch (e) {
@@ -532,13 +525,18 @@ export default function TextStudio() {
   const handleSaveToHub = (platform) => {
     const data = result?.versions?.[platform]
     if (!data) return
+    if (data.editorial && data.blocos) {
+      addIdea(socialIdea(data, data.editorial))
+      setSavedVersions(prev => new Set([...prev, platform]))
+      return
+    }
     const platformMeta = PLATFORMS.find(p => p.id === platform)
     addIdea({
       title: data.titles?.[0] || data.hook || data.first_line || `Versão ${platformMeta?.label} — ${niche || sourceType}`,
       description: buildCopyText(platform, data),
       platform: platform === 'reels' || platform === 'stories' ? 'instagram' : platform === 'tiktok' ? 'tiktok' : platform,
       platforms: [platform === 'reels' || platform === 'stories' ? 'instagram' : platform === 'tiktok' ? 'tiktok' : platform],
-      format: platform === 'reels' ? 'reel' : platform === 'stories' ? 'story' : platform === 'twitter' ? 'thread' : platform === 'youtube' ? 'video' : platform === 'linkedin' ? 'artigo' : 'carrossel',
+      format: platform === 'reels' ? 'reel' : platform === 'stories' ? 'story' : platform === 'twitter' ? 'thread' : platform === 'youtube' ? 'video' : platform === 'linkedin' ? 'post' : 'carrossel',
       tags: ['text-studio', sourceType, platform],
       priority: 'medium',
       status: 'draft',

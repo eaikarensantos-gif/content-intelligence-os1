@@ -15,7 +15,7 @@ const PromptGenerator = lazy(() => import('../promptgen/PromptGenerator'))
 // Cada ferramenta mantém a identidade visual (ícone/cor) já usada no seu
 // próprio cabeçalho, pra reconhecimento consistente entre a aba e o conteúdo.
 const TOOLS = [
-  { id: 'criar', label: 'Criar', desc: 'Reels, carrossel, caption, thread, stories', icon: PenTool, accent: 'orange' },
+  { id: 'criar', label: 'Criar', desc: 'Reels, carrossel, Stories e LinkedIn', icon: PenTool, accent: 'orange' },
   { id: 'thoughts', label: 'Captura de Pensamento', desc: 'Um pensamento → 7 formatos de uma vez', icon: Brain, accent: 'indigo' },
   { id: 'generate', label: 'Explorador de Ideias', desc: 'Ideias com estrutura narrativa e controle criativo', icon: Sparkles, accent: 'amber' },
   { id: 'text', label: 'Adaptador Multi-plataforma', desc: 'Um texto → versões para cada rede', icon: Wand2, accent: 'violet' },
@@ -112,7 +112,7 @@ export default function CreateHub({ persona = 'trabalho' }) {
         )}
         {visited.has('text') && (
           <div className="h-full" hidden={active !== 'text'}>
-            <Suspense fallback={<ToolLoader />}><TextStudio /></Suspense>
+            <Suspense fallback={<ToolLoader />}><TextStudio persona={persona} /></Suspense>
           </div>
         )}
         {visited.has('promptgen') && (

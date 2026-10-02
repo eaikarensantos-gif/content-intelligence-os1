@@ -1,3 +1,5 @@
+import SocialFormatStudio from './SocialFormatStudio'
+import { socialFormatRules, SOCIAL_RULES } from '../../utils/socialStudio'
 import { CAROUSEL_STRUCTURES, CAROUSEL_GOALS, CAROUSEL_TONES, CAROUSEL_SYSTEM, buildProfessionalCarouselPrompt, validateCarouselResult, reviewCarousel, formatCarouselSlide } from '../../utils/carouselStudio'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -5,7 +7,7 @@ import { ANTI_AI_FILTER } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { detectCliches } from '../../lib/clicheDetector'
 import {
-  sweepResult, carouselTextPaths, engagementTextPaths, hookListPaths,
+  sweepResult, carouselTextPaths, hookListPaths,
   blockingFindings, countBlocks, SHORT_FIELDS,
   rewriteWithoutCliches as rewriteWithoutClichesBase,
   rewriteShortLines as rewriteShortLinesBase,
@@ -15,7 +17,7 @@ import {
   Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown, ChevronRight, ChevronUp,
   Video, LayoutGrid, Type, MessageSquare, Mic, Film, Zap,
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
-  Brain, Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
+  Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
   MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
   AlertCircle, Building2,
 } from 'lucide-react'
@@ -164,7 +166,8 @@ NUNCA FAZER:
 const FORMATS = [
   { id: 'reels', label: 'Reels', icon: Video, desc: '30-60s roteiro com cenas', color: 'from-purple-500 to-pink-500' },
   { id: 'carrossel', label: 'Carrossel', icon: LayoutGrid, desc: '5-10 slides', color: 'from-orange-500 to-red-500' },
-  { id: 'caption', label: 'Caption', icon: Type, desc: 'Instagram/LinkedIn', color: 'from-blue-500 to-cyan-500' },
+  { id: 'linkedin', label: 'LinkedIn', icon: Type, desc: 'Post ou documento', color: 'from-blue-600 to-sky-600' },
+  { id: 'caption', label: 'Caption', icon: Type, desc: 'Instagram', color: 'from-blue-500 to-cyan-500' },
   { id: 'thread', label: 'Thread', icon: MessageSquare, desc: 'Twitter/X', color: 'from-gray-700 to-gray-900' },
   { id: 'stories', label: 'Stories', icon: Film, desc: 'Sequência de stories', color: 'from-amber-500 to-orange-500' },
 ]
@@ -351,14 +354,8 @@ function CoherenceChecker({ text, posicionamento }) {
 }
 
 const FORMAT_PROMPTS = {
-  reels: `FORMATO: REELS (30-60 segundos)
-- Abertura impactante (0-3s) — gancho visual + frase de impacto
-- Desenvolvimento (3-45s) — conteúdo principal com cortes rítmicos
-- Insight/Punchline (45-55s)
-- CTA (55-60s)
-- Inclua: indicações de cenas, direção de câmera mobile, narração, texto na tela
-- Sugestão de áudio/trilha
-- Legenda para o post + 5-8 hashtags`,
+  reels: socialFormatRules('reels'),
+  linkedin: socialFormatRules('linkedin'),
   carrossel: `FORMATO: CARROSSEL (5-10 slides)
 - Slide 1: abertura concreta — uma cena, um número ou uma consequência real. NÃO use frase de efeito, promessa de revelação ("o segredo de…", "a verdade sobre…", "o que ninguém te conta") nem pergunta retórica.
 - Slides 2-8: Desenvolvimento com 1 ideia por slide
@@ -379,7 +376,7 @@ passar sozinho no filtro de autenticidade:
 - Proibida a escadinha de negações em slides seguidos ("Não é A." / "Não é B." / "É C.").
 - Último slide: útil sozinho. Se a pessoa fechar o carrossel sem salvar, ela tem
   que perder alguma coisa concreta.`,
-  caption: `FORMATO: CAPTION (Instagram/LinkedIn)
+  caption: `FORMATO: CAPTION (Instagram)
 - Abertura: Gancho direto (primeira linha que aparece no feed — CRUCIAL)
 - Corpo: 3-5 parágrafos curtos, espaço branco
 - Encerramento: Pergunta/CTA que provoca comentário
@@ -389,11 +386,7 @@ passar sozinho no filtro de autenticidade:
 - Tweets 2-N: Desenvolvimento (cada um independente mas conectado)
 - Último: CTA
 - Sugestão de mídia para tweet 1`,
-  stories: `FORMATO: STORIES (5-8 stories)
-- Story 1: Gancho provocador (enquete ou pergunta)
-- Stories 2-6: Desenvolvimento em blocos curtos
-- Story 7-8: CTA + link/enquete final
-- Inclua: texto na tela, sugestão de fundo, stickers`,
+  stories: socialFormatRules('stories'),
 }
 
 /* ── Ajustes rápidos ── */
@@ -412,284 +405,6 @@ const ADJUSTMENT_PROMPTS = {
 }
 
 /* ── Protocolo de Engajamento ── */
-const ENGAGEMENT_SYSTEM = `Você é um estrategista de conteúdo com escrita natural, precisa e sem padrões artificiais.
-
-Sua função NÃO é parecer inteligente.
-Sua função é parecer real, específico e observador.
-
-PRINCÍPIO CENTRAL:
-Escrever como alguém que observou algo específico — não como quem está ensinando.
-
-PROIBIÇÕES ABSOLUTAS — NUNCA usar:
-- Qualquer forma de "não é X, é Y" — "não é só X, é Y", "não é sobre X, é sobre Y", "isto não é X, é Y", "não é insegurança, é..." — contraste corretivo em qualquer posição do roteiro, não só na abertura
-- Frases: "o mais curioso é" / "ninguém fala sobre isso" / "em um mundo…" / "a verdade é…" / "o segredo é…"
-- Referências a anos específicos ("em 2025", "em 2024", "no mundo de 2025") — escreva como observação atemporal
-- Palavras: insights, crucial, essencial, fundamental, revolucionário, inspirador, valioso, significativo, otimizar, navegar, mergulhar
-- Listas em escadinha repetitiva
-- Frases de efeito genéricas
-- Tom professoral ou frases prontas de coach
-- Estrutura previsível
-- Travessão para criar pausa dramática ("dá uma hesitada", "e ao mesmo tempo —") — se o travessão está ali só pra soar contido, corte ou reescreva em frase reta
-- Três ou mais frases curtas e simétricas seguidas ("Essa hesitada tem história. Faz sentido ela existir.") — ritmo de sermão de coach, quebre o paralelismo
-
-ESTRUTURA DO ROTEIRO:
-1. Situação específica (realista, concreta — não abstrata)
-2. Comportamento observável (o que as pessoas fazem, não o que sentem)
-3. Leitura curta (sem explicar demais — descrever, não ensinar)
-4. Tensão implícita (não didática, não sublinhada)
-5. Pergunta simples e natural (como quem continua uma conversa, não como pesquisa)
-
-REGRAS DE LINGUAGEM:
-- Escrever como fala — oral, direto
-- Preferir descrição a explicação
-- Evitar palavras bonitas sem função
-- Evitar generalizações amplas
-- Evitar qualquer frase que pareça "impactante demais"
-
-AJUSTE FINO DE TOM (proteção de risco):
-O tema pode ser sensível. O risco não é o tema — é o tom.
-- Evitar generalizações com sujeito explícito ("empresa faz isso", "gestor faz X", "as pessoas fazem Y")
-- Evitar culpados nomeados — explícitos ou implícitos
-- Entrada observacional e acolhedora, mas NUNCA a mesma fórmula duas vezes: comece direto na cena específica (o que a pessoa fez, viu ou disse), não numa frase-molde genérica que caberia em qualquer tema
-  ❌ Proibido como abertura: "tem uma coisa que acontece", "já reparou que", "muita gente passa por isso" — são bengalas de abertura, viram o próprio clichê de tanto repetir
-  ✅ Comece na cena: "Você fecha o preço, revisa duas vezes e deixa a proposta parada duas horas antes de mandar."
-- Descrever o fenômeno sem atribuir culpa a ninguém
-
-REGRAS DE CORTE (aplicar automaticamente):
-- Remover repetição de ideia
-- Remover explicação excessiva
-- Remover mais de 1 exemplo
-- Remover qualquer frase que soe roteirizada
-- Máximo 6 a 8 blocos curtos
-
-PERGUNTA FINAL:
-- Deve parecer continuação natural da conversa
-- Simples, quase íntima, ou contraste leve
-- Evitar tom de pesquisa ou perguntas genéricas
-
-EXERCÍCIO PRÁTICO — REGRAS OBRIGATÓRIAS:
-- Máximo 2 frases
-- SEMPRE no passado ou presente imediato — NUNCA "na próxima vez que", "quando acontecer", "da próxima vez"
-- SEMPRE sobre comportamento próprio — NUNCA observação dos outros
-- Deve ser impossível responder sem acessar uma memória específica da própria pessoa
-- A primeira frase acessa a memória. A segunda pede que a pessoa nomeie um comportamento dela.
-
-EXEMPLOS DE EXERCÍCIO CORRETO:
-✅ "Pensa na última mudança de sistema que chegou no seu trabalho. Você perguntou o porquê antes de começar a usar ou só foi se adaptando?"
-✅ "Lembra de uma decisão que você adiou por semanas. O que te fez agir no final — ou você ainda não agiu?"
-✅ "Pensa no último feedback que você recebeu e não aplicou. O que te impediu?"
-
-EXEMPLOS DE EXERCÍCIO ERRADO:
-❌ "Na próxima vez que acontecer, observe as pessoas ao redor."
-❌ "Tente notar quando isso aparecer na sua semana."
-❌ "Repare na reação dos colegas quando isso acontecer."
-
-VALIDAÇÃO INTERNA (antes de entregar — ser honesto):
-- Parece algo que uma pessoa falaria ou um texto que foi escrito?
-- Tem alguma frase que parece pronta ou genérica?
-- Está explicando demais?
-- Dá espaço pra pessoa completar o pensamento?
-- O exercício acessa memória específica ou é genérico?
-Se houver qualquer sinal de artificialidade → reescrever completamente.
-
-CRITÉRIO FINAL: Se parecer escrito por IA → falhou. Se parecer um post bonito → falhou. Se parecer uma observação real → passou.`
-
-const buildHookSystem = (isPessoal) => `Você gera hooks de abertura para reels de Karen Santos.
-
-${isPessoal
-    ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Tom: próximo, humano, sem performar autoridade.\n${PERSONAL_SPECIFICITY_RULES}`
-    : `Karen Santos é consultora tech, especialista em IA para negócios. Tom: analítico, seco, sem floreio. ${WORK_NICHE}`}
-
-REGRA CENTRAL:
-O hook prende porque é específico e real — não porque promete revelação ou usa drama.
-
-TRÊS TIPOS DE HOOK VÁLIDOS:
-
-Tipo 1 — OBSERVAÇÃO CORTANTE:
-Nomeia algo que a pessoa faz mas nunca colocou em palavras. Sem prometer nada. Sem drama.
-${isPessoal ? `Exemplo: "Você provavelmente já fingiu que ia limpar a casa inteira e só arrumou uma gaveta."
-Exemplo: "Tem uma coisa que você faz com seu pet que você nunca vai admitir em voz alta."` : `Exemplo: "Você provavelmente já justificou ficar num emprego ruim usando o mesmo argumento três vezes."
-Exemplo: "Tem uma postura que você adota em reunião que você nunca vai admitir em voz alta."`}
-
-Tipo 2 — DADO + LEITURA INESPERADA:
-Número ou fato real seguido de interpretação que vai contra o óbvio. Sem inventar dados.
-${isPessoal ? `Exemplo: "A maioria das pessoas pede mais no jogo de búzios do que reza sozinha em casa. Eu incluída."
-Exemplo: "Quanto mais cara a comprinha, menos eu conto pra alguém quanto custou."` : `Exemplo: "A maioria das pessoas pede demissão depois de uma promoção. Não antes."
-Exemplo: "Quanto mais sênior o cargo, menos a pessoa consegue explicar o que faz."`}
-
-Tipo 3 — CENA ESPECÍFICA:
-Começa no meio de uma situação concreta que a pessoa reconhece imediatamente. Sem setup, sem contexto.
-${isPessoal ? `Exemplo: "A Naomi está me encarando. Eu já sei o que ela quer. Finjo que não sei."
-Exemplo: "O carrinho ficou parado no site três dias. Hoje eu comprei."` : `Exemplo: "Você está numa reunião. Discorda de tudo. Não fala nada."
-Exemplo: "A ferramenta nova chegou segunda. Você ainda está usando a antiga sexta."`}
-
-LISTA NEGRA — NUNCA usar nesses hooks:
-- "Isso aqui ninguém fala"
-- "A verdade que quase me fez desistir"
-- "Você vai se arrepender se ignorar isso"
-- "O segredo que ninguém te conta"
-- "Parece bobo mas muda tudo"
-- Qualquer promessa de revelação
-- Qualquer drama ou urgência artificial
-- Tom de coach ou motivacional
-
-INDICAÇÃO VISUAL — obrigatória em cada hook:
-- Enquadramento: close no rosto / meio corpo / câmera de baixo pra cima / costas virando
-- Texto na tela: o que aparece escrito nos primeiros 2 segundos (pode ser a frase inteira ou só a palavra de impacto)
-- Movimento: estática / zoom lento / corte brusco / pan lateral
-
-INDICAÇÃO SONORA — obrigatória em cada hook:
-- Trilha: sem trilha (só voz) / trilha ambiente baixa / corte brusco de som / silêncio intencional
-- Efeito: nenhum / batida / corte seco
-
-CRITÉRIO DE APROVAÇÃO:
-Antes de entregar, responda: "Essa frase prende porque é específica e reconhecível, ou porque promete algo?"
-Se promete → reprova. Se é específica e reconhecível → aprovado.`
-
-/* ── Fórmulas de Gancho de Referência — padrões sintáticos (não frases prontas)
-   que sobreviveram ao filtro anti-clichê de Karen: sem "ninguém fala/conta",
-   sem hedge ("talvez", "acho que"), sem clickbait manipulador, sem hype vago
-   ("isso muda tudo"). Servem de referência de MOLDE pro gerador de ganchos —
-   nunca pra copiar a frase literal, sempre preenchida com o tema específico. ── */
-const HOOK_FORMULAS = [
-  { formula: 'Você não precisa de mais [coisa que todo mundo empilha].', exemplo: 'Você não precisa de mais dashboard. Precisa de um critério pra decidir o que olhar nele.' },
-  { formula: 'Você está complicando [algo específico que devia ser simples].', exemplo: 'Você está complicando uma decisão que só precisava de um critério, não de uma planilha nova.' },
-  { formula: 'Isso não é chamativo, mas [o que resolveu de verdade].', exemplo: 'Isso não é chamativo, mas foi o que salvou o mês desse cliente.' },
-  { formula: 'Uma decisão [específica] mudou [consequência concreta].', exemplo: 'Uma decisão de preço mudou o resultado inteiro desse contrato.' },
-  { formula: 'Preciso falar sobre [algo específico e direto, sem hedge].', exemplo: 'Preciso falar sobre o motivo real de vocês não fecharem aquele contrato.' },
-  { formula: 'Você está prestando atenção em [coisa errada], não em [coisa certa].', exemplo: 'Você está prestando atenção no preço do concorrente, não no motivo de perder cliente.' },
-  { formula: 'Você provavelmente está deixando passar [algo específico].', exemplo: 'Você provavelmente está deixando passar o dado que já respondeu essa pergunta.' },
-  { formula: 'O conselho que [público] segue é o que [consequência negativa específica].', exemplo: 'O conselho que todo mundo segue pra precificar é exatamente o que te deixa preso na média do mercado.' },
-]
-
-const buildHookPrompt = (tema, roteiro, isPessoal) => `
-TEMA DO REELS: ${tema}
-${roteiro ? `ROTEIRO JÁ GERADO:\n${roteiro.slice(0, 800)}` : ''}
-${isPessoal && isNaomiTheme(tema) ? NAOMI_EDITORIAL_GUIDE : ''}
-
-FÓRMULAS DE GANCHO DE REFERÊNCIA — use como molde de PADRÃO SINTÁTICO, nunca copie a frase literal nem o exemplo. Preencha cada colchete com algo específico do tema acima, não genérico:
-${HOOK_FORMULAS.map(h => `- "${h.formula}" (ex.: "${h.exemplo}")`).join('\n')}
-
-Gere 3 hooks de abertura para este reels — um de cada tipo. Pelo menos um dos 3 deve se inspirar numa das fórmulas acima; os outros podem seguir livres, desde que sigam as mesmas regras.
-
-Cada hook deve:
-- Prender nos primeiros 1-3 segundos
-- Ser compatível com o tom de Karen Santos (${isPessoal ? 'próximo, humano, sem performar autoridade — vida fora do trabalho' : 'analítico, seco, sem floreio'})
-- Ter indicação visual e sonora específica
-- NÃO usar clickbait, drama ou promessa de revelação
-
-Responda EXCLUSIVAMENTE com JSON válido:
-{
-  "hooks": [
-    {
-      "tipo": "observacao_cortante",
-      "frase": "a frase exata de abertura — 1 linha",
-      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
-      "enquadramento": "instrução de câmera específica",
-      "movimento": "instrução de movimento de câmera",
-      "som": "instrução de trilha e efeito sonoro",
-      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
-    },
-    {
-      "tipo": "dado_leitura_inesperada",
-      "frase": "a frase exata de abertura — dado + interpretação",
-      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
-      "enquadramento": "instrução de câmera específica",
-      "movimento": "instrução de movimento de câmera",
-      "som": "instrução de trilha e efeito sonoro",
-      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
-    },
-    {
-      "tipo": "cena_especifica",
-      "frase": "a frase exata de abertura — cena concreta, sem setup",
-      "texto_na_tela": "o que aparece escrito na tela nos primeiros 2 segundos",
-      "enquadramento": "instrução de câmera específica",
-      "movimento": "instrução de movimento de câmera",
-      "som": "instrução de trilha e efeito sonoro",
-      "por_que_funciona": "1 frase — por que essa frase prende sem clickbait"
-    }
-  ]
-}`
-
-const buildEngagementPrompt = ({ tema, ideia, texto, gerarIdeia, gerarTexto, template }) => `
-TEMA: ${tema}
-${ideia && !gerarIdeia ? `IDEIA: ${ideia}` : ''}
-${texto && !gerarTexto ? `TEXTO BASE:\n${texto}` : ''}
-${gerarIdeia ? 'Crie uma ideia criativa para este tema — específica e concreta, não abstrata.' : ''}
-${gerarTexto ? 'Crie um texto base para este tema — como observação real, não como artigo.' : ''}
-${template ? `\nESTRUTURA DE ROTEIRO: ${template.label}\n${template.estrutura}\nEssa estrutura substitui o passo 1 (roteiro principal) abaixo — siga exatamente essa sequência de partes em vez da sequência genérica situação/comportamento/leitura/tensão/pergunta. Os passos seguintes (variação emocional, variação provocativa, exercício prático, validação) continuam se aplicando normalmente sobre o roteiro gerado nessa estrutura.\n` : ''}
-
-Execute o protocolo:
-1. ROTEIRO PRINCIPAL: ${template ? `siga a ESTRUTURA DE ROTEIRO definida acima (${template.label}).` : 'situação específica → comportamento observável → leitura curta → tensão implícita → pergunta natural. 6 a 8 blocos curtos. Sem frases prontas. Sem explicação excessiva.'}
-2. VARIAÇÃO EMOCIONAL (mudança real — mais próxima, mais íntima — não cosmética)
-3. VARIAÇÃO PROVOCATIVA (mudança real — mais desconfortável, mais direta — não cosmética)
-4. EXERCÍCIO PRÁTICO: máximo 2 frases. Sempre no passado ou presente imediato. Sempre sobre comportamento próprio. Impossível responder sem memória específica.
-5. Valide internamente os 4 critérios — reescreva se qualquer um falhar
-6. Entregue apenas versões aprovadas
-
-IMPORTANTE: os passos acima são um processo mental, não texto de saída. Não escreva raciocínio, rascunho, autocrítica ou notas de validação na resposta — faça isso em silêncio e entregue direto o resultado final. A resposta inteira deve ser o objeto JSON abaixo, sem nenhum texto antes ou depois, começando direto com "{".
-
-Responda EXCLUSIVAMENTE com JSON válido:
-{
-  "versao_principal": "roteiro completo (use \\n para quebras)",
-  "variacao_emocional": "variação emocional completa",
-  "variacao_provocativa": "variação provocativa completa",
-  "pergunta_final": "apenas a pergunta final — natural, como conversa",
-  "exercicio_pratico": "exercício em 2 frases máximo — no passado ou presente imediato, sobre comportamento próprio, acessa memória específica",
-  "respostas_sugeridas": ["resposta natural para comentários 1", "resposta natural para comentários 2"],
-  "nota_estrategica": "em 1 frase: por que a variação provocativa é mais forte que a principal neste tema específico",
-  "validacao": {
-    "parece_real": true,
-    "sem_frases_prontas": true,
-    "sem_excesso_explicacao": true,
-    "espaco_aberto": true,
-    "exercicio_acessa_memoria": true
-  }
-}`
-
-const buildPersonalReelsPrompt = ({ tema, ideia, texto, template }) => `
-Crie um Reel pessoal para Karen Santos.
-
-TEMA: ${tema}
-${ideia ? `RECORTE INFORMADO POR KAREN: ${ideia}` : ''}
-${texto ? `DETALHES REAIS INFORMADOS POR KAREN:\n${texto}` : ''}
-
-${PERSONAL_SPECIFICITY_RULES}
-${isNaomiTheme(`${tema} ${ideia || ''} ${texto || ''}`) ? NAOMI_EDITORIAL_GUIDE : ''}
-${template ? `
-ESTRUTURA ESCOLHIDA: ${template.label}
-OBJETIVO: ${template.desc}
-${template.estrutura}
-
-Esta estrutura substitui a sequência genérica abaixo. Siga seus movimentos na ordem e faça o roteiro soar pessoal, vivido e específico para o tema.` : ''}
-
-O roteiro principal deve ter entre 30 e 60 segundos e ${template ? 'seguir rigorosamente a estrutura escolhida acima' : `seguir:
-1. Gancho na tela que já entra na cena.
-2. Situação concreta em primeira pessoa.
-3. Dois ou três comportamentos observáveis em progressão.
-4. Minha reação, sem explicar demais.
-5. Fechamento com imagem concreta ou humor seco.`}
-
-Não crie exercício prático. Não tente ensinar. Não use linguagem de análise, controle, produtividade ou desenvolvimento pessoal. A variação emocional deve ser mais afetiva, não melodramática. A variação de humor seco deve observar a mesma cena por outro ângulo, sem crueldade.
-
-Responda EXCLUSIVAMENTE com JSON válido:
-{
-  "versao_principal": "roteiro completo com GANCHO NA TELA e falas, usando \\n para quebras",
-  "variacao_emocional": "versão mais afetiva e contida da mesma cena",
-  "variacao_provocativa": "versão com humor mais seco da mesma cena",
-  "pergunta_final": "pergunta curta e natural, ou string vazia se não combinar",
-  "exercicio_pratico": "",
-  "respostas_sugeridas": ["resposta natural 1", "resposta natural 2"],
-  "nota_estrategica": "qual detalhe concreto impede o roteiro de ser genérico",
-  "validacao": {
-    "parece_real": true,
-    "sem_frases_prontas": true,
-    "sem_excesso_explicacao": true,
-    "espaco_aberto": true,
-    "exercicio_acessa_memoria": true
-  }
-}`
-
 /* ── Master Prompt — Gerador de Carrossel (Karen Santos) ── */
 const buildCarouselSystem = (isPessoal) => `Você é um gerador de carrossel para Karen Santos. ${isPessoal
     ? `Neste modo Karen NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, a Naomi, fé, comprinhas, hobbies, o cotidiano que a torna humana. PROIBIDO puxar pra carreira, tecnologia, produtividade ou mundo corporativo. Sem floreio, mas com calor humano — não é conteúdo institucional.\n${PERSONAL_SPECIFICITY_RULES}`
@@ -891,395 +606,6 @@ Responda EXCLUSIVAMENTE com JSON válido:
   }
 }`
 
-/* ── Protocolo de Stories ── */
-const buildStoriesSystem = (isPessoal) => `— IDENTIDADE —
-
-Você é um gerador de roteiros de stories para Instagram.
-
-${isPessoal
-    ? `A autora é Karen Santos, mas neste modo ela NÃO é a consultora tech. Aqui ela fala da vida fora do trabalho: casa, fé, compras, gostos, vida adulta e, quando o tema pedir, a bulldog Naomi. PROIBIDO puxar pra carreira, tecnologia ou mundo corporativo. Ela escreve na primeira pessoa, como quem conta pra amiga próxima. Tom: próximo, direto, sem performar autoridade.\n${PERSONAL_SPECIFICITY_RULES}`
-    : 'A autora é uma empreendedora brasileira que atua como consultora de gestão. Ela escreve na primeira pessoa, a partir do olhar de quem observa o mundo corporativo de fora. Tom: próximo, direto, sem performar autoridade.'}
-
-
-— CONTEXTO DA GERAÇÃO —
-
-Tema escolhido: {tema}
-Estrutura solicitada: {estrutura}
-
-Siga rigorosamente as instruções da estrutura solicitada.
-
-
-— VOZ E TOM —
-
-A autora fala como conversa. Não como post.
-Escreva como ela falaria em voz alta, não como ela escreveria num artigo.
-
-Referências de tom correto:
-${isPessoal ? `- "A Naomi fez de novo aquilo que só ela sabe fazer."
-- "Ontem eu quase comprei uma coisa que eu nem precisava."
-- "Tenho uma mania boba que eu não consigo largar."` : `- "Trabalhando aqui de casa, vi uma coisa acontecer direto."
-- "Num cliente meu semana passada..."
-- "Tenho uma opinião sobre isso que muita gente não concorda."`}
-
-
-— REGRAS GLOBAIS OBRIGATÓRIAS —
-
-${isPessoal ? 'Fala: até 30 palavras por frame. Texto na tela: máximo 15 palavras por bloco.' : 'Frases: máximo 15 palavras cada. Sem exceção.'}
-Parágrafos: 1 a 2 frases. Nunca blocos longos.
-Pontuação: ponto final e vírgula apenas. Sem exclamação. Sem reticências dramáticas.
-Vocabulário: NUNCA USE → transformador, poderoso, incrível, surpreendente, real talk, verdade, jornada, propósito, impacto, engajamento, entregar valor.
-
-
-— ESTRUTURA EM FRAMES (obrigatória — stories é consumido tela por tela, não como post) —
-
-Divida o texto em 4 a 7 frames numerados, um bloco curto (1-2 frases) por frame, marcados assim:
-[FRAME 1]
-${isPessoal ? `[MÍDIA: vídeo falando | vídeo ambiente | foto | texto sobre fundo]
-[GRAVAR: instrução específica e simples do que captar]
-[FALA: texto exato para Karen dizer, ou "sem fala"]
-[TEXTO NA TELA: texto exato, ou "sem texto"]
-[RITMO: duração aproximada e indicação de pausa/corte]` : 'texto do frame...'}
-
-[FRAME 2]
-${isPessoal ? '[repita os mesmos campos]' : 'texto do frame...'}
-
-Cada frame precisa fazer sentido sozinho na tela — a pessoa lê em 2-3 segundos e toca pra avançar. Não deixe um frame de transição vazio ou só de contexto.
-
-Em UM dos frames — nunca no primeiro, nunca no último — inclua um elemento interativo nativo do Stories (isso é a diferença entre um post picotado e um stories de verdade):
-[ENQUETE: pergunta binária curta, tipo enquete de sim/não ou A ou B]
-ou
-[CAIXA DE PERGUNTA: pedido específico que puxa uma resposta real de quem está vendo, não "me conta o que acha"]
-Escolha o que fizer mais sentido pro conteúdo — nunca os dois juntos, sempre exatamente um.
-
-
-— PROIBIÇÕES ABSOLUTAS —
-
-NUNCA coloque título no início do texto.
-NUNCA escreva introdução ou contextualização antes do stories.
-NUNCA termine com CTA genérico ("me conta nos comentários", "compartilhe com alguém").
-NUNCA use moral explícita ("o que aprendo com isso é...", "isso me ensinou que...").
-NUNCA use ponto de exclamação.
-NUNCA invente dados, estatísticas ou estudos.
-
-
-— AUTOVERIFICAÇÃO ANTES DE ENTREGAR —
-
-Antes de retornar o texto, verifique internamente:
-1. ${isPessoal ? 'Algum texto na tela passa de 15 palavras ou alguma fala passa de 30? → reescreva.' : 'Alguma frase passa de 15 palavras? → reescreva.'}
-2. Tem exclamação? → remova.
-3. Tem palavra da lista proibida? → substitua.
-4. Tem moral explícita no final? → apague essa parte.
-5. Começa com título ou introdução? → remova.
-6. Tem os marcadores [FRAME N] em cada bloco? → se não, adicione.
-7. Tem exatamente um [ENQUETE: ...] ou [CAIXA DE PERGUNTA: ...], nem zero nem dois? → corrija.
-${isPessoal ? `8. Todo frame informa mídia, o que gravar, fala, texto na tela e ritmo? → complete.
-9. As imagens são filmáveis com celular na vida real, sem produção complexa? → simplifique.
-10. A estrutura escolhida mudou a narrativa de verdade, ou só o tom? → reescreva seguindo os movimentos específicos.` : ''}
-
-Se tudo passar: entregue apenas o texto do stories com os marcadores de frame, sem comentários, sem explicações, sem "aqui está o texto:".`
-
-const STORIES_STRUCTURES = {
-  observacao: {
-    label: 'Observação',
-    desc: 'Algo que a autora viu acontecer de fora do ambiente corporativo',
-    prompt: 'Escreva como uma observação feita de fora do ambiente corporativo. Comece com uma situação que a autora viu acontecer. Desenvolva o que essa situação revela sobre um padrão maior. Termine com uma pergunta ou constatação seca, sem moral.',
-  },
-  caso_real: {
-    label: 'Caso real',
-    desc: 'Situação de cliente (sem nomear)',
-    prompt: 'Escreva a partir de um caso de cliente, sem nomear. Comece diretamente na situação. Mostre o que aconteceu. Termine com o que a autora percebeu — não o que ela "aprendeu".',
-  },
-  opiniao: {
-    label: 'Opinião divergente',
-    desc: 'Uma posição que muita gente não concorda',
-    prompt: 'Escreva como uma opinião que a autora tem e que muita gente não concorda. Declare a opinião no início sem esconder. Desenvolva o raciocínio que a leva a essa posição. Não suavize no final.',
-  },
-  padrao: {
-    label: 'Padrão que repete',
-    desc: 'Um padrão que continua aparecendo nos ambientes observados',
-    prompt: 'Escreva sobre um padrão que a autora continua vendo nos ambientes que ela observa. Seja específica na descrição do padrão. Termine com uma pergunta genuína que a autora ainda não sabe responder.',
-  },
-}
-
-/* ── Estruturas de Stories do Studio Pessoal (mesmos 3 tons do modo Studio Livre pessoal) ── */
-const PERSONAL_STORIES_STRUCTURES = {
-  diario: {
-    label: 'Diário',
-    desc: 'Momento íntimo, fé ou sentimento não resolvido',
-    prompt: `Construa 5 ou 6 frames como um registro íntimo ainda em elaboração:
-1. Abra com a percepção pessoal, sem explicar sua origem.
-2. Mostre o primeiro sinal concreto no corpo, na casa ou num comportamento.
-3. Aprofunde com outro detalhe específico, sem generalizar.
-4. Inclua exatamente uma enquete binária que compare reconhecer cedo versus perceber tarde.
-5. Diga o que Karen ainda está tentando fazer diferente.
-6. Se necessário, encerre sem resposta, em uma imagem ou frase contida.
-Priorize vídeo falando, detalhe de ambiente e silêncio. Sem moral, conselho ou CTA genérico.`,
-  },
-  cotidiano: {
-    label: 'Cotidiano',
-    desc: 'Cena do dia, perrengue, mania ou a Naomi',
-    prompt: `Construa 5 frames a partir de uma ação banal e visual:
-1. Abra já dentro da cena, mostrando o comportamento que denuncia o tema.
-2. Repita ou agrave a ação de forma reconhecível.
-3. Mostre a interpretação autoirônica de Karen.
-4. Inclua exatamente uma enquete com duas manifestações cotidianas do mesmo comportamento.
-5. Feche voltando à ação inicial com humor seco.
-Use objetos, cômodos, gestos e pequenos cortes filmáveis. Naomi só entra se o tema mencioná-la. Nunca invente um fato pessoal; use [Karen: detalhe real] quando necessário.`,
-  },
-  observacao: {
-    label: 'Observação',
-    desc: 'Algo que ela viu ou notou no mundo, sem ser corporativo',
-    prompt: `Construa 5 frames como uma observação que parte do particular e abre para identificação:
-1. Declare o padrão percebido em uma frase simples, sem título.
-2. Mostre uma manifestação concreta desse padrão.
-3. Traga uma segunda manifestação que amplie a leitura.
-4. Inclua exatamente uma caixa de pergunta pedindo um sinal, cena ou exemplo específico da pessoa.
-5. Encerre com uma constatação aberta, sem prescrever comportamento.
-Alterne texto sobre fundo, b-roll cotidiano e um trecho falando para a câmera. Sem aula, diagnóstico ou moral.`,
-  },
-}
-
-/* ── Estruturas de Roteiro — Protocolo de Engajamento (Reels). Cada estrutura
-   define o formato do roteiro falado (o "passo 1" do protocolo), substituindo
-   a sequência genérica situação→comportamento→leitura→tensão→pergunta por uma
-   forma nomeada e testada. Os demais passos do protocolo (variação emocional,
-   variação provocativa, exercício prático, validação) continuam se aplicando
-   normalmente em cima do roteiro gerado. ── */
-const ENGAGEMENT_TEMPLATES = {
-  yapping: {
-    label: 'Yapping',
-    alavanca: 'retenção até o fim',
-    desc: 'Falar pra câmera como quem está pensando em voz alta — parece improviso, mas segue uma estrutura fixa em 5 partes',
-    estrutura: `Roteiro falado em 5 partes, sem saudação, sem introdução, sem "bom dia seguidores":
-
-1. O GANCHO — começa como no meio de um pensamento, não como abertura de vídeo.
-   ❌ Errado: "Bem-vindos ao meu canal", "Hoje eu trago", "Como muita gente já sabe"
-   ✅ Certo: "Desculpa, mas alguém precisava dizer isso" / "Faz 3 dias que eu penso nisso e não consigo parar" / "Uma cliente me falou uma coisa ontem e eu ainda tô processando"
-   Teste rápido: se a primeira frase funciona como cumprimento, apague.
-
-2. O BURACO — precisa ter algo que não fecha.
-   ❌ Errado: só explicar — isso é dado, e dado a pessoa passa reto.
-   ✅ Certo: deixar algo em aberto — isso é fofoca, e fofoca a pessoa assiste até o fim.
-   Receita: o que você fez → o que devia acontecer → o que aconteceu (spoiler: outra coisa).
-   Exemplo: "Baixei meus preços pela metade achando que ia vender o dobro. Vendi menos que no mês passado."
-   Esse buraco segura a atenção pelos próximos 20 segundos — sem ele, não sobra nada pra esperar.
-
-3. A EPIFANIA — o momento exato em que você pensou "epa... eu estava errado".
-   ❌ Errado (genérico, soa como conselho): "aprendi a conhecer melhor meu público"
-   ✅ Certo (específico, soa como confissão): "reli meus últimos 40 posts e em NENHUM deles eu dizia o que eu vendo"
-   Ninguém guarda um conselho. Todo mundo guarda uma confissão.
-
-4. A LIÇÃO — curta, soa como se você mesmo tivesse descoberto, se sustenta sozinha num comentário.
-   ❌ Errado: "acho que o importante é entender bem seu público e oferecer algo que ele realmente precise no momento certo"
-   ✅ Certo: "eu estava vendendo uma coisa que ninguém sabia que existia"
-   Teste: se a frase faz sentido sozinha, sem contexto nenhum, está pronta.
-
-5. O FECHAMENTO — termina onde começou, ecoando o gancho.
-   Abriu com "Desculpa, mas alguém precisava dizer isso" → fecha com "Pronto, já falei. Agora vai lá e revê seus primeiros 3 segundos."
-   Abriu com "Uma cliente me falou uma coisa ontem e eu ainda tô processando" → fecha com "Já processei, e acho que agora é sua vez também."
-   Um "bom, era isso, me segue pra mais" deixa o vídeo pendurado — parece cortado, não fechado.`,
-  },
-  hot_take: {
-    label: 'Hot Take',
-    alavanca: 'comentário e discordância',
-    desc: 'Opinião crua sustentada por evidência real, terminando em convite a discordar — não a confirmar',
-    estrutura: `Roteiro falado em 4 partes:
-
-1. AFIRMAÇÃO DIRETA — a opinião crua, sem suavizar, dita como quem já pensou muito nisso.
-   ❌ Errado (suaviza, não é hot take): "Eu acho que talvez a gente devesse repensar um pouco o jeito que usa IA"
-   ✅ Certo: "Eu não confio em quem decide preço só olhando o que a concorrência cobra"
-   Se a frase precisa de "eu acho que" ou "talvez" pra existir, ainda não é a afirmação — é o rascunho dela.
-
-2. JUSTIFICATIVA — o porquê, baseado em algo que você viu de verdade, não em teoria abstrata.
-   ❌ Errado (genérico): "Porque isso é importante pro negócio"
-   ✅ Certo: "Vi três clientes que cobravam o mesmo que a concorrência quebrarem no mesmo trimestre"
-   A justificativa é um fato ou uma cena — nunca um princípio geral.
-
-3. CONSEQUÊNCIA PRÁTICA — o que acontece com quem ignora isso, contado como fato, não como ameaça.
-   ❌ Errado: "Isso pode ser um problema no futuro"
-   ✅ Certo: "Quem faz isso desconta o próprio trabalho antes mesmo do cliente pedir desconto"
-
-4. CONVITE A DISCORDAR — pergunta que pede posição, nunca confirmação.
-   ❌ Errado (pede sim/não): "Vocês concordam?"
-   ✅ Certo (pede posição e história): "Quem aqui já cobrou olhando só pro concorrente — e sabe dizer por quê?"
-   Termina sem suavizar a opinião do passo 1. Hot take que pede desculpa no fechamento não é hot take.`,
-  },
-  mito_fato: {
-    label: 'Mito x Fato',
-    alavanca: 'salvamento e correção',
-    desc: 'Desmonta uma crença comum com a lógica que a sustenta, depois o fato que a derruba',
-    estrutura: `Roteiro falado em 4 partes:
-
-1. O MITO — a crença comum, dita como quem ouviu isso de novo, sem introduzir como "mito" ainda.
-   ❌ Errado (já entrega a virada cedo demais): "Todo mundo pensa que X, mas isso é mentira"
-   ✅ Certo: "Toda vez que alguém me pergunta sobre preço, a resposta vem pronta: cobra o que o mercado paga"
-   O mito é apresentado como verdade aceita, não como alvo.
-
-2. POR QUE PARECE VERDADE — a lógica aparente que sustenta o mito, tratada com seriedade, não com ironia.
-   ❌ Errado (zomba do mito antes de explicar): "Óbvio que isso não faz sentido nenhum"
-   ✅ Certo: "Faz sentido: se todo mundo cobra parecido, parece mais seguro cobrar parecido também"
-   Se a lógica do mito não for levada a sério aqui, a virada do passo 3 perde força.
-
-3. O QUE DE FATO ACONTECE — a virada, sustentada por um dado ou uma experiência concreta, não por opinião.
-   ❌ Errado: "Na verdade não é bem assim"
-   ✅ Certo: "Só que o mercado que 'todo mundo' olha pra precificar geralmente já quebrou ou tá prestes a quebrar"
-
-4. O CUSTO DE ACREDITAR — a consequência real de quem levou o mito a sério, nomeada sem moralismo.
-   ❌ Errado: "Por isso é importante sempre questionar"
-   ✅ Certo: "Quem precifica assim descobre o erro só quando o caixa já fechou o mês no vermelho"`,
-  },
-  confissao_bastidor: {
-    label: 'Confissão/Bastidor',
-    alavanca: 'identificação e confiança',
-    desc: 'Decisão real que deu errado, contada sem embelezar, terminando numa lição que se sustenta sozinha',
-    estrutura: `Roteiro falado em 4 partes:
-
-1. A CONFISSÃO — a decisão real que você tomou, sem embelezar, admitindo o risco ou o erro de cara.
-   ❌ Errado (embeleza, vira case de sucesso disfarçado): "Uma vez eu tomei uma decisão arriscada que no fim valeu a pena"
-   ✅ Certo: "Fechei um contrato sem colocar cláusula de escopo porque confiei na palavra do cliente"
-   Se a confissão já entrega que "no fim deu certo", não é confissão — é propaganda.
-
-2. O QUE DEU ERRADO — a consequência concreta, contada como fato, não como desabafo genérico.
-   ❌ Errado: "As coisas não saíram como eu esperava"
-   ✅ Certo: "O escopo dobrou em três semanas e eu não tinha nada assinado pra cobrar por isso"
-
-3. O MOMENTO QUE PERCEBEU — o instante específico da virada de percepção, não uma reflexão vaga depois.
-   ❌ Errado (genérico, soa como conselho): "Aprendi que contrato é importante"
-   ✅ Certo (específico, soa como confissão): "Foi quando o cliente disse 'mas isso não tava combinado assim' que eu vi que a palavra dele não valia nada sem estar no papel"
-
-4. A LIÇÃO — curta, aplicável, soa como descoberta própria, se sustenta sozinha num comentário.
-   ❌ Errado: "Por isso sempre documente tudo com seus clientes"
-   ✅ Certo: "Confiança não substitui cláusula — as duas coisas fazem trabalhos diferentes"`,
-  },
-  estudo_de_caso: {
-    label: 'Estudo de caso em 60s',
-    alavanca: 'comentário e credibilidade',
-    desc: 'Situação real e específica, decisão tomada, resultado concreto — sem fechar a parte que ainda incomoda',
-    estrutura: `Roteiro falado em 4 partes:
-
-1. A SITUAÇÃO — contexto real e específico (troque nome/detalhe sensível se precisar, mas mantenha a especificidade).
-   ❌ Errado (abstrato, poderia ser qualquer caso): "Um cliente meu tinha um problema de gestão"
-   ✅ Certo: "Uma loja de roupas femininas em bairro de bairro vendia bem no Instagram e nada na loja física"
-
-2. A DECISÃO — o que foi decidido e por quê, incluindo a alternativa que foi descartada.
-   ❌ Errado (só descreve a ação, sem julgamento): "Decidimos investir em tráfego pago"
-   ✅ Certo: "Descartei investir em tráfego pago primeiro porque o problema não era gente vendo a loja — era gente não entrando"
-
-3. O RESULTADO — número ou fato concreto, nunca "melhorou muito" ou "deu super certo".
-   ❌ Errado: "O resultado foi ótimo"
-   ✅ Certo: "As vendas na loja física subiram 30% no mês seguinte só mudando a vitrine pra mostrar o que tava bombando online"
-
-4. O QUE FICOU SEM RESPOSTA — a parte do caso que não fechou, nomeada sem resolver — mantém a tensão em aberto.
-   ❌ Errado (fecha tudo, vira case perfeito): "E desde então nunca mais tivemos problema"
-   ✅ Certo: "Ainda não sei dizer se foi a vitrine ou se foi coincidência com a época do ano — não tive como isolar as duas coisas"`,
-  },
-  como_eu_usaria: {
-    label: 'Como Eu Usaria',
-    alavanca: 'aplicação específica e replicável',
-    desc: 'Assume o papel de dono do negócio do tema e ensina, passo a passo, exatamente como usaria IA ali — específico o bastante pra copiar',
-    estrutura: `Roteiro falado em 4 partes — o criador assume o papel de dono(a) do negócio citado no TEMA e ensina, passo a passo, como usaria IA especificamente ali:
-
-1. A PREMISSA — assume o papel do dono do negócio específico do TEMA, sem introdução de aula genérica.
-   ❌ Errado: "Hoje eu vou te ensinar como usar IA no seu negócio"
-   ✅ Certo: "Se eu fosse dona de um salão de beleza, essa semana eu já tinha feito isso com IA"
-   O gancho promete um caso específico, não uma aula genérica sobre IA.
-
-2. PASSO 1 — a primeira aplicação de IA, nomeando a ferramenta/tarefa exata e o problema real que ela resolve nesse negócio.
-   ❌ Errado (vago): "Eu usaria IA pra atender melhor os clientes"
-   ✅ Certo: "Eu pegava as últimas 200 conversas de WhatsApp da recepção e treinava um agente só pra responder 'vocês têm horário hoje?' sozinho"
-   Precisa nomear a ferramenta, o dado de entrada e a tarefa — sem isso vira propaganda genérica de IA.
-
-3. PASSO 2 — uma segunda aplicação, num ponto de dor diferente do mesmo negócio, igualmente específica.
-   ❌ Errado (repete a ideia do passo 1 com outras palavras): "E também usaria pra criar posts"
-   ✅ Certo: "E usava a mesma IA pra olhar o histórico de agendamento e me avisar quando uma cliente que sempre vem a cada 6 semanas passa 8 sem aparecer"
-   Cada passo resolve um problema diferente do anterior — não é a mesma ideia repetida.
-
-4. O FECHAMENTO — nomeia o que isso muda de verdade pro negócio (tempo, dinheiro ou decisão), e devolve pro espectador adaptar pro dele.
-   ❌ Errado: "E foi assim que a IA revolucionou meu negócio"
-   ✅ Certo: "Isso sozinho já tira 2 horas por semana da recepção — e o seu negócio provavelmente tem o mesmo tipo de tarefa repetitiva escondida em algum canto"
-   Termina apontando pra ação do espectador, não fechando a história como case perfeito.`,
-  },
-}
-
-/* Estruturas equivalentes do Studio Pessoal. Mantêm as seis mecânicas de
-   retenção, mas removem linguagem de autoridade, estudo de negócio e ensino. */
-const PERSONAL_ENGAGEMENT_TEMPLATES = {
-  yapping: {
-    label: 'Pensando em voz alta',
-    alavanca: 'retenção até o fim',
-    desc: 'Um pensamento espontâneo que vai encontrando forma durante a fala',
-    estrutura: `Roteiro falado em 5 movimentos:
-1. Comece no meio de um pensamento pessoal, sem saudação ou anúncio do tema.
-2. Mostre uma contradição, detalhe ou pergunta que ainda não fecha.
-3. Traga dois ou três exemplos cotidianos específicos em progressão.
-4. Diga o que você passou a perceber, sem transformar em conselho.
-5. Feche ecoando o começo, como quem terminou de pensar — não com moral ou "me segue".
-O ritmo pode ter autocorreção e oralidade, mas não deve parecer texto desorganizado.`,
-  },
-  hot_take: {
-    label: 'Uma opinião pessoal',
-    alavanca: 'comentário e discordância',
-    desc: 'Uma opinião clara sobre a vida cotidiana, sustentada por experiências observáveis',
-    estrutura: `Roteiro falado em 4 movimentos:
-1. Declare a opinião pessoal de forma direta, sem "talvez" ou pedido de desculpas.
-2. Mostre a cena ou comportamento cotidiano que fez você pensar assim.
-3. Nomeie o que essa opinião muda na forma como você vive ou se percebe.
-4. Termine com uma pergunta que pede experiência ou posição, nunca "concorda?".
-Não transforme a opinião em regra universal nem em provocação fabricada.`,
-  },
-  mito_fato: {
-    label: 'Eu achava × Hoje percebo',
-    alavanca: 'identificação e salvamento',
-    desc: 'Uma crença pessoal antiga confrontada com o que a vida mostrou na prática',
-    estrutura: `Roteiro falado em 4 movimentos:
-1. "Eu achava": apresente a crença antiga sem ridicularizá-la.
-2. Explique por que ela parecia verdadeira para você naquela fase.
-3. "Hoje percebo": mostre a cena, repetição ou experiência concreta que mudou sua leitura.
-4. Feche com a diferença entre as duas versões, sem declarar uma lição universal.
-Quando funcionar, use dois ou três pares curtos de "eu achava / hoje percebo".`,
-  },
-  confissao_bastidor: {
-    label: 'Uma coisa sobre mim',
-    alavanca: 'identificação e confiança',
-    desc: 'Uma admissão pessoal concreta, contada sem vulnerabilidade performada',
-    estrutura: `Roteiro falado em 4 movimentos:
-1. Revele a admissão já na primeira frase; não use "preciso confessar" como suspense.
-2. Mostre quando isso acontece com uma cena específica.
-3. Conte a interpretação que você fazia antes e o que entende hoje.
-4. Feche aceitando a contradição ou deixando a observação em aberto.
-Não dramatize, não peça validação e não transforme a confissão em case de superação.`,
-  },
-  estudo_de_caso: {
-    label: 'Cena de uma vida comum',
-    alavanca: 'história e identificação',
-    desc: 'Uma situação cotidiana observada como pequeno estudo de caso pessoal',
-    estrutura: `Roteiro falado em 5 movimentos:
-1. Nomeie a cena como um pequeno "estudo de caso" cotidiano, com humor leve.
-2. Diga qual era o plano ou expectativa concreta.
-3. Mostre o que realmente aconteceu, sem inventar detalhes dramáticos.
-4. Conte o que você fez diferente ou decidiu não fazer.
-5. Feche com o resultado humano da cena e, se couber, uma observação seca.
-Não use métricas, credibilidade profissional, cliente ou linguagem de negócio.`,
-  },
-  como_eu_usaria: {
-    label: 'Como isso aparece na minha vida',
-    alavanca: 'aplicação pessoal',
-    desc: 'Mostra como uma percepção se traduz em escolhas reais, sem virar tutorial',
-    estrutura: `Roteiro falado em 4 movimentos:
-1. Apresente a percepção pessoal que você está tentando acomodar, não resolver perfeitamente.
-2. Mostre como ela aparece numa situação cotidiana específica.
-3. Conte duas escolhas pequenas que você faz hoje por causa dessa percepção.
-4. Feche nomeando o que ainda continua contraditório ou incompleto.
-Não ensine passos ao público. Fale apenas do que você faz, evita, aceita ou ainda está aprendendo.`,
-  },
-}
-
-/* ── Gerador dedicado — série "Como eu aplicaria IA na minha empresa se eu
-   fosse [TIPO DE NEGÓCIO]". Roteiro de Reels mostrando aplicações reais de
-   IA na operação de um negócio específico — não é o protocolo genérico de
-   engajamento (sem variação emocional/provocativa, sem exercício de memória
-   pessoal): é um formato fechado, com ordem fixa de 10 partes e frases
-   obrigatórias de abertura e fechamento. ── */
 const IA_NEGOCIO_SYSTEM = `Você escreve roteiros de Reels para a série "Como eu aplicaria IA na minha empresa se eu fosse [TIPO DE NEGÓCIO]".
 
 O roteiro mostra aplicações reais de inteligência artificial na operação de um negócio específico. NUNCA transforme o conteúdo em lista de ferramentas, dicas genéricas ou ideias soltas para redes sociais.
@@ -1494,7 +820,7 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const inputRef = useRef(null)
 
   // ── Modo Engajamento ──
-  const [mode, setMode] = useState(() => searchParams.get('submode') === 'ia_negocio' ? 'ia_negocio' : 'studio') // 'studio' | 'revisor' | 'engagement' | 'carousel' | 'stories' | 'ia_negocio'
+  const [mode, setMode] = useState(() => ['ia_negocio', 'engagement', 'stories', 'linkedin', 'carousel'].includes(searchParams.get('submode')) ? searchParams.get('submode') : 'studio') // 'studio' | 'revisor' | 'engagement' | 'carousel' | 'stories' | 'ia_negocio'
 
   // ── Revisor de Texto ──
   const [revText, setRevText] = useState('')
@@ -1511,22 +837,6 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   // Engajamento (Reels)
   const [engTema, setEngTema] = useState('')
   const [engTemaCategoria, setEngTemaCategoria] = useState(null) // pilar de origem, pra saber o modo PJ/CLT
-  const [engTemplate, setEngTemplate] = useState(null)
-  const [engIdeia, setEngIdeia] = useState('')
-  const [engTexto, setEngTexto] = useState('')
-  const [engGerarIdeia, setEngGerarIdeia] = useState(false)
-  const [engGerarTexto, setEngGerarTexto] = useState(false)
-  const [engLoading, setEngLoading] = useState(false)
-  const [engResult, setEngResult] = useState(null)
-  const [engError, setEngError] = useState(null)
-  const [engCopied, setEngCopied] = useState(null)
-  const [engShowEmocional, setEngShowEmocional] = useState(false)
-  const [engShowProvocativo, setEngShowProvocativo] = useState(false)
-  const [engHooks, setEngHooks] = useState(null)
-  const [engHookLoading, setEngHookLoading] = useState(false)
-  const [engHookError, setEngHookError] = useState(null)
-  const [engHookCopied, setEngHookCopied] = useState(null)
-  const [engSweepReport, setEngSweepReport] = useState(null) // varredura anti-clichê do roteiro de Reels
   // Carrossel
 
   const [carTema, setCarTema] = useState('')
@@ -1549,17 +859,10 @@ export default function UnifiedCreator({ persona = 'trabalho' }) {
   const [carCopied, setCarCopied] = useState(null)
   const [carSavedHub, setCarSavedHub] = useState(false)
   const [carSweepReport, setCarSweepReport] = useState(null) // varredura anti-clichê do carrossel
-  const [engSavedHub, setEngSavedHub] = useState(false)
-  const [strSavedHub, setStrSavedHub] = useState(false)
-  // Stories
   const [strTema, setStrTema] = useState('')
-  const [strTemaCategoria, setStrTemaCategoria] = useState(null) // pilar de origem, pra saber o modo PJ/CLT
-  const [strEstrutura, setStrEstrutura] = useState('observacao')
-  const [strLoading, setStrLoading] = useState(false)
-  const [strResult, setStrResult] = useState(null)
-  const [strError, setStrError] = useState(null)
-  const [strCopied, setStrCopied] = useState(false)
-  const [strSweepReport, setStrSweepReport] = useState(null) // varredura anti-clichê do stories
+  const [strTemaCategoria, setStrTemaCategoria] = useState(null)
+  const [liTema, setLiTema] = useState('')
+  const [liTemaCategoria, setLiTemaCategoria] = useState(null)
 
   // IA no Negócio — série "Como eu aplicaria IA na minha empresa se eu fosse..."
   const [ianTipoNegocio, setIanTipoNegocio] = useState('')
@@ -1789,13 +1092,15 @@ IMPORTANTE: O conteúdo deve ser SOBRE A MARCA/CLIENTE do briefing. Karen é a c
 
 PEDIDO DO USUÁRIO: "${text}"
 
-${selectedFormat ? FORMAT_PROMPTS[selectedFormat] : `DETECTE automaticamente o melhor formato baseado no tema. Escolha entre: Reels, Carrossel, Caption, Thread ou Stories.`}
+${SOCIAL_RULES}
+
+${selectedFormat ? FORMAT_PROMPTS[selectedFormat] : `DETECTE automaticamente o melhor formato baseado no tema. Escolha entre: Reels, Carrossel, Caption, Thread, Stories ou LinkedIn.`}
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
   "detected_context": "${isPessoal ? 'diario|cotidiano|observacao' : 'reflexivo|engracado|mentora'}",
   "detected_context_reason": "por que este contexto foi escolhido (1 frase)",
-  "suggested_format": "reels|carrossel|caption|thread|stories",
+  "suggested_format": "reels|carrossel|caption|thread|stories|linkedin",
   "format_reason": "por que este formato é o melhor (1 frase)",
   "title": "título principal curto",
   "title_options": ["título viral 1 (máx 8 palavras)", "título viral 2", "título viral 3", "título viral 4", "título viral 5"],
@@ -2023,120 +1328,8 @@ ${revText.trim()}`
 
   const handleSaveIdea = () => {
     if (result) {
-      addIdea({ title: result.title, description: result.content?.slice(0, 200), format: result.suggested_format, tags: result.hashtags?.slice(0, 3)?.map(t => t.replace('#', '')) || [] })
+      addIdea({ title: result.title, description: result.content?.slice(0, 200), script: result.content, caption: result.caption || '', platform: result.suggested_format === 'linkedin' ? 'linkedin' : undefined, format: result.suggested_format === 'linkedin' ? 'post' : result.suggested_format, status: 'draft', tags: result.hashtags?.slice(0, 3)?.map(t => t.replace('#', '')) || [] })
     }
-  }
-
-  const handleEngCopy = (text, key) => {
-    navigator.clipboard.writeText(text)
-    setEngCopied(key)
-    setTimeout(() => setEngCopied(null), 2000)
-  }
-
-  const generateEngagement = async () => {
-    if (!engTema.trim()) return
-    if (!apiKey) { setEngError('Configure sua API key em Analytics > Configurações'); return }
-    setEngLoading(true)
-    setEngError(null)
-    setEngResult(null)
-    setEngSavedHub(false)
-    setEngSweepReport(null)
-    try {
-      const res = await fetch('/api/ai?action=openai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-
-        },
-        body: JSON.stringify({
-          model: 'gpt-5.6-terra',
-          thinking: { type: 'adaptive' },
-          output_config: { effort: 'medium' },
-          max_tokens: 12000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${isPessoal ? PERSONAL_MASTER_PROMPT : ENGAGEMENT_SYSTEM}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
-          messages: [{ role: 'user', content: isPessoal
-            ? buildPersonalReelsPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, template: engTemplate ? PERSONAL_ENGAGEMENT_TEMPLATES[engTemplate] : null })
-            : buildEngagementPrompt({ tema: engTema, ideia: engIdeia, texto: engTexto, gerarIdeia: engGerarIdeia, gerarTexto: engGerarTexto, template: engTemplate ? ENGAGEMENT_TEMPLATES[engTemplate] : null }) }],
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      assertNotTruncated(data)
-      const raw = data.content?.find(b => b.type === 'text')?.text || ''
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('Resposta inválida da IA')
-      const parsed = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-
-      // Varredura anti-clichê: content, caption e título já eram cobertos no
-      // Studio Livre e no Carrossel, mas o roteiro de Reels nunca passou por
-      // nenhuma varredura — saía direto da API pra tela.
-      let report = null
-      try {
-        report = await sweepAndFixPaths(parsed, (o) => [
-          ...engagementTextPaths(o),
-          ...hookListPaths(o, 'respostas_sugeridas'),
-        ])
-      } catch { /* se a correção falhar, mantém o texto original */ }
-      setEngSweepReport(report)
-
-      setEngResult(parsed)
-    } catch (err) {
-      setEngError(err.message)
-    } finally {
-      setEngLoading(false)
-    }
-  }
-
-  const generateReelsHooks = async () => {
-    if (!engTema.trim()) return
-    if (!apiKey) { setEngHookError('Configure sua API key.'); return }
-    setEngHookLoading(true)
-    setEngHookError(null)
-    setEngHooks(null)
-    try {
-      const res = await fetch('/api/ai?action=openai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-
-        },
-        body: JSON.stringify({
-          model: 'gpt-5.6-terra',
-          thinking: { type: 'adaptive' },
-          output_config: { effort: 'medium' },
-          max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${buildHookSystem(isPessoal)}${workModeFor(engTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
-          messages: [{ role: 'user', content: buildHookPrompt(engTema, engResult?.versao_principal, isPessoal) }],
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      assertNotTruncated(data)
-      const raw = data.content?.find(b => b.type === 'text')?.text || ''
-      const match = raw.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('Resposta inválida da IA')
-      const parsedHooks = JSON.parse(match[0].replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'))
-      try { await sweepAndFixPaths(parsedHooks, (o) => hookListPaths(o, 'hooks', 'frase')) } catch { /* mantém o original */ }
-      setEngHooks(parsedHooks)
-    } catch (err) {
-      setEngHookError(err.message)
-    } finally {
-      setEngHookLoading(false)
-    }
-  }
-
-  const handleEngHookCopy = (text, key) => {
-    navigator.clipboard.writeText(text)
-    setEngHookCopied(key)
-    setTimeout(() => setEngHookCopied(null), 2000)
   }
 
   const generateHooks = async () => {
@@ -2330,64 +1523,6 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setCarSavedHub(true)
   }
 
-  const handleEngSaveHub = () => {
-    if (!engResult) return
-    const scriptCompleto = [
-      engResult.versao_principal,
-      engResult.variacao_emocional   ? `\n\n--- VARIAÇÃO EMOCIONAL ---\n${engResult.variacao_emocional}` : '',
-      engResult.variacao_provocativa ? `\n\n--- VARIAÇÃO PROVOCATIVA ---\n${engResult.variacao_provocativa}` : '',
-      engResult.pergunta_final       ? `\n\n--- PERGUNTA FINAL ---\n${engResult.pergunta_final}` : '',
-      engResult.respostas_sugeridas?.length
-        ? `\n\n--- RESPOSTAS PARA COMENTÁRIOS ---\n${engResult.respostas_sugeridas.join('\n')}`
-        : '',
-      engResult.nota_estrategica
-        ? `\n\n--- NOTA ESTRATÉGICA ---\n${engResult.nota_estrategica}`
-        : '',
-    ].filter(Boolean).join('')
-    addIdea({
-      title: engTema,
-      description: engResult.versao_principal,
-      script: scriptCompleto,
-      caption: engResult.pergunta_final || '',
-      cta: (engResult.respostas_sugeridas || []).join('\n'),
-      format: 'reel',
-      platform: 'instagram',
-      platforms: ['instagram'],
-      priority: 'medium',
-      status: 'ready',
-      tags: ['protocolo-reels', engTema.toLowerCase().slice(0, 20), ...(engTemplate ? [((isPessoal ? PERSONAL_ENGAGEMENT_TEMPLATES : ENGAGEMENT_TEMPLATES)[engTemplate]?.label || engTemplate).toLowerCase()] : [])],
-      source: engTemplate ? `${isPessoal ? 'Reels do lado de cá' : 'Protocolo Anti-Emoji'} — ${(isPessoal ? PERSONAL_ENGAGEMENT_TEMPLATES : ENGAGEMENT_TEMPLATES)[engTemplate]?.label}` : isPessoal ? 'Reels do lado de cá' : 'Protocolo Anti-Emoji',
-    })
-    setEngSavedHub(true)
-  }
-
-  const handleStrCopy = () => {
-    if (!strResult) return
-    navigator.clipboard.writeText(strResult)
-    setStrCopied(true)
-    setTimeout(() => setStrCopied(false), 2000)
-  }
-
-  const handleStrSaveHub = () => {
-    if (!strResult) return
-    const estrutura = (isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES)[strEstrutura]
-    addIdea({
-      title: strTema,
-      description: strResult.slice(0, 300),
-      script: strResult,
-      caption: '',
-      cta: '',
-      format: 'stories',
-      platform: 'instagram',
-      platforms: ['instagram'],
-      priority: 'medium',
-      status: 'ready',
-      tags: ['protocolo-stories', estrutura?.label.toLowerCase() || '', strTema.toLowerCase().slice(0, 20)].filter(Boolean),
-      source: `Protocolo de Stories — ${estrutura?.label || ''}`,
-    })
-    setStrSavedHub(true)
-  }
-
   const generateIANegocio = async () => {
     if (!ianTipoNegocio.trim()) return
     if (!apiKey) { setIanError('Configure sua API key em Analytics > Configurações'); return }
@@ -2468,64 +1603,11 @@ Gere exatamente 5 hooks para o tema dado. Responda EXCLUSIVAMENTE com JSON: {"ho
     setIanSavedHub(true)
   }
 
-  const generateStories = async () => {
-    if (!strTema.trim()) return
-    if (!apiKey) { setStrError('Configure sua API key em Configurações'); return }
-    setStrLoading(true)
-    setStrError(null)
-    setStrResult(null)
-    setStrSavedHub(false)
-    setStrSweepReport(null)
-    try {
-      const structuresMap = isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES
-      const estrutura = structuresMap[strEstrutura] || structuresMap.observacao
-      const systemPrompt = `${buildStoriesSystem(isPessoal)}${isPessoal && isNaomiTheme(strTema) ? `\n${NAOMI_EDITORIAL_GUIDE}` : ''}${workModeFor(strTemaCategoria) === 'clt' ? `\n\n${WORK_CLT_GUIDE}` : ''}`
-        .replace('{tema}', strTema)
-        .replace('{estrutura}', estrutura.prompt)
-      const res = await fetch('/api/ai?action=openai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
-        body: JSON.stringify({
-          model: 'gpt-5.6-terra',
-          thinking: { type: 'adaptive' },
-          output_config: { effort: 'medium' },
-          max_tokens: 3000,
-          system: withManualOperacional(`${ANTI_AI_FILTER}\n\n---\n\n${systemPrompt}${buildVoiceContext(isPessoal ? null : brandVoice, dislikedContent, bannedWords, posicionamento, isPessoal ? '' : editorialContextBlock)}`),
-          messages: [{ role: 'user', content: 'Gere o stories agora.' }],
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error?.message || `Erro ${res.status}`)
-      }
-      const data = await res.json()
-      assertNotTruncated(data)
-      const text = data.content?.find(b => b.type === 'text')?.text?.trim() || ''
-      if (!text) throw new Error('Resposta inválida da IA')
-
-      // Varredura anti-clichê: stories é texto corrido, sem JSON — trata como
-      // um único campo de conteúdo, igual ao Studio Livre fora do carrossel.
-      let corrected = text
-      let report = null
-      try {
-        const wrapped = { content: text }
-        report = await sweepAndFix(wrapped, 'stories')
-        corrected = wrapped.content
-      } catch { /* se a correção falhar, mantém o texto original */ }
-      setStrSweepReport(report)
-
-      setStrResult(corrected)
-    } catch (err) {
-      setStrError(err.message)
-    } finally {
-      setStrLoading(false)
-    }
-  }
-
   const applyTheme = (tema, categoria) => {
     if (mode === 'engagement') { setEngTema(tema); setEngTemaCategoria(categoria || null) }
     else if (mode === 'carousel') { setCarTema(tema); setCarTemaCategoria(categoria || null) }
     else if (mode === 'stories') { setStrTema(tema); setStrTemaCategoria(categoria || null) }
+    else if (mode === 'linkedin') { setLiTema(tema); setLiTemaCategoria(categoria || null) }
     else setInput(tema)
   }
 
@@ -2807,7 +1889,7 @@ Responda EXCLUSIVAMENTE com JSON válido:
   // IA) — só usada quando Karen não escolheu manualmente no briefing acima.
   // Calculado aqui porque depende de estado (engTema, carTema) declarado
   // mais abaixo no componente.
-  const edAutoFunction = edFunction || classifyEditorialFunction(`${input} ${briefing} ${engTema} ${carTema}`)
+  const edAutoFunction = edFunction || classifyEditorialFunction(`${input} ${briefing} ${engTema} ${carTema} ${strTema} ${liTema}`)
 
   const editorialContextBlock = buildEditorialContext({
     editorialFunction: edFunction || edAutoFunction || undefined,
@@ -3148,6 +2230,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
           )}>
           <Film size={13} /> Stories
         </button>
+        <button onClick={() => setMode('linkedin')}
+          className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
+            mode === 'linkedin' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+          )}>
+          <Type size={13} /> LinkedIn
+        </button>
         <button onClick={() => setMode('ia_negocio')}
           className={clsx('flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all',
             mode === 'ia_negocio' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
@@ -3458,444 +2546,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
         </div>
       )}
 
-      {/* ── Formulário de Engajamento ── */}
-      {mode === 'engagement' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
-                <MessageCircle size={15} className="text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">{isPessoal ? 'Roteiros do lado de cá' : 'Protocolo Anti-Emoji'}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{isPessoal ? 'Transforma uma observação pessoal em história, afeto ou humor' : 'Gera roteiro otimizado para comentários reais — não emojis'}</p>
-              </div>
-            </div>
-
-            {/* Tema */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
-                Tema <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={engTema}
-                onChange={e => { setEngTema(e.target.value); setEngTemaCategoria(null) }}
-                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateEngagement()}
-                placeholder={isPessoal ? 'Ex: a Naomi e o sofá, comprinha de domingo, mania que herdei da minha mãe...' : 'Ex: solidão na carreira, síndrome da impostora, burnout disfarçado de produtividade...'}
-                className="input text-sm w-full"
-                autoFocus
-              />
-            </div>
-
-            {/* Estrutura de Roteiro */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-                Estrutura de roteiro <span className="text-gray-300">(opcional)</span>
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {Object.entries(isPessoal ? PERSONAL_ENGAGEMENT_TEMPLATES : ENGAGEMENT_TEMPLATES).map(([key, t]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setEngTemplate(prev => prev === key ? null : key)}
-                    title={t.desc}
-                    className={clsx(
-                      'text-left px-2.5 py-2 rounded-lg border transition-all',
-                      engTemplate === key
-                        ? 'bg-violet-50 border-violet-300 text-violet-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                    )}
-                  >
-                    <p className="text-[11px] font-semibold leading-tight">{t.label}</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 capitalize">{t.alavanca}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Ideia */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Ideia <span className="text-gray-300">(opcional)</span>
-                </label>
-                <button onClick={() => setEngGerarIdeia(v => !v)}
-                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
-                    engGerarIdeia
-                      ? 'bg-violet-100 border-violet-300 text-violet-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                  )}>
-                  <Sparkles size={10} />
-                  {engGerarIdeia ? 'Gerar com IA ✓' : 'Gerar com IA'}
-                </button>
-              </div>
-              {!engGerarIdeia && (
-                <textarea
-                  value={engIdeia}
-                  onChange={e => setEngIdeia(e.target.value)}
-                  rows={2}
-                  placeholder="Uma ideia ou ângulo específico que você quer explorar..."
-                  className="input text-sm w-full resize-none"
-                />
-              )}
-              {engGerarIdeia && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-violet-50 border border-violet-200 text-xs text-violet-600">
-                  <Sparkles size={12} /> A IA vai criar uma ideia criativa para o tema
-                </div>
-              )}
-            </div>
-
-            {/* Texto Base */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Texto base <span className="text-gray-300">(opcional)</span>
-                </label>
-                <button onClick={() => setEngGerarTexto(v => !v)}
-                  className={clsx('flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all',
-                    engGerarTexto
-                      ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                  )}>
-                  <Sparkles size={10} />
-                  {engGerarTexto ? 'Gerar com IA ✓' : 'Gerar com IA'}
-                </button>
-              </div>
-              {!engGerarTexto && (
-                <textarea
-                  value={engTexto}
-                  onChange={e => setEngTexto(e.target.value)}
-                  rows={3}
-                  placeholder="Cole um texto, trecho, post ou rascunho que queira transformar..."
-                  className="input text-sm w-full resize-none"
-                />
-              )}
-              {engGerarTexto && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-600">
-                  <Sparkles size={12} /> A IA vai criar um texto base relevante para o tema
-                </div>
-              )}
-            </div>
-
-            <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
-
-            {engError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{engError}</div>
-            )}
-
-            <button
-              onClick={generateEngagement}
-              disabled={engLoading || !engTema.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {engLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando conteúdo...</> : <><Zap size={15} /> Gerar Conteúdo</>}
-            </button>
-          </div>
-
-          {/* ── Output de Engajamento ── */}
-          {engResult && (
-            <div className="space-y-4 animate-fade-in">
-
-              {/* Varredura anti-clichê */}
-              {engSweepReport?.fixed > 0 && !engSweepReport.remaining.length && (
-                <p className="text-[10px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                  <ShieldCheck size={10} /> {engSweepReport.fixed} clichê{engSweepReport.fixed > 1 ? 's' : ''} corrigido{engSweepReport.fixed > 1 ? 's' : ''} na varredura
-                </p>
-              )}
-              <SweepReportPanel report={engSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
-              <CoherenceChecker text={engResult.versao_principal} posicionamento={posicionamento} />
-
-              {/* Validação */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-3 flex items-center gap-1.5">
-                  <ShieldCheck size={12} className="text-emerald-500" /> Protocolo de Validação
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { key: 'parece_real',            label: 'Parece real' },
-                    { key: 'sem_frases_prontas',     label: 'Sem frases prontas' },
-                    { key: 'sem_excesso_explicacao', label: 'Sem excesso' },
-                    { key: 'espaco_aberto',          label: 'Espaço aberto' },
-                  ].map(({ key, label }) => {
-                    const val = engResult.validacao?.[key]
-                    const ok = val === true
-                    return (
-                      <div key={key} className={clsx('flex flex-col items-center gap-1 p-2 rounded-xl border text-center',
-                        ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-                      )}>
-                        <span className={clsx('text-base', ok ? 'text-emerald-500' : 'text-red-400')}>{ok ? '✓' : '✗'}</span>
-                        <span className={clsx('text-[9px] font-semibold leading-tight', ok ? 'text-emerald-700' : 'text-red-600')}>{label}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Versão Principal */}
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-violet-500" />
-                    <span className="text-[10px] font-semibold text-gray-700 uppercase">Versão Principal (otimizada)</span>
-                  </div>
-                  <button onClick={() => handleEngCopy(engResult.versao_principal, 'principal')}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-violet-600 transition-colors">
-                    {engCopied === 'principal' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                  </button>
-                </div>
-                <div
-                  className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed select-text"
-                  onMouseUp={handleTextSelectionForBan}
-                >
-                  {engResult.versao_principal}
-                </div>
-              </div>
-
-              {/* Pergunta Final */}
-              {engResult.pergunta_final && <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg shadow-orange-200">
-                <div className="relative z-10">
-                  <p className="text-[10px] font-semibold text-white/70 uppercase mb-2 flex items-center gap-1.5">
-                    <Quote size={10} /> Pergunta Final (use literalmente)
-                  </p>
-                  <p className="text-base font-bold leading-snug">{engResult.pergunta_final}</p>
-                  <button onClick={() => handleEngCopy(engResult.pergunta_final, 'pergunta')}
-                    className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
-                    {engCopied === 'pergunta' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar pergunta</>}
-                  </button>
-                </div>
-                <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full translate-x-8 translate-y-8" />
-              </div>}
-
-              {/* Exercício Prático */}
-              {engResult.exercicio_pratico && (
-                <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-100 bg-amber-50/50">
-                    <div className="flex items-center gap-2">
-                      <Target size={12} className="text-amber-500" />
-                      <span className="text-[10px] font-semibold text-gray-700 uppercase">Exercício Prático</span>
-                    </div>
-                    <button onClick={() => handleEngCopy(engResult.exercicio_pratico, 'eng-exercicio')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors">
-                      {engCopied === 'eng-exercicio' ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                    </button>
-                  </div>
-                  <p className="p-4 text-sm text-gray-800 leading-relaxed select-text" onMouseUp={handleTextSelectionForBan}>{engResult.exercicio_pratico}</p>
-                </div>
-              )}
-
-              {/* Variações */}
-              <div className="space-y-2">
-                {[
-                  { key: 'variacao_emocional',    label: isPessoal ? 'Variação Afetiva' : 'Variação Emocional',    color: 'rose',   dot: 'bg-rose-500',   show: engShowEmocional,    toggle: () => setEngShowEmocional(v => !v) },
-                  { key: 'variacao_provocativa',   label: isPessoal ? 'Variação com Humor Seco' : 'Variação Provocativa',  color: 'indigo', dot: 'bg-indigo-500', show: engShowProvocativo,   toggle: () => setEngShowProvocativo(v => !v) },
-                ].map(({ key, label, color, dot, show, toggle }) => (
-                  <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                    <button onClick={toggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${dot}`} />
-                        <span className="text-xs font-semibold text-gray-700">{label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); handleEngCopy(engResult[key], key) }}
-                          className="text-gray-300 hover:text-gray-600 transition-colors">
-                          {engCopied === key ? <Check size={11} /> : <Copy size={11} />}
-                        </button>
-                        {show ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-                      </div>
-                    </button>
-                    {show && (
-                      <div
-                        className="px-4 pb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-gray-100 pt-3 select-text"
-                        onMouseUp={handleTextSelectionForBan}
-                      >
-                        {engResult[key]}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* ── Gerador de Hook ── */}
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center gap-2">
-                    <Zap size={13} className="text-amber-500" />
-                    <span className="text-xs font-semibold text-gray-700">Hooks de Abertura (0-3s)</span>
-                    <span className="text-[10px] text-gray-400">— o que prende antes do roteiro começar</span>
-                  </div>
-                  <button
-                    onClick={generateReelsHooks}
-                    disabled={engHookLoading}
-                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-40"
-                  >
-                    {engHookLoading
-                      ? <><Loader2 size={11} className="animate-spin" /> Gerando...</>
-                      : engHooks
-                        ? <><RefreshCw size={11} /> Regenerar</>
-                        : <><Zap size={11} /> Gerar 3 Hooks</>
-                    }
-                  </button>
-                </div>
-
-                {engHookError && (
-                  <div className="px-4 py-3 text-xs text-red-600 bg-red-50">{engHookError}</div>
-                )}
-
-                {engHooks && (
-                  <div className="divide-y divide-gray-100">
-                    {(engHooks.hooks || []).map((hook, i) => {
-                      const tipoLabel = {
-                        observacao_cortante: 'Observação Cortante',
-                        dado_leitura_inesperada: 'Dado + Leitura Inesperada',
-                        cena_especifica: 'Cena Específica',
-                      }[hook.tipo] || hook.tipo
-
-                      const tipoColor = {
-                        observacao_cortante: 'bg-violet-100 text-violet-700 border-violet-200',
-                        dado_leitura_inesperada: 'bg-blue-100 text-blue-700 border-blue-200',
-                        cena_especifica: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                      }[hook.tipo] || 'bg-gray-100 text-gray-600 border-gray-200'
-
-                      const copyText = [
-                        `FRASE: ${hook.frase}`,
-                        `TEXTO NA TELA: ${hook.texto_na_tela}`,
-                        `ENQUADRAMENTO: ${hook.enquadramento}`,
-                        `MOVIMENTO: ${hook.movimento}`,
-                        `SOM: ${hook.som}`,
-                      ].join('\n')
-
-                      return (
-                        <div key={i} className="px-4 py-4 space-y-3 group">
-                          <div className="flex items-center justify-between">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tipoColor}`}>
-                              {tipoLabel}
-                            </span>
-                            <button
-                              onClick={() => handleEngHookCopy(copyText, `hook-${i}`)}
-                              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
-                            >
-                              {engHookCopied === `hook-${i}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                            </button>
-                          </div>
-
-                          {/* Frase */}
-                          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Frase de abertura</p>
-                            <p className="text-sm font-semibold text-gray-900 leading-snug">"{hook.frase}"</p>
-                          </div>
-
-                          {/* Texto na tela */}
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Tela</span>
-                            <p className="text-xs text-gray-700">{hook.texto_na_tela}</p>
-                          </div>
-
-                          {/* Enquadramento + movimento */}
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Câmera</span>
-                            <p className="text-xs text-gray-700">{hook.enquadramento} · {hook.movimento}</p>
-                          </div>
-
-                          {/* Som */}
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide shrink-0 mt-0.5 w-20">Som</span>
-                            <p className="text-xs text-gray-700">{hook.som}</p>
-                          </div>
-
-                          {/* Por que funciona */}
-                          {hook.por_que_funciona && (
-                            <div className="flex items-start gap-1.5 pt-1 border-t border-gray-100">
-                              <span className="text-[10px] text-gray-300 mt-0.5">→</span>
-                              <p className="text-[11px] text-gray-400 italic">{hook.por_que_funciona}</p>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {!engHooks && !engHookLoading && (
-                  <div className="px-4 py-5 text-center">
-                    <p className="text-xs text-gray-400">
-                      Gere o roteiro primeiro, depois clique em "Gerar 3 Hooks" para receber opções de abertura com indicação visual e sonora.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Respostas Sugeridas */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1.5">
-                  <MessageCircle size={12} className="text-violet-500" /> Respostas para Comentários
-                </p>
-                <p className="text-[10px] text-gray-400">Use nos primeiros comentários para ativar conversas</p>
-                <div className="space-y-2">
-                  {(engResult.respostas_sugeridas || []).map((resp, i) => (
-                    <div key={i} className="flex items-start gap-3 group">
-                      <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[10px] font-bold text-violet-600">{i + 1}</span>
-                      </div>
-                      <p className="flex-1 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">{resp}</p>
-                      <button onClick={() => handleEngCopy(resp, `resp-${i}`)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-violet-500 transition-all mt-2 shrink-0">
-                        {engCopied === `resp-${i}` ? <Check size={12} /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nota Estratégica */}
-              {engResult.nota_estrategica && (
-                <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-2xl border border-violet-200 p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                    <Brain size={15} className="text-violet-600" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-violet-600 uppercase mb-1">Nota Estratégica</p>
-                    <p className="text-sm text-violet-800 leading-relaxed">{engResult.nota_estrategica}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Salvar + Regenerar */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleEngSaveHub}
-                  disabled={engSavedHub}
-                  className={clsx(
-                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
-                    engSavedHub
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                      : 'bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100'
-                  )}
-                >
-                  {engSavedHub
-                    ? <><Check size={13} /> Salvo no Hub</>
-                    : <><Save size={13} /> Salvar no Hub de Ideias</>
-                  }
-                </button>
-                {engSavedHub && (
-                  <button
-                    onClick={() => navigate('/ideas')}
-                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-violet-600 hover:border-violet-200 rounded-xl transition-all"
-                  >
-                    <ExternalLink size={12} /> Abrir Hub
-                  </button>
-                )}
-                <button
-                  onClick={generateEngagement}
-                  disabled={engLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
-                >
-                  <RefreshCw size={13} className={engLoading ? 'animate-spin' : ''} /> Regenerar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <div hidden={mode !== 'engagement'}>
+        <SocialFormatStudio key={`${persona}-reels`} format="reels" persona={persona} topic={engTema}
+          onTopicChange={value => { setEngTema(value); setEngTemaCategoria(null) }}
+          context={isPessoal ? `${PERSONAL_SPECIFICITY_RULES}${isNaomiTheme(engTema) ? NAOMI_EDITORIAL_GUIDE : ''}` : `${WORK_NICHE}\n${workModeFor(engTemaCategoria) === 'clt' ? WORK_CLT_GUIDE : ''}\n${editorialContextBlock}`}
+          onSelectText={handleTextSelectionForBan} />
+      </div>
 
       {/* ── Formulário de Carrossel ── */}
       {mode === 'carousel' && (
@@ -4322,145 +2978,18 @@ Responda EXCLUSIVAMENTE com JSON válido:
         </div>
       )}
 
-      {/* ── Formulário de Stories ── */}
-      {mode === 'stories' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shrink-0">
-                <Film size={15} className="text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">Protocolo de Stories</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {isPessoal ? 'Observação real — a vida fora do trabalho, sem performar.' : 'Observação real — ponto de entrada da empreendedora, conexão com o corporativo.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Tema */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1 mb-1.5">
-                Tema <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={strTema}
-                onChange={e => { setStrTema(e.target.value); setStrTemaCategoria(null) }}
-                onKeyDown={e => e.key === 'Enter' && e.ctrlKey && generateStories()}
-                placeholder={isPessoal ? 'Ex: passeio com a Naomi, jogo de búzios, achado que virou queridinho...' : 'Ex: ansiedade de domingo, reunião que podia ser e-mail, medo de pedir aumento...'}
-                className="input text-sm w-full"
-                autoFocus
-              />
-            </div>
-
-            {/* Estrutura */}
-            <div>
-              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                Estrutura <span className="text-red-400">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES).map(([key, s]) => (
-                  <button
-                    key={key}
-                    onClick={() => setStrEstrutura(key)}
-                    className={clsx(
-                      'text-left px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
-                      strEstrutura === key
-                        ? 'bg-teal-50 border-teal-400 text-teal-800'
-                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
-                    )}
-                  >
-                    <div className="font-semibold">{s.label}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">{s.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <BannedWordsBox bannedWords={bannedWords} onAdd={addBannedWord} onRemove={removeBannedWord} />
-
-            {strError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">{strError}</div>
-            )}
-
-            <button onClick={generateStories} disabled={strLoading || !strTema.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all shadow-lg shadow-teal-200 disabled:opacity-40 disabled:cursor-not-allowed">
-              {strLoading ? <><Loader2 size={15} className="animate-spin" /> Gerando roteiro...</> : <><Film size={15} /> Gerar Stories</>}
-            </button>
-          </div>
-
-          {/* ── Output de Stories ── */}
-          {strResult && (
-            <div className="space-y-4 animate-fade-in">
-
-              {/* Varredura anti-clichê */}
-              {strSweepReport?.fixed > 0 && !strSweepReport.remaining.length && (
-                <p className="text-[10px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                  <ShieldCheck size={10} /> {strSweepReport.fixed} clichê{strSweepReport.fixed > 1 ? 's' : ''} corrigido{strSweepReport.fixed > 1 ? 's' : ''} na varredura
-                </p>
-              )}
-              <SweepReportPanel report={strSweepReport} onBan={addBannedWord} bannedWords={bannedWords} />
-              <CoherenceChecker text={strResult} posicionamento={posicionamento} />
-
-              {/* Texto gerado */}
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-teal-500" />
-                    <span className="text-[10px] font-semibold text-gray-700 uppercase">
-                      Stories — {(isPessoal ? PERSONAL_STORIES_STRUCTURES : STORIES_STRUCTURES)[strEstrutura]?.label}
-                    </span>
-                  </div>
-                  <button onClick={handleStrCopy}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-teal-600 transition-colors">
-                    {strCopied ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar</>}
-                  </button>
-                </div>
-                <div
-                  className="p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed select-text"
-                  onMouseUp={handleTextSelectionForBan}
-                >
-                  {strResult}
-                </div>
-              </div>
-
-              {/* Salvar + Regenerar */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleStrSaveHub}
-                  disabled={strSavedHub}
-                  className={clsx(
-                    'flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl border transition-all',
-                    strSavedHub
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                      : 'bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100'
-                  )}
-                >
-                  {strSavedHub
-                    ? <><Check size={13} /> Salvo no Hub</>
-                    : <><Save size={13} /> Salvar no Hub de Ideias</>
-                  }
-                </button>
-                {strSavedHub && (
-                  <button
-                    onClick={() => navigate('/ideas')}
-                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold bg-white border border-gray-200 text-gray-500 hover:text-teal-600 hover:border-teal-200 rounded-xl transition-all"
-                  >
-                    <ExternalLink size={12} /> Abrir Hub
-                  </button>
-                )}
-                <button
-                  onClick={generateStories}
-                  disabled={strLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
-                >
-                  <RefreshCw size={13} className={strLoading ? 'animate-spin' : ''} /> Regenerar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <div hidden={mode !== 'stories'}>
+        <SocialFormatStudio key={`${persona}-stories`} format="stories" persona={persona} topic={strTema}
+          onTopicChange={value => { setStrTema(value); setStrTemaCategoria(null) }}
+          context={isPessoal ? `${PERSONAL_SPECIFICITY_RULES}${isNaomiTheme(strTema) ? NAOMI_EDITORIAL_GUIDE : ''}` : `${WORK_NICHE}\n${workModeFor(strTemaCategoria) === 'clt' ? WORK_CLT_GUIDE : ''}\n${editorialContextBlock}`}
+          onSelectText={handleTextSelectionForBan} />
+      </div>
+      <div hidden={mode !== 'linkedin'}>
+        <SocialFormatStudio key={`${persona}-linkedin`} format="linkedin" persona={persona} topic={liTema}
+          onTopicChange={value => { setLiTema(value); setLiTemaCategoria(null) }}
+          context={isPessoal ? PERSONAL_SPECIFICITY_RULES : `${WORK_NICHE}\n${workModeFor(liTemaCategoria) === 'clt' ? WORK_CLT_GUIDE : ''}\n${editorialContextBlock}`}
+          onSelectText={handleTextSelectionForBan} />
+      </div>
 
       {/* ── Formulário: IA no Negócio ── */}
       {mode === 'ia_negocio' && (
