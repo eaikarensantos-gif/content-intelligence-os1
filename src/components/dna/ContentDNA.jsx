@@ -510,7 +510,7 @@ export default function ContentDNA() {
                 { label: 'Posts', value: totalPosts, icon: Layers, color: 'text-purple-500' },
                 { label: 'Impressões', value: totalImpressions.toLocaleString(), icon: Eye, color: 'text-blue-500' },
                 { label: 'Engajamento', value: totalEngagement.toLocaleString(), icon: Heart, color: 'text-rose-500' },
-                { label: 'Taxa Média', value: `${avgEngRate}%`, icon: TrendingUp, color: 'text-emerald-500' },
+                { label: 'Taxa agregada', value: `${avgEngRate}%`, icon: TrendingUp, color: 'text-emerald-500' },
               ].map(({ label, value, icon: SIcon, color }) => (
                 <div key={label} className="rounded-xl p-3 bg-gray-50 border border-gray-100 text-center space-y-1">
                   <SIcon size={14} className={`${color} mx-auto`} />
@@ -520,6 +520,8 @@ export default function ContentDNA() {
               ))}
             </div>
           )}
+
+          {activeData.length > 0 && <p className="text-xs text-gray-500">Taxa agregada = soma de curtidas, comentários, compartilhamentos e salvamentos ÷ soma das impressões. Posts com mais impressões têm maior peso; este valor difere da média por post do Analytics.</p>}
 
           {csvData && dataSource === 'csv' && (
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Edit3, Plus, Trash2, X } from 'lucide-react'
-import { clientLedgerRows, parseClientValue } from '../../lib/clientValues'
+import { allocateLegacyValue, clientLedgerRows, parseClientValue } from '../../lib/clientValues'
 
 const money = value => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const today = () => {
@@ -10,6 +10,7 @@ const today = () => {
 
 export default function ClientLedger({ clients, updateClient, filter, setFilter, ledgerRef }) {
   const [work, setWork] = useState({ clientId: '', month: today().slice(0, 7), description: '', amount: '' })
+  const [allocateBase, setAllocateBase] = useState(false)
   const [editingWork, setEditingWork] = useState(null)
   const [paymentRow, setPaymentRow] = useState(null)
   const [payment, setPayment] = useState({ date: today(), amount: '' })
@@ -28,6 +29,14 @@ export default function ClientLedger({ clients, updateClient, filter, setFilter,
     const amount = parseClientValue(work.amount)
     if (!client || !/^\d{4}-(0[1-9]|1[0-2])$/.test(work.month) || !work.description.trim() || amount === null || amount <= 0) {
       setError('Escolha cliente e mês, descreva o trabalho e informe um valor maior que zero.')
+      return
+    }
+    if (allocateBase && !editingWork) {
+      try { updateClient(client.id, allocateLegacyValue(client, work.month, work.description, crypto.randomUUID())) }
+      catch (error) { setError(error.message); return }
+      setAllocateBase(false)
+      setWork({ clientId: work.clientId, month: today().slice(0, 7), description: '', amount: '' })
+      setError('')
       return
     }
     const entries = Array.isArray(client.work_entries) ? client.work_entries : []
@@ -79,18 +88,20 @@ export default function ClientLedger({ clients, updateClient, filter, setFilter,
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-      <select aria-label="Cliente do trabalho" disabled={!!editingWork} value={work.clientId} onChange={event => setWork({ ...work, clientId: event.target.value })} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white disabled:opacity-60">
+      <select aria-label="Cliente do trabalho" disabled={!!editingWork} value={work.clientId} onChange={event => { setAllocateBase(false); setWork({ ...work, clientId: event.target.value, amount: '' }) }} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white disabled:opacity-60">
         <option value="">Cliente</option>
         {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
       </select>
       <input aria-label="Mês do trabalho" type="month" value={work.month} onChange={event => setWork({ ...work, month: event.target.value })} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
       <input aria-label="Trabalho realizado" value={work.description} onChange={event => setWork({ ...work, description: event.target.value })} placeholder="O que foi feito" className="lg:col-span-2 border border-gray-200 rounded-lg px-3 py-2 text-sm" />
       <div className="flex gap-2">
-        <input aria-label="Valor do trabalho" inputMode="decimal" value={work.amount} onChange={event => setWork({ ...work, amount: event.target.value })} placeholder="Valor (R$)" className="min-w-0 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-        <button onClick={saveWork} className="shrink-0 bg-blue-500 text-white rounded-lg px-3 text-xs font-semibold flex items-center gap-1"><Plus size={14} /> {editingWork ? 'Salvar' : 'Adicionar'}</button>
+        <input aria-label="Valor do trabalho" disabled={allocateBase} inputMode="decimal" value={work.amount} onChange={event => setWork({ ...work, amount: event.target.value })} placeholder="Valor (R$)" className="min-w-0 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+        <button onClick={saveWork} className="shrink-0 bg-blue-500 text-white rounded-lg px-3 text-xs font-semibold flex items-center gap-1"><Plus size={14} /> {allocateBase ? 'Transferir' : editingWork ? 'Salvar' : 'Adicionar'}</button>
         {editingWork && <button aria-label="Cancelar edição" onClick={() => { setEditingWork(null); setWork({ clientId: '', month: today().slice(0, 7), description: '', amount: '' }); setError('') }} className="text-gray-500"><X size={16} /></button>}
       </div>
     </div>
+    {!editingWork && parseClientValue(clients.find(client => client.id === work.clientId)?.value) > 0 && <label className="block text-xs text-gray-700"><input type="checkbox" checked={allocateBase} onChange={event => { setAllocateBase(event.target.checked); if (event.target.checked) setWork({ ...work, amount: String(parseClientValue(clients.find(client => client.id === work.clientId)?.value)) }) }} /> Transferir todo o valor inicial para este mês, sem aumentar o total. Os recebimentos existentes acompanham o trabalho.</label>}
+    {allocateBase && <p className="text-xs text-amber-800">Ao salvar, o valor inicial sai do cadastro e entra neste trabalho. Total contratado e recebido permanecem iguais. Preencha a descrição e o mês antes de confirmar.</p>}
     {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
 
     {receivedByMonth.length > 0 && <div className="border border-emerald-100 bg-emerald-50 rounded-lg px-3 py-2">
@@ -109,13 +120,13 @@ export default function ClientLedger({ clients, updateClient, filter, setFilter,
           {rows.map(row => <tr key={`${row.clientId}-${row.id}`} className="align-top">
             <td className="px-3 py-3"><strong className="block text-gray-800">{row.month ? new Date(`${row.month}-01T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Sem mês informado'}</strong><span className="text-gray-500">{row.clientName}</span></td>
             <td className="px-3 py-3 text-gray-700">{row.description}{row.legacyPaid && <span className="block text-[10px] text-emerald-700">Marcado como pago antes deste controle, sem data</span>}
-              {row.payments.map(receipt => <div key={receipt.id} className="text-[10px] text-gray-500 flex gap-1 items-center">Recebido em {new Date(`${receipt.date}T12:00:00`).toLocaleDateString('pt-BR')}: {money(parseClientValue(receipt.amount) ?? 0)} <button aria-label={`Remover recebimento de ${row.clientName}`} onClick={() => removePayment(row, receipt.id)} className="text-red-500"><X size={11} /></button></div>)}
+              {row.payments.map(receipt => <div key={receipt.id} className="text-[10px] text-gray-500 flex gap-1 items-center">Recebido em {receipt.date ? new Date(`${receipt.date}T12:00:00`).toLocaleDateString('pt-BR') : 'data não informada'}: {money(parseClientValue(receipt.amount) ?? 0)} <button aria-label={`Remover recebimento de ${row.clientName}`} onClick={() => removePayment(row, receipt.id)} className="text-red-500"><X size={11} /></button></div>)}
             </td>
             <td className="px-3 py-3 text-right">{money(row.amount)}</td><td className="px-3 py-3 text-right text-emerald-700">{money(row.received)}</td><td className="px-3 py-3 text-right font-semibold text-orange-700">{money(row.outstanding)}</td>
             <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
               {row.outstanding > 0 && <button onClick={() => { setPaymentRow(`${row.clientId}-${row.id}`); setPayment({ date: today(), amount: row.outstanding.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }); setError('') }} className="text-blue-700 hover:underline">Registrar recebimento</button>}
               {row.legacyPaid && <button onClick={() => { if (confirm('Reabrir este valor como pendente?')) updateClient(row.clientId, { payment_status: '' }) }} className="text-gray-500 hover:underline">Reabrir</button>}
-              {row.id !== 'base' && <><button aria-label={`Editar trabalho ${row.description}`} onClick={() => { setEditingWork(row.id); setWork({ clientId: row.clientId, month: row.month, description: row.description, amount: row.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }); setError(''); ledgerRef.current?.scrollIntoView({ behavior: 'smooth' }) }} className="text-gray-500"><Edit3 size={13} /></button>
+              {row.id !== 'base' && <><button aria-label={`Editar trabalho ${row.description}`} onClick={() => { setAllocateBase(false); setEditingWork(row.id); setWork({ clientId: row.clientId, month: row.month, description: row.description, amount: row.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }); setError(''); ledgerRef.current?.scrollIntoView({ behavior: 'smooth' }) }} className="text-gray-500"><Edit3 size={13} /></button>
               <button aria-label={`Excluir trabalho ${row.description}`} onClick={() => { if (!confirm('Excluir este trabalho e seus recebimentos?')) return; const client = clients.find(item => item.id === row.clientId); updateClient(client.id, { work_entries: client.work_entries.filter(entry => entry.id !== row.id) }) }} className="text-red-500"><Trash2 size={13} /></button></>}
             </div>
               {paymentRow === `${row.clientId}-${row.id}` && <div className="flex gap-1 mt-2">

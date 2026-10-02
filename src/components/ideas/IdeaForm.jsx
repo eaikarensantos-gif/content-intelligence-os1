@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Tag, Sparkles, Loader2, Wand2, Zap, Link2, ExternalLink, ChevronDown, ChevronUp, Search, Plus, Lightbulb, Film } from 'lucide-react'
+import IdeaWorkflowPanel from './IdeaWorkflowPanel'
 import Modal from '../common/Modal'
 import ScriptBlockRegenerator from './ScriptBlockRegenerator'
 import ScriptCoherenceFixer from './ScriptCoherenceFixer'
@@ -110,7 +111,7 @@ Regras:
 - Use quebras de linha estratégicas
 - Tom humano e autêntico, NUNCA genérico
 - Inclua emojis com moderação
-- Termine com uma pergunta ou reflexão que gere comentários
+- Termine com conclusão prática, dado disponível ou observação. Não peça comentários por obrigação.
 
 Responda APENAS com a legenda, sem explicações.`,
 
@@ -125,20 +126,20 @@ Tipo de gancho: ${context.hook_type || 'problema'}
 
 REGRA DE ENTRADA — antes de escrever, responda internamente:
 "Qual é a tensão interna que a pessoa carrega sobre esse tema — não a situação externa, o que ela SENTE sobre o que faz ou deixa de fazer?"
-Comece por essa tensão, nunca pela cena, pelo contexto ou por uma afirmação geral sobre o mercado/setor.
+Use uma situação concreta do briefing como ponto de partida. Não presuma sentimentos do leitor.
 
 REGRAS OBRIGATÓRIAS:
 - PROIBIDO tom de tese acadêmica ou terceira pessoa analítica (ex.: "Negócios físicos operam com restrições que explicam a adoção de X"). Fale em primeira ou segunda pessoa, como quem viveu, decidiu ou hesitou sobre isso — não como quem observa e explica de fora.
 - Cada parte do roteiro avança por causa e consequência, nunca é uma lista de fatos ou características enfileiradas. Pergunta de controle: "isso avança o raciocínio ou só descreve mais do mesmo?" Se só descreve, reescreva.
 - Traga julgamento pessoal — o que você decidiu, testou, rejeitou ou ainda desconfia — nunca só a explicação neutra de como algo funciona. Uma sequência tipo "isso exige X, aquilo depende de Y" sem opinião nenhuma é manual técnico, não é roteiro de Karen.
-- Termine em tensão real ou pergunta que exige posicionamento — nunca uma conclusão fechada tipo "portanto, é necessário equilibrar X e Y" ou um resumo institucional que soa neutro.
+- Termine com conclusão prática, dado ou observação específica. Não force tensão nem pergunta de engajamento.
 - Linguagem direta, conversacional — como Karen fala, não como IA escreve.
 - PROIBIDO: frases genéricas, enrolação, superlativo vazio.
 ${context.format === 'carrossel'
-    ? '- Estruture em exatamente 5 blocos numerados [1] a [5]: [1] abertura — estado interno (a pessoa se reconhece, não a cena); [2] a [4] desenvolvimento causal (cada slide avança o anterior, nunca descreve mais do mesmo); [5] virada sem resolução — tensão máxima, sem CTA embutido no texto, sem fechar a questão.'
+    ? '- Estruture em exatamente 5 blocos numerados [1] a [5]: [1] abertura com situação concreta; [2] a [4] desenvolvimento causal; [5] conclusão prática sustentada pelo conteúdo, sem CTA obrigatório.'
     : '- Estruture em blocos claros: Abertura → Desenvolvimento → Conclusão/CTA. Use marcadores visuais para cenas/cortes quando for Reels ou Vídeo.'}
 
-TESTE DE SANIDADE FINAL: se o texto ficou "bem explicado" mas ninguém precisaria se posicionar pra comentar, reescreva.
+TESTE FINAL: o texto poderia estar no print de posts saturados de IA? Se sim, reescreva sem fórmulas de engajamento.
 
 Responda APENAS com o roteiro, sem introdução nem explicações.`,
 
@@ -257,6 +258,8 @@ export default function IdeaForm({ open, onClose, onSave, initial }) {
   const tagRef = useRef(null)
   const linkRef = useRef(null)
 
+  const clients = useStore(s => s.clients)
+  const metrics = useStore(s => s.metrics)
   const allIdeas = useStore((s) => s.ideas)
   const brandVoice = useStore((s) => s.brandVoice)
   const dislikedContent = useStore((s) => s.dislikedContent)
@@ -525,7 +528,10 @@ Responda EXCLUSIVAMENTE com JSON válido:
     e.preventDefault()
     if (!form.title.trim()) return
     if (tagInput.trim()) addTag(tagInput)
-    onSave({ ...form, platform: (form.platforms || [])[0] || 'instagram', scheduled_date: form.scheduled_date || null })
+    const draft = { ...form }
+    delete draft.approved_version
+    delete draft.revisions
+    onSave({ ...draft, platform: (form.platforms || [])[0] || 'instagram', scheduled_date: form.scheduled_date || null })
     onClose()
   }
 
@@ -536,6 +542,16 @@ Responda EXCLUSIVAMENTE com JSON válido:
       <form onSubmit={handleSubmit} className="space-y-5">
 
         <BrandDirectiveBanner />
+        <label className="block text-xs text-gray-600">Link da publicação (quando existir)
+          <input type="url" className="input mt-1" placeholder="https://..." value={form.published_url || ''} onChange={event => set('published_url', event.target.value)} />
+        </label>
+        <label className="block text-xs text-gray-600">Resultado importado desta publicação
+          <select aria-label="Resultado importado desta publicação" className="select mt-1" value={form.metric_id || ''} onChange={event => set('metric_id', event.target.value)}>
+            <option value="">Sem vínculo com métricas</option>
+            {metrics.map(metric => <option key={metric.id} value={metric.id}>{metric.date || 'Sem data'} · {metric.platform || 'Sem plataforma'} · {(metric.description || metric.title || metric.link || metric.id).slice(0, 85)}</option>)}
+          </select>
+        </label>
+        <IdeaWorkflowPanel form={form} onRestore={revision => setForm(current => ({ ...current, ...Object.fromEntries(['title', 'description', 'script', 'caption', 'cta'].map(key => [key, revision[key] || ''])) }))} />
 
         {/* Banco de temas — mesmo banco do Studio e do Thought Capture; primeira coisa do card */}
         <div className="space-y-1">
@@ -706,7 +722,8 @@ Responda EXCLUSIVAMENTE com JSON válido:
             <div>
               <label className="label">Cliente / Marca</label>
               <input className="input" placeholder="ex: Samsung, FIAP, orgânico próprio"
-                value={form.client || ''} onChange={(e) => set('client', e.target.value)} />
+                list="idea-client-names" value={form.client || ''} onChange={(e) => { const name = e.target.value; set('client', name); set('client_id', clients.find(client => client.name === name)?.id || null) }} />
+              <datalist id="idea-client-names">{clients.map(client => <option key={client.id} value={client.name} />)}</datalist>
             </div>
           )}
         </div>

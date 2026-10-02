@@ -1,3 +1,4 @@
+import PageErrorBoundary from './components/common/PageErrorBoundary'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
@@ -132,7 +133,7 @@ export default function App() {
         <FavoritesDrawer />
         <FloatingActions />
         <Layout>
-          <Suspense fallback={<PageLoader />}>
+          <PageErrorBoundary><Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/ideas" element={<IdeasHub />} />
@@ -173,7 +174,7 @@ export default function App() {
             {/* Rotas desconhecidas voltam ao Dashboard em vez de tela em branco */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          </Suspense>
+          </Suspense></PageErrorBoundary>
         </Layout>
       </BrowserRouter>
     </LoginGate>

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader2, Terminal } from 'lucide-react'
 import clsx from 'clsx'
@@ -54,6 +54,8 @@ export default function CreateHub({ persona = 'trabalho' }) {
   // quando inativa) — trocar de aba não perde rascunho nem histórico da sessão.
   const [visited, setVisited] = useState(() => new Set([active]))
 
+  useEffect(() => { setVisited(previous => previous.has(active) ? previous : new Set(previous).add(active)) }, [active])
+
   const goTo = (id) => {
     if (!visited.has(id)) setVisited((prev) => new Set(prev).add(id))
     const next = new URLSearchParams(searchParams)
@@ -66,7 +68,7 @@ export default function CreateHub({ persona = 'trabalho' }) {
     <div className="flex flex-col h-full">
       <div className="shrink-0 bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-8 sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 sm:mx-0 sm:px-0">
             {TOOLS.map((t) => {
               const Icon = t.icon
               const a = ACCENT[t.accent]
@@ -82,8 +84,8 @@ export default function CreateHub({ persona = 'trabalho' }) {
                 >
                   <Icon size={16} className={clsx('shrink-0 mt-0.5', isActive ? a.icon : 'text-gray-400')} />
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold truncate">{t.label}</div>
-                    <div className="text-[10px] text-gray-400 truncate">{t.desc}</div>
+                    <div className="text-xs font-semibold">{t.label}</div>
+                    <div className="text-[10px] text-gray-500">{t.desc}</div>
                   </div>
                 </button>
               )

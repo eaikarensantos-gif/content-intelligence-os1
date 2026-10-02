@@ -1,3 +1,5 @@
+import { KAREN_VOICE_RULES } from '../data/karenVoice'
+
 /**
  * Builds AI context from brand voice + dislike history.
  * Used by all content generators for consistent, improving output.
@@ -11,6 +13,7 @@ export function buildBannedWordsBlock(bannedWords = []) {
   if (!bannedWords?.length) return ''
   return `\n\nPALAVRAS/EXPRESSÕES PROIBIDAS (NUNCA use estas palavras ou variações delas no conteúdo gerado):\n${bannedWords.map(w => `- "${w}"`).join('\n')}\nEsta é uma regra ABSOLUTA. O criador baniu essas palavras permanentemente.\n`
 }
+
 
 /**
  * Bloco do Posicionamento (âncora, públicos, concorrência, pilares, teste de
@@ -126,16 +129,16 @@ export function buildVoiceContext(brandVoice, dislikedContent = [], bannedWords 
     ctx += `\nREGRA: Analise os padrões rejeitados acima e EVITE abordagens similares. O criador está buscando algo diferente.\n`
   }
 
-  return ctx
+  return ctx + KAREN_VOICE_RULES
 }
 
 export function buildRegenerateInstruction(attempt = 0) {
   const variations = [
-    'Use um tom COMPLETAMENTE diferente da geração anterior. Mude a abertura, o ângulo, a metáfora e a estrutura.',
-    'Reinvente totalmente. Use uma abordagem OPOSTA: se antes foi reflexivo, seja provocativo. Se foi lista, use storytelling. Surpreenda.',
-    'Pense fora da caixa. Use referências culturais, dados surpreendentes ou uma perspectiva contraintuitiva que ninguém esperaria.',
-    'Vá pelo caminho mais inesperado. Use humor, ironia inteligente, ou uma confissão pessoal. Quebre o padrão.',
-    'Foque em uma dor ESPECÍFICA e real. Nada genérico. Conte uma micro-história ou use um exemplo concreto que gere identificação.',
+    'Mude a abertura a partir de outro aspecto comprovado da mesma situação. Preserve os fatos, a voz e a intenção.',
+    'Reorganize o raciocínio por causa e consequência. Elimine repetições sem inventar tensão.',
+    'Troque abstrações por um exemplo disponível no briefing. Se faltar evidência, explicite o limite.',
+    'Revise o ângulo e o fechamento. Não invente confissão pessoal, humor ou metáfora para diferenciar o texto.',
+    'Destaque a restrição concreta e a decisão que ela afeta. Preserve o que já estava factual e editorialmente correto.',
   ]
   return `\n\nINSTRUÇÃO CRÍTICA DE VARIAÇÃO (tentativa ${attempt + 1}): ${variations[attempt % variations.length]}\nNUNCA repita títulos, ganchos ou estruturas de gerações anteriores.\n`
 }

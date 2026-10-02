@@ -1,3 +1,4 @@
+import { KAREN_VOICE_RULES } from '../../data/karenVoice'
 import { useState, useRef, useCallback } from 'react'
 import {
   Upload, FileText, Sparkles, Copy, Check, ChevronDown, ChevronUp,
@@ -22,7 +23,8 @@ async function extractTextFromPDF(file) {
   for (let i = 1; i <= Math.min(pdf.numPages, 80); i++) {
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
-    pages.push(content.items.map((item) => item.str + (item.hasEOL ? '\n' : ' ')).join(''))
+    const pageText = content.items.map((item) => item.str + (item.hasEOL ? '\n' : ' ')).join('')
+    pages.push(pageText.trim() ? `[Página ${i}]\n${pageText}` : '')
   }
   return { text: pages.join('\n\n'), pageCount: pdf.numPages }
 }
@@ -150,14 +152,14 @@ IMPORTANTE: Use apenas ensinamentos reais do material. Linguagem próxima, diret
 CONTEÚDO DO CURSO:
 ${truncated}
 
-Retorne um array JSON com exatamente ${count} itens:
+Retorne um array JSON com exatamente ${count} itens. Acrescente em cada item "source_pages": [números das páginas usadas]. Se não houver marcadores de página, use uma lista vazia:
 ${jsonFormat[format.id]}
 
 Retorne APENAS o array JSON, sem markdown.`
 
   const text = await callAnthropic(
     prompt,
-    'Você é um especialista em criação de conteúdo para redes sociais. Responda APENAS com JSON válido.',
+    'Você é um especialista em criação de conteúdo para redes sociais. Responda APENAS com JSON válido. Indique na saída as páginas do material que sustentam cada conteúdo, quando os marcadores estiverem disponíveis. Não invente páginas.' + KAREN_VOICE_RULES,
     4000,
   )
   return JSON.parse(text)
@@ -399,11 +401,11 @@ function PostCard({ item }) {
 }
 
 function ResultCard({ format, item, index }) {
-  if (format.id === 'carousel') return <CarouselCard item={item} index={index} />
-  if (format.id === 'reel') return <ReelCard item={item} index={index} />
-  if (format.id === 'stories') return <StoriesCard item={item} />
-  if (format.id === 'post') return <PostCard item={item} />
-  return null
+  const pages = Array.isArray(item.source_pages) ? item.source_pages.filter(page => Number.isInteger(page) && page > 0) : []
+  const cards = { carousel: CarouselCard, reel: ReelCard, stories: StoriesCard, post: PostCard }
+  const Card = cards[format.id]
+  if (!Card) return null
+  return <div className="space-y-2"><Card item={item} index={index} /><p className="text-xs text-gray-500">{pages.length ? `Páginas indicadas pela IA: ${pages.join(', ')}. Confira os trechos no documento.` : 'Sem páginas de origem identificadas nesta saída. Confira no documento antes de usar.'}</p></div>
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -568,7 +570,7 @@ export default function PDFContentGenerator() {
             <FileText size={32} className="text-green-500 mx-auto" />
             <p className="font-semibold text-gray-900">{pdfInfo.name}</p>
             <p className="text-xs text-gray-500">
-              {pdfInfo.pageCount} páginas · {Math.round(pdfInfo.size / 1024)} KB
+              {pdfInfo.pageCount} páginas · {Math.round(pdfInfo.size / 1024)} KB · A extração de texto considera até 80 páginas; a geração recebe um recorte de até 12.000 caracteres. Confira a cobertura antes de usar.
             </p>
             <button
               onClick={(e) => { e.stopPropagation(); setPdfInfo(null); setLessons([]); setSelectedLesson(null); setResults({}); setActiveTab(null) }}

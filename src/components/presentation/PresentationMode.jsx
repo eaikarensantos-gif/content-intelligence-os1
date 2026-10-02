@@ -1,3 +1,4 @@
+import { KAREN_VOICE_RULES } from '../../data/karenVoice'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { extractJsonObject } from '../../utils/aiJson.js'
 import { useNavigate } from 'react-router-dom'
@@ -129,7 +130,7 @@ Responda SOMENTE com JSON válido. Sem markdown, sem código, sem explicações.
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 8000,
-      system: withAntiAIFilter('You are a Brazilian content and presentation coach. You write in natural spoken Portuguese. Everything must sound like someone TALKING naturally. Your tone adapts to the goal: brand content = enthusiastic and genuine, reflective content = curious and intelligent (never pessimistic), educational = clear and practical. You NEVER default to melancholic or defeatist tone. Respond ONLY with valid JSON.'),
+      system: withAntiAIFilter('You are a Brazilian content and presentation coach. You write in natural spoken Portuguese. Everything must sound like someone TALKING naturally. Your tone adapts to the goal: brand content = enthusiastic and genuine, reflective content = curious and intelligent (never pessimistic), educational = clear and practical. You NEVER default to melancholic or defeatist tone. Respond ONLY with valid JSON.' + KAREN_VOICE_RULES),
       messages: [{ role: 'user', content: prompt }],
     }),
   })

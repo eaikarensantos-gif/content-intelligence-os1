@@ -18,11 +18,21 @@ export function enrichMetric(m) {
   return { ...m, engagement, engagement_rate, authority_score }
 }
 
+// CSV imports already carry post metadata, even without a separate post record.
+function postForMetric(posts, metric, index = 0) {
+  return posts.find(p => metric.post_id && p.id === metric.post_id) || {
+    id: metric.post_id || metric.id || `metric-${index}`,
+    title: metric.description || metric.title || 'Post sem título',
+    platform: metric.platform || 'unknown',
+    format: metric.post_type || metric.format || 'Não informado',
+    topic: metric.topic,
+  }
+}
+
 export function aggregateByFormat(posts, metrics) {
   const map = {}
   metrics.forEach((m) => {
-    const post = posts.find((p) => p.id === m.post_id)
-    if (!post) return
+    const post = postForMetric(posts, m)
     const fmt = post.format
     if (!map[fmt]) map[fmt] = { format: fmt, impressions: 0, engagement: 0, count: 0 }
     const e = enrichMetric(m)
@@ -39,8 +49,7 @@ export function aggregateByFormat(posts, metrics) {
 export function aggregateByPlatform(posts, metrics) {
   const map = {}
   metrics.forEach((m) => {
-    const post = posts.find((p) => p.id === m.post_id)
-    if (!post) return
+    const post = postForMetric(posts, m)
     const plt = m.platform || post.platform
     if (!map[plt]) map[plt] = { platform: plt, impressions: 0, engagement: 0, engagement_rate_sum: 0, count: 0 }
     const e = enrichMetric(m)
@@ -117,10 +126,10 @@ export function timelineData(metrics) {
 
 export function topPosts(posts, metrics, limit = 5) {
   return metrics
-    .map((m) => {
-      const post = posts.find((p) => p.id === m.post_id)
+    .map((m, index) => {
+      const post = postForMetric(posts, m, index)
       const e = enrichMetric(m)
-      return { ...e, post }
+      return { ...e, post, metric: e }
     })
     .filter((x) => x.post)
     .sort((a, b) => b.impressions - a.impressions)

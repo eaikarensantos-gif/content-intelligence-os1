@@ -1,3 +1,5 @@
+import BannedRulesPreview from './BannedRulesPreview'
+import VoiceRulesNotice from '../brand/VoiceRulesNotice'
 import { useState } from 'react'
 import { Compass, Plus, Trash2, X } from 'lucide-react'
 import useStore from '../../store/useStore'
@@ -40,6 +42,7 @@ function ListaNegraBox() {
 
   return (
     <div className="space-y-2">
+      <BannedRulesPreview rules={listaNegra} />
       <div className="flex gap-2">
         <input
           value={value}
@@ -190,14 +193,14 @@ export default function PositioningStudio() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-5">
+      <VoiceRulesNotice />
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Compass className="text-violet-500" size={24} />
           Posicionamento
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          A fonte única da sua identidade de marca — alimenta a Diretriz de Marca, os termos banidos e
-          toda geração de conteúdo do app.
+          O posicionamento e os termos banidos complementam a base editorial e o perfil de voz nos geradores conectados.
         </p>
       </div>
 

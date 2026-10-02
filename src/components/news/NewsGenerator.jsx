@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { withAntiAIFilter } from '../../lib/antiAIFilter'
 import { withManualOperacional } from '../../lib/manualOperacional'
 import { assertNotTruncated } from '../../utils/aiJson.js'
-import { VOICE_SIGNATURE } from '../../utils/voiceContext'
+import { buildVoiceContext } from '../../utils/voiceContext'
 import useStore from '../../store/useStore'
 
 async function callAI(apiKey, body) {
@@ -323,7 +323,7 @@ Regras:
     }
     if (filter.trim()) {
       base = base.filter(a =>
-        a.title?.toLowerCase().includes(filter.toLowerCase()) ||
+        [a.title, stripHtml(a.description || ''), a.source].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(filter.trim().toLocaleLowerCase('pt-BR')) ||
         a.categories?.some(c => c.toLowerCase().includes(filter.toLowerCase()))
       )
     }
@@ -438,7 +438,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
         max_tokens: MAX_TOKENS_BY_FORMAT[format] || 2000,
-        system: withManualOperacional(withAntiAIFilter(`Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.${VOICE_SIGNATURE}`)),
+        system: withManualOperacional(withAntiAIFilter(`Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.${buildVoiceContext(useStore.getState().brandVoice, useStore.getState().dislikedContent, useStore.getState().posicionamento?.lista_negra || [], useStore.getState().posicionamento)}`)),
         messages: [{ role: 'user', content: prompt }],
       })
       assertNotTruncated(res, 'A resposta ficou grande demais e foi cortada antes de terminar. Tente novamente.')

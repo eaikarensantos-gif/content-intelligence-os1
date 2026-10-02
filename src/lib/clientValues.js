@@ -38,6 +38,18 @@ export function sumPayments(payments) {
     cents + Math.round((parseClientValue(payment.amount) ?? 0) * 100), 0)
 }
 
+// Move o valor inteiro do cadastro para um trabalho; não cria nova receita.
+export function allocateLegacyValue(client, month, description, id) {
+  const amount = parseClientValue(client.value)
+  if (amount === null || amount <= 0) throw new Error('Não há valor inicial positivo para distribuir.')
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !description.trim() || !id) throw new Error('Informe mês e descrição do trabalho.')
+  const entries = Array.isArray(client.work_entries) ? client.work_entries : []
+  if (entries.some(entry => entry.id === id)) throw new Error('Este trabalho já foi registrado.')
+  const payments = Array.isArray(client.base_payments) ? client.base_payments : client.payment_status === 'pago' ? [{ id: `${id}-legacy`, amount, date: '', legacy: true }] : []
+  if (sumPayments(payments) > Math.round(amount * 100)) throw new Error('Revise os recebimentos: superam o valor inicial.')
+  return { value: '', base_payments: [], payment_status: '', work_entries: [...entries, { id, month, description: description.trim(), amount, payments, source: 'legacy-value' }] }
+}
+
 export function clientLedgerRows(client) {
   const rows = []
   const base = parseClientValue(client.value)

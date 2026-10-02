@@ -1,3 +1,4 @@
+import { KAREN_VOICE_RULES } from '../../data/karenVoice'
 import { useState, useEffect } from 'react'
 import {
   Sparkles, Copy, Check, RefreshCw, AlertCircle, Trash2, Loader2, MessageCircle,
@@ -168,7 +169,7 @@ export default function CommunityEngager() {
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 1200,
-          system: COMMENT_SYSTEM,
+          system: COMMENT_SYSTEM + KAREN_VOICE_RULES,
           messages: [{ role: 'user', content: buildPrompt({ post, author, relationship, tone, length, context }) }],
         }),
       })

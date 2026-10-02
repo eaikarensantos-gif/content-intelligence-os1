@@ -1,3 +1,4 @@
+import MetricsCoverage from '../common/MetricsCoverage'
 // Build cache buster: 2026-04-02T13:57:00Z
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -474,6 +475,7 @@ export default function Analytics() {
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
+      <MetricsCoverage metrics={metrics} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
@@ -502,7 +504,7 @@ export default function Analytics() {
             <MiniStat icon={Eye} label="Impressões" value={totalImpressions.toLocaleString()} color="orange" trend={trendImpressions} />
             <MiniStat
               icon={TrendingUp}
-              label="Eng. Médio"
+              label="Média das taxas por post"
               value={`${avgER}%`}
               color="emerald"
               trend={trendER}
@@ -514,6 +516,8 @@ export default function Analytics() {
             <MiniStat icon={UserPlus} label="Seguimentos" value={totalFollows.toLocaleString()} color="sky" trend={trendFollows} />
             <MiniStat icon={Trophy} label="Score Autoridade" value={totalAuthority.toLocaleString()} color="orange" trend={trendAuthority} />
           </div>
+
+          <p className="text-xs text-gray-500">A média das taxas dá o mesmo peso a cada post. Cada taxa é (curtidas + comentários + compartilhamentos + salvamentos) ÷ impressões. O Content DNA usa a taxa agregada: soma das interações ÷ soma das impressões.</p>
 
           {/* Charts row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

@@ -1,3 +1,4 @@
+import VoiceRulesNotice from './VoiceRulesNotice'
 import { useState } from 'react'
 import { ChevronRight, ChevronLeft, Sparkles, Check, RotateCcw, Loader2, Eye, Copy, Zap } from 'lucide-react'
 import useStore from '../../store/useStore'
@@ -408,6 +409,7 @@ Analise e retorne EXCLUSIVAMENTE JSON:
 export default function BrandVoiceSetup() {
   const brandVoice = useStore(s => s.brandVoice)
   const setBrandVoice = useStore(s => s.setBrandVoice)
+  const [customizing, setCustomizing] = useState(false)
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState(brandVoice?.answers || {})
   const [done, setDone] = useState(!!brandVoice)
@@ -452,10 +454,22 @@ export default function BrandVoiceSetup() {
     setBrandVoice(null)
   }
 
+  if (!brandVoice && !customizing) return <div className="max-w-3xl mx-auto py-8 px-4">
+    <VoiceRulesNotice />
+    <section className="rounded-xl border border-gray-200 bg-white p-5 space-y-3 text-sm text-gray-700">
+      <h2 className="text-lg font-semibold text-gray-900">A voz já tem uma base</h2>
+      <p>Karen Santos, designer com mais de 10 anos de experiência e especialista em IA para negócios. Raciocínio técnico, linguagem simples e limites da análise apresentados com clareza.</p>
+      <p>Acolhimento 7/10, provocação 5/10 e deboche leve 2/10. Sem metáforas forçadas, confissões inventadas ou perguntas obrigatórias para gerar comentários.</p>
+      <p>O questionário é opcional e serve para acrescentar preferências ao contexto. Ele não é necessário para ativar essa base.</p>
+      <button onClick={() => setCustomizing(true)} className="btn-secondary">Complementar preferências</button>
+    </section>
+  </div>
+
   /* ── Tela de resultado ── */
   if (done && brandVoice) {
     return (
       <div className="max-w-3xl mx-auto py-8 px-4">
+      <VoiceRulesNotice />
         <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-200">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -464,7 +478,7 @@ export default function BrandVoiceSetup() {
                 Master Prompt Ativo
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Alimentando todos os geradores de conteúdo
+                Complementa o contexto compartilhado dos geradores de Karen
               </p>
             </div>
             <button
@@ -527,6 +541,7 @@ export default function BrandVoiceSetup() {
   /* ── Tela do questionário ── */
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <VoiceRulesNotice />
       {/* Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
