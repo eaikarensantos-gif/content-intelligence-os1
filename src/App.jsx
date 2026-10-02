@@ -1,4 +1,5 @@
 import PageErrorBoundary from './components/common/PageErrorBoundary'
+import SyncNotice from './components/common/SyncNotice'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
@@ -92,6 +93,7 @@ function Layout({ children }) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} onSearchClick={() => setSearchOpen(true)} />
+        <SyncNotice />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

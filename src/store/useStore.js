@@ -3,7 +3,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { enrichMetric, generateInsights } from '../utils/analytics'
-import { dbLoadAll, dbSaveAll } from '../lib/db'
+import { dbLoadAll, dbSaveAll, COLLECTIONS } from '../lib/db'
+import { createSaveQueue } from '../lib/saveQueue'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 /**
@@ -689,6 +690,10 @@ const useStore = create(
       // ── Supabase sync ─────────────────────────────────────
       dbStatus: 'idle',
       dbError: '',
+      syncStatus: 'idle',
+      syncError: '',
+      lastSavedAt: null,
+      retrySave: () => saveQueue.retry(),
       setDbStatus: (status, err = '') => set({ dbStatus: status, dbError: err }),
 
       loadFromDB: async () => {
@@ -815,17 +820,21 @@ const useStore = create(
 // chega no Supabase — e o próximo loadFromDB() carrega a cópia antiga.
 // flushSync() força o save pendente assim que a aba fica oculta, então a
 // perda só acontece se o navegador matar o processo antes do fetch sair.
-let _syncTimer = null
-const flushSync = () => {
-  if (!_syncTimer) return
-  clearTimeout(_syncTimer)
-  _syncTimer = null
-  dbSaveAll(useStore.getState())
-}
-useStore.subscribe((state) => {
+const saveQueue = createSaveQueue({
+  getState: () => useStore.getState(),
+  save: dbSaveAll,
+  onStatus: ({ status, error, lastSavedAt }) => useStore.setState({
+    syncStatus: status,
+    syncError: error,
+    ...(lastSavedAt ? { lastSavedAt } : {}),
+  }),
+})
+const flushSync = () => saveQueue.flush()
+useStore.subscribe((state, previous) => {
   if (!isSupabaseConfigured()) return
-  clearTimeout(_syncTimer)
-  _syncTimer = setTimeout(() => { _syncTimer = null; dbSaveAll(state) }, 2500)
+  // Estado visual e mensagens de sincronização não são edições de conteúdo.
+  if (!COLLECTIONS.some(key => state[key] !== previous[key])) return
+  saveQueue.schedule()
 })
 if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
