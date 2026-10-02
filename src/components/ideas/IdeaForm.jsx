@@ -538,21 +538,13 @@ Responda EXCLUSIVAMENTE com JSON válido:
   const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 
   return (
-    <Modal open={open} onClose={onClose} title={initial?.id ? 'Editar Ideia' : 'Nova Ideia de Conteúdo'}>
+    <Modal open={open} onClose={onClose} title={initial?.id ? 'Editar Ideia' : 'Nova Ideia de Conteúdo'} maxWidth="max-w-3xl">
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        <BrandDirectiveBanner />
-        <label className="block text-xs text-gray-600">Link da publicação (quando existir)
-          <input type="url" className="input mt-1" placeholder="https://..." value={form.published_url || ''} onChange={event => set('published_url', event.target.value)} />
-        </label>
-        <label className="block text-xs text-gray-600">Resultado importado desta publicação
-          <select aria-label="Resultado importado desta publicação" className="select mt-1" value={form.metric_id || ''} onChange={event => set('metric_id', event.target.value)}>
-            <option value="">Sem vínculo com métricas</option>
-            {metrics.map(metric => <option key={metric.id} value={metric.id}>{metric.date || 'Sem data'} · {metric.platform || 'Sem plataforma'} · {(metric.description || metric.title || metric.link || metric.id).slice(0, 85)}</option>)}
-          </select>
-        </label>
-        <IdeaWorkflowPanel form={form} onRestore={revision => setForm(current => ({ ...current, ...Object.fromEntries(['title', 'description', 'script', 'caption', 'cta'].map(key => [key, revision[key] || ''])) }))} />
-
+        <details className="text-sm text-gray-700"><summary className="cursor-pointer py-2">Consultar regras editoriais</summary><BrandDirectiveBanner /></details>
+        <details open={!initial?.id} className="rounded-xl border border-gray-200 p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Briefing e formato</summary>
+          <div className="space-y-4 mt-4">
         {/* Banco de temas — mesmo banco do Studio e do Thought Capture; primeira coisa do card */}
         <div className="space-y-1">
           <button
@@ -730,9 +722,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
 
         <div className="border-t border-gray-100" />
 
+          </div>
+        </details>
+
         {/* ── 2. CONTEÚDO ─────────────────────────────────────────────────── */}
         <div className="space-y-3">
-          <SectionLabel>Conteúdo</SectionLabel>
+          <SectionLabel>Texto em edição</SectionLabel>
 
           {/* Título */}
           <div>
@@ -1041,11 +1036,29 @@ Responda EXCLUSIVAMENTE com JSON válido:
           </div>
         </div>
 
+        <details className="rounded-xl border border-gray-200 p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Produção, aprovação e resultado</summary>
+          <p className="text-sm text-gray-600 mt-2 mb-4">Tarefa vinculada, versões anteriores e métricas da publicação.</p>
+          <div className="space-y-4">
+        <label className="block text-xs text-gray-600">Link da publicação (quando existir)
+          <input type="url" className="input mt-1" placeholder="https://..." value={form.published_url || ''} onChange={event => set('published_url', event.target.value)} />
+        </label>
+        <label className="block text-xs text-gray-600">Resultado importado desta publicação
+          <select aria-label="Resultado importado desta publicação" className="select mt-1" value={form.metric_id || ''} onChange={event => set('metric_id', event.target.value)}>
+            <option value="">Sem vínculo com métricas</option>
+            {metrics.map(metric => <option key={metric.id} value={metric.id}>{metric.date || 'Sem data'} · {metric.platform || 'Sem plataforma'} · {(metric.description || metric.title || metric.link || metric.id).slice(0, 85)}</option>)}
+          </select>
+        </label>
+        <IdeaWorkflowPanel form={form} onRestore={revision => setForm(current => ({ ...current, ...Object.fromEntries(['title', 'description', 'script', 'caption', 'cta'].map(key => [key, revision[key] || ''])) }))} />
+
+          </div>
+        </details>
+
         {/* Brand Linter */}
         {lintViolations.length > 0 && <BrandLinterPanel violations={lintViolations} compact />}
 
         {/* Ações */}
-        <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+        <div className="sticky bottom-0 bg-white flex justify-end gap-2 py-3 border-t border-gray-200">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button type="submit" disabled={!form.title.trim()}
             title={!form.title.trim() ? 'Preencha o título antes de salvar' : undefined}

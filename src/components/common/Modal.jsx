@@ -37,6 +37,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Fechar janela"
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
           >
             <X size={16} />
