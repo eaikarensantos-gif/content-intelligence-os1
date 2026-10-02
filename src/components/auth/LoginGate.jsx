@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Shield, Lock, Eye, EyeOff, AlertTriangle, LogOut, Zap, Monitor, Globe, Clock } from 'lucide-react'
+import { AuthActionsContext } from './AuthActionsContext'
+import { Shield, Lock, Eye, EyeOff, AlertTriangle, Zap, Monitor, Globe, Clock } from 'lucide-react'
 
 const AUTH_KEY = 'cio-auth-session'
 const OWNER_KEY = 'cio-owner-credentials'
@@ -181,18 +182,9 @@ export default function LoginGate({ children }) {
   // Se autenticado, renderiza o app
   if (session) {
     return (
-      <div className="relative">
-        {/* Botão logout discreto */}
-        <button
-          onClick={handleLogout}
-          className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur border border-gray-200 rounded-lg text-xs text-gray-500 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
-          title="Sair"
-        >
-          <LogOut size={12} />
-          Sair
-        </button>
+      <AuthActionsContext.Provider value={handleLogout}>
         {children}
-      </div>
+      </AuthActionsContext.Provider>
     )
   }
 

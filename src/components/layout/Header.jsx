@@ -1,5 +1,7 @@
 import { useLocation, Link } from 'react-router-dom'
-import { Heart, Search, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
+import { useContext } from 'react'
+import { AuthActionsContext } from '../auth/AuthActionsContext'
+import { Heart, Search, Menu, ChevronRight, Sun, Moon, LogOut } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TITLES = {
@@ -41,6 +43,7 @@ const TITLES = {
 const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation', '/carousel'])
 
 export default function Header({ onMenuClick, onSearchClick }) {
+  const logout = useContext(AuthActionsContext)
   const { pathname } = useLocation()
   const info = TITLES[pathname] || { title: 'Content Intelligence OS', sub: '' }
   const isCreateChild = CREATE_ROUTES.has(pathname)
@@ -75,6 +78,7 @@ export default function Header({ onMenuClick, onSearchClick }) {
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
+        {logout && <button type="button" onClick={logout} aria-label="Sair da conta" title="Sair da conta" className="order-last min-w-11 min-h-11 flex items-center justify-center gap-1.5 rounded-lg text-gray-600 hover:text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"><LogOut size={16} /><span className="hidden sm:inline text-sm">Sair</span></button>}
         <button
           onClick={onSearchClick}
           className="p-2 sm:px-2.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1.5"
