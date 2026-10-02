@@ -3,11 +3,12 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool, Heart,
-  Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings, Activity,
+  Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings,
   ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
+import { canonicalPinnedPages } from '../../utils/navigation'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
@@ -34,7 +35,6 @@ const NAV_GROUPS = [
   { id: 'resultados', label: 'Resultados', children: [
     { to: '/analytics', icon: BarChart2, label: 'Analytics' },
     { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
-    { to: '/social', icon: Activity, label: 'Visão das redes' },
     { to: '/dna', icon: Dna, label: 'Content DNA' },
   ] },
   { id: 'comercial', label: 'Comercial', children: [
@@ -70,7 +70,8 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const importRef = useRef(null)
   const [syncMsg, setSyncMsg] = useState(null) // { type: 'success'|'error', text }
-  const pinnedPages = useStore((s) => s.pinnedPages)
+  const savedPinnedPages = useStore((s) => s.pinnedPages)
+  const pinnedPages = canonicalPinnedPages(savedPinnedPages)
   const togglePinnedPage = useStore((s) => s.togglePinnedPage)
   const pinnedItems = pinnedPages.map((to) => ALL_NAV_ITEMS.find((i) => i.to === to)).filter(Boolean)
 

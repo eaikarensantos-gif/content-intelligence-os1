@@ -18,7 +18,6 @@ const Dashboard = lazy(() => import('./components/dashboard/Dashboard'))
 const IdeasHub = lazy(() => import('./components/ideas/IdeasHub'))
 const TrendRadar = lazy(() => import('./components/trends/TrendRadar'))
 const Analytics = lazy(() => import('./components/analytics/Analytics'))
-const SocialDashboard = lazy(() => import('./components/analytics/SocialDashboard'))
 const AudienceAnalytics = lazy(() => import('./components/analytics/AudienceAnalytics'))
 const VideoAnalyzer = lazy(() => import('./components/video/VideoAnalyzer'))
 const CreateHub = lazy(() => import('./components/create/CreateHub'))
@@ -48,6 +47,11 @@ const CommunityStudio = lazy(() => import('./components/community/CommunityStudi
 // como abas dentro do Studio de Criação — isso preserva links e favoritos
 // existentes (inclusive com querystring, ex. /generate?context=...) em vez de
 // quebrá-los.
+function AnalyticsRedirect() {
+  const location = useLocation()
+  return <Navigate to={{ pathname: '/analytics', search: location.search, hash: location.hash }} replace />
+}
+
 function ToolRedirect({ tool }) {
   const location = useLocation()
   const params = new URLSearchParams(location.search)
@@ -141,7 +145,7 @@ export default function App() {
             <Route path="/ideas" element={<IdeasHub />} />
             <Route path="/trends" element={<TrendRadar />} />
             <Route path="/analytics" element={<Analytics />} />
-            <Route path="/social" element={<SocialDashboard />} />
+          <Route path="/social" element={<AnalyticsRedirect />} />
             <Route path="/audience" element={<div className="p-6 animate-fade-in"><AudienceAnalytics /></div>} />
             <Route path="/video" element={<VideoAnalyzer />} />
             {/* key força remount ao trocar de rota — sem ele o React reaproveita a

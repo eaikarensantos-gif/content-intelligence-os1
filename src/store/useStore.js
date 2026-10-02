@@ -1,4 +1,5 @@
 import { reviseIdea } from '../utils/ideaWorkflow'
+import { canonicalPage, canonicalPinnedPages } from '../utils/navigation'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
@@ -123,11 +124,11 @@ const useStore = create(
       pinnedPages: [],
 
       togglePinnedPage: (path) =>
-        set((s) => ({
-          pinnedPages: s.pinnedPages.includes(path)
-            ? s.pinnedPages.filter((p) => p !== path)
-            : [...s.pinnedPages, path],
-        })),
+        set((s) => {
+          const current = canonicalPinnedPages(s.pinnedPages)
+          const target = canonicalPage(path)
+          return { pinnedPages: current.includes(target) ? current.filter((p) => p !== target) : [...current, target] }
+        }),
 
       // ── Perfil do Criador ────────────────────────────────
       creatorProfile: {
