@@ -10,7 +10,7 @@
 
 import { getSupabase, isSupabaseConfigured } from './supabase'
 
-const COLLECTIONS = [
+export const COLLECTIONS = [
   'ideas', 'posts', 'metrics', 'clients', 'videoAnalyses',
   'thoughtCaptures', 'commentContexts', 'tasks', 'ads', 'leads', 'archetypes',
   'hybridArchetypes', 'favorites', 'pricingProducts', 'proposals',
@@ -35,7 +35,7 @@ export async function dbLoadAll() {
 // ─── Salva todo o estado no Supabase (debounced pelo store) ───────────────────
 
 export async function dbSaveAll(state) {
-  if (!isSupabaseConfigured()) return
+  if (!isSupabaseConfigured()) return false
   const db = getSupabase()
 
   const rows = COLLECTIONS.map((key) => ({
@@ -45,7 +45,8 @@ export async function dbSaveAll(state) {
   }))
 
   const { error } = await db.from('user_data').upsert(rows)
-  if (error) console.error('[DB] Sync error:', error.message)
+  if (error) throw new Error('Não foi possível salvar no banco')
+  return true
 }
 
 // ─── Testa a conexão ──────────────────────────────────────────────────────────
