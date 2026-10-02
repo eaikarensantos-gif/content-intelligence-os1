@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search, Lightbulb, Brain, Video, ClipboardList, ArrowRight,
   LayoutDashboard, BarChart2, PenTool, Clapperboard, Radar, Dna,
-  Activity, FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft, Dices, FileText,
+  FileBarChart, DollarSign, Flame, Settings, Mic, CornerDownLeft, Dices, FileText,
   Newspaper, Shield, Users, Bookmark, PieChart, Heart,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -21,7 +21,6 @@ const PAGES = [
   { to: '/ideas', label: 'Hub de Ideias', icon: Lightbulb },
   { to: '/tasks', label: 'Tarefas', icon: ClipboardList },
   { to: '/brain', label: 'Content Brain', icon: Brain },
-  { to: '/social', label: 'Social Dashboard', icon: Activity },
   { to: '/reports', label: 'Relatórios', icon: FileBarChart },
   { to: '/news', label: 'Notícias', icon: Newspaper },
   { to: '/dna', label: 'Content DNA', icon: Dna },

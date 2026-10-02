@@ -1,4 +1,5 @@
 import MetricsCoverage from '../common/MetricsCoverage'
+import FollowersSummary from './FollowersSummary'
 // Build cache buster: 2026-04-02T13:57:00Z
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -475,6 +476,7 @@ export default function Analytics() {
 
   return (
     <div className="p-6 space-y-5 animate-fade-in">
+      <FollowersSummary />
       <MetricsCoverage metrics={metrics} />
       {/* Header */}
       <div className="flex items-center justify-between">
