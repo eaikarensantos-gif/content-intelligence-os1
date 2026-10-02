@@ -53,8 +53,8 @@ export default function SocialDashboard() {
       <div className="px-6 pt-6 pb-4 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Métricas de conteúdo importadas</p>
+            <h1 className="text-2xl font-bold text-gray-900">Visão das redes</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Seguidores informados manualmente e métricas de conteúdo importadas</p>
           </div>
         </div>
 
@@ -69,11 +69,11 @@ export default function SocialDashboard() {
                   <div key={key} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-sm font-semibold text-gray-700">
                     <Icon size={13} style={{ color }} />
                     {label}
-                    <span className="text-gray-400 font-normal ml-0.5">{fmt(Number(val))}</span>
+                    <span className="text-gray-600 font-normal ml-0.5">{fmt(Number(val))}</span>
                   </div>
                 )
               })
-            : <span className="text-xs text-gray-400">Nenhum seguidor configurado</span>
+            : <span className="text-xs text-gray-600">Nenhum seguidor configurado</span>
           }
           <button
             onClick={() => { setDraft(followers); setEditing(v => !v) }}

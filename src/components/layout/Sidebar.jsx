@@ -34,7 +34,7 @@ const NAV_GROUPS = [
   { id: 'resultados', label: 'Resultados', children: [
     { to: '/analytics', icon: BarChart2, label: 'Analytics' },
     { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
-    { to: '/social', icon: Activity, label: 'Social Dashboard' },
+    { to: '/social', icon: Activity, label: 'Visão das redes' },
     { to: '/dna', icon: Dna, label: 'Content DNA' },
   ] },
   { id: 'comercial', label: 'Comercial', children: [

@@ -8,7 +8,7 @@ const TITLES = {
   '/dm-automation': { title: 'Automação de DM', sub: 'Regras de resposta e registros de execução' },
   '/search-intelligence': { title: 'Inteligência de Busca', sub: 'Consultas e oportunidades a partir do Search Console' },
   '/': { title: 'Hoje', sub: 'Visão geral da sua inteligência de conteúdo' },
-  '/social': { title: 'Analytics', sub: 'Visão geral do desempenho das suas redes sociais' },
+  '/social': { title: 'Visão das redes', sub: 'Seguidores informados e resultados do conteúdo' },
   '/audience': { title: 'Audiência', sub: 'Quem é o público que consome seu conteúdo' },
   '/ideas': { title: 'Hub de Ideias', sub: 'Capture e organize suas ideias de conteúdo' },
   '/trends': { title: 'Creator Insights', sub: 'Criadores, padrões e oportunidades do seu nicho analisados com IA' },
@@ -70,7 +70,7 @@ export default function Header({ onMenuClick, onSearchClick }) {
           ) : (
             <h1 className="text-sm sm:text-base font-semibold text-gray-900 leading-none truncate">{info.title}</h1>
           )}
-          <p className="text-xs text-gray-400 mt-0.5 hidden sm:block truncate">{info.sub}</p>
+          <p className="text-sm text-gray-600 mt-0.5 hidden sm:block truncate">{info.sub}</p>
         </div>
       </div>
 

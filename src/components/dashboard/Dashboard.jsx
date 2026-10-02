@@ -24,13 +24,6 @@ const STATUS_COLORS = { idea: 'bg-orange-400', draft: 'bg-blue-400', ready: 'bg-
 const TASK_STATUS_COLORS = { todo: 'bg-gray-300', in_progress: 'bg-blue-400', done: 'bg-emerald-400', blocked: 'bg-red-400' }
 const TASK_STATUS_PT = { todo: 'A Fazer', in_progress: 'Em Andamento', done: 'Concluída', blocked: 'Bloqueada' }
 
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Bom dia'
-  if (h < 18) return 'Boa tarde'
-  return 'Boa noite'
-}
-
 function daysAgo(dateStr) {
   if (!dateStr) return Infinity
   const diff = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
@@ -75,7 +68,7 @@ function PipelineBar({ statusCounts, total, navigate }) {
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Layers size={14} className="text-orange-500" /> Pipeline de Conteúdo
         </h3>
-        <button onClick={() => navigate('/ideas')} className="text-[11px] text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
+        <button onClick={() => navigate('/ideas')} className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
           Ver Kanban <ChevronRight size={11} />
         </button>
       </div>
@@ -104,7 +97,7 @@ function PipelineBar({ statusCounts, total, navigate }) {
                 <span className={`w-2.5 h-2.5 rounded-full ${color} shrink-0`} />
                 <div>
                   <p className="text-lg font-bold text-gray-900 leading-none">{count}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{label}</p>
                 </div>
               </button>
             ))}
@@ -112,7 +105,7 @@ function PipelineBar({ statusCounts, total, navigate }) {
         </>
       ) : (
         <div className="text-center py-6">
-          <p className="text-xs text-gray-400 mb-3">Nenhuma ideia no pipeline ainda</p>
+          <p className="text-xs text-gray-600 mb-3">Nenhuma ideia no pipeline ainda</p>
           <button onClick={() => navigate('/ideas')} className="btn-primary text-xs mx-auto">
             <Plus size={13} /> Criar Primeira Ideia
           </button>
@@ -132,7 +125,7 @@ function TopPostsCard({ posts, metrics, navigate }) {
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Trophy size={14} className="text-amber-500" /> Top Posts
         </h3>
-        <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
+        <button onClick={() => navigate('/analytics')} className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
           Ver Analytics <ChevronRight size={11} />
         </button>
       </div>
@@ -143,16 +136,16 @@ function TopPostsCard({ posts, metrics, navigate }) {
             const er = item.metric ? (enrichMetric(item.metric).engagement_rate * 100).toFixed(1) : null
             return (
               <div key={item.id || `${item.post.id}-${i}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 hover:bg-amber-50/50 transition-colors">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500'}`}>
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-800 truncate">{item.post.title || item.post.topic || 'Post sem título'}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <PlatformBadge platform={item.metric?.platform || item.post.platform} />
-                    {er && <span className="text-[10px] text-emerald-600 font-semibold">{er}% eng.</span>}
+                    {er && <span className="text-xs text-emerald-600 font-semibold">{er}% eng.</span>}
                     {item.metric?.impressions > 0 && (
-                      <span className="text-[10px] text-gray-400">{item.metric.impressions.toLocaleString()} imp.</span>
+                      <span className="text-xs text-gray-600">{item.metric.impressions.toLocaleString()} imp.</span>
                     )}
                   </div>
                 </div>
@@ -163,8 +156,8 @@ function TopPostsCard({ posts, metrics, navigate }) {
       ) : (
         <div className="h-44 flex flex-col items-center justify-center">
           <Trophy size={24} className="text-gray-200 mb-2" />
-          <p className="text-xs text-gray-400 text-center">Importe métricas em<br/><span className="text-amber-600 font-medium">Analytics</span> para ver seus top posts</p>
-          <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 font-medium mt-2 hover:underline">
+          <p className="text-xs text-gray-600 text-center">Importe métricas em<br/><span className="text-amber-600 font-medium">Analytics</span> para ver seus top posts</p>
+          <button onClick={() => navigate('/analytics')} className="text-sm text-amber-600 font-medium mt-2 hover:underline">
             Ir para Analytics →
           </button>
         </div>
@@ -196,7 +189,7 @@ function TasksOverview({ tasks, navigate }) {
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <ClipboardList size={14} className="text-blue-500" /> Tarefas
         </h3>
-        <button onClick={() => navigate('/tasks')} className="text-[11px] text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+        <button onClick={() => navigate('/tasks')} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
           Ver todas <ChevronRight size={11} />
         </button>
       </div>
@@ -207,13 +200,13 @@ function TasksOverview({ tasks, navigate }) {
           {overdue.length > 0 && (
             <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100 mb-3">
               <AlertCircle size={12} className="text-red-500 shrink-0" />
-              <p className="text-[11px] text-red-600 font-medium">{overdue.length} tarefa{overdue.length > 1 ? 's' : ''} atrasada{overdue.length > 1 ? 's' : ''}</p>
+              <p className="text-sm text-red-600 font-medium">{overdue.length} tarefa{overdue.length > 1 ? 's' : ''} atrasada{overdue.length > 1 ? 's' : ''}</p>
             </div>
           )}
           {dueToday.length > 0 && (
             <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-100 mb-3">
               <Clock size={12} className="text-amber-500 shrink-0" />
-              <p className="text-[11px] text-amber-600 font-medium">{dueToday.length} tarefa{dueToday.length > 1 ? 's' : ''} para hoje</p>
+              <p className="text-sm text-amber-600 font-medium">{dueToday.length} tarefa{dueToday.length > 1 ? 's' : ''} para hoje</p>
             </div>
           )}
 
@@ -228,7 +221,7 @@ function TasksOverview({ tasks, navigate }) {
             ].map(({ label, count, color, bg }) => (
               <div key={label} className={`${bg} rounded-lg p-2 text-center`}>
                 <p className={`text-base font-bold ${color}`}>{count}</p>
-                <p className="text-[9px] text-gray-400 leading-tight">{label}</p>
+                <p className="text-[9px] text-gray-600 leading-tight">{label}</p>
               </div>
             ))}
           </div>
@@ -245,12 +238,12 @@ function TasksOverview({ tasks, navigate }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-700 font-medium truncate">{task.title}</p>
                   {task.due_date && (
-                    <p className={`text-[10px] ${task.due_date < today ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                    <p className={`text-xs ${task.due_date < today ? 'text-red-500 font-semibold' : 'text-gray-600'}`}>
                       Vence {formatRelative(task.due_date)}
                     </p>
                   )}
                 </div>
-                <ChevronRight size={11} className="text-gray-300 shrink-0" />
+                <ChevronRight size={11} className="text-gray-500 shrink-0" />
               </button>
             ))}
           </div>
@@ -258,8 +251,8 @@ function TasksOverview({ tasks, navigate }) {
       ) : (
         <div className="h-36 flex flex-col items-center justify-center">
           <ClipboardList size={24} className="text-gray-200 mb-2" />
-          <p className="text-xs text-gray-400 mb-2">Nenhuma tarefa criada</p>
-          <button onClick={() => navigate('/tasks')} className="text-[11px] text-blue-600 font-medium hover:underline">
+          <p className="text-xs text-gray-600 mb-2">Nenhuma tarefa criada</p>
+          <button onClick={() => navigate('/tasks')} className="text-sm text-blue-600 font-medium hover:underline">
             Criar primeira tarefa →
           </button>
         </div>
@@ -289,11 +282,11 @@ function PlatformBreakdown({ posts, metrics, navigate }) {
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <BarChart2 size={14} className="text-orange-500" /> Performance por Plataforma
         </h3>
-        <button onClick={() => navigate('/analytics')} className="text-[11px] text-orange-600 font-medium flex items-center gap-1">
+        <button onClick={() => navigate('/analytics')} className="text-sm text-orange-600 font-medium flex items-center gap-1">
           Detalhes <ChevronRight size={11} />
         </button>
       </div>
-      <p className="text-[10px] text-gray-400 mb-4">Impressões totais por plataforma</p>
+      <p className="text-xs text-gray-600 mb-4">Impressões totais por plataforma</p>
 
       {byPlatform.length > 0 ? (
         <ResponsiveContainer width="100%" height={160}>
@@ -308,8 +301,8 @@ function PlatformBreakdown({ posts, metrics, navigate }) {
       ) : (
         <div className="h-40 flex flex-col items-center justify-center">
           <BarChart2 size={24} className="text-gray-200 mb-2" />
-          <p className="text-xs text-gray-400 text-center">Importe métricas em<br/><span className="text-orange-600 font-medium">Analytics</span> para ver o breakdown</p>
-          <button onClick={() => navigate('/analytics')} className="text-[11px] text-orange-600 font-medium mt-2 hover:underline">
+          <p className="text-xs text-gray-600 text-center">Importe métricas em<br/><span className="text-orange-600 font-medium">Analytics</span> para ver o breakdown</p>
+          <button onClick={() => navigate('/analytics')} className="text-sm text-orange-600 font-medium mt-2 hover:underline">
             Importar dados →
           </button>
         </div>
@@ -322,7 +315,7 @@ function PlatformBreakdown({ posts, metrics, navigate }) {
 function UpcomingSchedule({ ideas, navigate }) {
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = ideas
-    .filter(i => i.scheduled_date && i.scheduled_date >= today)
+    .filter(i => i.scheduled_date && i.scheduled_date >= today && i.status !== 'published')
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
     .slice(0, 4)
   const overdue = ideas.filter(i => i.scheduled_date && i.scheduled_date < today && i.status !== 'published')
@@ -330,9 +323,9 @@ function UpcomingSchedule({ ideas, navigate }) {
   if (upcoming.length === 0 && overdue.length === 0) {
     return (
       <div className="text-center py-6">
-        <Calendar size={20} className="text-gray-300 mx-auto mb-2" />
-        <p className="text-xs text-gray-400 mb-2">Nenhum conteúdo agendado</p>
-        <button onClick={() => navigate('/ideas')} className="text-[11px] text-orange-600 font-medium hover:underline">
+        <Calendar size={20} className="text-gray-500 mx-auto mb-2" />
+        <p className="text-xs text-gray-600 mb-2">Nenhum conteúdo agendado</p>
+        <button onClick={() => navigate('/ideas')} className="text-sm text-orange-600 font-medium hover:underline">
           Agendar ideias →
         </button>
       </div>
@@ -344,7 +337,7 @@ function UpcomingSchedule({ ideas, navigate }) {
       {overdue.length > 0 && (
         <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-          <p className="text-[11px] text-red-600 font-medium">{overdue.length} atrasada{overdue.length > 1 ? 's' : ''}</p>
+          <p className="text-sm text-red-600 font-medium">{overdue.length} atrasada{overdue.length > 1 ? 's' : ''}</p>
         </div>
       )}
       {upcoming.map((idea) => {
@@ -355,7 +348,7 @@ function UpcomingSchedule({ ideas, navigate }) {
         return (
           <button
             key={idea.id}
-            onClick={() => navigate('/ideas')}
+            onClick={() => navigate(`/ideas?idea=${encodeURIComponent(idea.id)}`)}
             className="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-orange-50/50 transition-colors text-left"
           >
             <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center shrink-0 ${isToday ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
@@ -432,7 +425,7 @@ function SmartSuggestion({ ideas, metrics, tasks, navigate }) {
     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${suggestion.color}`}>
       <Icon size={16} className="shrink-0" />
       <p className="text-xs flex-1">{suggestion.text}</p>
-      <button onClick={() => navigate(suggestion.to)} className="text-[11px] font-semibold whitespace-nowrap hover:underline flex items-center gap-1">
+      <button onClick={() => navigate(suggestion.to)} className="text-sm font-semibold whitespace-nowrap hover:underline flex items-center gap-1">
         {suggestion.action} <ArrowRight size={11} />
       </button>
     </div>
@@ -455,8 +448,8 @@ function QuickAction({ icon: Icon, label, sub, to, gradient, iconColor, navigate
         )}
       </div>
       <div className="text-xs sm:text-sm font-semibold text-gray-800">{label}</div>
-      <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{sub}</div>
-      <ArrowRight size={12} className="absolute bottom-3 right-3 text-gray-300 group-hover:text-gray-500 transition-colors" />
+      <div className="text-xs sm:text-xs text-gray-600 mt-0.5">{sub}</div>
+      <ArrowRight size={12} className="absolute bottom-3 right-3 text-gray-500 group-hover:text-gray-500 transition-colors" />
     </button>
   )
 }
@@ -490,39 +483,49 @@ export default function Dashboard() {
   const tasksOpen = tasks.filter(t => t.status !== 'done').length
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 animate-fade-in">
-      <MetricsCoverage metrics={metrics} />
+    <div className="p-4 sm:p-6 pb-28 sm:pb-28 space-y-4 sm:space-y-5 animate-fade-in">
 
-      {/* ── Welcome Banner ──────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/80 to-white border border-orange-200 p-4 sm:p-6">
-        <div className="relative z-10">
-          <p className="text-xs text-orange-500 font-medium mb-1">{getGreeting()}, Criador</p>
-          <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-2">Seu sistema de conteúdo está ativo</h2>
-          <p className="text-xs sm:text-sm text-gray-500 mb-4 leading-relaxed">
-            <span className="text-orange-600 font-medium">{ideas.length} ideia{ideas.length !== 1 ? 's' : ''}</span> no banco
-            {statusCounts.ready > 0 && <> · <span className="text-emerald-600 font-medium">{statusCounts.ready} pronta{statusCounts.ready !== 1 ? 's' : ''}</span> para publicar</>}
-            {statusCounts.draft > 0 && <> · <span className="text-blue-600 font-medium">{statusCounts.draft} em rascunho</span></>}
-            {tasksOpen > 0 && <> · <span className="text-blue-600 font-medium">{tasksOpen} tarefa{tasksOpen !== 1 ? 's' : ''}</span> em aberto</>}
-            {metrics.length > 0 && <> · <span className="text-violet-600 font-medium">{metrics.length} post{metrics.length !== 1 ? 's' : ''}</span> com métricas</>}
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => navigate('/ideas')} className="btn-primary text-xs py-1.5 px-3">
-              <Plus size={13} /> Nova Ideia
-            </button>
-            <button onClick={() => navigate('/create')} className="btn-secondary text-xs py-1.5 px-3">
-              <Wand2 size={13} /> Studio de Criação
-            </button>
-            <button onClick={() => navigate('/analytics')} className="btn-secondary text-xs py-1.5 px-3 hidden sm:flex">
-              <BarChart2 size={13} /> Analytics
-            </button>
-          </div>
+      <section className="flex flex-wrap items-start justify-between gap-4 py-1" aria-labelledby="daily-heading">
+        <div>
+          <p className="text-sm text-gray-600 mb-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h2 id="daily-heading" className="text-2xl font-semibold text-gray-900">O que pede atenção hoje</h2>
+          <p className="text-sm text-gray-600 mt-2">{tasksOpen} tarefas abertas · {statusCounts.draft} conteúdos em rascunho · {statusCounts.ready} {statusCounts.ready === 1 ? 'pronto' : 'prontos'} para publicar</p>
         </div>
-        <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-orange-100/30 to-transparent pointer-events-none" />
-      </div>
+        <button onClick={() => navigate('/ideas')} className="btn-secondary min-h-11"><Plus size={16} /> Abrir ideias</button>
+      </section>
 
       {/* ── Smart Suggestion ────────────────────────────────────────────────── */}
       <SmartSuggestion ideas={ideas} metrics={metrics} tasks={tasks} navigate={navigate} />
 
+      {/* ── Charts + Calendar + Tasks ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <TasksOverview tasks={tasks} navigate={navigate} />
+        <div className="card p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">Revisar e publicar</h3>
+          <p className="text-sm text-gray-600 mb-3">Conteúdos marcados como prontos e tarefas em revisão.</p>
+          {ideas.filter(idea => idea.status === 'ready').slice(0, 3).map(idea => <button key={idea.id} onClick={() => navigate(`/ideas?idea=${encodeURIComponent(idea.id)}`)} className="flex items-center justify-between gap-3 w-full text-left rounded-lg p-3 min-h-11 hover:bg-orange-50 border border-gray-200 mb-2"><span className="text-sm text-gray-800 line-clamp-2">{idea.title || 'Ideia sem título'}</span><ChevronRight size={16} className="shrink-0 text-orange-700" /></button>)}
+          {tasks.some(task => taskStatus(task.status) === 'review') && <button onClick={() => navigate('/tasks')} className="text-sm text-blue-700 underline min-h-11">Abrir tarefas em revisão ({tasks.filter(task => taskStatus(task.status) === 'review').length})</button>}
+          {!statusCounts.ready && !tasks.some(task => taskStatus(task.status) === 'review') && <p className="text-sm text-gray-600 py-3">Nenhum conteúdo pronto ou tarefa em revisão.</p>}
+        </div>
+
+        <div className="card p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Calendar size={14} className="text-blue-500" /> Próximos Conteúdos
+            </h3>
+            <button onClick={() => navigate('/ideas')} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+              Calendário <ChevronRight size={11} />
+            </button>
+          </div>
+          <UpcomingSchedule ideas={ideas} navigate={navigate} />
+        </div>
+
+      </div>
+
+      <div className="pt-3 space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">Resultados do conteúdo</h2>
+        <MetricsCoverage metrics={metrics} />
+      </div>
       {/* ── KPIs ────────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <button onClick={() => navigate('/analytics')} className="card p-3 sm:p-4 border border-gray-100 hover:border-emerald-200 transition-all text-left group">
@@ -530,10 +533,10 @@ export default function Dashboard() {
             <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
               <Eye size={14} className="text-emerald-600" />
             </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-emerald-400" />
+            <ChevronRight size={12} className="text-gray-500 group-hover:text-emerald-400" />
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900">{totalImpressions > 0 ? totalImpressions.toLocaleString() : '—'}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Impressões totais</p>
+          <p className="text-xs sm:text-xs text-gray-600">Impressões totais</p>
         </button>
 
         <button onClick={() => navigate('/analytics')} className="card p-3 sm:p-4 border border-gray-100 hover:border-amber-200 transition-all text-left group">
@@ -541,11 +544,11 @@ export default function Dashboard() {
             <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
               <TrendingUp size={14} className="text-amber-600" />
             </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-amber-400" />
+            <ChevronRight size={12} className="text-gray-500 group-hover:text-amber-400" />
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900">{avgER > 0 ? `${avgER}%` : '—'}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Média das taxas por post</p>
-          <p className="text-[10px] text-gray-500">Cada post tem o mesmo peso; taxa calculada por impressões.</p>
+          <p className="text-xs sm:text-xs text-gray-600">Média das taxas por post</p>
+          <p className="text-xs text-gray-500">Cada post tem o mesmo peso; taxa calculada por impressões.</p>
         </button>
 
         <button onClick={() => navigate('/analytics')} className="card p-3 sm:p-4 border border-gray-100 hover:border-violet-200 transition-all text-left group">
@@ -553,10 +556,10 @@ export default function Dashboard() {
             <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
               <Zap size={14} className="text-violet-600" />
             </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-violet-400" />
+            <ChevronRight size={12} className="text-gray-500 group-hover:text-violet-400" />
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900">{totalEngagement > 0 ? totalEngagement.toLocaleString() : '—'}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Engajamento total</p>
+          <p className="text-xs sm:text-xs text-gray-600">Engajamento total</p>
         </button>
 
         <button onClick={() => navigate('/tasks')} className="card p-3 sm:p-4 border border-gray-100 hover:border-blue-200 transition-all text-left group">
@@ -564,33 +567,17 @@ export default function Dashboard() {
             <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
               <ClipboardList size={14} className="text-blue-600" />
             </div>
-            <ChevronRight size={12} className="text-gray-300 group-hover:text-blue-400" />
+            <ChevronRight size={12} className="text-gray-500 group-hover:text-blue-400" />
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900">{tasksOpen}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Tarefas em aberto</p>
+          <p className="text-xs sm:text-xs text-gray-600">Tarefas em aberto</p>
         </button>
       </div>
 
       {/* ── Pipeline ────────────────────────────────────────────────────────── */}
-      <PipelineBar statusCounts={statusCounts} total={ideas.length} navigate={navigate} />
-
-      {/* ── Charts + Calendar + Tasks ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <PlatformBreakdown posts={posts} metrics={metrics} navigate={navigate} />
-
-        <div className="card p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Calendar size={14} className="text-blue-500" /> Próximos Conteúdos
-            </h3>
-            <button onClick={() => navigate('/ideas')} className="text-[11px] text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-              Calendário <ChevronRight size={11} />
-            </button>
-          </div>
-          <UpcomingSchedule ideas={ideas} navigate={navigate} />
-        </div>
-
-        <TasksOverview tasks={tasks} navigate={navigate} />
+        <PipelineBar statusCounts={statusCounts} total={ideas.length} navigate={navigate} />
       </div>
 
       {/* ── Top Posts + Insights ─────────────────────────────────────────────── */}
@@ -603,7 +590,7 @@ export default function Dashboard() {
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Sparkles size={14} className="text-amber-500" /> Insights do Seu Conteúdo
               </h3>
-              <button onClick={() => navigate('/analytics')} className="text-[11px] text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
+              <button onClick={() => navigate('/analytics')} className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1">
                 Ver todos <ChevronRight size={11} />
               </button>
             </div>
@@ -612,7 +599,7 @@ export default function Dashboard() {
                 <div key={ins.id || i} className="p-3 rounded-xl bg-amber-50/50 border border-amber-100">
                   <div className="flex items-center gap-2 mb-1">
                     <Star size={11} className="text-amber-500" />
-                    <span className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide">{ins.type || 'Insight'}</span>
+                    <span className="text-xs text-amber-600 font-semibold uppercase tracking-wide">{ins.type || 'Insight'}</span>
                   </div>
                   <p className="text-xs text-gray-700 leading-relaxed">{ins.description || ins.text}</p>
                 </div>
@@ -625,7 +612,7 @@ export default function Dashboard() {
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Lightbulb size={14} className="text-orange-500" /> Últimas Ideias
               </h3>
-              <button onClick={() => navigate('/ideas')} className="text-[11px] text-orange-600 font-medium flex items-center gap-1">
+              <button onClick={() => navigate('/ideas')} className="text-sm text-orange-600 font-medium flex items-center gap-1">
                 Ver todas <ChevronRight size={11} />
               </button>
             </div>
@@ -633,7 +620,7 @@ export default function Dashboard() {
               {[...ideas].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5).map((idea) => (
                 <button
                   key={idea.id}
-                  onClick={() => navigate('/ideas')}
+                  onClick={() => navigate(`/ideas?idea=${encodeURIComponent(idea.id)}`)}
                   className="flex items-start gap-3 w-full p-2.5 rounded-xl hover:bg-orange-50/50 transition-colors text-left group"
                 >
                   <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${STATUS_COLORS[idea.status] || 'bg-orange-400'}`} />
@@ -644,11 +631,11 @@ export default function Dashboard() {
                       <StatusBadge status={idea.status} />
                     </div>
                   </div>
-                  <span className="text-[10px] text-gray-300 shrink-0">{formatRelative(idea.created_at)}</span>
+                  <span className="text-xs text-gray-500 shrink-0">{formatRelative(idea.created_at)}</span>
                 </button>
               ))}
               {ideas.length === 0 && (
-                <p className="text-xs text-gray-400 py-6 text-center">Nenhuma ideia ainda. Comece criando uma!</p>
+                <p className="text-xs text-gray-600 py-6 text-center">Nenhuma ideia ainda. Comece criando uma!</p>
               )}
             </div>
           </div>

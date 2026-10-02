@@ -172,7 +172,7 @@ ${text.trim()}`
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
           Cole o texto para revisar
         </label>
         <textarea
@@ -180,11 +180,11 @@ ${text.trim()}`
           onChange={(e) => setText(e.target.value)}
           rows={5}
           placeholder="Cole aqui o roteiro, legenda ou qualquer texto gerado..."
-          className="w-full text-xs border border-gray-200 rounded-xl p-3 resize-none outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 placeholder:text-gray-300 leading-relaxed"
+          className="w-full text-xs border border-gray-200 rounded-xl p-3 resize-none outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-300 placeholder:text-gray-600 leading-relaxed"
         />
         <div className="flex items-center justify-between mt-1">
-          <span className="text-[10px] text-gray-300">{text.length} caracteres</span>
-          {text && <button onClick={() => { setText(''); setResult(null) }} className="text-[10px] text-gray-400 hover:text-gray-600">Limpar</button>}
+          <span className="text-xs text-gray-600">{text.length} caracteres</span>
+          {text && <button onClick={() => { setText(''); setResult(null) }} className="text-xs text-gray-600 hover:text-gray-600">Limpar</button>}
         </div>
       </div>
 
@@ -209,7 +209,7 @@ ${text.trim()}`
           <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
             <ScoreRing score={result.score} />
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Score Geral</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-0.5">Score Geral</p>
               <p className="text-xs text-gray-700 leading-snug">{result.parecer}</p>
             </div>
           </div>
@@ -217,7 +217,7 @@ ${text.trim()}`
           <div className="grid grid-cols-2 gap-2">
             {DIMS.map(({ key, label, icon: Icon, color }) => (
               <div key={key} className="p-3 rounded-xl border border-gray-100 bg-white space-y-1.5">
-                <div className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide ${color}`}>
+                <div className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide ${color}`}>
                   <Icon size={10} /> {label}
                 </div>
                 <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ ${text.trim()}`
                         background: (result.dimensoes?.[key] || 0) >= 75 ? '#10b981' : (result.dimensoes?.[key] || 0) >= 50 ? '#f59e0b' : '#ef4444',
                       }} />
                   </div>
-                  <span className="text-[10px] font-bold text-gray-600 w-6 text-right">{result.dimensoes?.[key]}</span>
+                  <span className="text-xs font-bold text-gray-600 w-6 text-right">{result.dimensoes?.[key]}</span>
                 </div>
               </div>
             ))}
@@ -236,7 +236,7 @@ ${text.trim()}`
 
           {result.linguagem_robotica?.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wide">Soa artificial</p>
+              <p className="text-xs font-semibold text-red-500 uppercase tracking-wide">Soa artificial</p>
               {result.linguagem_robotica.map((t, i) => (
                 <div key={i} className="px-3 py-2 rounded-lg bg-red-50 border border-red-100">
                   <p className="text-xs text-red-700 italic">"{t}"</p>
@@ -247,20 +247,20 @@ ${text.trim()}`
 
           {result.sugestoes?.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide">Sugestões de melhoria</p>
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Sugestões de melhoria</p>
               {result.sugestoes.map((s, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
                   <div className="px-3 py-2 bg-red-50/60 border-b border-gray-100">
-                    <p className="text-[10px] text-red-500 font-medium">Antes</p>
+                    <p className="text-xs text-red-500 font-medium">Antes</p>
                     <p className="text-xs text-gray-700 italic">"{s.problema}"</p>
                   </div>
                   <div className="px-3 py-2 bg-emerald-50/60">
-                    <p className="text-[10px] text-emerald-600 font-medium">Sugestão</p>
+                    <p className="text-xs text-emerald-600 font-medium">Sugestão</p>
                     <p className="text-xs text-gray-800 font-medium mb-2">"{s.melhoria}"</p>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => applySuggestion(s.problema, s.melhoria, i)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-semibold transition-colors ${
                           applied === i
                             ? 'bg-emerald-500 text-white'
                             : 'bg-violet-600 hover:bg-violet-700 text-white'
@@ -270,7 +270,7 @@ ${text.trim()}`
                       </button>
                       <button
                         onClick={() => { navigator.clipboard.writeText(s.melhoria); setCopied(i); setTimeout(() => setCopied(false), 1500) }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors"
                       >
                         {copied === i ? <Check size={10} /> : <Copy size={10} />} Copiar
                       </button>
@@ -292,7 +292,7 @@ ${text.trim()}`
 
               {rewrittenText && (
                 <div className="space-y-2 pt-1">
-                  <p className="text-[10px] font-semibold text-violet-600 uppercase tracking-wide">Roteiro Reescrito</p>
+                  <p className="text-xs font-semibold text-violet-600 uppercase tracking-wide">Roteiro Reescrito</p>
                   <div className="bg-violet-50 border border-violet-100 rounded-xl p-3">
                     <p className="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{rewrittenText}</p>
                   </div>
@@ -317,7 +317,7 @@ ${text.trim()}`
 
           {result.pontos_fortes?.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">Pontos fortes</p>
+              <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Pontos fortes</p>
               {result.pontos_fortes.map((p, i) => (
                 <p key={i} className="text-xs text-gray-700 flex items-start gap-1.5">
                   <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>{p}
@@ -350,22 +350,22 @@ function IdeiaPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Qual é a ideia?</label>
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Qual é a ideia?</label>
         <textarea ref={textRef} value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) save() }}
           rows={4}
           placeholder="Descreva a ideia brevemente — gancho, tema, ângulo, o que vier à cabeça agora..."
-          className="w-full text-xs border border-gray-200 rounded-xl p-3 resize-none outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 placeholder:text-gray-300 leading-relaxed"
+          className="w-full text-xs border border-gray-200 rounded-xl p-3 resize-none outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 placeholder:text-gray-600 leading-relaxed"
         />
-        <p className="text-[10px] text-gray-300 mt-1">Ctrl+Enter para salvar</p>
+        <p className="text-xs text-gray-600 mt-1">Ctrl+Enter para salvar</p>
       </div>
 
       <div>
-        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Formato</label>
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Formato</label>
         <div className="flex flex-wrap gap-1.5">
           {FORMATS.map((f) => (
             <button key={f.value} onClick={() => setFormat(f.value)}
-              className={`text-[11px] px-3 py-1 rounded-full font-medium transition-all border ${
+              className={`text-sm px-3 py-1 rounded-full font-medium transition-all border ${
                 format === f.value ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-600'
               }`}>
               {f.label}
@@ -401,7 +401,7 @@ function BanidasPanel() {
         <input value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') add() }}
           placeholder='Ex: "Você já sentiu que..."'
-          className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-300"
+          className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 placeholder:text-gray-600"
           autoFocus />
         <button onClick={add} disabled={!input.trim()}
           className="px-3 py-2 rounded-xl text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 transition-colors flex items-center gap-1">
@@ -410,13 +410,13 @@ function BanidasPanel() {
       </div>
 
       {bannedPhrases.length === 0 ? (
-        <div className="text-center py-8 text-gray-300">
+        <div className="text-center py-8 text-gray-600">
           <X size={24} className="mx-auto mb-2 opacity-40" />
           <p className="text-xs">Nenhuma frase banida ainda</p>
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
             {bannedPhrases.length} frase{bannedPhrases.length !== 1 ? 's' : ''} banida{bannedPhrases.length !== 1 ? 's' : ''}
           </p>
           <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
@@ -443,58 +443,44 @@ const ACTIONS = [
 ]
 
 export default function FloatingActions() {
+  const [expanded, setExpanded] = useState(false)
   const [activePanel, setActivePanel] = useState(null)
   const panelRef = useRef(null)
-  const active = ACTIONS.find((a) => a.id === activePanel)
-
-  const toggle = (id) => setActivePanel((prev) => (prev === id ? null : id))
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') setActivePanel(null) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  const triggerRef = useRef(null)
+  const active = ACTIONS.find(action => action.id === activePanel)
+  const close = () => { setExpanded(false); setActivePanel(null); triggerRef.current?.focus() }
 
   useEffect(() => {
-    if (!activePanel) return
-    const onClick = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target) && !e.target.closest('[data-fab]'))
-        setActivePanel(null)
+    if (!expanded) return
+    const onKey = event => {
+      if (event.key === 'Escape') { setExpanded(false); setActivePanel(null); triggerRef.current?.focus() }
     }
-    document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
-  }, [activePanel])
+    const onOutside = event => {
+      if (!panelRef.current?.contains(event.target)) { setExpanded(false); setActivePanel(null) }
+    }
+    window.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onOutside)
+    return () => { window.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onOutside) }
+  }, [expanded])
 
-  return (
-    <>
-      {activePanel && <div className="fixed inset-0 z-40 bg-black/10" onClick={() => setActivePanel(null)} />}
+  useEffect(() => {
+    if (expanded) panelRef.current?.querySelector('textarea, input, [data-action-choice]')?.focus()
+  }, [expanded, activePanel])
 
-      {active && (
-        <div ref={panelRef}
-          className={`fixed bottom-20 right-4 z-50 w-[360px] max-h-[80vh] flex flex-col bg-white rounded-2xl shadow-2xl border ${active.panelBorder} overflow-hidden animate-slide-up`}>
-          <div className={`flex items-center justify-between px-5 py-3.5 border-b ${active.panelBorder} ${active.headerBg} shrink-0`}>
-            <div className="flex items-center gap-2">
-              <active.icon size={14} className={active.headerText} />
-              <p className={`text-sm font-semibold ${active.headerText}`}>{active.label}</p>
-            </div>
-            <button onClick={() => setActivePanel(null)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-5">
-            <active.Panel />
-          </div>
+  return <div ref={panelRef} className="fixed bottom-4 right-4 z-40 max-w-[calc(100vw-2rem)]">
+    {expanded && <div id="quick-actions-panel" className="absolute bottom-14 right-0 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+      {active ? <>
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
+          <h2 className="font-semibold text-gray-900">{active.label}</h2>
+          <button type="button" onClick={() => setActivePanel(null)} className="text-sm text-gray-700 underline min-h-11">Voltar às ações</button>
         </div>
-      )}
-
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-center">
-        {ACTIONS.map(({ id, label, icon: Icon, btnClass, activeClass }) => (
-          <button key={id} data-fab onClick={() => toggle(id)} title={label}
-            className={`w-11 h-11 rounded-2xl text-white shadow-lg transition-all duration-150 flex items-center justify-center ${
-              activePanel === id ? activeClass + ' scale-95' : btnClass + ' hover:scale-105 hover:shadow-xl'
-            }`}>
-            {activePanel === id ? <X size={16} /> : <Icon size={16} />}
-          </button>
-        ))}
-      </div>
-    </>
-  )
+        <div className="p-4 overflow-y-auto max-h-[calc(100dvh-12rem)]"><active.Panel /></div>
+      </> : <div className="p-2" aria-label="Ferramentas rápidas">
+        {ACTIONS.map(({ id, label, icon: Icon }) => <button data-action-choice type="button" key={id} onClick={() => setActivePanel(id)} className="flex items-center gap-3 w-full rounded-xl px-3 py-3 text-sm font-medium text-gray-800 hover:bg-orange-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"><Icon size={18} className="text-orange-700" />{label}</button>)}
+      </div>}
+    </div>}
+    <button ref={triggerRef} type="button" aria-expanded={expanded} aria-controls="quick-actions-panel" onClick={() => expanded ? close() : setExpanded(true)} className="flex items-center gap-2 min-h-11 px-4 rounded-xl bg-gray-900 text-white shadow-lg hover:bg-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600">
+      {expanded ? <X size={18} /> : <Plus size={18} />} {expanded ? 'Fechar ações' : 'Ações rápidas'}
+    </button>
+  </div>
 }
