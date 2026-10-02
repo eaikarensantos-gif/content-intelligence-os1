@@ -4,6 +4,8 @@ import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader
 import clsx from 'clsx'
 import UnifiedCreator from './UnifiedCreator'
 
+const MultichannelPlanner = lazy(() => import('./MultichannelPlanner'))
+
 const ThoughtCapture = lazy(() => import('../thoughts/ThoughtCapture'))
 const IdeaGenerator = lazy(() => import('../generate/IdeaGenerator'))
 const TextStudio = lazy(() => import('../text/TextStudio'))
@@ -16,6 +18,7 @@ const PromptGenerator = lazy(() => import('../promptgen/PromptGenerator'))
 // próprio cabeçalho, pra reconhecimento consistente entre a aba e o conteúdo.
 const TOOLS = [
   { id: 'criar', label: 'Criar', desc: 'Reels, carrossel, Stories e LinkedIn', icon: PenTool, accent: 'orange' },
+  { id: 'multichannel', label: 'Planejamento Multicanal', desc: 'Um assunto, recortes e entregas diferentes', icon: Megaphone, accent: 'teal' },
   { id: 'thoughts', label: 'Captura de Pensamento', desc: 'Um pensamento → 7 formatos de uma vez', icon: Brain, accent: 'indigo' },
   { id: 'generate', label: 'Explorador de Ideias', desc: 'Ideias com estrutura narrativa e controle criativo', icon: Sparkles, accent: 'amber' },
   { id: 'text', label: 'Adaptador Multi-plataforma', desc: 'Um texto → versões para cada rede', icon: Wand2, accent: 'violet' },
@@ -28,6 +31,7 @@ const TOOLS = [
 const TOOL_IDS = new Set(TOOLS.map((t) => t.id))
 
 const ACCENT = {
+  teal: { active: 'bg-teal-50 border-teal-300 text-teal-700', icon: 'text-teal-500' },
   orange: { active: 'bg-orange-50 border-orange-300 text-orange-700', icon: 'text-orange-500' },
   indigo: { active: 'bg-indigo-50 border-indigo-300 text-indigo-700', icon: 'text-indigo-500' },
   amber:  { active: 'bg-amber-50 border-amber-300 text-amber-700', icon: 'text-amber-500' },
@@ -98,6 +102,11 @@ export default function CreateHub({ persona = 'trabalho' }) {
         {visited.has('criar') && (
           <div className="h-full" hidden={active !== 'criar'}>
             <UnifiedCreator persona={persona} />
+          </div>
+        )}
+        {visited.has('multichannel') && (
+          <div className="h-full" hidden={active !== 'multichannel'}>
+            <Suspense fallback={<ToolLoader />}><MultichannelPlanner key={persona} persona={persona} /></Suspense>
           </div>
         )}
         {visited.has('thoughts') && (
