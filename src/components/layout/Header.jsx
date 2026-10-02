@@ -3,7 +3,11 @@ import { Heart, Search, Menu, ChevronRight, Sun, Moon } from 'lucide-react'
 import useStore from '../../store/useStore'
 
 const TITLES = {
-  '/': { title: 'Dashboard', sub: 'Visão geral da sua inteligência de conteúdo' },
+  '/instagram': { title: 'Posts do Instagram', sub: 'Publicações, métricas e referências da sua conta' },
+  '/posicionamento': { title: 'Posicionamento', sub: 'Estratégia, públicos e critérios editoriais' },
+  '/dm-automation': { title: 'Automação de DM', sub: 'Regras de resposta e registros de execução' },
+  '/search-intelligence': { title: 'Inteligência de Busca', sub: 'Consultas e oportunidades a partir do Search Console' },
+  '/': { title: 'Hoje', sub: 'Visão geral da sua inteligência de conteúdo' },
   '/social': { title: 'Analytics', sub: 'Visão geral do desempenho das suas redes sociais' },
   '/audience': { title: 'Audiência', sub: 'Quem é o público que consome seu conteúdo' },
   '/ideas': { title: 'Hub de Ideias', sub: 'Capture e organize suas ideias de conteúdo' },
@@ -20,8 +24,8 @@ const TITLES = {
   '/naomi': { title: 'Naomi Studio', sub: 'Roteiros e prompts de vídeo para a personagem Naomi' },
   '/swipe': { title: 'Video Swipe', sub: 'Descubra vídeos de referência em modo swipe' },
   '/settings': { title: 'Configurações', sub: 'Sincronização, banco de dados e preferências' },
-  '/brand-voice': { title: 'Minha Voz', sub: 'Configure seu tom, estilo e identidade — alimenta todos os geradores' },
-  '/desafio': { title: 'Desafio de Formato', sub: 'Sorteie um briefing criativo para sair da zona de conforto' },
+  '/brand-voice': { title: 'Minha Voz', sub: 'Base editorial, regras de voz e preferências complementares' },
+  '/desafio': { title: 'Desafio de Formato', sub: 'Acompanhe a sequência de oito semanas de experimentos' },
   '/brain': { title: 'Content Brain', sub: 'Priorize pelo score: Impacto² ÷ Esforço' },
   '/news': { title: 'Notícias', sub: 'Gere conteúdo a partir das notícias do seu nicho' },
   '/community': { title: 'Community Studio', sub: 'Engajamento e recursos para a sua comunidade' },
@@ -38,7 +42,7 @@ const CREATE_ROUTES = new Set(['/thoughts', '/text', '/generate', '/presentation
 
 export default function Header({ onMenuClick, onSearchClick }) {
   const { pathname } = useLocation()
-  const info = TITLES[pathname] || TITLES['/']
+  const info = TITLES[pathname] || { title: 'Content Intelligence OS', sub: '' }
   const isCreateChild = CREATE_ROUTES.has(pathname)
   const favorites = useStore((s) => s.favorites)
   const unseenFavorites = useStore((s) => s.unseenFavorites)
@@ -78,7 +82,7 @@ export default function Header({ onMenuClick, onSearchClick }) {
           title="Buscar (Ctrl+K)"
         >
           <Search size={15} />
-          <kbd className="hidden lg:block text-[9px] text-gray-400 border border-gray-200 rounded px-1 py-0.5">⌘K</kbd>
+          <kbd className="hidden lg:block text-[9px] text-gray-400 border border-gray-200 rounded px-1 py-0.5">Ctrl+K</kbd>
         </button>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

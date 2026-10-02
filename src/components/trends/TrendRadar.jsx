@@ -148,22 +148,6 @@ const SUGGESTED = [
 ]
 
 // ─── Signal visual maps ────────────────────────────────────────────────────────
-const SIGNAL_COLORS = {
-  'Fraco':         'bg-gray-100 text-gray-500 border-gray-200',
-  'Emergente':     'bg-blue-100 text-blue-700 border-blue-200',
-  'Forte':         'bg-emerald-100 text-emerald-700 border-emerald-200',
-  'Alto Momentum': 'bg-orange-100 text-orange-700 border-orange-200',
-  'Saturado':      'bg-red-100 text-red-500 border-red-200',
-  'Crescendo':     'bg-teal-100 text-teal-700 border-teal-200',
-}
-const SIGNAL_DOTS = {
-  'Fraco':         'bg-gray-400',
-  'Emergente':     'bg-blue-500',
-  'Forte':         'bg-emerald-500',
-  'Alto Momentum': 'bg-orange-500',
-  'Saturado':      'bg-red-400',
-  'Crescendo':     'bg-teal-500',
-}
 const PLATFORM_META = {
   tiktok:    { emoji: '🎵', color: 'from-black to-gray-800', text: 'text-white', label: 'TikTok' },
   instagram: { emoji: '📸', color: 'from-purple-600 to-pink-500', text: 'text-white', label: 'Instagram' },
@@ -181,9 +165,9 @@ const POTENTIAL_LABELS = { 'Very High': 'Muito Alto', 'High': 'Alto', 'Medium': 
 const GAP_COLORS = { 'Alta': 'bg-orange-100 text-orange-700 border-orange-200', 'Média': 'bg-blue-100 text-blue-700 border-blue-200', 'Baixa': 'bg-gray-100 text-gray-500 border-gray-200' }
 
 const LOADING_PHASES = [
-  'Escaneando plataformas...',
-  'Mapeando criadores relevantes...',
-  'Detectando padrões de conteúdo...',
+  'Preparando hipóteses editoriais...',
+  'Organizando caminhos de pesquisa...',
+  'Explorando estruturas de conteúdo...',
   'Identificando lacunas e oportunidades...',
   'Gerando insights estratégicos...',
 ]
@@ -237,10 +221,11 @@ CONTENT IDEAS MUST FAVOR:
 - For brand/product topics: show what the product concretely enables in the professional's real workflow — not whether it's good or bad compared to competitors
 
 CRITICAL RULES:
+- This call has no measured market dataset. NEVER invent scores, counts, growth rates or frequencies, including in prose. Use null for signal_score, posts_per_week, growth_rate and frequency. Treat all suggestions as hypotheses to validate, not observed trends.
 - ALL descriptive text, hook examples, narratives, insights MUST be in Brazilian Portuguese
-- Generate REALISTIC and SPECIFIC data tailored to the exact topic "${topic}"
+- Generate SPECIFIC editorial hypotheses tailored to the exact topic "${topic}"
 - Hook examples must be SPECIFIC to topic "${topic}", not generic
-- Content gaps must be REAL underexplored angles about "${topic}"
+- Content gaps must be framed as hypotheses of underexplored angles about "${topic}"
 - DECLARAÇÃO DIRETA OBRIGATÓRIA: every hook_example and hook_suggestion MUST begin with a direct declaration — subject + verb + complement. NEVER start with negation ("Não é...", "Nunca..."), corrective contrast ("Não é X, é Y"), or epanortose. Lead straight with the main point.
 - ABSOLUTELY FORBIDDEN in any generated text: epanortose structures ("Não é falta de X, é que Y"), guilt-denial hooks ("a culpa não é sua"), external-blame attribution ("ninguém te ensinou que..."), adversative revelation ("A maioria faz X, mas os melhores fazem Y")
 ${bannedBlock}
@@ -255,16 +240,16 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
 {
   "topic": "${topic}",
   "overall_signal": "Emergente|Crescendo|Alto Momentum|Saturado",
-  "signal_score": 0-100,
+  "signal_score": null,
   "platform_signals": [
-    { "platform": "tiktok", "signal": "Fraco|Emergente|Forte|Alto Momentum", "posts_per_week": "~XK/sem", "growth_rate": "+X%", "dominant_format": "formato", "key_insight": "1 frase" },
-    { "platform": "instagram", "signal": "...", "posts_per_week": "...", "growth_rate": "...", "dominant_format": "...", "key_insight": "..." },
-    { "platform": "linkedin", "signal": "...", "posts_per_week": "...", "growth_rate": "...", "dominant_format": "...", "key_insight": "..." }
+    { "platform": "tiktok", "signal": "Fraco|Emergente|Forte|Alto Momentum", "posts_per_week": null, "growth_rate": null, "dominant_format": "formato", "key_insight": "1 frase" },
+    { "platform": "instagram", "signal": "...", "posts_per_week": null, "growth_rate": null, "dominant_format": "...", "key_insight": "..." },
+    { "platform": "linkedin", "signal": "...", "posts_per_week": null, "growth_rate": null, "dominant_format": "...", "key_insight": "..." }
   ],
   "trends": [
-    { "id": "t1", "name": "subtendência", "classification": "Emergente|Crescendo|Alto Momentum|Saturado", "description": "2 frases", "growth_rate": "+X%", "why_trending": "1 frase", "platforms": ["tiktok"] },
-    { "id": "t2", "name": "...", "classification": "...", "description": "...", "growth_rate": "...", "why_trending": "...", "platforms": ["instagram"] },
-    { "id": "t3", "name": "...", "classification": "...", "description": "...", "growth_rate": "...", "why_trending": "...", "platforms": ["linkedin"] }
+    { "id": "t1", "name": "subtendência", "classification": "Emergente|Crescendo|Alto Momentum|Saturado", "description": "2 frases", "growth_rate": null, "why_trending": "1 frase", "platforms": ["tiktok"] },
+    { "id": "t2", "name": "...", "classification": "...", "description": "...", "growth_rate": null, "why_trending": "...", "platforms": ["instagram"] },
+    { "id": "t3", "name": "...", "classification": "...", "description": "...", "growth_rate": null, "why_trending": "...", "platforms": ["linkedin"] }
   ],
   "creator_search": [
     { "id": "cs1", "platform": "instagram", "platform_search_url": "https://www.instagram.com/explore/tags/HASHTAG/", "hashtags": ["#tag1", "#tag2"], "keyword_searches": ["termo1", "termo2"], "archetype": "1 frase descrevendo o tipo de criador", "what_to_look_for": "1 frase", "size_range": "10K–500K", "best_search_tip": "1 frase" },
@@ -280,13 +265,13 @@ Return ONLY a compact JSON object (no markdown). Generate exactly the counts sho
   ],
   "patterns": {
     "recurring_hooks": [
-      { "hook": "tipo", "type": "lista|contrário|história|dados|observação|afirmação|provocação", "frequency": "X%", "example": "frase gancho em português — declaração direta, sem negação inicial", "platforms": ["platform"] },
-      { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] },
-      { "hook": "...", "type": "...", "frequency": "...", "example": "...", "platforms": ["..."] }
+      { "hook": "tipo", "type": "lista|contrário|história|dados|observação|afirmação|provocação", "frequency": null, "example": "frase gancho em português — declaração direta, sem negação inicial", "platforms": ["platform"] },
+      { "hook": "...", "type": "...", "frequency": null, "example": "...", "platforms": ["..."] },
+      { "hook": "...", "type": "...", "frequency": null, "example": "...", "platforms": ["..."] }
     ],
     "narrative_styles": [
-      { "style": "nome", "frequency": "X%", "description": "1 frase", "why_works": "1 frase" },
-      { "style": "...", "frequency": "...", "description": "...", "why_works": "..." }
+      { "style": "nome", "frequency": null, "description": "1 frase", "why_works": "1 frase" },
+      { "style": "...", "frequency": null, "description": "...", "why_works": "..." }
     ],
     "emerging_topics": ["subtópico1", "subtópico2", "subtópico3", "subtópico4"]
   },
@@ -371,17 +356,6 @@ function repairAndParseJSON(raw) {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function SignalBadge({ signal, size = 'sm' }) {
-  const color = SIGNAL_COLORS[signal] || SIGNAL_COLORS['Fraco']
-  const dot = SIGNAL_DOTS[signal] || 'bg-gray-400'
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-      {signal}
-    </span>
-  )
-}
-
 function PlatformSignalCard({ ps }) {
   const meta = PLATFORM_META[ps.platform] || { emoji: '🌐', color: 'from-gray-600 to-gray-700', text: 'text-white', label: ps.platform }
   return (
@@ -392,20 +366,13 @@ function PlatformSignalCard({ ps }) {
             <span className="text-lg">{meta.emoji}</span>
             <span className={`text-xs font-bold ${meta.text}`}>{meta.label}</span>
           </div>
-          <SignalBadge signal={ps.signal} />
+          <span className="text-[10px] bg-white/90 text-gray-700 rounded px-2 py-1">Hipótese</span>
         </div>
       </div>
       <div className="p-3 space-y-2">
+        <p className="text-[11px] text-gray-500">Volume e crescimento não medidos.</p>
         <div className="flex items-center justify-between text-[11px]">
-          <span className="text-gray-400">Posts/semana</span>
-          <span className="font-semibold text-gray-700">{ps.posts_per_week}</span>
-        </div>
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-gray-400">Crescimento</span>
-          <span className="font-semibold text-emerald-600">{ps.growth_rate}</span>
-        </div>
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-gray-400">Formato líder</span>
+          <span className="text-gray-400">Formato sugerido</span>
           <span className="font-semibold text-gray-700">{ps.dominant_format}</span>
         </div>
         <div className="pt-1 border-t border-gray-100">
@@ -418,22 +385,20 @@ function PlatformSignalCard({ ps }) {
 
 function TrendCard({ trend }) {
   const [expanded, setExpanded] = useState(false)
-  const color = SIGNAL_COLORS[trend.classification] || SIGNAL_COLORS['Emergente']
   return (
     <div className="card p-4 space-y-2 hover:border-orange-200 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <h4 className="text-sm font-semibold text-gray-900 flex-1 leading-snug">{trend.name}</h4>
-        <SignalBadge signal={trend.classification} />
+        <span className="chip text-[10px]">Hipótese</span>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[11px] font-semibold text-emerald-600">{trend.growth_rate}</span>
         {trend.platforms?.map((p) => <PlatformBadge key={p} platform={p} />)}
       </div>
       {expanded && (
         <div className="space-y-2 animate-fade-in">
           <p className="text-xs text-gray-500 leading-relaxed">{trend.description}</p>
           <div className="bg-orange-50 rounded-lg p-2.5">
-            <p className="text-[10px] font-semibold text-orange-600 mb-0.5">Por que está crescendo</p>
+            <p className="text-[10px] font-semibold text-orange-600 mb-0.5">O que investigar</p>
             <p className="text-xs text-gray-700">{trend.why_trending}</p>
           </div>
         </div>
@@ -526,14 +491,13 @@ function HookCard({ hook }) {
     <div className="card p-4 space-y-2.5">
       <div className="flex items-start justify-between gap-2">
         <span className="text-xs font-semibold text-gray-800">{hook.hook}</span>
-        <span className={`chip border text-[10px] ${SIGNAL_COLORS['Emergente']}`}>{hook.frequency}</span>
       </div>
       <div className="flex gap-1">
         {(hook.platforms || []).map((p) => <PlatformBadge key={p} platform={p} />)}
       </div>
       <div className="bg-orange-50 border border-orange-100 rounded-lg p-2.5">
         <p className="text-[10px] text-orange-600 font-semibold mb-1 uppercase tracking-wide flex items-center gap-1">
-          <Zap size={9} /> Exemplo exato
+          <Zap size={9} /> Exemplo gerado
         </p>
         <p className="text-xs text-gray-700 italic leading-relaxed">"{hook.example}"</p>
       </div>
@@ -853,11 +817,11 @@ export default function TrendRadar() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-gray-900">Creator Insights · Radar de Tendências</h2>
-            <p className="text-xs text-gray-400">Detecta criadores, padrões, lacunas e oportunidades em 5 plataformas com IA</p>
+            <p className="text-xs text-gray-400">Sugere hipóteses editoriais e caminhos para buscar referências reais</p>
           </div>
           {hasApiKey ? (
             <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
-              <Brain size={9} /> IA Real Ativa
+              <Brain size={9} /> IA configurada
             </span>
           ) : (
             <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
@@ -896,7 +860,7 @@ export default function TrendRadar() {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-700">
-              <span className="font-semibold">Configure sua chave OpenAI</span> para ativar o Creator Insights completo — análise real de tendências, criadores, padrões e oportunidades com IA.
+              <span className="font-semibold">Configure sua chave OpenAI</span> para ativar o Creator Insights completo — sugestões editoriais e caminhos de pesquisa com IA.
             </p>
           </div>
         )}
@@ -916,7 +880,7 @@ export default function TrendRadar() {
                 <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i <= loadPhase ? 'bg-orange-500 w-8' : 'bg-gray-200 w-4'}`} />
               ))}
             </div>
-            <p className="text-xs text-gray-400">Analisando "{topic}" em TikTok, Instagram, YouTube, LinkedIn e X</p>
+            <p className="text-xs text-gray-400">Preparando sugestões para "{topic}". Esta etapa não consulta métricas das plataformas.</p>
           </div>
         </div>
       )}
@@ -938,21 +902,16 @@ export default function TrendRadar() {
 
           {/* Summary banner */}
           <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shadow-md shadow-orange-200">
-                <span className="text-xl font-black text-white">{trendResults.signal_score || '—'}</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Score de Tendência</p>
-                <SignalBadge signal={trendResults.overall_signal} />
-              </div>
+            <div className="text-xs text-orange-800 max-w-sm">
+              <p className="font-semibold">Hipóteses editoriais geradas por IA</p>
+              <p className="mt-1">Sem medição de volume, crescimento ou frequência. Isso também vale para resultados antigos. Valide as sugestões nas fontes antes de usá-las como evidência.</p>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-800">
                 Resultados para <span className="text-orange-600">"{trendResults.topic}"</span>
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {trendResults.creator_search?.length} plataformas · {trendResults.content_searches?.length} temas para buscar · {trendResults.trends?.length} tendências · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
+                {trendResults.creator_search?.length} plataformas · {trendResults.content_searches?.length} temas para buscar · {trendResults.trends?.length} temas sugeridos · {trendResults.opportunities?.length} oportunidades · {trendResults.ideas?.length} ideias
               </p>
             </div>
             {insights.length > 0 && (
@@ -1002,7 +961,7 @@ export default function TrendRadar() {
               {/* Platform signals */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Globe size={15} className="text-orange-500" /> Sinal por Plataforma
+                  <Globe size={15} className="text-orange-500" /> Hipóteses por Plataforma
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                   {(trendResults.platform_signals || []).map((ps) => (
@@ -1014,7 +973,7 @@ export default function TrendRadar() {
               {/* Detected trends */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <TrendingUp size={15} className="text-emerald-500" /> Tendências Detectadas
+                  <TrendingUp size={15} className="text-emerald-500" /> Temas para Investigar
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {(trendResults.trends || []).map((trend) => <TrendCard key={trend.id} trend={trend} />)}
@@ -1316,7 +1275,6 @@ export default function TrendRadar() {
                       <div key={i} className="card p-4 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-semibold text-gray-800">{style.style}</span>
-                          <span className="text-[11px] font-bold text-blue-600">{style.frequency}</span>
                         </div>
                         {style.description && <p className="text-[11px] text-gray-500 leading-relaxed">{style.description}</p>}
                         {style.why_works && (

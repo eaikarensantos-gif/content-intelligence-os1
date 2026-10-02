@@ -1,6 +1,23 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// Older backups may contain null instead of arrays. Restore only data fields,
+// keeping the store's actions and valid saved selections intact.
+export function mergeVideoSwipeState(saved, current) {
+  const data = saved && typeof saved === 'object' ? saved : {}
+  const result = { ...current }
+  for (const key of ['selectedCategories', 'selectedPlatforms', 'queue', 'seenIds']) {
+    if (Array.isArray(data[key])) {
+      result[key] = data[key].filter(value => key === 'queue'
+        ? value && typeof value === 'object' && value.id != null
+        : typeof value === 'string')
+    }
+  }
+  if (['any', 'short', 'medium', 'long'].includes(data.filterDuration)) result.filterDuration = data.filterDuration
+  if (['relevance', 'recent', 'views'].includes(data.filterSort)) result.filterSort = data.filterSort
+  return result
+}
+
 const useVideoSwipeStore = create(
   persist(
     (set, get) => ({
@@ -50,6 +67,7 @@ const useVideoSwipeStore = create(
     }),
     {
       name: 'content-intelligence-video-swipe',
+      merge: mergeVideoSwipeState,
       partialize: (s) => ({
         selectedCategories: s.selectedCategories,
         selectedPlatforms:  s.selectedPlatforms,

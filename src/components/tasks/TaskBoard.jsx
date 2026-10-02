@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import {
   Plus, Calendar, Tag, Flag, MoreHorizontal, Trash2, Edit3,
@@ -8,6 +9,7 @@ import {
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
 import TaskCalendar from './TaskCalendar'
+import { taskStatus } from '../../utils/taskStatus'
 
 /* ── Constantes ──────────────────────────────────────────── */
 const COLUMNS = [
@@ -276,6 +278,7 @@ function TaskDetail({ task, onClose, onUpdate, onDelete }) {
             <button onClick={save} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
           </div>
 
+          {task.idea_id && <Link to={`/ideas?idea=${encodeURIComponent(task.idea_id)}`} onClick={save} className="block text-xs text-orange-700 underline">Abrir ideia vinculada</Link>}
           {/* Title */}
           <input
             value={title}
@@ -514,7 +517,8 @@ function ListRow({ task, onUpdate, onDelete, onEdit, onMove }) {
 
 /* ── Main TaskBoard ─────────────────────────────────────── */
 export default function TaskBoard() {
-  const tasks = useStore((s) => s.tasks)
+  const savedTasks = useStore((s) => s.tasks)
+  const tasks = savedTasks.map(task => ({ ...task, status: taskStatus(task.status) }))
   const addTask = useStore((s) => s.addTask)
   const updateTask = useStore((s) => s.updateTask)
   const deleteTask = useStore((s) => s.deleteTask)

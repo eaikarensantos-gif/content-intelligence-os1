@@ -53,7 +53,7 @@ DADOS DO PERÍODO (${periodLabel}):
 - Posts analisados: ${filtered.length}
 - Impressões totais: ${totalImpressions.toLocaleString()}
 - Engajamento total: ${totalEngagement.toLocaleString()}
-- Taxa de engajamento média: ${avgER}%
+- Média das taxas por post (interações divididas por impressões em cada post): ${avgER}%
 - Compartilhamentos totais: ${totalShares}
 - Salvamentos totais: ${totalSaves}
 
@@ -164,7 +164,7 @@ td{padding:.5rem;border-bottom:1px solid #f9fafb;color:#4b5563}tr:hover{backgrou
     <div class="stat"><div class="value">${enrichedFiltered.length}</div><div class="label">Posts</div></div>
     <div class="stat"><div class="value">${totalImpressions.toLocaleString()}</div><div class="label">Impressões</div></div>
     <div class="stat"><div class="value">${totalEngagement.toLocaleString()}</div><div class="label">Engajamento</div></div>
-    <div class="stat"><div class="value">${avgER}%</div><div class="label">Taxa Eng.</div></div>
+    <div class="stat"><div class="value">${avgER}%</div><div class="label">Média das taxas por post</div></div>
   </div>
 
   <div class="section">
@@ -392,9 +392,8 @@ export default function ClientReports() {
     if (clientName) {
       const cn = clientName.toLowerCase()
       const matchClient = m.client?.toLowerCase() === cn
-      const matchHashtag = extractHashtags(m.description).includes(cn.startsWith('#') ? cn : '#' + cn)
       const matchHashtagDirect = extractHashtags(m.description).includes(cn)
-      if (!matchClient && !matchHashtag && !matchHashtagDirect) return false
+      if (cn.startsWith('#') ? !matchHashtagDirect : !matchClient) return false
     }
     if (dateFrom && m.date < dateFrom) return false
     if (dateTo && m.date > dateTo) return false
@@ -632,6 +631,7 @@ export default function ClientReports() {
               </div>
             )}
 
+            <p className="rounded-lg bg-amber-50 border border-amber-100 p-3 text-xs text-amber-900">Cobertura do recorte: {filtered.length} posts, {filtered.filter(m => m.description?.trim()).length} com legenda e {filtered.filter(m => m.client?.trim()).length} com cliente identificado. Ausência de vínculo não significa ausência de entrega. Revise a classificação em Analytics antes de enviar o relatório.</p>
             {/* Client selector */}
             <div>
               <label className="label">Cliente / Projeto / Hashtag</label>
@@ -643,17 +643,12 @@ export default function ClientReports() {
                     onChange={(e) => setSelectedClient(e.target.value)}
                   >
                     <option value="">Todos (sem filtro)</option>
-                    {existingClients.map(c => {
-                      const isTag = c.startsWith('#')
-                      const count = isTag
-                        ? (hashtagMap[c]?.size || 0)
-                        : enriched.filter(m => m.client?.toLowerCase() === c.toLowerCase()).length
-                      return (
-                        <option key={c} value={c}>
-                          {isTag ? '' : '👤 '}{c} ({count} posts)
-                        </option>
-                      )
-                    })}
+                    <optgroup label="Clientes e projetos cadastrados nos posts">
+                      {existingClients.filter(c => !c.startsWith('#')).map(c => <option key={c} value={c}>{c} ({enriched.filter(m => m.client?.toLowerCase() === c.toLowerCase()).length} posts)</option>)}
+                    </optgroup>
+                    <optgroup label="Hashtags das legendas, sem vínculo comercial confirmado">
+                      {existingClients.filter(c => c.startsWith('#')).map(c => <option key={c} value={c}>{c} ({hashtagMap[c]?.size || 0} posts)</option>)}
+                    </optgroup>
                     <option value="__custom">+ Digitar outro nome ou #hashtag...</option>
                   </select>
                   {selectedClient === '__custom' && (
@@ -666,7 +661,7 @@ export default function ClientReports() {
                     />
                   )}
                   <p className="text-[11px] text-gray-400">
-                    As hashtags (#) são extraídas automaticamente das descrições dos seus posts.
+                    Nome de cliente filtra apenas o campo cliente. Use # para filtrar uma hashtag; isso não confirma vínculo comercial.
                   </p>
                 </div>
               ) : (
@@ -679,7 +674,7 @@ export default function ClientReports() {
                     onChange={(e) => { setCustomClient(e.target.value); setSelectedClient('__custom') }}
                   />
                   <p className="text-[11px] text-gray-400">
-                    Dica: Use as hashtags que já estão nos seus posts (#parceiro, #publi, #marca) para filtrar por cliente automaticamente.
+                    Digite um nome para filtrar o campo cliente, ou #hashtag para localizar publicações pela legenda. A hashtag não confirma vínculo comercial.
                   </p>
                 </div>
               )}
@@ -709,7 +704,7 @@ export default function ClientReports() {
                 {[
                   { label: 'Impressões', value: fmtNumber(totalImpressions) },
                   { label: 'Engajamento', value: fmtNumber(totalEngagement) },
-                  { label: 'Taxa Eng.', value: `${avgER}%` },
+                  { label: 'Média das taxas por post', value: `${avgER}%` },
                   { label: 'Compartilh.', value: fmtNumber(totalShares) },
                 ].map(({ label, value }) => (
                   <div key={label} className="p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-center">
@@ -823,7 +818,7 @@ export default function ClientReports() {
                 { icon: FileText, label: 'Posts', value: filtered.length, color: 'text-orange-500' },
                 { icon: Eye, label: 'Impressões', value: fmtNumber(totalImpressions), color: 'text-blue-500' },
                 { icon: Heart, label: 'Engajamento', value: fmtNumber(totalEngagement), color: 'text-pink-500' },
-                { icon: TrendingUp, label: 'Taxa Eng.', value: `${avgER}%`, color: 'text-emerald-500' },
+                { icon: TrendingUp, label: 'Média das taxas por post', value: `${avgER}%`, color: 'text-emerald-500' },
               ].map(({ icon: Icon, label, value, color }) => (
                 <div key={label} className="card p-4 text-center">
                   <Icon size={16} className={`mx-auto mb-1.5 ${color}`} />

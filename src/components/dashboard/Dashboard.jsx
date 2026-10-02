@@ -1,3 +1,4 @@
+import MetricsCoverage from '../common/MetricsCoverage'
 import { useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import {
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react'
 import useStore from '../../store/useStore'
 import { enrichMetric, aggregateByFormat, aggregateByPlatform, topPosts } from '../../utils/analytics'
+import { taskStatus } from '../../utils/taskStatus'
 import { PlatformBadge, StatusBadge } from '../common/Badge'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -140,7 +142,7 @@ function TopPostsCard({ posts, metrics, navigate }) {
           {best.map((item, i) => {
             const er = item.metric ? (enrichMetric(item.metric).engagement_rate * 100).toFixed(1) : null
             return (
-              <div key={item.post.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 hover:bg-amber-50/50 transition-colors">
+              <div key={item.id || `${item.post.id}-${i}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 hover:bg-amber-50/50 transition-colors">
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500'}`}>
                   {i + 1}
                 </span>
@@ -174,7 +176,8 @@ function TopPostsCard({ posts, metrics, navigate }) {
 // ── Tasks Overview ────────────────────────────────────────────────────────────
 function TasksOverview({ tasks, navigate }) {
   const todo = tasks.filter(t => t.status === 'todo')
-  const inProgress = tasks.filter(t => t.status === 'in_progress')
+  const inProgress = tasks.filter(t => taskStatus(t.status) === 'doing')
+  const review = tasks.filter(t => taskStatus(t.status) === 'review')
   const done = tasks.filter(t => t.status === 'done')
   const blocked = tasks.filter(t => t.status === 'blocked')
 
@@ -215,12 +218,13 @@ function TasksOverview({ tasks, navigate }) {
           )}
 
           {/* Contadores */}
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
             {[
               { label: 'A Fazer', count: todo.length, color: 'text-gray-600', bg: 'bg-gray-50' },
-              { label: 'Em Andamento', count: inProgress.length, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Em Progresso', count: inProgress.length, color: 'text-blue-600', bg: 'bg-blue-50' },
+              { label: 'Em Revisão', count: review.length, color: 'text-amber-600', bg: 'bg-amber-50' },
               { label: 'Concluídas', count: done.length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Bloqueadas', count: blocked.length, color: 'text-red-600', bg: 'bg-red-50' },
+              ...(blocked.length ? [{ label: 'Bloqueadas', count: blocked.length, color: 'text-red-600', bg: 'bg-red-50' }] : []),
             ].map(({ label, count, color, bg }) => (
               <div key={label} className={`${bg} rounded-lg p-2 text-center`}>
                 <p className={`text-base font-bold ${color}`}>{count}</p>
@@ -386,7 +390,7 @@ function SmartSuggestion({ ideas, metrics, tasks, navigate }) {
   if (overdueTasks.length > 0) {
     suggestion = {
       icon: AlertCircle, color: 'text-red-600 bg-red-50 border-red-200',
-      text: `Você tem ${overdueTasks.length} tarefa${overdueTasks.length > 1 ? 's' : ''} atrasada${overdueTasks.length > 1 ? 's' : ''}. Resolva logo para manter o ritmo.`,
+      text: `Há ${overdueTasks.length} tarefa${overdueTasks.length > 1 ? 's' : ''} com prazo vencido. Confira o status e a próxima ação.`,
       action: 'Ver Tarefas', to: '/tasks',
     }
   } else if (readyCount >= 3) {
@@ -487,6 +491,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 animate-fade-in">
+      <MetricsCoverage metrics={metrics} />
 
       {/* ── Welcome Banner ──────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/80 to-white border border-orange-200 p-4 sm:p-6">
@@ -539,7 +544,8 @@ export default function Dashboard() {
             <ChevronRight size={12} className="text-gray-300 group-hover:text-amber-400" />
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900">{avgER > 0 ? `${avgER}%` : '—'}</p>
-          <p className="text-[10px] sm:text-xs text-gray-400">Engajamento médio</p>
+          <p className="text-[10px] sm:text-xs text-gray-400">Média das taxas por post</p>
+          <p className="text-[10px] text-gray-500">Cada post tem o mesmo peso; taxa calculada por impressões.</p>
         </button>
 
         <button onClick={() => navigate('/analytics')} className="card p-3 sm:p-4 border border-gray-100 hover:border-violet-200 transition-all text-left group">

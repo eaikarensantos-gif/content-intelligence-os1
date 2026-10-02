@@ -1,3 +1,4 @@
+import { KAREN_VOICE_RULES } from '../../data/karenVoice'
 import { useState } from 'react'
 import {
   Sparkles, Loader2, Copy, Check, RefreshCw,
@@ -220,7 +221,7 @@ export default function CommunityStudio() {
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 1500,
-          system: COMMUNITY_SYSTEM,
+          system: COMMUNITY_SYSTEM + KAREN_VOICE_RULES,
           messages: [{ role: 'user', content: buildPrompt({ slotId, weekTheme, fissura: fissuras[slotId] }) }],
         }),
       })
@@ -262,7 +263,7 @@ export default function CommunityStudio() {
           thinking: { type: 'adaptive' },
           output_config: { effort: 'medium' },
           max_tokens: 1000,
-          system: COMMUNITY_SYSTEM,
+          system: COMMUNITY_SYSTEM + KAREN_VOICE_RULES,
           messages: [{ role: 'user', content: buildPrompt({ slotId: 'enquete', weekTheme: enqueteTema, fissura: enqueteFissura }) }],
         }),
       })

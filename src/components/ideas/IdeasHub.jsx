@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import {
   Plus, Search, Calendar, Tag,
@@ -1602,6 +1602,7 @@ const PRIORITY_LABELS_FILTER = { all: 'Todas Prioridades', high: 'Alta',  medium
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function IdeasHub() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate          = useNavigate()
   const ideas                = useStore((s) => s.ideas)
   const addIdea              = useStore((s) => s.addIdea)
@@ -1619,6 +1620,12 @@ export default function IdeasHub() {
   const [tab, setTab]                       = useState('calendar')
   const [formOpen, setFormOpen]             = useState(false)
   const [editTarget, setEditTarget]         = useState(null)
+  useEffect(() => {
+    const id = searchParams.get('idea')
+    if (!id) return
+    const found = ideas.find(idea => idea.id === id)
+    if (found) { setEditTarget(found); setFormOpen(true); const next = new URLSearchParams(searchParams); next.delete('idea'); setSearchParams(next, { replace: true }) }
+  }, [searchParams, ideas, setSearchParams])
   const [search, setSearch]                 = useState('')
   const [filterClient, setFilterClient]     = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')

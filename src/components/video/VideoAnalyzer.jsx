@@ -1053,7 +1053,7 @@ Responda APENAS com este JSON:
           </div>
           <div>
             <h1 className="text-base font-bold text-gray-900">Analisador de Vídeos de Referência</h1>
-            <p className="text-xs text-gray-400">Análise 100% baseada em dados reais — transcrição real ou frames extraídos. Nunca gera conteúdo fictício.</p>
+            <p className="text-xs text-gray-400">A análise usa a transcrição ou os frames disponíveis. Interpretações da IA precisam ser conferidas na fonte.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -1667,7 +1667,7 @@ Responda APENAS com este JSON:
                   className="input flex-1 min-h-[240px] resize-none text-xs leading-relaxed"
                   placeholder={`Cole aqui a transcrição real do vídeo...
 
-A IA irá citar trechos EXATOS da transcrição no gancho, promessa, CTA e padrões detectados. Nenhuma frase será inventada.
+A IA recebe a instrução de citar a transcrição. Confira os trechos na fonte antes de reutilizar; padrões e intenções são interpretações.
 
 Quanto mais completa a transcrição, mais precisa será a análise.`}
                   value={transcript}

@@ -1,3 +1,4 @@
+import { reviseIdea } from '../utils/ideaWorkflow'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
@@ -393,7 +394,7 @@ const useStore = create(
         })),
 
       updateIdea: (id, updates) => {
-        set((s) => ({ ideas: s.ideas.map((i) => (i.id === id ? { ...i, ...updates } : i)) }))
+        set((s) => ({ ideas: s.ideas.map((i) => (i.id === id ? reviseIdea(i, updates) : i)) }))
       },
 
       deleteIdea: (id) => {
@@ -406,6 +407,8 @@ const useStore = create(
       convertIdeaToPost: (ideaId) => {
         const idea = get().ideas.find((i) => i.id === ideaId)
         if (!idea) return
+        const existingPost = get().posts.find(post => post.idea_id === ideaId || (idea.post_id && post.id === idea.post_id))
+        if (existingPost) return existingPost.id
         const postId = uuidv4()
         const editorialFields = copyEditorialFields(idea)
         set((s) => ({
@@ -415,7 +418,13 @@ const useStore = create(
               id: postId,
               idea_id: ideaId,
               title: idea.title,
-              content: idea.description,
+              content: idea.script || idea.description,
+              caption: idea.caption || '',
+              cta: idea.cta || '',
+              client: idea.client || '',
+              reference_links: idea.reference_links || [],
+              published_url: idea.published_url || '',
+              platforms: idea.platforms || [idea.platform].filter(Boolean),
               platform: idea.platform,
               format: idea.format,
               hook_type: idea.hook_type,

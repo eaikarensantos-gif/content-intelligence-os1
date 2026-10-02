@@ -813,7 +813,7 @@ export default function AdManager() {
               </div>
             </div>
 
-            <p className="text-xs text-gray-500">Valor total = valor inicial do cadastro + novos trabalhos. Se for detalhar um trabalho já incluído no valor inicial, ajuste esse valor no card para não somar duas vezes. Recebimentos diminuem o saldo a receber. {clientSummary.missing > 0 && `${clientSummary.missing} cliente(s) sem valor informado.`}</p>
+            <p className="text-xs text-gray-500">Valor total = valor inicial do cadastro + novos trabalhos. Para distribuir o valor inicial por mês sem somar de novo, use a opção de transferência no controle abaixo. Recebimentos diminuem o saldo a receber. {clientSummary.missing > 0 && `${clientSummary.missing} cliente(s) sem valor informado.`}</p>
             {clientError && <p role="alert" className="text-sm text-red-600">{clientError}</p>}
             {/* Add/Edit client form */}
             {editingClient ? (
@@ -1007,8 +1007,8 @@ export default function AdManager() {
                     {client.service && (
                       <p className="text-[11px] text-gray-500"><span className="text-gray-400">Serviço:</span> {client.service}</p>
                     )}
-                    <p className="text-[11px] font-medium text-green-600">Total: {fmtMoney(summarizeClients([client]).total)}</p>
-                    <p className="text-[11px] text-gray-500">Recebido: {fmtMoney(summarizeClients([client]).received)} · Falta: {fmtMoney(summarizeClients([client]).outstanding)}</p>
+                    <p className="text-[11px] font-medium text-green-600">Total: {summarizeClients([client]).missing ? 'Valor não informado' : fmtMoney(summarizeClients([client]).total)}</p>
+                    <p className="text-[11px] text-gray-500">{summarizeClients([client]).missing ? 'Saldo indisponível sem valor contratado.' : `Recebido registrado: ${fmtMoney(summarizeClients([client]).received)} · Saldo registrado: ${fmtMoney(summarizeClients([client]).outstanding)}`}</p>
                     <button onClick={() => { setLedgerClientId(client.id); ledgerRef.current?.scrollIntoView({ behavior: 'smooth' }) }} className="text-[11px] text-blue-700 hover:underline">Ver financeiro</button>
                     {client.notes && (
                       <p className="text-[10px] text-gray-400 italic line-clamp-2">{client.notes}</p>

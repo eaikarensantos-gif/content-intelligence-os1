@@ -11,51 +11,41 @@ import useStore from '../../store/useStore'
 
 // ── Grouped navigation structure ─────────────────────────────────────────────
 const TOP_NAV = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/', icon: LayoutDashboard, label: 'Hoje' },
   { to: '/tasks', icon: ClipboardList, label: 'Tarefas' },
 ]
 
 const NAV_GROUPS = [
-  {
-    id: 'studio-criacao',
-    label: 'Studio de Criação',
-    children: [
-      { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
-      { to: '/pdf-studio', icon: FileText, label: 'Conteúdo de PDF' },
-      { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
-      { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
-      { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
-      { to: '/create', icon: PenTool, label: 'Studio de Criação' },
-      { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
-      { to: '/swipe', icon: Flame, label: 'Video Swipe' },
-    ],
-  },
-  {
-    id: 'metricas',
-    label: 'Métricas',
-    children: [
-      { to: '/analytics', icon: BarChart2, label: 'Analytics' },
-      { to: '/trends', icon: Radar, label: 'Creator Insights' },
-      { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
-      { to: '/dm-automation', icon: Zap, label: 'Automação de DM' },
-      { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
-      { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
-    ],
-  },
-  {
-    id: 'inteligencia',
-    label: 'Inteligência',
-    children: [
-      { to: '/community', icon: Users, label: 'Community Studio' },
-      { to: '/dna', icon: Dna, label: 'Content DNA' },
-      { to: '/news', icon: Newspaper, label: 'Notícias' },
-      { to: '/posicionamento', icon: Compass, label: 'Posicionamento' },
-      { to: '/social', icon: Activity, label: 'Social Dashboard' },
-    ],
-  },
+  { id: 'conteudo', label: 'Conteúdo', children: [
+    { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
+    { to: '/create', icon: PenTool, label: 'Studio de Criação' },
+    { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
+    { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
+    { to: '/pdf-studio', icon: FileText, label: 'Conteúdo de PDF' },
+    { to: '/desafio', icon: Dices, label: 'Desafio de Formato' },
+    { to: '/community', icon: Users, label: 'Community Studio' },
+  ] },
+  { id: 'pesquisa', label: 'Pesquisa', children: [
+    { to: '/video', icon: Video, label: 'Analisador de Vídeo' },
+    { to: '/swipe', icon: Flame, label: 'Video Swipe' },
+    { to: '/trends', icon: Radar, label: 'Creator Insights' },
+    { to: '/news', icon: Newspaper, label: 'Notícias' },
+  ] },
+  { id: 'resultados', label: 'Resultados', children: [
+    { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+    { to: '/instagram', icon: Instagram, label: 'Posts do Instagram' },
+    { to: '/social', icon: Activity, label: 'Social Dashboard' },
+    { to: '/dna', icon: Dna, label: 'Content DNA' },
+  ] },
+  { id: 'comercial', label: 'Comercial', children: [
+    { to: '/ads', icon: DollarSign, label: 'Publicidade & Preços' },
+    { to: '/reports', icon: FileBarChart, label: 'Relatórios' },
+    { to: '/dm-automation', icon: Zap, label: 'Automação de DM' },
+  ] },
 ]
 
 const BOTTOM_NAV = [
+  { to: '/posicionamento', icon: Compass, label: 'Posicionamento' },
   { to: '/brand-voice', icon: Mic, label: 'Minha Voz' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
   { to: '/security', icon: Shield, label: 'Registro de Acessos' },
@@ -115,11 +105,7 @@ export default function Sidebar({ isOpen, onClose }) {
       // Main store
       const storeData = localStorage.getItem(STORE_KEY)
       if (storeData) payload.store = JSON.parse(storeData)
-      // API keys
-      API_KEYS.forEach(k => {
-        const v = localStorage.getItem(k)
-        if (v) payload[k] = v
-      })
+      // Credenciais não fazem parte de backups exportáveis.
       payload._exported_at = new Date().toISOString()
       payload._version = 'cio-v3'
 
@@ -130,7 +116,7 @@ export default function Sidebar({ isOpen, onClose }) {
       a.download = `content-intelligence-backup-${new Date().toISOString().slice(0, 10)}.json`
       a.click()
       URL.revokeObjectURL(url)
-      setSyncMsg({ type: 'success', text: 'Dados exportados!' })
+      setSyncMsg({ type: 'success', text: 'Dados exportados sem chaves de API.' })
       setTimeout(() => setSyncMsg(null), 3000)
     } catch (e) {
       setSyncMsg({ type: 'error', text: 'Erro ao exportar' })
@@ -262,23 +248,23 @@ export default function Sidebar({ isOpen, onClose }) {
         )}
 
         {/* Top-level items */}
-        {TOP_NAV.map((item) => renderNavItem(item))}
+        {TOP_NAV.filter(item => !pinnedPages.includes(item.to)).map((item) => renderNavItem(item))}
 
         {/* Always-open groups */}
         {NAV_GROUPS.map((group) => (
           <div key={group.id} className="mt-3">
-            <div className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-              {group.label}
-            </div>
-            <div className="space-y-0.5">
-              {group.children.map((item) => renderNavItem(item, true))}
-            </div>
+            <button type="button" aria-expanded={openGroup === group.id} onClick={() => toggleGroup(group.id)} className="flex items-center justify-between w-full px-3 py-2 text-[11px] font-semibold text-gray-600 uppercase tracking-wider">
+              {group.label}<ChevronRight size={13} className={openGroup === group.id ? 'rotate-90' : ''} />
+            </button>
+            {openGroup === group.id && <div className="space-y-0.5">
+              {group.children.filter(item => !pinnedPages.includes(item.to)).map((item) => renderNavItem(item, true))}
+            </div>}
           </div>
         ))}
 
         {/* Bottom items */}
         <div className="mt-3 pt-3 border-t border-orange-100">
-          {BOTTOM_NAV.map((item) => renderNavItem(item))}
+          {BOTTOM_NAV.filter(item => !pinnedPages.includes(item.to)).map((item) => renderNavItem(item))}
         </div>
       </nav>
 
