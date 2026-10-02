@@ -212,6 +212,9 @@ export function carouselTextPaths(carResult) {
   CAROUSEL_VERSIONS.forEach(({ key, label }) => {
     const slides = Array.isArray(carResult[key]?.slides) ? carResult[key].slides : []
     slides.forEach((slide, i) => {
+      if (typeof slide?.titulo === 'string') {
+        entries.push({ path: [key, 'slides', i, 'titulo'], isClosing: false, short: true, label: `${label} · título ${slide.numero ?? i + 1}` })
+      }
       if (typeof slide?.texto !== 'string') return
       entries.push({
         path: [key, 'slides', i, 'texto'],
