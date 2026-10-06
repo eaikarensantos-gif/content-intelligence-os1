@@ -59,14 +59,12 @@ const FEED_COLORS = [
   'bg-purple-600', 'bg-pink-600', 'bg-amber-500', 'bg-cyan-600',
 ]
 
-const CREATOR_PROFILE = `Perfil da criadora:
-Consultora de UX e Estratégia de Produto, sênior independente, brasileira.
-Histórico: Nubank, QuintoAndar, PicPay. Fundadora da UX para Minas Pretas.
-Nicho: maturidade profissional na era da IA.
-Público: profissionais de tech, produto e design, nível pleno a sênior.
-Parceria ativa: Samsung (tech, IA aplicada, conteúdo de produto).
-Tom: direto, analítico, sem motivacional, sem coach.
-Ângulo: situações reais, decisões concretas, dados quando disponível.`
+const CREATOR_PROFILE = `Perfil editorial da criadora:
+Karen Santos cria conteúdo sobre carreira, tecnologia e IA, negócios, inovação, liderança, comportamento e maturidade profissional, com atenção a diversidade e à experiência de mulheres negras.
+Público: profissionais e pessoas que querem transformar acontecimentos do mercado em decisões práticas no trabalho e nos negócios.
+Tom: direto, analítico, humano, específico, sem motivacional, sem coach e sem corporativismo vazio.
+Ângulo: o que mudou, por que importa, quem é afetado e o que a pessoa pode fazer/observar a partir disso.
+Não atribua a Karen emprego, cliente, parceria, experiência, opinião ou vivência que não esteja no contexto fornecido pelo sistema.`
 
 const FORMATS = [
   { id: 'post', label: 'Post LinkedIn', icon: FileText, desc: 'Post direto, analítico, sem motivacional' },
@@ -342,7 +340,9 @@ Fonte: ${url}
 
 ${CREATOR_PROFILE}
 
-Ângulo: filtre o que é relevante para profissionais brasileiros de tech, produto e design. Traga a perspectiva de quem trabalha no mercado, não de quem só lê notícias. Dados concretos quando disponível. Sem reproduzir a manchete — adicione análise, contexto ou implicação real.`
+Ângulo: filtre o que é relevante para o público da Karen e transforme notícia em leitura útil, não em resumo de portal. Traga análise, contexto, consequência e implicação prática. Use dados concretos somente quando estiverem presentes na notícia/resumo fornecido. Não invente números, contexto, falas, experiências da Karen ou fatos que não estejam na fonte disponível. Se o material recebido não sustentar uma afirmação específica, reformule sem essa afirmação.
+
+A saída precisa obedecer às mesmas regras editoriais do restante do Content: voz natural e falável; abrir pelo ponto mais forte; uma ideia central legível; tensão sem polêmica fabricada; ajuda antes de promoção; CTA apenas quando fizer sentido; nada de clichê de IA; nada de placeholders, colchetes ou campos para Karen preencher. Entregue sempre a versão final pronta para publicar/gravar.`
 
     const noNarration = `\n\nIMPORTANTE: qualquer verificação, checklist ou rascunho interno é um processo mental — não escreva isso na resposta. Nada de comentários entre parênteses, notas de validação ou texto fora do conteúdo pedido. A resposta é só o conteúdo final, começando direto no gancho.`
 
@@ -375,7 +375,7 @@ Gere um roteiro COMPLETO de Reels de 60 segundos com base nessa notícia — as 
 - 0-5s: gancho visual (o que acontece na tela + fala de abertura exata)
 - 5-45s: desenvolvimento em 3 blocos curtos, cada bloco com [tempo] fala / [tempo] legenda sugerida
 - 45-60s: encerramento com implicação concreta, fala exata
-Tom: conversa direta, sem voz de narrador de documentário.${noNarration}`
+Tom: conversa direta, sem voz de narrador de documentário. As indicações de gravação também precisam vir prontas e executáveis. Não use campos como "[local]", "[detalhe real]", "[Karen completa]" ou equivalentes.${noNarration}`
     }
 
     if (fmt === 'thread') {
@@ -438,7 +438,7 @@ Retorne JSON: {"titulo": "...", "resumo": "..."}`
         thinking: { type: 'adaptive' },
         output_config: { effort: 'medium' },
         max_tokens: MAX_TOKENS_BY_FORMAT[format] || 2000,
-        system: withManualOperacional(withAntiAIFilter(`Você é um estrategista de conteúdo para criadores digitais brasileiros de tech e produto. Gere conteúdo autêntico, específico e analítico — nunca genérico.${buildVoiceContext(useStore.getState().brandVoice, useStore.getState().dislikedContent, useStore.getState().posicionamento?.lista_negra || [], useStore.getState().posicionamento)}`)),
+        system: withManualOperacional(withAntiAIFilter(`Você é o mesmo estrategista editorial usado no restante do Content. Gere conteúdo autêntico, específico, analítico e pronto para uso — nunca genérico. A notícia é matéria-prima para um conteúdo autoral, não autorização para inventar fatos. Nunca devolva placeholders ou peça que Karen complete trechos. Preserve a voz, o posicionamento, a lista negra e os aprendizados editoriais disponíveis no contexto a seguir.\n${buildVoiceContext(useStore.getState().brandVoice, useStore.getState().dislikedContent, useStore.getState().posicionamento?.lista_negra || [], useStore.getState().posicionamento)}`)),
         messages: [{ role: 'user', content: prompt }],
       })
       assertNotTruncated(res, 'A resposta ficou grande demais e foi cortada antes de terminar. Tente novamente.')
