@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ANALYSIS_CRITERIA, buildAnalysisPrompt, validateAnalysis } from './contentAnalysis'
+import { ANALYSIS_CRITERIA, buildAnalysisPrompt, validateAnalysis, contentBrainLearnings } from './contentAnalysis'
 
 const valid=()=>({
   resumo:'A tese é boa, mas aparece tarde.',funciona:['Tema específico'],
@@ -7,7 +7,17 @@ const valid=()=>({
   mudaria_primeiro:'Gancho',como_ficaria:'Abra pela consequência.',
   notas:Object.fromEntries(ANALYSIS_CRITERIA.map(([k])=>[k,8])),
   ganchos:[{nivel:'segura',texto:'A',porque:'Direta'},{nivel:'forte',texto:'B',porque:'Tensão'},{nivel:'ousada',texto:'C',porque:'Contraste'}],
-  roteiro:{gancho:'A',desenvolvimento:'B',virada_prova:'C',entrega:'D',cta:'E'},alertas:[],
+  roteiro:{gancho:'A',desenvolvimento:'B',virada_prova:'C',entrega:'D',cta:'E'},direcao:{enquadramento:'frontal',texto_tela:'A',apoio_visual:'',edicao:'simples',legenda:'abaixo',evitar:[]},alertas:[],
+  it('only learns from analyzed content linked to posts and metrics',()=>{
+    expect(contentBrainLearnings([],[],[]).learnings).toEqual([])
+    const ideas=[1,2,3].map(n=>({id:'i'+n,format:'reels',analysis:{result:{notas:{gancho:8},ganchos:[{}, {nivel:'forte'}]}}}))
+    const posts=ideas.map((x,n)=>({id:'p'+n,idea_id:x.id,format:'reels'}))
+    const metrics=posts.map((p,n)=>({post_id:p.id,impressions:1000,likes:100+n*10,comments:10,saves:20,shares:5}))
+    const learned=contentBrainLearnings(ideas,posts,metrics)
+    expect(learned.sample).toBe(3)
+    expect(learned.learnings[0].count).toBe(3)
+    expect(learned.message).toContain('não provam causalidade')
+  })
 })
 
 describe('content analysis',()=>{
