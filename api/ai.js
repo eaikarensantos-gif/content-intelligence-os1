@@ -1295,8 +1295,11 @@ export default async function handler(req, res) {
     if (action === 'version') return res.status(200).json({ version: 'public-audio-v4' })
     // ── OpenAI Responses API (compatibility response shape) ─────────────────
     if (action === 'openai') {
-      const apiKey = req.headers['x-api-key']
-      if (!apiKey) return res.status(400).json({ error: 'API key is required' })
+      // Production uses the server-side Vercel secret. A browser-provided key is
+      // only a development fallback, so stale localStorage credentials cannot
+      // override the deployed project configuration.
+      const apiKey = process.env.OPENAI_API_KEY || req.headers['x-api-key']
+      if (!apiKey) return res.status(400).json({ error: 'OpenAI não está configurada no servidor.' })
       const { action: _drop, skipAntiCliche = false, ...openaiBody } = req.body || {}
       if (!skipAntiCliche) openaiBody.system = withGlobalAntiCliche(openaiBody.system || '')
       const result = await callOpenAIResponses(apiKey, openaiBody)
