@@ -1,10 +1,11 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader2, Terminal } from 'lucide-react'
+import { PenTool, Brain, Sparkles, Wand2, Megaphone, Calendar, Instagram, Loader2, Terminal, ScanSearch } from 'lucide-react'
 import clsx from 'clsx'
 import UnifiedCreator from './UnifiedCreator'
 
 const MultichannelPlanner = lazy(() => import('./MultichannelPlanner'))
+const ContentAnalyzer = lazy(() => import('./ContentAnalyzer'))
 
 const ThoughtCapture = lazy(() => import('../thoughts/ThoughtCapture'))
 const IdeaGenerator = lazy(() => import('../generate/IdeaGenerator'))
@@ -17,6 +18,7 @@ const PromptGenerator = lazy(() => import('../promptgen/PromptGenerator'))
 // Cada ferramenta mantém a identidade visual (ícone/cor) já usada no seu
 // próprio cabeçalho, pra reconhecimento consistente entre a aba e o conteúdo.
 const TOOLS = [
+  { id: 'analisar', label: 'Analisar', desc: 'Diagnóstico, ganchos e roteiro melhorado', icon: ScanSearch, accent: 'violet' },
   { id: 'criar', label: 'Criar', desc: 'Reels, carrossel, Stories e LinkedIn', icon: PenTool, accent: 'orange' },
   { id: 'multichannel', label: 'Planejamento Multicanal', desc: 'Um assunto, recortes e entregas diferentes', icon: Megaphone, accent: 'teal' },
   { id: 'thoughts', label: 'Captura de Pensamento', desc: 'Um pensamento → 7 formatos de uma vez', icon: Brain, accent: 'indigo' },
@@ -53,7 +55,7 @@ function ToolLoader() {
 export default function CreateHub({ persona = 'trabalho' }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const requested = searchParams.get('tool')
-  const active = TOOL_IDS.has(requested) ? requested : 'criar'
+  const active = TOOL_IDS.has(requested) ? requested : 'analisar'
   // Cada aba só monta na primeira visita, mas depois fica montada (display:none
   // quando inativa) — trocar de aba não perde rascunho nem histórico da sessão.
   const [visited, setVisited] = useState(() => new Set([active]))
@@ -63,7 +65,7 @@ export default function CreateHub({ persona = 'trabalho' }) {
   const goTo = (id) => {
     if (!visited.has(id)) setVisited((prev) => new Set(prev).add(id))
     const next = new URLSearchParams(searchParams)
-    if (id === 'criar') next.delete('tool')
+    if (id === 'analisar') next.delete('tool')
     else next.set('tool', id)
     setSearchParams(next)
   }
@@ -99,6 +101,11 @@ export default function CreateHub({ persona = 'trabalho' }) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {visited.has('analisar') && (
+          <div className="h-full" hidden={active !== 'analisar'}>
+            <Suspense fallback={<ToolLoader />}><ContentAnalyzer key={persona} persona={persona} /></Suspense>
+          </div>
+        )}
         {visited.has('criar') && (
           <div className="h-full" hidden={active !== 'criar'}>
             <UnifiedCreator persona={persona} />
