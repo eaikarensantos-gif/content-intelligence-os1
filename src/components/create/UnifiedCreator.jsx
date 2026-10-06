@@ -77,7 +77,7 @@ GUIA EDITORIAL — VIDA COM NAOMI:
 - O conteúdo mostra a personalidade real dela e a dinâmica entre as duas: manias, rotina, expressões, passeios, visitas, espaços da casa, compras que não funcionaram, pedidos de atenção, banho, veterinário, aprendizados e pequenos rituais.
 - Pode haver humor por antropomorfismo leve, como "gerente de rotina", desde que venha de um comportamento canino observável.
 - O tom combina conexão, humor seco e afeto. Não infantilize, não use voz de bebê e não seja açucarado.
-- Não invente ações da Naomi. Quando faltar uma cena concreta, escreva o roteiro como molde e sinalize o detalhe que Karen precisa completar.
+- Não invente ações da Naomi. Quando faltar uma cena concreta, entregue mesmo assim uma versão final e executável: use direção observacional neutra (por exemplo, registrar Naomi em um comportamento real disponível naquele momento), sem atribuir a ela uma ação específica não conhecida e sem pedir que Karen complete nada.
 - Pode encerrar com uma pergunta natural para quem também convive com animais, mas nunca force engajamento.
 
 REFERÊNCIA OFICIAL DE TOM PARA REELS SOBRE NAOMI — use o ritmo e a caracterização; só reproduza literalmente quando Karen escolher este mesmo recorte:
@@ -118,7 +118,7 @@ REGRA DE ESPECIFICIDADE — VALE PARA TODOS OS FORMATOS PESSOAIS:
 - Cada bloco precisa conter comportamento, objeto, fala, gesto, lugar ou momento observável.
 - Proibido usar abstrações para preencher espaço: "buscar controle", "rotina perfeita", "frustração acumulada", "a vida acontece", "no fim das contas".
 - Não invente acontecimentos dramáticos, falas ou sentimentos. Use somente o que o tema informa e os fatos presentes neste guia.
-- Se faltar um detalhe pessoal indispensável, escreva [Karen: conte aqui o detalhe real] em vez de fabricar.
+- Nunca devolva placeholders, colchetes, campos para Karen completar ou instruções do tipo "conte aqui o detalhe real". Se faltar um detalhe pessoal, use o contexto já conhecido para escrever uma versão final sem afirmar fatos não confirmados; reformule a cena de modo observacional, plausível e executável.
 - Não transforme a cena em lição, exercício, conselho, produtividade ou conteúdo profissional.
 - Só inclua Naomi quando o tema ou os detalhes fornecidos mencionarem Naomi, bulldog, cachorro ou pet. Ela nunca entra como enfeite em temas de casa, fé, compras, repertório ou vida adulta.
 - O final deve ser uma observação, uma imagem, uma pergunta natural ou humor seco. Nunca um resumo moral.
@@ -553,7 +553,7 @@ Crie três tratamentos da mesma micro-história:
 - Afetivo: mais próximo e contido, sem sentimentalismo fabricado.
 - Humor seco: mais engraçado, sem transformar a personagem em caricatura.
 
-PROIBIDO: "a gente", conceitos abstratos, exercício prático, conselho, transformação, cronograma perfeito, tentativa de controle, frustração acumulada ou qualquer detalhe inventado não sustentado pelo tema. Se um fato real fizer falta, use [Karen: conte aqui o detalhe real].
+PROIBIDO: "a gente", conceitos abstratos, exercício prático, conselho, transformação, cronograma perfeito, tentativa de controle, frustração acumulada ou qualquer detalhe inventado não sustentado pelo tema. Também é proibido devolver placeholders, colchetes ou campos para Karen preencher. Se um fato real fizer falta, reformule usando apenas o contexto disponível e entregue texto/cena final, concreta e executável sem afirmar o fato ausente.
 
 Responda EXCLUSIVAMENTE com JSON válido:
 {
