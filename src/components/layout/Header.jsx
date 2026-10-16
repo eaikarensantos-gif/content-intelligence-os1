@@ -32,6 +32,7 @@ const TITLES = {
   '/community': { title: 'Community Studio', sub: 'Engajamento e recursos para a sua comunidade' },
   '/clipper': { title: 'Web Clipper', sub: 'Salve referências da web no seu segundo cérebro' },
   '/pdf-studio': { title: 'PDF Studio', sub: 'Gere conteúdo estruturado a partir de PDFs' },
+  '/arte': { title: 'Studio de Arte', sub: 'Templates da identidade visual: edite cor, fonte, foto e posição e baixe o PNG' },
   '/carousel': { title: 'Carousel Studio', sub: 'Roteiros de carrossel com potencial viral', parent: '/create' },
   '/thoughts': { title: 'Thought Capture', sub: 'Transforme pensamentos em conteúdo estruturado', parent: '/create' },
   '/text': { title: 'Text Studio', sub: 'Adapte qualquer texto para cada plataforma com IA', parent: '/create' },

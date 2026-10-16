@@ -26,6 +26,7 @@ const ContentDNA = lazy(() => import('./components/dna/ContentDNA'))
 const AccessLog = lazy(() => import('./components/auth/AccessLog'))
 const AdManager = lazy(() => import('./components/ads/AdManager'))
 const CarouselStudio = lazy(() => import('./components/trends/CarouselStudio'))
+const ArteStudio = lazy(() => import('./components/arte/ArteStudio'))
 const TaskBoard = lazy(() => import('./components/tasks/TaskBoard'))
 const NaomiStudio = lazy(() => import('./components/naomi/NaomiStudio'))
 const SupabaseSettings = lazy(() => import('./components/settings/SupabaseSettings'))
@@ -163,6 +164,7 @@ export default function App() {
             <Route path="/posicionamento" element={<PositioningStudio />} />
             <Route path="/ads" element={<AdManager />} />
             <Route path="/carousel" element={<div className="p-6 animate-fade-in"><CarouselStudio /></div>} />
+            <Route path="/arte" element={<ArteStudio />} />
             <Route path="/security" element={<AccessLog />} />
             <Route path="/settings" element={<SupabaseSettings />} />
             <Route path="/instagram-callback" element={<InstagramCallback />} />
