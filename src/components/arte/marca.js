@@ -25,7 +25,12 @@ export const FORMATOS = {
 }
 
 // Emojis Apple são os únicos adesivos da identidade.
-export const EMOJIS = ['2728', '2b50', '1f440', '1f525', '1f914', '1f9d0', '1f4dd', '1f90d', '1f497', '1f338', '2615', '1f3a4']
+export const EMOJIS = [
+  '2728', '2b50', '1f31f', '1f4ab', '1f440', '1f525', '1f914', '1f9d0', '1f60d', '1f970', '1f60e', '1faf6',
+  '1f90d', '1f497', '1f496', '1f495', '1f9e1', '2764', '1f338', '1f352', '1f48e', '2705', '2615', '1f3a4',
+  '1f4dd', '1f4d6', '1f4da', '1f4c5', '1f4ca', '1f4cc', '1f4cd', '1f4c1', '1f4c2', '1f4bb', '1f4f1', '1f4de',
+  '1f4ac', '1f4e2', '1f4e7', '1f4f0', '1f517', '1f9e0', '1f916', '1f9f8', '1f9fe', '1f455', '2696-fe0f',
+]
 export const emojiUrl = (cod) => `/marca/emoji/${cod}.png`
 
 export const hex = (cor) => CORES[cor]?.hex ?? cor
@@ -44,5 +49,6 @@ export const normalizar = (arte, padrao) => {
   if (!(a.formato in FORMATOS)) a.formato = 'feed'
   a.emojis = (a.emojis ?? []).filter((e) => EMOJIS.includes(e.cod))
   a.veu = Math.min(0.6, Math.max(0, Number(a.veu) || 0))
+  a.est = { ...(padrao.est ?? {}), ...(arte?.est ?? {}) }
   return a
 }

@@ -19,6 +19,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@hello-pangea/dnd": "^17.0.0",
+    "@mediapipe/tasks-vision": "^1.0.1",
     "@supabase/supabase-js": "^2.101.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
