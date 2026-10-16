@@ -7,7 +7,7 @@ import {
 } from 'recharts'
 import {
   Lightbulb, BarChart2, Eye, TrendingUp, Plus, ArrowRight,
-  Sparkles, Radar, Zap, Video, Brain, Wand2, Calendar,
+  Sparkles, Radar, Zap, Video, Brain, Wand2, Calendar, Palette,
   ChevronRight, Clock, Target, Flame,
   CheckCircle2, AlignLeft, Layers, Star, ClipboardList,
   Instagram, Youtube, Linkedin, Trophy, AlertCircle,
@@ -647,7 +647,9 @@ export default function Dashboard() {
         <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Zap size={14} className="text-orange-500" /> Ações Rápidas
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
+          <QuickAction icon={Palette} label="Studio de Arte" sub="Artes da identidade" to="/arte" navigate={navigate}
+            gradient="from-rose-50 to-rose-100/50 border-rose-200" iconColor="text-rose-500" />
           <QuickAction icon={Plus} label="Nova Ideia" sub="Criar manualmente" to="/ideas" navigate={navigate}
             gradient="from-orange-50 to-orange-100/50 border-orange-200" iconColor="text-orange-500" />
           <QuickAction icon={Brain} label="Pensamento" sub="Capturar e transformar" to="/thoughts" navigate={navigate}
