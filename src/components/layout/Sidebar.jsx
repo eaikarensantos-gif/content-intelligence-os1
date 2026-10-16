@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Lightbulb, Radar, BarChart2,
   Zap, ChevronRight, Video, X, PenTool, Heart,
   Download, Upload, Check, AlertCircle, Dna, Shield, DollarSign, FileBarChart, Settings,
-  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin,
+  ClipboardList, Clapperboard, Flame, Mic, Dices, Newspaper, Users, FileText, Compass, Instagram, Pin, Palette,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -20,6 +20,7 @@ const NAV_GROUPS = [
   { id: 'conteudo', label: 'Conteúdo', children: [
     { to: '/ideas', icon: Lightbulb, label: 'Hub de Ideias' },
     { to: '/create', icon: PenTool, label: 'Studio de Criação' },
+    { to: '/arte', icon: Palette, label: 'Studio de Arte' },
     { to: '/create-pessoal', icon: Heart, label: 'Studio Pessoal' },
     { to: '/naomi', icon: Clapperboard, label: 'Naomi Studio' },
     { to: '/pdf-studio', icon: FileText, label: 'Conteúdo de PDF' },

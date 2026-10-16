@@ -1,0 +1,7 @@
+/* Fontes da identidade. Os arquivos ficam em public/marca/fontes (repositório privado: Bootzy e Kindergarten são licenciadas). */
+@font-face { font-family: 'KS Bootzy'; src: url('/marca/fontes/Bootzy.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'KS Instrument'; font-style: normal; src: url('/marca/fontes/InstrumentSerif-Regular.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'KS Instrument'; font-style: italic; src: url('/marca/fontes/InstrumentSerif-Italic.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'KS Inter'; font-weight: 500; src: url('/marca/fontes/Inter-Medium.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'KS Inter'; font-weight: 700; src: url('/marca/fontes/Inter-Bold.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'KS Kinder'; src: url('/marca/fontes/Kindergarten-BR.woff2') format('woff2'); font-display: block; }
