@@ -8,6 +8,9 @@ const valid=()=>({
   notas:Object.fromEntries(ANALYSIS_CRITERIA.map(([k])=>[k,8])),
   ganchos:[{nivel:'segura',texto:'A',porque:'Direta'},{nivel:'forte',texto:'B',porque:'Tensão'},{nivel:'ousada',texto:'C',porque:'Contraste'}],
   roteiro:{gancho:'A',desenvolvimento:'B',virada_prova:'C',entrega:'D',cta:'E'},direcao:{enquadramento:'frontal',texto_tela:'A',apoio_visual:'',edicao:'simples',legenda:'abaixo',evitar:[]},alertas:[],
+})
+
+describe('content brain learnings',()=>{
   it('only learns from analyzed content linked to posts and metrics',()=>{
     expect(contentBrainLearnings([],[],[]).learnings).toEqual([])
     const ideas=[1,2,3].map(n=>({id:'i'+n,format:'reels',analysis:{result:{notas:{gancho:8},ganchos:[{}, {nivel:'forte'}]}}}))
@@ -25,7 +28,7 @@ describe('content analysis',()=>{
     const p=buildAnalysisPrompt({content:'Um roteiro suficientemente longo para análise.',platform:'Instagram'},'trabalho')
     expect(p).toContain('ajuda antes de promoção')
     expect(p).toContain('tensão sem polêmica fabricada')
-    expect(p).toContain('não prometa viralização')
+    expect(p).toContain('nem prometa viralização')
     expect(p).toContain('no máximo 3 problemas críticos')
   })
   it('accepts a complete diagnosis',()=>expect(validateAnalysis(valid()).resumo).toContain('tese'))
