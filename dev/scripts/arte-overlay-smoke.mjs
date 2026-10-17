@@ -31,6 +31,10 @@ try {
       }
       const select = page.getByRole('combobox', { name: 'Tarjas de baixo: sobreposição', exact: true })
       await select.selectOption('atras')
+      await page.getByRole('button', { name: 'Desfazer', exact: true }).click()
+      assert.equal(await select.inputValue(), '')
+      await page.getByRole('button', { name: 'Refazer', exact: true }).click()
+      assert.equal(await select.inputValue(), 'atras')
       // Select text even when the full-size cutout covers it.
       await select.locator('..').getByRole('button', { name: 'Selecionar este texto na arte' }).tap()
       await page.getByTestId('painel-camada').waitFor()

@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest'
+import { iniciarHistorico, reduzirHistorico as reduzir } from './useHistorico'
+
+const editar = (estado, n, grupo) => reduzir(estado, { tipo: 'editar', valor: { n }, grupo })
+describe('histórico do Studio de Arte', () => {
+  it('desfaz e refaz uma sequência sem alterar os snapshots', () => {
+    let h = iniciarHistorico({ n: 0 })
+    h = editar(editar(h, 1), 2)
+    h = reduzir(h, { tipo: 'desfazer' })
+    expect(h.presente.n).toBe(1)
+    h = reduzir(h, { tipo: 'desfazer' })
+    expect(h.presente.n).toBe(0)
+    h = reduzir(h, { tipo: 'refazer' })
+    expect(h.presente.n).toBe(1)
+    h = reduzir(h, { tipo: 'refazer' })
+    expect(h.presente.n).toBe(2)
+  })
+  it('agrupa um arrasto, mas mantém gestos seguintes separados', () => {
+    let h = iniciarHistorico({ n: 0 })
+    for (let i = 1; i <= 20; i++) h = editar(h, i, 1)
+    h = editar(h, 21, 2)
+    expect(h.passado).toHaveLength(2)
+    h = reduzir(h, { tipo: 'desfazer' })
+    expect(h.presente.n).toBe(20)
+    expect(reduzir(h, { tipo: 'desfazer' }).presente.n).toBe(0)
+  })
+  it('uma edição depois de desfazer limpa o futuro', () => {
+    let h = editar(iniciarHistorico({ n: 0 }), 1)
+    h = reduzir(h, { tipo: 'desfazer' })
+    h = editar(h, 2)
+    expect(h.futuro).toEqual([])
+    expect(reduzir(h, { tipo: 'refazer' })).toBe(h)
+  })
+  it('navegação não ocupa histórico nem impede refazer', () => {
+    let h = editar(iniciarHistorico({ n: 0 }), 1)
+    h = reduzir(h, { tipo: 'desfazer' })
+    h = reduzir(h, { tipo: 'navegar', valor: p => ({ ...p, atual: 1 }) })
+    expect(h.passado).toEqual([])
+    expect(reduzir(h, { tipo: 'refazer' }).presente.n).toBe(1)
+  })
+  it('restaurar um rascunho começa um histórico vazio e limita a 50 ações', () => {
+    let h = iniciarHistorico({ n: 0 })
+    for (let i = 1; i <= 80; i++) h = editar(h, i)
+    expect(h.passado).toHaveLength(50)
+    h = reduzir(h, { tipo: 'reset', valor: { n: 9 } })
+    expect(h).toEqual(iniciarHistorico({ n: 9 }))
+  })
+  it('atualizadores recebem o estado mais recente e no-op não cria ação', () => {
+    let h = iniciarHistorico({ n: 0 })
+    expect(reduzir(h, { tipo: 'editar', valor: p => p })).toBe(h)
+    h = reduzir(h, { tipo: 'editar', valor: p => ({ n: p.n + 1 }) })
+    h = reduzir(h, { tipo: 'editar', valor: p => ({ n: p.n + 1 }) })
+    expect(h.presente.n).toBe(2)
+  })
+})

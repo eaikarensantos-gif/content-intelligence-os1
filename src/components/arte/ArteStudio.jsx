@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 import TextoArte from './TextoArte'
-import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Scissors, Trash2 } from 'lucide-react'
+import useHistorico from './useHistorico'
+import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Undo2, Redo2, Scissors, Trash2 } from 'lucide-react'
 import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
@@ -141,7 +142,7 @@ const Faixa = ({ rotulo, valor, min, max, passo = 1, onChange }) => (
 const nomeArquivo = (s, n) => `${String(n).padStart(2, '0')}-${(s || 'arte').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}.png`
 
 export default function ArteStudio() {
-  const [projeto, setProjeto] = useState(PROJETO_INICIAL)
+  const { projeto, setProjeto, navegar, reset, desfazer, refazer, podeDesfazer, podeRefazer, iniciarGrupo, encerrarGrupo } = useHistorico(PROJETO_INICIAL)
   const [carregado, setCarregado] = useState(false)
   const [selecionado, setSelecionado] = useState(null)
   const [ocupado, setOcupado] = useState('')
@@ -167,11 +168,11 @@ export default function ArteStudio() {
         const slides = salvo.slides
           .filter((s) => s.template in TEMPLATES || ehCartao(s))
           .map((s) => (ehCartao(s) ? normalizarCartao(s) : normalizar(s, { ...TEMPLATES[s.template].padrao, template: s.template })))
-        if (slides.length) setProjeto({ ...PROJETO_INICIAL, ...salvo, slides, atual: Math.min(salvo.atual ?? 0, slides.length - 1) })
+        if (slides.length) reset({ ...PROJETO_INICIAL, ...salvo, slides, atual: Math.min(salvo.atual ?? 0, slides.length - 1) })
       }
       setCarregado(true)
     })
-  }, [])
+  }, [reset])
   useEffect(() => { if (carregado) salvarRascunho(projeto) }, [projeto, carregado])
 
   const mudarProjeto = (campos) => setProjeto((p) => ({ ...p, ...campos }))
@@ -188,8 +189,30 @@ export default function ArteStudio() {
     setSelecionado(null)
   }
 
+  const voltarEdicao = () => { desfazer(); setSelecionado(null); setAnterior(null) }
+  const repetirEdicao = () => { refazer(); setSelecionado(null); setAnterior(null) }
+  useEffect(() => {
+    const encerrar = () => encerrarGrupo('pointer')
+    window.addEventListener('pointerup', encerrar)
+    window.addEventListener('pointercancel', encerrar)
+    return () => {
+      window.removeEventListener('pointerup', encerrar)
+      window.removeEventListener('pointercancel', encerrar)
+    }
+  }, [encerrarGrupo])
+
   useEffect(() => {
     const tecla = (e) => {
+      const digitando = e.target.closest('textarea, input:not([type="range"]):not([type="checkbox"]), [contenteditable="true"]')
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !digitando && !galeria && !bancoAberto && !ocupado && carregado) {
+        const key = e.key.toLowerCase()
+        if (key === 'z' || key === 'y') {
+          e.preventDefault()
+          if (key === 'y' || e.shiftKey) repetirEdicao()
+          else voltarEdicao()
+          return
+        }
+      }
       if (!selecionado || galeria || !['Delete', 'Backspace'].includes(e.key) || e.target.closest('input, textarea, select, [contenteditable="true"]')) return
       e.preventDefault()
       apagarElemento(selecionado)
@@ -333,7 +356,7 @@ export default function ArteStudio() {
   }
 
   // Slides
-  const irPara = (i) => { mudarProjeto({ atual: i }); setSelecionado(null) }
+  const irPara = (i) => { navegar((p) => ({ ...p, atual: i })); setSelecionado(null) }
   const adicionar = () => setProjeto((p) => ({ ...p, slides: [...p.slides, padraoDe(p.slides[p.atual])], atual: p.slides.length }))
   const duplicar = () => setProjeto((p) => ({ ...p, slides: [...p.slides.slice(0, p.atual + 1), structuredClone(p.slides[p.atual]), ...p.slides.slice(p.atual + 1)], atual: p.atual + 1 }))
   const apagar = () => setProjeto((p) => (p.slides.length < 2 ? p : { ...p, slides: p.slides.filter((_, i) => i !== p.atual), atual: Math.max(0, p.atual - 1) }))
@@ -372,12 +395,12 @@ export default function ArteStudio() {
     try {
       for (let i = 0; i < slides.length; i++) {
         setOcupado(`Exportando ${i + 1} de ${slides.length}…`)
-        mudarProjeto({ atual: i })
+        navegar((p) => ({ ...p, atual: i }))
         await new Promise((r) => setTimeout(r, 350))
         baixar(await png(slides[i]), nomeArquivo(tituloDoSlide(slides[i]), i + 1))
       }
     } finally {
-      mudarProjeto({ atual: volta })
+      navegar((p) => ({ ...p, atual: volta }))
       setOcupado('')
     }
   }
@@ -433,8 +456,16 @@ export default function ArteStudio() {
   }) : null
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-6 animate-fade-in"
+      onPointerDownCapture={(e) => { if (e.target.closest('[data-canvas="editor"], input[type="range"]')) iniciarGrupo('pointer') }}
+      onFocusCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) iniciarGrupo('texto') }}
+      onBlurCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) encerrarGrupo('texto') }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div className="flex gap-2" role="group" aria-label="Histórico de edição">
+          <button type="button" onClick={voltarEdicao} disabled={!podeDesfazer || !carregado || !!ocupado} title="Desfazer (Ctrl+Z / ⌘Z)" className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 disabled:opacity-40"><Undo2 size={16} />Desfazer</button>
+          <button type="button" onClick={repetirEdicao} disabled={!podeRefazer || !carregado || !!ocupado} title="Refazer (Ctrl+Shift+Z / Ctrl+Y)" className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 disabled:opacity-40"><Redo2 size={16} />Refazer</button>
+        </div>
         {/* Foto fica aqui em cima para não sumir quando um texto está selecionado nem no celular. */}
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setGaleria(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800"><LayoutGrid size={15} />Modelos de arte ({itensGaleria.length})</button>
