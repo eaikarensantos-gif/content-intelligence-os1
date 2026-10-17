@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
-import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Loader2, Plus, RotateCcw, Scissors, Trash2 } from 'lucide-react'
+import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, Loader2, Plus, RotateCcw, Scissors, Trash2 } from 'lucide-react'
 import { CORES, EMOJIS, FONTES_TITULO, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
 import { montarProjeto } from './pedido'
 import Pedido from './Pedido'
+import Banco from './Banco'
 import './marca.css'
 
 const novoSlide = (template = 'tarjas', herdado = {}) => normalizar(herdado, { ...TEMPLATES[template].padrao, template })
@@ -99,6 +100,7 @@ export default function ArteStudio() {
   const [ocupado, setOcupado] = useState('')
   const [aviso, setAviso] = useState('')
   const [anterior, setAnterior] = useState(null)
+  const [bancoAberto, setBancoAberto] = useState(false)
   const node = useRef(null)
 
   const { formato, slides, atual } = projeto
@@ -152,13 +154,16 @@ export default function ArteStudio() {
     }
   }
 
-  const escolherFoto = async (e) => {
-    const f = e.target.files?.[0]
-    e.target.value = ''
-    if (!f) return
-    const foto = await prepararFoto(f)
+  // Recebe um arquivo/Blob (upload ou banco) ou um data URL (quadro de vídeo, já reduzido).
+  const usarFoto = async (origem) => {
+    const foto = typeof origem === 'string' ? origem : await prepararFoto(origem)
     mudar({ foto, recorte: '', veu: arte.veu || 0.3 })
     if (TEMPLATES[arte.template].recorta) gerarRecorte(foto)
+  }
+  const escolherFoto = (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (f) usarFoto(f)
   }
 
   const aplicarPedido = (resposta) => {
@@ -233,6 +238,7 @@ export default function ArteStudio() {
       </div>
 
       <Pedido onResposta={aplicarPedido} desfazer={anterior ? desfazerPedido : null} />
+      {bancoAberto && <Banco onFechar={() => setBancoAberto(false)} onEscolher={(origem) => { setBancoAberto(false); usarFoto(origem) }} />}
 
       {(ocupado || aviso) && (
         <div className={`mb-4 flex items-center gap-2 text-sm ${aviso ? 'text-red-600' : 'text-gray-600'}`}>
@@ -332,6 +338,7 @@ export default function ArteStudio() {
                     <ImagePlus size={15} />{arte.foto ? 'Trocar foto' : 'Colocar foto'}
                     <input type="file" accept="image/*" onChange={escolherFoto} className="hidden" />
                   </label>
+                  <button type="button" onClick={() => setBancoAberto(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Images size={15} />Do meu banco</button>
                   {arte.foto && TEMPLATES[arte.template].recorta && (
                     <button type="button" onClick={() => gerarRecorte(arte.foto)} disabled={!!ocupado} className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Scissors size={14} />Refazer recorte</button>
                   )}
