@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Database, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ExternalLink, RefreshCw, Key, Youtube, Sun, Moon, Instagram, Copy, Download, CalendarDays } from 'lucide-react'
 import useStore from '../../store/useStore'
 import useAIStore from '../../store/useAIStore'
+import CofreChaves from './CofreChaves'
 import { resetSupabaseClient, isSupabaseConfigured, getSupabaseUrl, getSupabaseKey } from '../../lib/supabase'
 import { dbTestConnection } from '../../lib/db'
 import {
@@ -219,6 +220,8 @@ export default function SupabaseSettings() {
         <h1 className="text-lg font-bold text-gray-900">Configurações</h1>
         <p className="text-sm text-gray-400 mt-0.5">Banco de dados, chaves de API e integrações</p>
       </div>
+
+      <CofreChaves />
 
       {/* ── Aparência ──────────────────────────────────────────────────────────── */}
       <div className="card p-5 space-y-3">

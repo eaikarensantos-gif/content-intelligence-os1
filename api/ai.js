@@ -10,6 +10,7 @@
 //   (default)          → AI chat completion
 
 import { ANTI_AI_FILTER } from '../src/lib/antiAIFilter.js'
+import { apagarDoCofre, completarComCofre, listarCofre, salvarNoCofre } from '../src/lib/cofreServidor.js'
 
 const PROVIDER_URLS = {
   openai:     'https://api.openai.com/v1/chat/completions',
@@ -1268,6 +1269,16 @@ function isAllowedOrigin(origin) {
   return false
 }
 
+// Gravar ou apagar chaves do cofre: só a partir do próprio Content (produção, previews dele,
+// localhost ou ALLOWED_ORIGINS), não de qualquer *.vercel.app.
+function isAppOrigin(origin) {
+  if (!isAllowedOrigin(origin)) return false
+  const extra = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean)
+  if (extra.includes(origin)) return true
+  const { hostname } = new URL(origin)
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('content-intelligence-o')
+}
+
 function applyCors(req, res) {
   const origin = req.headers.origin
   if (isAllowedOrigin(origin)) {
@@ -1293,6 +1304,18 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'version') return res.status(200).json({ version: 'public-audio-v4' })
+
+    // ── Cofre de chaves (lista só o final; o valor nunca volta ao navegador) ──
+    if (action === 'chaves-listar') return res.status(200).json({ chaves: await listarCofre() })
+    if (action === 'chaves-salvar' || action === 'chaves-apagar') {
+      if (!isAppOrigin(req.headers.origin)) return res.status(403).json({ error: 'Só o próprio Content pode mudar as chaves.' })
+      if (action === 'chaves-salvar') await salvarNoCofre(req.body?.nome, req.body?.valor)
+      else await apagarDoCofre(req.body?.nome)
+      return res.status(200).json({ chaves: await listarCofre() })
+    }
+
+    // Chave que o aparelho não tem (ou marcou como "cofre") vem do cofre.
+    await completarComCofre(req)
     // ── OpenAI Responses API (compatibility response shape) ─────────────────
     if (action === 'openai') {
       // Production uses the server-side Vercel secret. A browser-provided key is
