@@ -293,13 +293,19 @@ export default function ArteStudio() {
   }
   const abrirBanco = (slot = null) => { setFotoAlvo(slot); setBancoAberto(true) }
 
-  const aplicarPedido = (resposta) => {
-    const novo = montarProjeto(resposta, arte.foto)
+  const aplicarPedido = async (resposta) => {
+    const foto = cartao ? arte.fotos?.[fotosDe(def)[0]] || '' : arte.foto
+    const novo = montarProjeto(resposta, foto)
     setAnterior(projeto)
     setProjeto(novo)
     setSelecionado(null)
-    const precisa = novo.slides.find((s) => s.foto && TEMPLATES[s.template].recorta)
-    if (precisa) gerarRecorte(precisa.foto)
+    const precisa = novo.slides.find((s) => s.foto && TEMPLATES[s.template]?.recorta)
+    if (precisa) await gerarRecorte(precisa.foto)
+    const slots = new Set(novo.slides.filter(ehCartao).map((s) => CARTAO[s.cartao].cabeca?.slot).filter(Boolean))
+    for (const slot of slots) {
+      const slide = novo.slides.find((s) => ehCartao(s) && s.fotos?.[slot])
+      if (slide) await recortarCartao(slot, slide.fotos[slot])
+    }
   }
   const desfazerPedido = () => { setProjeto(anterior); setAnterior(null); setSelecionado(null) }
 
