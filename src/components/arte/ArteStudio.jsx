@@ -98,7 +98,7 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onMoverCamada, o
   const alca = (chave, x, y) => ({ onPointerDown: (e) => iniciar(e, chave, x, y), onPointerMove: mover, onPointerUp: soltar, onPointerCancel: soltar, onLostPointerCapture: soltar, style: { cursor: 'move', touchAction: 'none' } })
 
   return (
-    <div ref={nodeRef} data-canvas={interativo ? 'editor' : 'miniatura'} {...(interativo && arte.foto ? alca('foto', arte.fotoDX ?? 0, arte.fotoDY ?? 0) : { onPointerDown: () => interativo && onSelecionar?.(null) })} style={{ position: 'relative', width: w, height: h, overflow: 'hidden', background: cartao ? '#2B211B' : hex(arte.fundo), touchAction: interativo ? 'none' : undefined }}>
+    <div ref={nodeRef} tabIndex={interativo ? 0 : undefined} aria-label={interativo ? 'Área de edição da arte' : undefined} onPointerDownCapture={interativo ? (e) => e.currentTarget.focus({ preventScroll: true }) : undefined} data-canvas={interativo ? 'editor' : 'miniatura'} {...(interativo && arte.foto ? alca('foto', arte.fotoDX ?? 0, arte.fotoDY ?? 0) : { onPointerDown: () => interativo && onSelecionar?.(null) })} style={{ position: 'relative', width: w, height: h, overflow: 'hidden', background: cartao ? '#2B211B' : hex(arte.fundo), touchAction: interativo ? 'none' : undefined }}>
       {cartao ? (
         <CartaoCorpo arte={arte} interativo={interativo} selecionado={selecionado} onSelecionar={onSelecionar} onMoverCamada={onMoverCamada} escala={escala} grao={grao} />
       ) : (
@@ -213,7 +213,7 @@ export default function ArteStudio() {
           return
         }
       }
-      if (!selecionado || galeria || !['Delete', 'Backspace'].includes(e.key) || e.target.closest('input, textarea, select, [contenteditable="true"]')) return
+      if (!selecionado || galeria || bancoAberto || ocupado || !['Delete', 'Backspace'].includes(e.key) || e.target.closest('input, textarea, select, [contenteditable="true"]')) return
       e.preventDefault()
       apagarElemento(selecionado)
     }
@@ -569,6 +569,10 @@ export default function ArteStudio() {
                 <span className="text-sm font-semibold text-gray-900 truncate">{descreverCamada(elCamada)}</span>
                 <button type="button" onClick={() => setSelecionado(null)} className="text-xs text-gray-500 hover:underline shrink-0">Fechar</button>
               </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50"><Trash2 size={14} />Apagar da arte</button>
+                <span className="text-xs text-gray-500">Ou pressione Delete após selecionar na arte.</span>
+              </div>
               <div className="space-y-3" aria-label="Textos do modelo">
                 <p className="text-sm font-semibold">Textos do modelo</p>
                 <p className="text-xs text-gray-500">Edite os textos e quebre linhas aqui. Os ajustes abaixo se aplicam ao elemento selecionado.</p>
@@ -598,7 +602,6 @@ export default function ArteStudio() {
               </details>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => mudarCamada(camadaSel, { dx: 0, dy: 0, escala: 1 })} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><RotateCcw size={14} />Voltar ao lugar</button>
-                <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50"><Trash2 size={14} />Apagar da arte</button>
               </div>
             </div>
           ) : cartao ? (
