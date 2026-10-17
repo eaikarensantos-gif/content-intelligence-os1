@@ -174,7 +174,8 @@ async function enrichVideos(items, youtubeApiKey) {
     if (item.url && /youtube\.com\/watch|youtu\.be\//.test(item.url)) {
       return { ...item, verified: true }
     }
-    if (!youtubeApiKey) return item
+    // "cofre": a chave está só no servidor; essa busca é direta do navegador, então fica sem o enriquecimento.
+    if (!youtubeApiKey || youtubeApiKey === 'cofre') return item
     try {
       const q = encodeURIComponent(`${item.titulo} ${item.canal || ''}`)
       const lang = item.idioma === 'PT' ? '&relevanceLanguage=pt&regionCode=BR' : ''

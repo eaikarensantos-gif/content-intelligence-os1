@@ -1,5 +1,5 @@
 // Sem OPENAI_API_KEY na Vercel, só funciona no aparelho que tem a chave salva no navegador.
-export const SEM_CHAVE = 'A chave da OpenAI não está salva neste aparelho e o servidor não tem uma configurada. Salve a chave neste aparelho ou cadastre OPENAI_API_KEY na Vercel para valer em todos.'
+export const SEM_CHAVE = 'A chave da OpenAI não está salva neste aparelho nem no Content. Salve em Configurações → Chaves fixas no Content para valer em todos os aparelhos, ou salve só neste aparelho aqui embaixo.'
 
 /**
  * Handle OpenAI API errors (via /api/ai?action=openai) with user-friendly Portuguese messages.

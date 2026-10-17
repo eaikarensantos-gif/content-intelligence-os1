@@ -278,7 +278,22 @@ export default function WebClipper() {
       const text = [clip.title, clip.description, clip.content].filter(Boolean).join('\n\n').slice(0, 4000)
 
       let response, data, summary
-      if (provider === 'groq') {
+      const mensagens = [
+        { role: 'system', content: 'Você é um assistente que resume conteúdo de forma concisa. Responda em português, máximo 3 frases.' },
+        { role: 'user', content: `Resuma este conteúdo:\n\n${text}` },
+      ]
+      if (apiKey === 'cofre') {
+        // Chave guardada no cofre do Content: só o servidor tem o valor, então a chamada passa por ele.
+        response = await fetch('/api/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(provider === 'groq'
+            ? { provider: 'groq', apiKey: 'cofre', model: 'llama-3.1-8b-instant', messages: mensagens, options: { maxTokens: 200 } }
+            : { provider: 'openai', apiKey: 'cofre', messages: mensagens, options: { maxTokens: 200 } }),
+        })
+        data = await response.json()
+        summary = data.content?.trim()
+      } else if (provider === 'groq') {
         response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },

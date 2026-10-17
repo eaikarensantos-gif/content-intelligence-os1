@@ -11,6 +11,7 @@ import FloatingActions from './components/global/FloatingActions'
 import CommandPalette from './components/common/CommandPalette'
 import useStore from './store/useStore'
 import { isSupabaseConfigured } from './lib/supabase'
+import { sincronizarCofre } from './lib/cofre'
 
 // Route pages are code-split so the initial bundle stays small; each loads on
 // demand when its route is first visited.
@@ -132,6 +133,7 @@ export default function App() {
 
   useEffect(() => {
     if (isSupabaseConfigured()) loadFromDB()
+    sincronizarCofre()
   }, [])
 
   return (
