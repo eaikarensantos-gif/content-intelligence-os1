@@ -99,3 +99,16 @@ export function descreverCamada(el) {
   if (/url\(/.test(el.getAttribute('style') ?? '') || el.querySelector?.('[style*="url("]')) return 'Foto'
   return 'Forma'
 }
+
+/** Identifica os campos que desenham a camada, inclusive textos divididos em linhas ou sílabas. */
+export function camposDaCamada(def, arte, indice) {
+  if (indice < 0) return []
+  const valores = textosDe(def, arte)
+  return def.campos.filter((campo, i) => {
+    const marca = `CIOCAMPO${i}MARCADOR`
+    const valor = String(valores[campo.id] ?? '').replace(/(^|[\n-])/g, `$1${marca}`)
+    const fragmento = document.createElement('template')
+    fragmento.innerHTML = def.html({ t: { ...valores, [campo.id]: valor }, F: () => 'none', R: () => 'none' })
+    return fragmento.content.children[indice]?.textContent.includes(marca)
+  })
+}

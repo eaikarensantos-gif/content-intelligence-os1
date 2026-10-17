@@ -2,14 +2,14 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { toPng } from 'html-to-image'
 import TextoArte from './TextoArte'
 import useHistorico from './useHistorico'
-import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Undo2, Redo2, Scissors, Trash2 } from 'lucide-react'
+import { AlignCenter, AlignLeft, AlignRight, ChevronDown, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Undo2, Redo2, Scissors, Trash2 } from 'lucide-react'
 import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
 import { fixarTextos, montarProjeto, pedidoDeSlides, pedirArte, pegarEntrada } from './pedido'
 import { CARTAO, CARTOES, CATEGORIAS } from './cartoes/colecao'
-import { descreverCamada, ehCartao, formatoDe, fotosDe, normalizarCartao, novoCartao, textosDe, urlFoto } from './cartoes/render'
+import { camposDaCamada, descreverCamada, ehCartao, formatoDe, fotosDe, normalizarCartao, novoCartao, textosDe, urlFoto } from './cartoes/render'
 import { CartaoCorpo } from './cartoes/Cartao'
 import Galeria from './Galeria'
 import Pedido from './Pedido'
@@ -434,11 +434,13 @@ export default function ArteStudio() {
     </Campo>
   )
 
-  const camposTextoCartao = cartao ? def.campos.map((c) => {
+  const camposSelecionados = useMemo(() => cartao && camadaSel >= 0 ? camposDaCamada(def, arte, camadaSel) : [], [cartao, def, arte.textos, camadaSel]) // eslint-disable-line react-hooks/exhaustive-deps
+  const idsSelecionados = new Set(camposSelecionados.map((c) => c.id))
+  const renderCampoTexto = (c, compacto = false) => {
     const valor = textosDe(def, arte)[c.id] ?? ''
     return (
       <Campo key={c.id} rotulo={c.rotulo}>
-        <TextoArte rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
+        <TextoArte compacto={compacto} rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
         {c.ajuda && <span className="block text-xs text-gray-400 mt-0.5">{c.ajuda}</span>}
         {def.camadasTexto?.[c.id] != null && (
           <span className="block mt-2 space-y-1">
@@ -448,12 +450,13 @@ export default function ArteStudio() {
               <option value="atras">Atrás da pessoa</option>
               <option value="frente">Na frente da pessoa</option>
             </select>
-            <button type="button" onClick={() => setSelecionado(`camada:${def.camadasTexto[c.id]}`)} className="min-h-11 text-xs text-orange-700 underline">Selecionar este texto na arte</button>
+            {!compacto && <button type="button" onClick={() => setSelecionado(`camada:${def.camadasTexto[c.id]}`)} className="min-h-11 text-xs text-orange-700 underline">Selecionar este texto na arte</button>}
           </span>
         )}
       </Campo>
     )
-  }) : null
+  }
+  const camposTextoCartao = cartao ? def.campos.map((c) => renderCampoTexto(c)) : null
 
   return (
     <div className="p-6 animate-fade-in"
@@ -573,11 +576,9 @@ export default function ArteStudio() {
                 <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50"><Trash2 size={14} />Apagar da arte</button>
                 <span className="text-xs text-gray-500">Ou pressione Delete após selecionar na arte.</span>
               </div>
-              <div className="space-y-3" aria-label="Textos do modelo">
-                <p className="text-sm font-semibold">Textos do modelo</p>
-                <p className="text-xs text-gray-500">Edite os textos e quebre linhas aqui. Os ajustes abaixo se aplicam ao elemento selecionado.</p>
-                {camposTextoCartao}
-              </div>
+              {camposSelecionados.length > 0 && <div className="space-y-2" aria-label="Texto selecionado">
+                {camposSelecionados.map((c) => renderCampoTexto(c, true))}
+              </div>}
               <Faixa rotulo="Tamanho (%)" valor={Math.round((camada.escala ?? 1) * 100)} min={20} max={300} onChange={(v) => mudarCamada(camadaSel, { escala: v / 100 })} />
               <Campo rotulo="Fonte">
                 <select value={camada.fonte ?? ''} onChange={(e) => mudarCamada(camadaSel, { fonte: e.target.value || undefined })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
@@ -585,6 +586,9 @@ export default function ArteStudio() {
                   {Object.entries(FONTES).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
                 </select>
               </Campo>
+              <details key={`ajustes:${arte.cartao}:${camadaSel}`} className="border-t border-orange-100 pt-2">
+                <summary className="min-h-11 flex items-center justify-between text-sm text-gray-700 cursor-pointer">Mais ajustes · cor e corte<ChevronDown size={16} /></summary>
+                <div className="space-y-3 pt-2">
               <Campo rotulo="Cor do texto">
                 <div className="flex flex-wrap items-center gap-2">
                   <Cores valor={camada.cor} onChange={(cor) => mudarCamada(camadaSel, { cor })} />
@@ -603,6 +607,12 @@ export default function ArteStudio() {
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => mudarCamada(camadaSel, { dx: 0, dy: 0, escala: 1 })} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><RotateCcw size={14} />Voltar ao lugar</button>
               </div>
+                </div>
+              </details>
+              {def.campos.length > camposSelecionados.length && <details key={`${arte.cartao}:${camadaSel}`} className="border-t border-orange-100 pt-2">
+                <summary className="min-h-11 flex items-center justify-between text-sm text-orange-800 cursor-pointer">Outros textos do modelo ({def.campos.length - camposSelecionados.length})<ChevronDown size={16} /></summary>
+                <div className="space-y-3 mt-2">{def.campos.filter((c) => !idsSelecionados.has(c.id)).map((c) => renderCampoTexto(c, true))}</div>
+              </details>}
             </div>
           ) : cartao ? (
             <>
