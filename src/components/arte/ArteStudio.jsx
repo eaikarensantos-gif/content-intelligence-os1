@@ -106,7 +106,8 @@ export default function ArteStudio() {
   const { formato, slides, atual } = projeto
   const arte = slides[atual]
   const { w, h } = FORMATOS[formato]
-  const escala = 520 / w
+  // No celular a arte encolhe para caber na tela, com o painel logo abaixo.
+  const escala = Math.min(520, typeof window !== 'undefined' ? window.innerWidth - 48 : 520) / w
   const contadorDe = (i) => (projeto.contador && slides.length > 1 ? `${i + 1}/${slides.length}` : '')
 
   useEffect(() => {
@@ -228,14 +229,23 @@ export default function ArteStudio() {
 
   return (
     <div className="p-6 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <p className="text-sm text-gray-500">Clique num texto para editar só ele. Arraste textos e emojis direto na arte.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        {/* Foto fica aqui em cima para não sumir quando um texto está selecionado nem no celular. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+            <ImagePlus size={15} />{arte.foto ? 'Trocar foto' : 'Colocar foto'}
+            <input type="file" accept="image/*" onChange={escolherFoto} className="hidden" />
+          </label>
+          <button type="button" onClick={() => setBancoAberto(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Images size={15} />Do meu banco</button>
+          {arte.foto && <button type="button" onClick={() => mudar({ foto: '', recorte: '' })} className="flex items-center gap-1 px-2 text-sm text-gray-500 hover:text-red-600"><Trash2 size={14} />Tirar foto</button>}
+        </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => { mudarSlide((s) => ({ ...s, pos: TEMPLATES[s.template].padrao.pos, est: {} })); setSelecionado(null) }} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><RotateCcw size={15} />Posições padrão</button>
           <button type="button" onClick={exportarAtual} disabled={!!ocupado} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-50 disabled:opacity-60"><Download size={15} />Baixar este</button>
           <button type="button" onClick={exportarTodos} disabled={!!ocupado} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"><Download size={15} />Baixar todos ({slides.length})</button>
         </div>
       </div>
+      <p className="text-sm text-gray-500 mb-5">Clique num texto para editar só ele. Arraste textos e emojis direto na arte.</p>
 
       <Pedido onResposta={aplicarPedido} desfazer={anterior ? desfazerPedido : null} />
       {bancoAberto && <Banco onFechar={() => setBancoAberto(false)} onEscolher={(origem) => { setBancoAberto(false); usarFoto(origem) }} />}
@@ -333,17 +343,9 @@ export default function ArteStudio() {
               {arte.template === 'tarjas' && <Campo rotulo="Cor da tarja"><Cores valor={arte.corTarja} onChange={(corTarja) => mudar({ corTarja })} /></Campo>}
 
               <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
-                    <ImagePlus size={15} />{arte.foto ? 'Trocar foto' : 'Colocar foto'}
-                    <input type="file" accept="image/*" onChange={escolherFoto} className="hidden" />
-                  </label>
-                  <button type="button" onClick={() => setBancoAberto(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Images size={15} />Do meu banco</button>
-                  {arte.foto && TEMPLATES[arte.template].recorta && (
-                    <button type="button" onClick={() => gerarRecorte(arte.foto)} disabled={!!ocupado} className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Scissors size={14} />Refazer recorte</button>
-                  )}
-                  {arte.foto && <button type="button" onClick={() => mudar({ foto: '', recorte: '' })} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-600"><Trash2 size={14} />Tirar</button>}
-                </div>
+                {arte.foto && TEMPLATES[arte.template].recorta && (
+                  <button type="button" onClick={() => gerarRecorte(arte.foto)} disabled={!!ocupado} className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Scissors size={14} />Refazer recorte</button>
+                )}
                 {arte.foto && (
                   <div className="grid grid-cols-2 gap-3">
                     <Faixa rotulo="Horizontal" valor={arte.fotoX} min={0} max={100} onChange={(fotoX) => mudar({ fotoX })} />
