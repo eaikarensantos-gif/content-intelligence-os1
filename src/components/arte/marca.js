@@ -1,4 +1,4 @@
-// Identidade visual @karensantosperfil: cores, fontes e regras que o Studio de Arte não deixa quebrar.
+// Identidade visual @karensantosperfil: paleta e sugestões iniciais do Studio de Arte.
 // Fonte única de verdade para os templates; o Design System completo está no artifact "Karen Santos · Instagram".
 
 export const CORES = {
@@ -11,13 +11,31 @@ export const CORES = {
   tinta: { nome: 'Tinta', hex: '#2B211B' },
 }
 
-// Título é Bootzy ou Instrument; Inter é sempre corpo; a manuscrita é só detalhe.
+// Fontes iniciais: título em Bootzy ou Instrument, corpo em Inter e detalhe manuscrito.
 export const FONTES_TITULO = {
   bootzy: { nome: 'Bootzy', css: "'KS Bootzy', 'Arial Black', sans-serif", tracking: '0.03em', estilo: 'normal' },
   instrument: { nome: 'Instrument Serif', css: "'KS Instrument', Georgia, serif", tracking: '-0.01em', estilo: 'italic' },
 }
 export const FONTE_CORPO = "'KS Inter', Arial, sans-serif"
 export const FONTE_DETALHE = "'KS Kinder', 'Comic Neue', cursive"
+
+// As fontes da marca são sugestões; cada bloco pode usar uma fonte diferente.
+export const FONTES = {
+  ...FONTES_TITULO,
+  inter: { nome: 'Inter', css: FONTE_CORPO, estilo: 'normal', tracking: '-0.01em' },
+  kinder: { nome: 'Kindergarten', css: FONTE_DETALHE, estilo: 'normal', tracking: 'normal' },
+  arial: { nome: 'Arial', css: 'Arial, sans-serif', estilo: 'normal', tracking: 'normal' },
+  georgia: { nome: 'Georgia', css: 'Georgia, serif', estilo: 'normal', tracking: 'normal' },
+  times: { nome: 'Times New Roman', css: "'Times New Roman', serif", estilo: 'normal', tracking: 'normal' },
+  courier: { nome: 'Courier New', css: "'Courier New', monospace", estilo: 'normal', tracking: 'normal' },
+}
+
+export const fonteDoBloco = (a, id, padrao) => FONTES[a.est?.[id]?.fonte] ?? FONTES[padrao]
+
+export const corteFoto = (a, recorte = 0) => {
+  const c = a.fotoCorte ?? {}
+  return `inset(max(${recorte}px, ${c.topo ?? 0}%) ${c.direita ?? 0}% ${c.base ?? 0}% ${c.esquerda ?? 0}%)`
+}
 
 export const FORMATOS = {
   feed: { nome: 'Feed 4:5', w: 1080, h: 1350 },

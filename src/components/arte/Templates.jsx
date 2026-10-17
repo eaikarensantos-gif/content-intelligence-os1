@@ -1,4 +1,4 @@
-import { FONTES_TITULO, FONTE_CORPO, FONTE_DETALHE, hex, partesDestaque, emojiUrl } from './marca'
+import { FONTE_CORPO, fonteDoBloco, corteFoto, hex, partesDestaque, emojiUrl } from './marca'
 
 // Cada template desenha a arte em tamanho real (1080 de largura). Os blocos de texto ficam dentro de
 // <Bloco id>, que o canvas posiciona por arte.pos[id], deixa arrastar e redimensionar. Tamanho e
@@ -14,30 +14,37 @@ const Rico = ({ texto, cor, fundo }) =>
     ),
   )
 
+const estiloFonte = (a, id, padrao) => {
+  const f = fonteDoBloco(a, id, padrao)
+  return { fontFamily: f.css, fontStyle: f.estilo, letterSpacing: f.tracking }
+}
+
 /** Tamanho e alinhamento do bloco: o que a pessoa ajustou ou o padrão do template. */
 export const tam = (a, id, padrao) => a.est?.[id]?.tamanho ?? padrao
 export const alin = (a, id, padrao = 'left') => a.est?.[id]?.alinhar ?? padrao
 
 const estiloTitulo = (a, padrao) => {
-  const f = FONTES_TITULO[a.fonteTitulo]
+  const f = fonteDoBloco(a, 'titulo', a.fonteTitulo)
   return { fontFamily: f.css, fontStyle: f.estilo, letterSpacing: f.tracking, fontSize: tam(a, 'titulo', padrao), lineHeight: 1.02, color: hex(a.corTitulo), whiteSpace: 'pre-wrap' }
 }
-const estiloCorpo = (a, padrao = 40) => ({ fontFamily: FONTE_CORPO, fontWeight: 500, fontSize: tam(a, 'texto', padrao), lineHeight: 1.32, letterSpacing: '-0.01em', color: hex(a.corTexto), whiteSpace: 'pre-wrap' })
+const estiloCorpo = (a, padrao = 40) => ({ ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: tam(a, 'texto', padrao), lineHeight: 1.32, letterSpacing: '-0.01em', color: hex(a.corTexto), whiteSpace: 'pre-wrap' })
 
 /** Foto com enquadramento. A mesma camada desenha o recorte da pessoa, então os dois ficam sempre alinhados. */
 export const Camada = ({ a, src, recorte = 0 }) =>
   src ? (
-    <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${src})`, backgroundSize: `${a.fotoZoom}%`, backgroundPosition: `${a.fotoX}% ${a.fotoY}%`, backgroundRepeat: 'no-repeat', clipPath: recorte ? `inset(${recorte}px 0 0 0)` : undefined }} />
+    <div data-foto="" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', clipPath: corteFoto(a, recorte) }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${src})`, backgroundSize: `${a.fotoZoom}%`, backgroundPosition: `${a.fotoX}% ${a.fotoY}%`, backgroundRepeat: 'no-repeat', transform: `translate(${a.fotoDX ?? 0}px, ${a.fotoDY ?? 0}px)` }} />
+    </div>
   ) : null
 
 /** Véu chapado sobre a foto (nunca degradê). */
 const Veu = ({ a, recorte = 0 }) =>
-  a.foto && a.veu > 0 ? <div style={{ position: 'absolute', left: 0, right: 0, top: recorte, bottom: 0, background: hex('tinta'), opacity: a.veu }} /> : null
+  a.foto && a.veu > 0 ? <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: hex('tinta'), opacity: a.veu, clipPath: corteFoto(a, recorte) }} /> : null
 
 const Detalhe = ({ a, Bloco }) =>
   a.detalhe ? (
     <Bloco id="detalhe" largura={460}>
-      <div style={{ fontFamily: FONTE_DETALHE, fontSize: tam(a, 'detalhe', 46), lineHeight: 1.15, color: hex(a.corDestaque), whiteSpace: 'pre-wrap', textAlign: alin(a, 'detalhe') }}>{a.detalhe}</div>
+      <div style={{ ...estiloFonte(a, 'detalhe', 'kinder'), fontSize: tam(a, 'detalhe', 46), lineHeight: 1.15, color: hex(a.corDestaque), whiteSpace: 'pre-wrap', textAlign: alin(a, 'detalhe') }}>{a.detalhe}</div>
     </Bloco>
   ) : null
 
@@ -58,13 +65,13 @@ const Tarjas = ({ a, Bloco }) => (
     <Veu a={a} />
     <Bloco id="titulo" largura={920}>
       <div style={{ ...estiloTitulo(a, 80), lineHeight: 1.28, textAlign: alin(a, 'titulo') }}>
-        <Tarja fundo={hex(a.corTarja)}><Rico texto={a.titulo} cor={hex(a.corDestaque)} /></Tarja>
+        <Tarja fundo={a.semEnfeites ? undefined : hex(a.corTarja)}><Rico texto={a.titulo} cor={hex(a.corDestaque)} /></Tarja>
       </div>
     </Bloco>
     {a.texto && (
       <Bloco id="texto" largura={880}>
         <div style={{ ...estiloCorpo(a, 40), lineHeight: 1.45, textAlign: alin(a, 'texto') }}>
-          <Tarja fundo={hex(a.corDestaque)} cor={hex('creme')} padding="4px 14px">{a.texto}</Tarja>
+          <Tarja fundo={a.semEnfeites ? undefined : hex(a.corDestaque)} cor={a.semEnfeites ? hex(a.corTexto) : hex('creme')} padding="4px 14px">{a.texto}</Tarja>
         </div>
       </Bloco>
     )}
@@ -74,6 +81,8 @@ const Tarjas = ({ a, Bloco }) => (
 
 const CorCheia = ({ a, Bloco }) => (
   <>
+    <Camada a={a} src={a.foto} />
+    <Veu a={a} />
     <Bloco id="titulo" largura={860}>
       <div style={{ ...estiloTitulo(a, 108), textAlign: alin(a, 'titulo', 'center') }}><Rico texto={a.titulo} cor={hex(a.corDestaque)} /></div>
     </Bloco>
@@ -93,12 +102,12 @@ const Caixa = ({ a, Bloco }) => (
     <Camada a={a} src={a.foto} recorte={a.corte} />
     <Veu a={a} recorte={a.corte} />
     <Bloco id="titulo" largura={800}>
-      <div style={{ position: 'relative', border: `4px dashed ${hex('tinta')}`, padding: '40px 40px 44px', textAlign: alin(a, 'titulo', 'center') }}>
-        {ALCAS.map((p, i) => <i key={i} style={{ position: 'absolute', width: 22, height: 22, background: hex('tinta'), ...p }} />)}
+      <div style={{ position: 'relative', border: a.semEnfeites ? '4px solid transparent' : `4px dashed ${hex('tinta')}`, padding: '40px 40px 44px', textAlign: alin(a, 'titulo', 'center') }}>
+        {!a.semEnfeites && ALCAS.map((p, i) => <i key={i} style={{ position: 'absolute', width: 22, height: 22, background: hex('tinta'), ...p }} />)}
         <div style={estiloTitulo(a, 96)}><Rico texto={a.titulo} cor={hex(a.corDestaque)} /></div>
-        {a.texto && <div style={{ ...estiloCorpo(a, 36), marginTop: 22 }}>{a.texto}</div>}
       </div>
     </Bloco>
+    {a.texto && <Bloco id="texto" largura={712}><div style={{ ...estiloCorpo(a, 36), textAlign: alin(a, 'texto', 'center') }}>{a.texto}</div></Bloco>}
     <Detalhe a={a} Bloco={Bloco} />
   </>
 )
@@ -116,7 +125,7 @@ const Chat = ({ a, Bloco }) => {
           {linhas.map((l, i) => {
             const eu = l.startsWith('>')
             return (
-              <div key={i} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '72%', background: eu ? hex('terracota') : '#FBF8F3', color: eu ? hex('creme') : hex('tinta'), borderRadius: eu ? '30px 30px 8px 30px' : '30px 30px 30px 8px', padding: '18px 26px', fontFamily: FONTE_CORPO, fontWeight: 500, fontSize: tam(a, 'texto', 32), lineHeight: 1.3 }}>
+              <div key={i} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '72%', background: eu ? hex('terracota') : '#FBF8F3', color: eu ? hex('creme') : hex('tinta'), borderRadius: eu ? '30px 30px 8px 30px' : '30px 30px 30px 8px', padding: '18px 26px', ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: tam(a, 'texto', 32), lineHeight: 1.3 }}>
                 {eu ? l.slice(1).trim() : l}
               </div>
             )
@@ -142,13 +151,13 @@ const Busca = ({ a, Bloco }) => {
         <div style={{ ...estiloTitulo(a, 100), textAlign: alin(a, 'titulo') }}><Rico texto={a.titulo} cor={hex(a.corDestaque)} /></div>
       </Bloco>
       <Bloco id="texto" largura={940}>
-        <div style={{ background: hex('creme'), borderRadius: 56, padding: '26px 34px', display: 'flex', alignItems: 'center', gap: 20, fontFamily: FONTE_CORPO, fontWeight: 500, fontSize: t, color: hex('tinta') }}>
+        <div style={{ background: hex('creme'), borderRadius: 56, padding: '26px 34px', display: 'flex', alignItems: 'center', gap: 20, ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: t, color: hex('tinta') }}>
           <Lupa cor={hex('cafe')} /><span>{busca}</span>
         </div>
         {itens.length > 0 && (
           <div style={{ marginTop: 16, background: hex('creme'), borderRadius: 30, padding: '14px 0', overflow: 'hidden' }}>
             {itens.map((it, i) => (
-              <div key={i} style={{ display: 'flex', gap: 22, alignItems: 'center', padding: '22px 34px', background: i === itens.length - 1 ? hex('pessego') : 'transparent', fontFamily: FONTE_CORPO, fontWeight: 500, fontSize: t * 0.95, color: hex('tinta') }}>
+              <div key={i} style={{ display: 'flex', gap: 22, alignItems: 'center', padding: '22px 34px', background: i === itens.length - 1 ? hex('pessego') : 'transparent', ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: t * 0.95, color: hex('tinta') }}>
                 <Lupa cor="#7A6E64" /><span>{it}</span>
               </div>
             ))}
@@ -171,9 +180,9 @@ const Selecao = ({ a, Bloco }) => (
       </Bloco>
     )}
     <Bloco id="titulo" largura={920}>
-      <div style={{ display: 'inline-flex', marginBottom: 34, background: '#FBF6EC', borderRadius: 10, padding: '4px 8px', fontFamily: FONTE_CORPO, fontWeight: 500, fontSize: 28, color: hex('tinta') }}>
+      {!a.semEnfeites && <div style={{ display: 'inline-flex', marginBottom: 34, background: '#FBF6EC', borderRadius: 10, padding: '4px 8px', fontFamily: FONTE_CORPO, fontWeight: 500, fontSize: 28, color: hex('tinta') }}>
         <span style={{ padding: '12px 22px' }}>Copiar</span><span style={{ padding: '12px 22px' }}>Compartilhar</span><span style={{ padding: '12px 22px' }}>Selecionar tudo</span>
-      </div>
+      </div>}
       <div style={{ ...estiloTitulo(a, 110), lineHeight: 1.12, textAlign: alin(a, 'titulo') }}>
         {partesDestaque(a.titulo).map((p, i) =>
           p.destaque ? (
@@ -203,7 +212,7 @@ const AtrasCabeca = ({ a, Bloco }) => (
     <Camada a={a} src={a.recorte} />
     {a.texto && (
       <Bloco id="texto" largura={900}>
-        <div style={{ ...estiloTitulo(a, 64), fontSize: tam(a, 'texto', 64), lineHeight: 1.25, color: hex('cafe'), textAlign: alin(a, 'texto') }}>
+        <div style={{ ...estiloCorpo(a, 64), ...estiloFonte(a, 'texto', a.fonteTitulo), fontSize: tam(a, 'texto', 64), lineHeight: 1.25, color: hex('cafe'), textAlign: alin(a, 'texto') }}>
           <Tarja fundo={hex('creme')} padding="2px 16px">{a.texto}</Tarja>
         </div>
       </Bloco>
@@ -230,7 +239,7 @@ const CabecaCaixa = ({ a, Bloco }) => (
   </>
 )
 
-const base = { fonteTitulo: 'bootzy', corTexto: 'tinta', corDestaque: 'terracota', corTarja: 'creme', foto: '', recorte: '', fotoX: 50, fotoY: 30, fotoZoom: 100, veu: 0, corte: 0, detalhe: '', emojis: [], est: {} }
+const base = { fonteTitulo: 'bootzy', corTexto: 'tinta', corDestaque: 'terracota', corTarja: 'creme', foto: '', recorte: '', fotoX: 50, fotoY: 30, fotoZoom: 100, fotoDX: 0, fotoDY: 0, fotoCorte: {}, veu: 0, corte: 0, detalhe: '', emojis: [], est: {} }
 
 export const TEMPLATES = {
   tarjas: {
@@ -258,7 +267,7 @@ export const TEMPLATES = {
   caixa: {
     nome: 'Caixa tracejada',
     Corpo: Caixa,
-    padrao: { ...base, fundo: 'creme', corTitulo: 'cafe', corte: 680, titulo: 'postar começou a pesar.', texto: 'Eu sabia que precisava aparecer, mas fui adiando.', pos: { titulo: { x: 140, y: 150 }, detalhe: { x: 140, y: 600 } }, emojis: [{ cod: '2728', x: 60, y: 100, tam: 100 }] },
+    padrao: { ...base, fundo: 'creme', corTitulo: 'cafe', corte: 680, titulo: 'postar começou a pesar.', texto: 'Eu sabia que precisava aparecer, mas fui adiando.', pos: { titulo: { x: 140, y: 150 }, texto: { x: 184, y: 440 }, detalhe: { x: 140, y: 600 } }, emojis: [{ cod: '2728', x: 60, y: 100, tam: 100 }] },
   },
   selecao: {
     nome: 'Seleção de texto',

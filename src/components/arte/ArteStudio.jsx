@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, Loader2, Plus, RotateCcw, Scissors, Trash2 } from 'lucide-react'
-import { CORES, EMOJIS, FONTES_TITULO, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
+import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
@@ -25,8 +25,9 @@ function Bloco({ id, largura, children }) {
   const p = arte.pos[id] ?? { x: 80, y: 200 }
   const a = alca(id, p.x, p.y)
   const w = arte.est?.[id]?.largura ?? largura
+  if (arte.est?.[id]?.oculto) return null
   return (
-    <div {...(interativo ? a : {})} style={{ ...(interativo ? a.style : {}), position: 'absolute', left: p.x, top: p.y, width: w, outline: interativo && selecionado === id ? '4px dashed #F97316' : 'none', outlineOffset: 12 }}>
+    <div data-elemento={id} {...(interativo ? a : {})} style={{ ...(interativo ? a.style : {}), position: 'absolute', left: p.x, top: p.y, width: w, outline: interativo && selecionado === id ? '4px dashed #F97316' : 'none', outlineOffset: 12 }}>
       {children}
     </div>
   )
@@ -43,7 +44,7 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onSelecionar, se
     e.stopPropagation()
     e.currentTarget.setPointerCapture(e.pointerId)
     arrasto.current = { chave, x0: e.clientX, y0: e.clientY, x, y }
-    if (!chave.startsWith('emoji:')) onSelecionar?.(chave)
+    onSelecionar?.(chave)
   }
   const mover = (e) => {
     const d = arrasto.current
@@ -51,10 +52,10 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onSelecionar, se
     onMover(d.chave, Math.round(d.x + (e.clientX - d.x0) / escala), Math.round(d.y + (e.clientY - d.y0) / escala))
   }
   const soltar = () => { arrasto.current = null }
-  const alca = (chave, x, y) => ({ onPointerDown: (e) => iniciar(e, chave, x, y), onPointerMove: mover, onPointerUp: soltar, style: { cursor: 'move', touchAction: 'none' } })
+  const alca = (chave, x, y) => ({ onPointerDown: (e) => iniciar(e, chave, x, y), onPointerMove: mover, onPointerUp: soltar, onPointerCancel: soltar, onLostPointerCapture: soltar, style: { cursor: 'move', touchAction: 'none' } })
 
   return (
-    <div ref={nodeRef} onPointerDown={() => interativo && onSelecionar?.(null)} style={{ position: 'relative', width: w, height: h, overflow: 'hidden', background: hex(arte.fundo) }}>
+    <div ref={nodeRef} data-canvas={interativo ? 'editor' : 'miniatura'} {...(interativo && arte.foto ? alca('foto', arte.fotoDX ?? 0, arte.fotoDY ?? 0) : { onPointerDown: () => interativo && onSelecionar?.(null) })} style={{ position: 'relative', width: w, height: h, overflow: 'hidden', background: hex(arte.fundo), touchAction: interativo ? 'none' : undefined }}>
       <ArrastoCtx.Provider value={{ arte, alca, selecionado, interativo }}>
         <T.Corpo a={arte} Bloco={Bloco} />
       </ArrastoCtx.Provider>
@@ -63,7 +64,7 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onSelecionar, se
         <div style={{ position: 'absolute', right: 70, top: 56, fontFamily: FONTE_DETALHE, fontSize: 40, color: hex(['cafe', 'tinta', 'terracota'].includes(arte.fundo) ? 'creme' : 'cafe') }}>{contador}</div>
       )}
       {interativo && arte.emojis.map((e, i) => (
-        <div key={i} {...alca(`emoji:${i}`, e.x, e.y)} style={{ position: 'absolute', left: e.x, top: e.y, width: e.tam, height: e.tam, cursor: 'move', touchAction: 'none' }} />
+        <div key={i} data-elemento={`emoji:${i}`} {...alca(`emoji:${i}`, e.x, e.y)} style={{ position: 'absolute', left: e.x, top: e.y, width: e.tam, height: e.tam, cursor: 'move', touchAction: 'none', outline: selecionado === `emoji:${i}` ? '4px dashed #F97316' : 'none' }} />
       ))}
     </div>
   )
@@ -125,16 +126,33 @@ export default function ArteStudio() {
   const mudarSlide = (fn) => setProjeto((p) => ({ ...p, slides: p.slides.map((s, i) => (i === p.atual ? fn(s) : s)) }))
   const mudar = (campos) => mudarSlide((s) => ({ ...s, ...campos }))
   const mudarEst = (id, campos) => mudarSlide((s) => ({ ...s, est: { ...s.est, [id]: { ...(s.est?.[id] ?? {}), ...campos } } }))
+  const apagarElemento = (id) => {
+    if (id === 'foto') mudar({ foto: '', recorte: '' })
+    else if (id.startsWith('emoji:')) mudarSlide((s) => ({ ...s, emojis: s.emojis.filter((_, i) => i !== Number(id.slice(6))) }))
+    else mudarEst(id, { oculto: true })
+    setSelecionado(null)
+  }
+
+  useEffect(() => {
+    const tecla = (e) => {
+      if (!selecionado || !['Delete', 'Backspace'].includes(e.key) || e.target.closest('input, textarea, select, [contenteditable="true"]')) return
+      e.preventDefault()
+      apagarElemento(selecionado)
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  })
 
   const trocarTemplate = (id) => {
     // Texto que ainda é o exemplo do template antigo dá lugar ao exemplo do novo; texto escrito por ela fica.
     const proprio = (s, k) => (s[k] !== TEMPLATES[s.template].padrao[k] ? { [k]: s[k] } : {})
-    mudarSlide((s) => novoSlide(id, { ...proprio(s, 'titulo'), ...proprio(s, 'texto'), ...proprio(s, 'detalhe'), foto: s.foto, recorte: s.recorte, fotoX: s.fotoX, fotoY: s.fotoY, fotoZoom: s.fotoZoom }))
+    mudarSlide((s) => novoSlide(id, { ...proprio(s, 'titulo'), ...proprio(s, 'texto'), ...proprio(s, 'detalhe'), foto: s.foto, recorte: s.recorte, fotoX: s.fotoX, fotoY: s.fotoY, fotoZoom: s.fotoZoom, fotoDX: s.fotoDX, fotoDY: s.fotoDY, fotoCorte: s.fotoCorte }))
     setSelecionado(null)
     if (TEMPLATES[id].recorta && arte.foto && !arte.recorte) gerarRecorte(arte.foto)
   }
   const mover = (chave, x, y) =>
     mudarSlide((s) => {
+      if (chave === 'foto') return { ...s, fotoDX: x, fotoDY: y }
       if (chave.startsWith('emoji:')) {
         const i = Number(chave.slice(6))
         return { ...s, emojis: s.emojis.map((e, j) => (j === i ? { ...e, x, y } : e)) }
@@ -158,7 +176,8 @@ export default function ArteStudio() {
   // Recebe um arquivo/Blob (upload ou banco) ou um data URL (quadro de vídeo, já reduzido).
   const usarFoto = async (origem) => {
     const foto = typeof origem === 'string' ? origem : await prepararFoto(origem)
-    mudar({ foto, recorte: '', veu: arte.veu || 0.3 })
+    mudar({ foto, recorte: '', fotoX: 50, fotoY: 30, fotoZoom: 100, fotoDX: 0, fotoDY: 0, fotoCorte: {}, veu: arte.veu || 0.3 })
+    setSelecionado('foto')
     if (TEMPLATES[arte.template].recorta) gerarRecorte(foto)
   }
   const escolherFoto = (e) => {
@@ -242,6 +261,7 @@ export default function ArteStudio() {
 
   const est = selecionado ? arte.est?.[selecionado] ?? {} : {}
   const tamanhoPadrao = { titulo: 100, texto: 40, detalhe: 46 }
+  const emojiSelecionado = selecionado?.startsWith('emoji:') ? arte.emojis[Number(selecionado.slice(6))] : null
 
   return (
     <div className="p-6 animate-fade-in">
@@ -261,7 +281,7 @@ export default function ArteStudio() {
           <button type="button" onClick={exportarTodos} disabled={!!ocupado} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"><Download size={15} />Baixar todos ({slides.length})</button>
         </div>
       </div>
-      <p className="text-sm text-gray-500 mb-5">Clique num texto para editar só ele. Arraste textos e emojis direto na arte.</p>
+      <p className="text-sm text-gray-500 mb-5">Selecione um elemento na arte ou na lista para editar ou apagar. Arraste textos, emojis e a foto para reposicionar.</p>
 
       <Pedido onResposta={aplicarPedido} desfazer={anterior ? desfazerPedido : null} />
       {bancoAberto && <Banco onFechar={() => setBancoAberto(false)} onEscolher={(origem) => { setBancoAberto(false); usarFoto(origem) }} />}
@@ -300,20 +320,57 @@ export default function ArteStudio() {
         </div>
 
         <div className="flex-1 w-full max-w-md space-y-4">
-          {selecionado ? (
+          <div className="rounded-xl border border-gray-200 p-4 space-y-2" aria-label="Elementos da arte">
+            <h2 className="text-sm font-semibold">Elementos da arte</h2>
+            {Object.entries(NOMES_BLOCO).map(([id, nome]) => (
+              <div key={id} className="flex items-center gap-2">
+                <button type="button" onClick={() => setSelecionado(id)} className={`flex-1 text-left text-sm rounded px-2 py-1 ${selecionado === id ? 'bg-orange-100 text-orange-800' : 'hover:bg-gray-50'}`}>{nome}{arte.est?.[id]?.oculto ? ' (apagado)' : !arte[id] ? ' (vazio)' : ''}</button>
+                {arte.est?.[id]?.oculto ? <button type="button" onClick={() => { mudarEst(id, { oculto: false }); setSelecionado(id) }} className="text-xs text-orange-700">Restaurar {nome.toLowerCase()}</button> : <button type="button" aria-label={`Apagar ${nome.toLowerCase()}`} onClick={() => apagarElemento(id)} className="p-1 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button>}
+              </div>
+            ))}
+            {['tarjas', 'caixa', 'selecao'].includes(arte.template) && <div className="flex items-center justify-between text-sm px-2 py-1"><span>Enfeites do template</span><button type="button" onClick={() => mudar({ semEnfeites: !arte.semEnfeites })} className="text-xs text-orange-700">{arte.semEnfeites ? 'Restaurar enfeites' : 'Apagar enfeites'}</button></div>}
+            {arte.foto && <button type="button" onClick={() => setSelecionado('foto')} className={`block w-full text-left text-sm rounded px-2 py-1 ${selecionado === 'foto' ? 'bg-orange-100 text-orange-800' : 'hover:bg-gray-50'}`}>Foto · tamanho e corte</button>}
+            {arte.emojis.map((e, i) => <div key={i} className="flex items-center gap-2"><button type="button" onClick={() => setSelecionado(`emoji:${i}`)} className="flex flex-1 items-center gap-2 text-sm px-2 py-1"><img src={emojiUrl(e.cod)} alt="" className="w-5 h-5" />Emoji {i + 1}</button><button type="button" aria-label={`Apagar emoji ${i + 1}`} onClick={() => apagarElemento(`emoji:${i}`)} className="p-1 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button></div>)}
+          </div>
+
+          {arte.foto && (!selecionado || selecionado === 'foto') && (
+            <div className="rounded-xl border border-gray-200 p-4 space-y-3" aria-label="Editar foto">
+              <h2 className="text-sm font-semibold">Foto · tamanho, posição e corte</h2>
+              <Faixa rotulo="Tamanho da foto (%)" valor={arte.fotoZoom} min={10} max={400} onChange={(fotoZoom) => mudar({ fotoZoom })} />
+              <div className="grid grid-cols-2 gap-3">
+                <Faixa rotulo="Mover para os lados" valor={arte.fotoDX ?? 0} min={-w} max={w} passo={5} onChange={(fotoDX) => mudar({ fotoDX })} />
+                <Faixa rotulo="Mover para cima/baixo" valor={arte.fotoDY ?? 0} min={-h} max={h} passo={5} onChange={(fotoDY) => mudar({ fotoDY })} />
+              </div>
+              <p className="text-xs text-gray-500">Corte as bordas sem perder a foto original.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[['topo', 'Cortar em cima (%)'], ['base', 'Cortar embaixo (%)'], ['esquerda', 'Cortar à esquerda (%)'], ['direita', 'Cortar à direita (%)']].map(([lado, nome]) => (
+                  <Faixa key={lado} rotulo={nome} valor={arte.fotoCorte?.[lado] ?? 0} min={0} max={49} onChange={(v) => mudar({ fotoCorte: { ...arte.fotoCorte, [lado]: v } })} />
+                ))}
+              </div>
+              <Faixa rotulo="Véu" valor={Math.round(arte.veu * 100)} min={0} max={60} onChange={(v) => mudar({ veu: v / 100 })} />
+              {(arte.template === 'caixa' || arte.template === 'cabecaCaixa') && <Faixa rotulo="Onde a foto começa" valor={arte.corte} min={0} max={h - 100} passo={10} onChange={(corte) => mudar({ corte })} />}
+              <div className="flex flex-wrap gap-3 text-xs">
+                <button type="button" onClick={() => mudar({ fotoX: 50, fotoY: 30, fotoZoom: 100, fotoDX: 0, fotoDY: 0, fotoCorte: {} })} className="text-orange-700">Restaurar enquadramento</button>
+                {TEMPLATES[arte.template].recorta && <button type="button" onClick={() => gerarRecorte(arte.foto)} disabled={!!ocupado} className="flex items-center gap-1"><Scissors size={14} />Recortar pessoa (remover fundo)</button>}
+                <button type="button" onClick={() => apagarElemento('foto')} className="text-red-600">Apagar foto</button>
+              </div>
+            </div>
+          )}
+
+          {emojiSelecionado && <div className="rounded-xl border border-orange-200 p-4 space-y-3"><h2 className="text-sm font-semibold">Emoji selecionado</h2><Faixa rotulo="Tamanho do emoji" valor={emojiSelecionado.tam} min={20} max={400} onChange={(tam) => mudar({ emojis: arte.emojis.map((e, i) => i === Number(selecionado.slice(6)) ? { ...e, tam } : e) })} /><button type="button" onClick={() => apagarElemento(selecionado)} className="text-sm text-red-600">Apagar emoji</button><button type="button" onClick={() => setSelecionado(null)} className="ml-3 text-sm text-gray-500">Fechar</button></div>}
+          {selecionado && NOMES_BLOCO[selecionado] ? (
             <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-900">{NOMES_BLOCO[selecionado]}</span>
                 <button type="button" onClick={() => setSelecionado(null)} className="text-xs text-gray-500 hover:underline">Fechar</button>
               </div>
               <textarea rows={3} value={arte[selecionado]} onChange={(e) => mudar({ [selecionado]: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-              {selecionado === 'titulo' && (
                 <Campo rotulo="Fonte">
-                  <select value={arte.fonteTitulo} onChange={(e) => mudar({ fonteTitulo: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
-                    {Object.entries(FONTES_TITULO).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
+                  <select value={est.fonte ?? (selecionado === 'titulo' || (selecionado === 'texto' && arte.template === 'atrasCabeca') ? arte.fonteTitulo : selecionado === 'detalhe' ? 'kinder' : 'inter')} onChange={(e) => mudarEst(selecionado, { fonte: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+                    {Object.entries(FONTES).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
                   </select>
                 </Campo>
-              )}
+              {est.oculto ? <button type="button" onClick={() => mudarEst(selecionado, { oculto: false })} className="text-sm text-orange-700">Restaurar elemento</button> : <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1 text-sm text-red-600"><Trash2 size={14} />Apagar elemento</button>}
               <Faixa rotulo="Tamanho" valor={est.tamanho ?? tamanhoPadrao[selecionado]} min={20} max={360} onChange={(tamanho) => mudarEst(selecionado, { tamanho })} />
               <Faixa rotulo="Largura do bloco" valor={est.largura ?? LARGURA_PADRAO[selecionado]} min={200} max={1040} passo={10} onChange={(largura) => mudarEst(selecionado, { largura })} />
               <div className="flex gap-1">
@@ -357,23 +414,6 @@ export default function ArteStudio() {
               <Campo rotulo="Fundo"><Cores valor={arte.fundo} onChange={(fundo) => mudar({ fundo })} /></Campo>
               <Campo rotulo="Cor de destaque"><Cores valor={arte.corDestaque} onChange={(corDestaque) => mudar({ corDestaque })} /></Campo>
               {arte.template === 'tarjas' && <Campo rotulo="Cor da tarja"><Cores valor={arte.corTarja} onChange={(corTarja) => mudar({ corTarja })} /></Campo>}
-
-              <div className="space-y-2">
-                {arte.foto && TEMPLATES[arte.template].recorta && (
-                  <button type="button" onClick={() => gerarRecorte(arte.foto)} disabled={!!ocupado} className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Scissors size={14} />Refazer recorte</button>
-                )}
-                {arte.foto && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Faixa rotulo="Horizontal" valor={arte.fotoX} min={0} max={100} onChange={(fotoX) => mudar({ fotoX })} />
-                    <Faixa rotulo="Vertical" valor={arte.fotoY} min={0} max={100} onChange={(fotoY) => mudar({ fotoY })} />
-                    <Faixa rotulo="Zoom" valor={arte.fotoZoom} min={100} max={300} onChange={(fotoZoom) => mudar({ fotoZoom })} />
-                    <Faixa rotulo="Véu" valor={Math.round(arte.veu * 100)} min={0} max={60} onChange={(v) => mudar({ veu: v / 100 })} />
-                  </div>
-                )}
-                {(arte.template === 'caixa' || arte.template === 'cabecaCaixa') && (
-                  <Faixa rotulo="Onde a foto começa" valor={arte.corte} min={200} max={h - 200} passo={10} onChange={(corte) => mudar({ corte })} />
-                )}
-              </div>
 
               <Campo rotulo="Emojis (clique para adicionar e arraste na arte)">
                 <div className="flex flex-wrap gap-1 mb-2 max-h-28 overflow-y-auto">

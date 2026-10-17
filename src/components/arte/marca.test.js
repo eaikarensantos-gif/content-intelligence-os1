@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CORES, FONTES_TITULO, normalizar, partesDestaque } from './marca'
+import { CORES, FONTES, FONTES_TITULO, corteFoto, fonteDoBloco, normalizar, partesDestaque } from './marca'
 import { TEMPLATES } from './Templates'
 
 describe('marca', () => {
@@ -31,5 +31,21 @@ describe('marca', () => {
       for (const campo of ['fundo', 'corTitulo', 'corTexto', 'corDestaque', 'corTarja']) expect(CORES, `${id}.${campo}`).toHaveProperty(t.padrao[campo])
       expect(t.padrao.pos.titulo, id).toBeDefined()
     }
+  })
+
+  it('preserva edições independentes dos textos e enquadramento ao reabrir', () => {
+    const a = normalizar({
+      est: { titulo: { fonte: 'georgia', oculto: true }, texto: { fonte: 'bootzy' }, detalhe: { fonte: 'arial' } },
+      fotoZoom: 45, fotoDX: -120, fotoDY: 250,
+      fotoCorte: { topo: 10, base: 20, esquerda: 15, direita: 5 },
+    }, TEMPLATES.tarjas.padrao)
+    expect(fonteDoBloco(a, 'titulo', 'bootzy')).toBe(FONTES.georgia)
+    expect(fonteDoBloco(a, 'texto', 'inter')).toBe(FONTES.bootzy)
+    expect(fonteDoBloco(a, 'detalhe', 'kinder')).toBe(FONTES.arial)
+    expect(a.est.titulo.oculto).toBe(true)
+    expect(a.fotoZoom).toBe(45)
+    expect(a.fotoDY).toBe(250)
+    expect(corteFoto(a, 680)).toBe('inset(max(680px, 10%) 5% 20% 15%)')
+    expect(fonteDoBloco({ est: { texto: { fonte: 'inexistente' } } }, 'texto', 'inter')).toBe(FONTES.inter)
   })
 })
