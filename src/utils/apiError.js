@@ -1,3 +1,6 @@
+// Sem OPENAI_API_KEY na Vercel, só funciona no aparelho que tem a chave salva no navegador.
+export const SEM_CHAVE = 'A chave da OpenAI não está salva neste aparelho e o servidor não tem uma configurada. Salve a chave neste aparelho ou cadastre OPENAI_API_KEY na Vercel para valer em todos.'
+
 /**
  * Handle OpenAI API errors (via /api/ai?action=openai) with user-friendly Portuguese messages.
  */
@@ -5,10 +8,14 @@ export async function handleApiError(res) {
   let detail = ''
   try {
     const body = await res.json()
-    detail = body?.error?.message || ''
+    // A OpenAI responde { error: { message } }; o próprio /api/ai responde { error: 'texto' }.
+    detail = body?.error?.message || (typeof body?.error === 'string' ? body.error : '')
   } catch {
     try { detail = await res.text() } catch { /* ignore */ }
   }
+
+  if (detail.includes('não está configurada no servidor'))
+    throw new Error(SEM_CHAVE)
 
   const status = res.status
   const lower = detail.toLowerCase()

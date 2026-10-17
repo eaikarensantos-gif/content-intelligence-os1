@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Mic, Square, Wand2 } from 'lucide-react'
 import { pedirArte } from './pedido'
+import { SEM_CHAVE } from '../../utils/apiError'
 
 // Ditado pelo próprio navegador (Chrome, Edge, Safari): sem servidor e sem custo de transcrição.
 const Reconhecimento = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null
@@ -11,7 +12,15 @@ export default function Pedido({ onResposta, desfazer }) {
   const [ouvindo, setOuvindo] = useState(false)
   const [criando, setCriando] = useState(false)
   const [erro, setErro] = useState('')
+  const [chave, setChave] = useState('')
   const rec = useRef(null)
+
+  // Mesma chave que as outras telas do Content usam (localStorage 'cio-openai-key').
+  const salvarChave = () => {
+    try { localStorage.setItem('cio-openai-key', chave.trim()) } catch { /* sem armazenamento */ }
+    setChave('')
+    setErro('')
+  }
   const base = useRef('')
 
   useEffect(() => () => rec.current?.abort(), [])
@@ -77,6 +86,14 @@ export default function Pedido({ onResposta, desfazer }) {
         {!Reconhecimento && <span className="text-xs text-gray-500">Para falar, use o microfone do teclado do celular ou abra no Chrome.</span>}
       </div>
       {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
+      {erro === SEM_CHAVE && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <input type="password" value={chave} onChange={(e) => setChave(e.target.value)} placeholder="sk-…" autoComplete="off"
+            className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" />
+          <button type="button" onClick={salvarChave} disabled={!chave.trim().startsWith('sk-')}
+            className="px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">Salvar chave neste aparelho</button>
+        </div>
+      )}
     </div>
   )
 }
