@@ -19,7 +19,7 @@ import {
   ThumbsDown, Heart, ArrowRight, X, Sliders, Eye, History,
   Wand2, Layers, PenTool, Target, Plus, Save, Upload, Paperclip,
   MessageCircle, ShieldCheck, Quote, Flame, ToggleLeft, ToggleRight, ExternalLink,
-  AlertCircle, Building2,
+  AlertCircle, Building2, Palette,
 } from 'lucide-react'
 import clsx from 'clsx'
 import useStore from '../../store/useStore'
@@ -38,6 +38,7 @@ import {
 } from '../../utils/themeCategories'
 import * as pdfjsLib from 'pdfjs-dist'
 import BrandLinterPanel from '../linter/BrandLinterPanel'
+import { guardarEntrada } from '../arte/pedido'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
@@ -2769,12 +2770,24 @@ Responda EXCLUSIVAMENTE com JSON válido:
                       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                         <div className="flex items-center justify-between px-4 pt-3 pb-2">
                           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Slides</span>
+                          <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              guardarEntrada('Studio de Criação', (active.data.slides || []).map((s) => ({ titulo: s.titulo || '', texto: s.texto || '', papel: s.funcao || '', visual: s.visual || '' })))
+                              navigate('/arte')
+                            }}
+                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+                            title="Leva os slides para o Studio de Arte, na identidade visual, com o texto como está"
+                          >
+                            <Palette size={12} /> Abrir no Studio de Arte
+                          </button>
                           <button onClick={() => handleCarCopy(
                             (active.data.slides || []).map(s => formatCarouselSlide(s)).join('\n\n'),
                             `slides-${active.key}`
                           )} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-orange-600 transition-colors">
                             {carCopied === `slides-${active.key}` ? <><Check size={10} /> Copiado</> : <><Copy size={10} /> Copiar tudo</>}
                           </button>
+                          </div>
                         </div>
                         <div className="px-4 pb-3 space-y-0">
                           {(active.data.slides || []).map((slide, idx) => (
