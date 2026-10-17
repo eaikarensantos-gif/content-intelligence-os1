@@ -61,3 +61,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## Sistema de conteúdo da Karen
+
+Antes de qualquer tarefa de criação (pauta, roteiro, texto, legenda, arte), ler `.claude/sistema-de-conteudo.md`. Ele define rotina, cadência, metas, gates, regras de voz, modelo do carrossel de terça, banco de pautas do ROTA, regras do Engage e calendário. Toda peça passa pelos gates (seção 5) e pela checagem de voz (seção 6) antes de ser entregue.
