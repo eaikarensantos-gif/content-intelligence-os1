@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Scissors, Trash2 } from 'lucide-react'
 import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
@@ -68,6 +68,21 @@ function levarConteudo(de, para) {
   }
   return normalizar({ conteudo, ...(titulo != null && { titulo }), ...(texto != null && { texto }), ...(foto && { foto, veu: 0.3 }) }, para)
 }
+
+// Foto em data URL vira um endereço curto (blob) nas miniaturas: 49 cópias da foto inteira pesariam no celular.
+const fotosLeves = new Map()
+const leve = (url) => {
+  if (typeof url !== 'string' || !url.startsWith('data:')) return url
+  if (!fotosLeves.has(url)) {
+    const [cab, dados] = url.split(',')
+    const bytes = Uint8Array.from(atob(dados), (c) => c.charCodeAt(0))
+    fotosLeves.set(url, URL.createObjectURL(new Blob([bytes], { type: cab.slice(5).split(';')[0] })))
+  }
+  return fotosLeves.get(url)
+}
+const aliviar = (s) => (ehCartao(s)
+  ? { ...s, fotos: Object.fromEntries(Object.entries(s.fotos ?? {}).map(([k, v]) => [k, leve(v)])) }
+  : { ...s, foto: leve(s.foto), recorte: leve(s.recorte) })
 
 /** Ajustes de posição, tamanho, fonte ou corte que se perdem na troca de modelo. */
 const temAjustes = (s) => (ehCartao(s) ? Object.keys(s.camadas ?? {}).length > 0 : Object.keys(s.est ?? {}).length > 0 || JSON.stringify(s.pos) !== JSON.stringify(TEMPLATES[s.template].padrao.pos))
@@ -165,6 +180,7 @@ export default function ArteStudio() {
   const [bancoAberto, setBancoAberto] = useState(false)
   const [fotoAlvo, setFotoAlvo] = useState(null)
   const [galeria, setGaleria] = useState(false)
+  const [catVisual, setCatVisual] = useState(null)
   const node = useRef(null)
 
   const { formato, slides, atual } = projeto
@@ -425,6 +441,46 @@ export default function ArteStudio() {
     </select>
   )
 
+  // Miniaturas de todos os modelos já com o título, o texto e a foto deste slide.
+  const modeloAtual = cartao ? `cartao:${arte.cartao}` : arte.template
+  const categoriaAtual = catVisual ?? (cartao ? def.categoria : 'base')
+  const arteAdiada = useDeferredValue(arte)
+  const previas = useMemo(() => itensGaleria
+    .filter((it) => categoriaAtual === 'todas' || it.categoria === categoriaAtual)
+    .map((it) => ({ it, slide: aliviar(levarConteudo(arteAdiada, it.id.startsWith('cartao:') ? novoCartao(it.id.slice(7)) : novoSlide(it.id))) })),
+  [itensGaleria, categoriaAtual, arteAdiada])
+  const chipVisual = (ativo) => `shrink-0 px-2.5 py-1 rounded-full text-xs border ${ativo ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`
+  const seletorVisual = (
+    <div className="rounded-xl border border-gray-200 p-3 space-y-2" aria-label="Modelos com o seu texto">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-gray-900">Modelos com o seu texto</span>
+        <span className="text-xs text-gray-500">{previas.length} {previas.length === 1 ? 'modelo' : 'modelos'}</span>
+      </div>
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <button type="button" className={chipVisual(categoriaAtual === 'todas')} onClick={() => setCatVisual('todas')}>Todos</button>
+        {Object.entries({ ...CATEGORIAS, base: 'Base do Studio' }).map(([k, nome]) => (
+          <button key={k} type="button" className={chipVisual(categoriaAtual === k)} onClick={() => setCatVisual(k)}>{nome}</button>
+        ))}
+      </div>
+      <div className="grid gap-2 max-h-80 overflow-y-auto pr-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))' }}>
+        {previas.map(({ it, slide }) => {
+          const t = tamanho(slide, 'feed')
+          const k = 92 / t.w
+          return (
+            <button key={it.id} type="button" data-escolha={it.id} onClick={() => trocarPelaLista(it.id)} title={it.nome} className="text-left group" style={{ contentVisibility: 'auto', containIntrinsicSize: '92px 140px' }}>
+              <div className={`rounded-md overflow-hidden ring-1 ${it.id === modeloAtual ? 'ring-2 ring-orange-500' : 'ring-gray-200 group-hover:ring-orange-300'}`} style={{ width: 92, height: t.h * k }}>
+                <div style={{ transform: `scale(${k})`, transformOrigin: 'top left', pointerEvents: 'none' }}>
+                  <Canvas arte={slide} formato="feed" interativo={false} grao={false} />
+                </div>
+              </div>
+              <span className="block mt-1 text-[11px] leading-tight text-gray-700 line-clamp-2">{it.nome}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
   const painelEmojis = (
     <Campo rotulo="Emojis (clique para adicionar e arraste na arte)">
       <div className="flex flex-wrap gap-1 mb-2 max-h-28 overflow-y-auto">
@@ -588,7 +644,8 @@ export default function ArteStudio() {
                 </div>
                 <button type="button" onClick={() => setGaleria(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><LayoutGrid size={14} />Ver galeria</button>
               </div>
-              <Campo rotulo="Template">{seletorModelo}</Campo>
+              {seletorVisual}
+              <Campo rotulo="Template (pelo nome)">{seletorModelo}</Campo>
               <p className="text-xs text-gray-500">Clique em qualquer elemento da arte para mudar tamanho, fonte, cor, cortar ou apagar.</p>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={projeto.contador} onChange={(e) => mudarProjeto({ contador: e.target.checked })} />
@@ -663,7 +720,7 @@ export default function ArteStudio() {
                   </select>
                 </Campo>
               </div>
-              <button type="button" onClick={() => setGaleria(true)} className="flex items-center gap-1.5 text-sm text-orange-700 hover:underline"><LayoutGrid size={14} />Ver todos os {itensGaleria.length} modelos de arte</button>
+              {seletorVisual}
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={projeto.contador} onChange={(e) => mudarProjeto({ contador: e.target.checked })} />
                 Numerar os slides (1/{slides.length}) em manuscrita
