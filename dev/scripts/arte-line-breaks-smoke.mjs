@@ -3,12 +3,25 @@ import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 const browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']})
 try {
-for (const width of [1440,390]) {
- const context = await browser.newContext({viewport:{width,height:1000},acceptDownloads:true})
+for (const width of [1440,1280,390]) {
+ const context = await browser.newContext({viewport:{width,height:1000},hasTouch:width <= 1280,acceptDownloads:true})
  await context.addInitScript(()=>localStorage.setItem('cio-auth-session',JSON.stringify({email:'local@example.test',loginAt:Date.now(),isOwner:true})))
  const page=await context.newPage()
+ page.on('dialog',dialog=>dialog.accept())
  await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
  await page.locator('[data-canvas="editor"]').waitFor()
+ // Reproduce the selected title panel from the tablet screenshot.
+ await page.getByLabel('Elementos da arte').getByRole('button',{name:/^Título/}).click()
+ const title = page.getByRole('combobox',{name:'Fonte',exact:true}).locator('../..').locator('textarea')
+ await title.fill('A pergunta define o tipo de resposta')
+ assert.ok((await title.boundingBox()).height >= 96)
+ await title.evaluate(el=>{el.focus();el.setSelectionRange(11,11)})
+ const breakButton = title.locator('..').getByRole('button',{name:'Quebrar linha',exact:true})
+ if (width <= 1280) await breakButton.tap()
+ else await breakButton.click()
+ assert.equal(await title.inputValue(),'A pergunta \ndefine o tipo de resposta')
+ assert.ok((await page.locator('[data-canvas="editor"] [data-elemento="titulo"]').textContent()).includes('A pergunta \ndefine'))
+ await page.getByRole('button',{name:'Fechar',exact:true}).click()
  await page.getByRole('button',{name:/Modelos de arte/}).click()
  await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Balão e polaroid com pet')
  await page.locator('[data-modelo="cartao:26-cachorro"]').click()

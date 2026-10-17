@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 
 /** Enter e o botão inserem a mesma quebra, preservada no rascunho e na arte. */
-export default function TextoArte({ value, onChange, ...props }) {
+export default function TextoArte({ value, onChange, style, ...props }) {
   const campo = useRef(null)
   const quebrar = () => {
     const el = campo.current
@@ -15,10 +15,10 @@ export default function TextoArte({ value, onChange, ...props }) {
   }
   return (
     <span className="block">
-      <textarea {...props} ref={campo} value={value} onChange={onChange} />
+      <textarea {...props} ref={campo} value={value} onChange={onChange} style={{ minHeight: '6rem', ...style }} />
       <span className="flex flex-wrap items-center justify-between gap-2 mt-1 text-xs">
-        <span className="text-gray-500">Enter para quebrar linha.</span>
-        <button type="button" onClick={quebrar} className="text-orange-700 underline">Quebrar linha</button>
+        <span className="text-gray-500">Toque antes da palavra que deve ir para a próxima linha. Depois use Enter ou o botão.</span>
+        <button type="button" onPointerDown={(e) => e.preventDefault()} onClick={quebrar} className="min-h-11 px-3 py-2 rounded-lg border border-orange-300 bg-orange-50 text-orange-800">Quebrar linha</button>
       </span>
     </span>
   )
