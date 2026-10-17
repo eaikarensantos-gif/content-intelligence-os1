@@ -5,6 +5,8 @@ import { CORES, EMOJIS, FONTES_TITULO, FONTE_DETALHE, FORMATOS, emojiUrl, hex, n
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
+import { montarProjeto } from './pedido'
+import Pedido from './Pedido'
 import './marca.css'
 
 const novoSlide = (template = 'tarjas', herdado = {}) => normalizar(herdado, { ...TEMPLATES[template].padrao, template })
@@ -57,7 +59,7 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onSelecionar, se
       </ArrastoCtx.Provider>
       <Emojis a={arte} />
       {contador && (
-        <div style={{ position: 'absolute', right: 70, top: 56, fontFamily: FONTE_DETALHE, fontSize: 40, color: hex(arte.corTitulo) }}>{contador}</div>
+        <div style={{ position: 'absolute', right: 70, top: 56, fontFamily: FONTE_DETALHE, fontSize: 40, color: hex(['cafe', 'tinta', 'terracota'].includes(arte.fundo) ? 'creme' : 'cafe') }}>{contador}</div>
       )}
       {interativo && arte.emojis.map((e, i) => (
         <div key={i} {...alca(`emoji:${i}`, e.x, e.y)} style={{ position: 'absolute', left: e.x, top: e.y, width: e.tam, height: e.tam, cursor: 'move', touchAction: 'none' }} />
@@ -96,6 +98,7 @@ export default function ArteStudio() {
   const [selecionado, setSelecionado] = useState(null)
   const [ocupado, setOcupado] = useState('')
   const [aviso, setAviso] = useState('')
+  const [anterior, setAnterior] = useState(null)
   const node = useRef(null)
 
   const { formato, slides, atual } = projeto
@@ -141,7 +144,7 @@ export default function ArteStudio() {
     setAviso('')
     try {
       const recorte = await recortarPessoa(foto)
-      mudarSlide((s) => (s.foto === foto ? { ...s, recorte } : s))
+      setProjeto((p) => ({ ...p, slides: p.slides.map((s) => (s.foto === foto ? { ...s, recorte } : s)) }))
     } catch (err) {
       setAviso(`Não consegui recortar a foto: ${err?.message ?? err}`)
     } finally {
@@ -157,6 +160,16 @@ export default function ArteStudio() {
     mudar({ foto, recorte: '', veu: arte.veu || 0.3 })
     if (TEMPLATES[arte.template].recorta) gerarRecorte(foto)
   }
+
+  const aplicarPedido = (resposta) => {
+    const novo = montarProjeto(resposta, arte.foto)
+    setAnterior(projeto)
+    setProjeto(novo)
+    setSelecionado(null)
+    const precisa = novo.slides.find((s) => s.foto && TEMPLATES[s.template].recorta)
+    if (precisa) gerarRecorte(precisa.foto)
+  }
+  const desfazerPedido = () => { setProjeto(anterior); setAnterior(null); setSelecionado(null) }
 
   // Slides
   const irPara = (i) => { mudarProjeto({ atual: i }); setSelecionado(null) }
@@ -218,6 +231,8 @@ export default function ArteStudio() {
           <button type="button" onClick={exportarTodos} disabled={!!ocupado} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"><Download size={15} />Baixar todos ({slides.length})</button>
         </div>
       </div>
+
+      <Pedido onResposta={aplicarPedido} desfazer={anterior ? desfazerPedido : null} />
 
       {(ocupado || aviso) && (
         <div className={`mb-4 flex items-center gap-2 text-sm ${aviso ? 'text-red-600' : 'text-gray-600'}`}>
