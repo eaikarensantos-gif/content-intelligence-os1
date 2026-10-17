@@ -5,3 +5,11 @@
 @font-face { font-family: 'KS Inter'; font-weight: 500; src: url('/marca/fontes/Inter-Medium.woff2') format('woff2'); font-display: block; }
 @font-face { font-family: 'KS Inter'; font-weight: 700; src: url('/marca/fontes/Inter-Bold.woff2') format('woff2'); font-display: block; }
 @font-face { font-family: 'KS Kinder'; src: url('/marca/fontes/Kindergarten-BR.woff2') format('woff2'); font-display: block; }
+
+/* Cards da coleção "Karen Santos · Instagram": o mesmo CSS base dos geradores originais (arte-ig). */
+.kc { overflow: hidden; background: #2B211B; color: #F4EFE7; line-height: normal; font-family: 'Times New Roman', serif; text-align: left; }
+.kc * { margin: 0; box-sizing: border-box; }
+.kc img, .kc svg { display: inline; max-width: none; vertical-align: baseline; }
+.kc .bz { font-family: 'KS Bootzy'; letter-spacing: .03em; line-height: .85; white-space: nowrap; }
+.kc .ab { position: absolute; }
+.kc .ft { position: absolute; inset: 0; background-size: cover; background-position: center; }
