@@ -411,6 +411,16 @@ export default function ArteStudio() {
     </Campo>
   )
 
+  const camposTextoCartao = cartao ? def.campos.map((c) => {
+    const valor = textosDe(def, arte)[c.id] ?? ''
+    return (
+      <Campo key={c.id} rotulo={c.rotulo}>
+        <TextoArte rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
+        {c.ajuda && <span className="block text-xs text-gray-400 mt-0.5">{c.ajuda}</span>}
+      </Campo>
+    )
+  }) : null
+
   return (
     <div className="p-6 animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
@@ -517,7 +527,11 @@ export default function ArteStudio() {
                 <span className="text-sm font-semibold text-gray-900 truncate">{descreverCamada(elCamada)}</span>
                 <button type="button" onClick={() => setSelecionado(null)} className="text-xs text-gray-500 hover:underline shrink-0">Fechar</button>
               </div>
-              <p className="text-xs text-gray-500">O texto se edita nos campos do modelo (feche este painel). Aqui você ajusta o elemento na arte.</p>
+              <div className="space-y-3" aria-label="Textos do modelo">
+                <p className="text-sm font-semibold">Textos do modelo</p>
+                <p className="text-xs text-gray-500">Edite os textos e quebre linhas aqui. Os ajustes abaixo se aplicam ao elemento selecionado.</p>
+                {camposTextoCartao}
+              </div>
               <Faixa rotulo="Tamanho (%)" valor={Math.round((camada.escala ?? 1) * 100)} min={20} max={300} onChange={(v) => mudarCamada(camadaSel, { escala: v / 100 })} />
               <Campo rotulo="Fonte">
                 <select value={camada.fonte ?? ''} onChange={(e) => mudarCamada(camadaSel, { fonte: e.target.value || undefined })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
@@ -566,15 +580,7 @@ export default function ArteStudio() {
                 </div>
               )}
 
-              {def.campos.map((c) => {
-                const valor = textosDe(def, arte)[c.id] ?? ''
-                return (
-                  <Campo key={c.id} rotulo={c.rotulo}>
-                    <TextoArte rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
-                    {c.ajuda && <span className="block text-xs text-gray-400 mt-0.5">{c.ajuda}</span>}
-                  </Campo>
-                )
-              })}
+              {camposTextoCartao}
 
               {fotosCartao.length > 0 && (
                 <Campo rotulo={fotosCartao.length > 1 ? `Fotos (${fotosCartao.length})` : 'Foto'}>

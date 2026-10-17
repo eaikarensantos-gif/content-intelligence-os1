@@ -23,11 +23,15 @@ for (const width of [1440,1280,390]) {
  assert.ok((await page.locator('[data-canvas="editor"] [data-elemento="titulo"]').textContent()).includes('A pergunta \ndefine'))
  await page.getByRole('button',{name:'Fechar',exact:true}).click()
  await page.getByRole('button',{name:/Modelos de arte/}).click()
- await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Balão e polaroid com pet')
- await page.locator('[data-modelo="cartao:26-cachorro"]').click()
+ const screenshotModel = width === 1280
+ const fieldId = screenshotModel ? 'titulo' : 'balao'
+ await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill(screenshotModel ? 'Bastidores com campo de mensagem' : 'Balão e polaroid com pet')
+ await page.locator(`[data-modelo="cartao:${screenshotModel ? '24-bastidores' : '26-cachorro'}"]`).click()
  await page.getByRole('button',{name:'Usar neste slide',exact:true}).click()
- const field=page.locator('textarea[data-campo="balao"]')
+ const field=page.locator(`textarea[data-campo="${fieldId}"]`)
  await field.fill('PrimeiraSegunda')
+ await page.locator('[data-canvas="editor"] .kc').getByText('PrimeiraSegunda',{exact:true}).click()
+ await page.getByTestId('painel-camada').locator(`textarea[data-campo="${fieldId}"]`).waitFor()
  await field.evaluate(el=>{el.focus();el.setSelectionRange(8,8)})
  await field.locator('..').getByRole('button',{name:'Quebrar linha',exact:true}).click()
  assert.equal(await field.inputValue(),'Primeira\nSegunda')
