@@ -53,7 +53,7 @@ export default function Pedido({ onResposta, desfazer }) {
     setCriando(true)
     setErro('')
     try {
-      await onResposta(await pedirArte(texto.trim()))
+      await onResposta(await pedirArte(texto.trim()), texto.trim())
     } catch (err) {
       setErro(err?.message ?? String(err))
     } finally {

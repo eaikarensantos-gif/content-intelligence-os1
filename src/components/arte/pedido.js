@@ -61,6 +61,7 @@ Regras:
 - Use *asteriscos* em no máximo um trecho por slide para a cor de destaque.
 - Título com até ~45 caracteres. "detalhe" é uma anotação manuscrita curta e opcional ("" se não fizer sentido).
 - Contraste: texto claro (creme, areia, pessego, mostarda) sobre fundo escuro (cafe, tinta, terracota) e vice-versa.
+- Informe também "papel" em cada slide: "capa", "explicacao", "conversa", "lista" ou "fechamento". A escolha visual será conferida pelo editor.
 - Em carrossel, mantenha a mesma família de cores e varie o template quando o conteúdo pedir.
 - usarFoto só é true se ela pediu foto; atrasCabeca e cabecaCaixa exigem foto.
 - formato "feed" por padrão; "story" só se ela pedir. contador true em carrossel com 3 ou mais slides, salvo pedido contrário.`
@@ -156,13 +157,13 @@ export function fixarTextos(resposta, slides) {
         const fielCampo = (campo, original = '') => typeof s.textos?.[campo] === 'string' && semDestaque(s.textos[campo]) === semDestaque(original) ? s.textos[campo] : original
         textos[def.titulo] = fielCampo(def.titulo, orig.titulo)
         if (def.texto && def.texto !== def.titulo) textos[def.texto] = fielCampo(def.texto, orig.texto)
-        return { ...s, textos }
+        return { ...s, textos, papel: orig.papel }
       }
       // Um modelo sem campo de corpo não pode descartar o parágrafo do gerador.
       s = { template: 'corCheia' }
     }
     const fiel = (k) => (semDestaque(s[k]) === semDestaque(orig[k]) ? s[k] : orig[k] || '')
-    return { ...s, titulo: fiel('titulo'), texto: fiel('texto') }
+    return { ...s, titulo: fiel('titulo'), texto: fiel('texto'), ...(orig.papel && { papel: orig.papel }) }
   })
   return { ...resposta, slides: saida }
 }

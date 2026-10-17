@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { toPng } from 'html-to-image'
 import TextoArte from './TextoArte'
 import useHistorico from './useHistorico'
+import { avaliarLayouts } from './avaliarLayouts'
+import { CATALOGO_LAYOUTS, idLayout } from './layoutSuggestions'
+import SugestoesLayout from './SugestoesLayout'
 import { AlignCenter, AlignLeft, AlignRight, ChevronDown, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Undo2, Redo2, Scissors, Trash2 } from 'lucide-react'
 import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
@@ -152,6 +155,10 @@ export default function ArteStudio() {
   const [fotoAlvo, setFotoAlvo] = useState(null)
   const [galeria, setGaleria] = useState(false)
   const node = useRef(null)
+  const projetoAtual = useRef(projeto)
+  projetoAtual.current = projeto
+  const [sugestoes, setSugestoes] = useState({})
+  const [analisandoLayout, setAnalisandoLayout] = useState(null)
 
   const { formato, slides, atual } = projeto
   const arte = slides[atual]
@@ -293,19 +300,70 @@ export default function ArteStudio() {
   }
   const abrirBanco = (slot = null) => { setFotoAlvo(slot); setBancoAberto(true) }
 
-  const aplicarPedido = async (resposta) => {
+  const papelLayout = (s, i, total, informado) => {
+    if (['capa', 'explicacao', 'conversa', 'lista', 'fechamento'].includes(informado)) return informado
+    if (s.template === 'chat' || (ehCartao(s) && CARTAO[s.cartao].categoria === 'baloes')) return 'conversa'
+    return i === 0 ? 'capa' : i === total - 1 ? 'fechamento' : 'explicacao'
+  }
+  const renderLayout = (s, f = formato, numero = contadorDe(atual)) => <Canvas arte={s} formato={f} contador={numero} interativo={false} grao={false} />
+  const sugerirLayouts = async () => {
+    const origem = arte
+    const indice = atual
+    setAnalisandoLayout(indice)
+    try {
+      const resultado = await avaliarLayouts(origem, { formato: cartao ? formatoDe(def) : formato, papel: papelLayout(origem, indice, slides.length), anteriores: slides.slice(Math.max(0, indice - 2), indice).map(idLayout) }, s => renderLayout(s))
+      setSugestoes(prev => ({ ...prev, [indice]: { origem, ...resultado } }))
+    } catch {
+      setAviso('Não consegui conferir os layouts. Sua arte foi mantida; tente novamente.')
+    } finally { setAnalisandoLayout(null) }
+  }
+  const aplicarSugestao = (opcao) => {
+    if (sugestoes[atual]?.origem !== arte) return
+    mudarSlide(() => opcao.slide)
+    setSugestoes(prev => ({ ...prev, [atual]: { ...prev[atual], origem: opcao.slide, problemas: [] } }))
+    setSelecionado(null)
+  }
+
+  const aplicarPedido = async (resposta, pedido = '') => {
+    const antes = projetoAtual.current
     const foto = cartao ? arte.fotos?.[fotosDe(def)[0]] || '' : arte.foto
     const novo = montarProjeto(resposta, foto)
-    setAnterior(projeto)
-    setProjeto(novo)
-    setSelecionado(null)
-    const precisa = novo.slides.find((s) => s.foto && TEMPLATES[s.template]?.recorta)
-    if (precisa) await gerarRecorte(precisa.foto)
-    const slots = new Set(novo.slides.filter(ehCartao).map((s) => CARTAO[s.cartao].cabeca?.slot).filter(Boolean))
-    for (const slot of slots) {
-      const slide = novo.slides.find((s) => ehCartao(s) && s.fotos?.[slot])
-      if (slide) await recortarCartao(slot, slide.fotos[slot])
-    }
+    setOcupado('Conferindo os layouts…')
+    setAviso('')
+    try {
+      const precisaRecorte = foto && novo.slides.some(s => ehCartao(s) ? CARTAO[s.cartao].cabeca && Object.values(s.fotos).includes(foto) : TEMPLATES[s.template]?.recorta && s.foto)
+      if (precisaRecorte) {
+        try {
+          const recorte = await recortarPessoa(foto)
+          novo.slides = novo.slides.map(s => {
+            if (!ehCartao(s)) return s.foto === foto ? { ...s, recorte } : s
+            const slot = CARTAO[s.cartao].cabeca?.slot
+            return slot && s.fotos[slot] === foto ? { ...s, fotos: { ...s.fotos, [`${slot}:recorte`]: recorte } } : s
+          })
+        } catch { setAviso('Não consegui recortar a pessoa. Confira a foto antes de exportar.') }
+      }
+      const resultados = {}
+      const usados = []
+      const normal = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      const explicito = CATALOGO_LAYOUTS.find(c => normal(pedido).includes(normal(c.nome)))?.id || ''
+      for (let i = 0; i < novo.slides.length; i++) {
+        setOcupado(`Conferindo layout ${i + 1} de ${novo.slides.length}…`)
+        const original = novo.slides[i]
+        const resultado = await avaliarLayouts(original, { formato: novo.formato, papel: papelLayout(original, i, novo.slides.length, resposta.slides?.[i]?.papel), anteriores: usados.slice(-2), preferido: explicito }, s => renderLayout(s, novo.formato, novo.contador ? `${i + 1}/${novo.slides.length}` : ''))
+        const escolhido = resultado.opcoes[0]?.slide || original
+        novo.slides[i] = escolhido
+        resultados[i] = { ...resultado, origem: escolhido, problemas: resultado.opcoes.length ? [] : resultado.problemas }
+        usados.push(idLayout(escolhido))
+      }
+      if (projetoAtual.current !== antes) {
+        setAviso('A arte mudou durante a conferência. Mantive suas alterações; gere novamente quando terminar de editar.')
+        return
+      }
+      setAnterior(antes)
+      setProjeto(novo)
+      setSugestoes(resultados)
+      setSelecionado(null)
+    } finally { setOcupado('') }
   }
   const desfazerPedido = () => { setProjeto(anterior); setAnterior(null); setSelecionado(null) }
 
@@ -534,6 +592,7 @@ export default function ArteStudio() {
         </div>
 
         <div className="flex-1 w-full max-w-md space-y-4">
+          <SugestoesLayout arte={arte} resultado={sugestoes[atual]} analisando={analisandoLayout != null || !!ocupado} onAnalisar={sugerirLayouts} onAplicar={aplicarSugestao} renderizar={s => renderLayout(s)} tamanho={s => tamanho(s, formato)} />
           {!cartao && <div className="rounded-xl border border-gray-200 p-4 space-y-2" aria-label="Elementos da arte">
             <h2 className="text-sm font-semibold">Elementos da arte</h2>
             {Object.entries(NOMES_BLOCO).map(([id, nome]) => (
