@@ -29,6 +29,68 @@ export const fotosDe = (def) => {
   return nomes
 }
 
+/** Campos que recebem o título e o texto dela na troca de modelo. */
+export const camposPrincipais = (def) => ({ titulo: def.recebe?.[0] ?? undefined, texto: def.recebe?.[1] ?? undefined })
+
+const comparar = (t = '') => String(t).replace(/\*/g, '').replace(/\s+/g, '')
+
+/**
+ * Texto dela maior que o lugar do modelo: primeiro o elemento passa a quebrar linha na largura da arte
+ * (a 40px das bordas); se ainda passar da altura, encolhe. Só mexe em elemento com texto dela que saiu
+ * da arte e que ela não moveu nem redimensionou.
+ */
+export function caberNoQuadro(raiz, def, arte) {
+  if (!raiz) return
+  const { titulo, texto } = camposPrincipais(def)
+  const padrao = Object.fromEntries(def.campos.map((c) => [c.id, c.padrao]))
+  const alvos = [titulo, texto].filter((id) => id && arte.textos?.[id] && arte.textos[id] !== padrao[id]).map((id) => comparar(arte.textos[id])).filter(Boolean)
+  const M = 40
+  ;[...raiz.children].forEach((el, i) => {
+    // Desfaz o encaixe da vez anterior antes de medir de novo.
+    if (el.dataset.cabe) {
+      const o = JSON.parse(el.dataset.cabe)
+      el.style.width = o.w
+      el.querySelectorAll('[data-ws]').forEach((d) => { d.style.whiteSpace = d.dataset.ws; delete d.dataset.ws })
+      el.style.whiteSpace = o.ws
+      delete el.dataset.cabe
+    }
+    el.style.transformOrigin = ''
+    const c = arte.camadas?.[i] ?? {}
+    if (!alvos.length || c.dx || c.dy || c.escala || !alvos.some((a) => comparar(el.textContent).includes(a))) return
+    const caixa = raiz.getBoundingClientRect()
+    const k = caixa.width / def.w || 1
+    const medir = () => {
+      const faixa = document.createRange()
+      faixa.selectNodeContents(el)
+      const r = faixa.getBoundingClientRect()
+      const e = el.getBoundingClientRect()
+      return { r, e, esq: (r.left - caixa.left) / k, dir: (r.right - caixa.left) / k, topo: (r.top - caixa.top) / k, base: (r.bottom - caixa.top) / k, elEsq: (e.left - caixa.left) / k }
+    }
+    let m = medir()
+    if (m.esq >= 0 && m.dir <= def.w && m.base <= def.h) return
+    let dx = 0
+    if (m.esq < 0 || m.dir > def.w) {
+      el.dataset.cabe = JSON.stringify({ w: el.style.width, ws: el.style.whiteSpace })
+      // Tudo que estava travado numa linha só passa a quebrar.
+      el.querySelectorAll('*').forEach((d) => { if (getComputedStyle(d).whiteSpace === 'nowrap') { d.dataset.ws = d.style.whiteSpace; d.style.whiteSpace = 'normal' } })
+      el.style.whiteSpace = 'normal'
+      el.style.width = `${def.w - 2 * M}px`
+      m = medir()
+      dx = M - m.elEsq
+    }
+    // Passou da altura: primeiro sobe (até 40px do topo); só encolhe se nem assim couber.
+    const alt = m.base - m.topo
+    const s = Math.min(1, (def.h - 2 * M) / alt)
+    const topoNovo = Math.min(Math.max(m.topo, M), def.h - M - alt * s)
+    const dy = topoNovo - m.topo
+    if (s < 1) {
+      el.style.transformOrigin = `${(m.r.left - m.e.left) / k}px ${(m.r.top - m.e.top) / k}px`
+      el.style.scale = String(s)
+    }
+    el.style.translate = `${dx}px ${dy}px`
+  })
+}
+
 export const textosDe = (def, arte) => ({ ...Object.fromEntries(def.campos.map((c) => [c.id, c.padrao])), ...(arte?.textos ?? {}) })
 
 /** HTML completo do card com os textos e fotos do slide. */

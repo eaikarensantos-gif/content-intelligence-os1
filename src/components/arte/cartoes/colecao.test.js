@@ -83,4 +83,14 @@ describe('coleção de cards', () => {
   it('só o 60-processo é story; os outros são feed 1080x1350', () => {
     for (const c of CARTOES) expect([c.w, c.h], c.id).toEqual(c.id === '60-processo' ? [1080, 1920] : [1080, 1350])
   })
+
+  it('todo card diz para onde vão o título e o texto dela na troca de modelo, com campos que existem', () => {
+    for (const c of CARTOES) {
+      expect(c.recebe, c.id).toBeDefined()
+      const ids = c.campos.map((k) => k.id)
+      const [titulo, texto, limpa = []] = c.recebe
+      for (const id of [titulo, texto, ...limpa].filter(Boolean)) expect(ids, `${c.id}: ${id}`).toContain(id)
+      if (c.id !== 'meses-01-janeiro') expect(titulo, c.id).toBeTruthy()
+    }
+  })
 })
