@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
+import TextoArte from './TextoArte'
 import { AlignCenter, AlignLeft, AlignRight, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Scissors, Trash2 } from 'lucide-react'
 import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
@@ -569,7 +570,7 @@ export default function ArteStudio() {
                 const valor = textosDe(def, arte)[c.id] ?? ''
                 return (
                   <Campo key={c.id} rotulo={c.rotulo}>
-                    <textarea rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
+                    <TextoArte rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
                     {c.ajuda && <span className="block text-xs text-gray-400 mt-0.5">{c.ajuda}</span>}
                   </Campo>
                 )
@@ -599,7 +600,7 @@ export default function ArteStudio() {
                 <span className="text-sm font-semibold text-gray-900">{NOMES_BLOCO[selecionado]}</span>
                 <button type="button" onClick={() => setSelecionado(null)} className="text-xs text-gray-500 hover:underline">Fechar</button>
               </div>
-              <textarea rows={3} value={arte[selecionado]} onChange={(e) => mudar({ [selecionado]: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+              <TextoArte rows={3} value={arte[selecionado]} onChange={(e) => mudar({ [selecionado]: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
                 <Campo rotulo="Fonte">
                   <select value={est.fonte ?? (selecionado === 'titulo' || (selecionado === 'texto' && arte.template === 'atrasCabeca') ? arte.fonteTitulo : selecionado === 'detalhe' ? 'kinder' : 'inter')} onChange={(e) => mudarEst(selecionado, { fonte: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
                     {Object.entries(FONTES).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
@@ -638,13 +639,13 @@ export default function ArteStudio() {
               </label>
 
               <Campo rotulo="Título (*trecho* ganha a cor de destaque)">
-                <textarea rows={2} value={arte.titulo} onChange={(e) => mudar({ titulo: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+                <TextoArte rows={2} value={arte.titulo} onChange={(e) => mudar({ titulo: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
               </Campo>
               <Campo rotulo={arte.template === 'chat' ? 'Mensagens (uma por linha; ">" no começo = sua)' : arte.template === 'busca' ? 'Busca na 1ª linha, sugestões nas seguintes' : 'Texto'}>
-                <textarea rows={3} value={arte.texto} onChange={(e) => mudar({ texto: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+                <TextoArte rows={3} value={arte.texto} onChange={(e) => mudar({ texto: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
               </Campo>
               <Campo rotulo="Detalhe manuscrito (opcional)">
-                <input value={arte.detalhe} onChange={(e) => mudar({ detalhe: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+                <TextoArte rows={2} value={arte.detalhe} onChange={(e) => mudar({ detalhe: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
               </Campo>
 
               <Campo rotulo="Fundo"><Cores valor={arte.fundo} onChange={(fundo) => mudar({ fundo })} /></Campo>

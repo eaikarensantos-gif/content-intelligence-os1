@@ -10,7 +10,11 @@ const emo = (c) => `/marca/emoji/${c}.png`
 // ---------- texto ----------
 const esc = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 /** Texto simples: quebra de linha vira <br>. */
-const T = (s) => esc(s).replace(/\n/g, '<br>')
+const T = (s) => {
+  const texto = esc(s).replace(/\r\n?/g, '\n')
+  // Um único item de flex: balões e etiquetas também respeitam as quebras.
+  return texto.includes('\n') ? `<span>${texto.replace(/\n/g, '<br>')}</span>` : texto
+}
 /** Texto com *trecho* marcado: o trecho ganha o invólucro do card original. */
 const rico = (s, abre, fecha) => T(s).replace(/\*(.+?)\*/g, `${abre}$1${fecha}`)
 const linhas = (s = '') => String(s).split('\n')
