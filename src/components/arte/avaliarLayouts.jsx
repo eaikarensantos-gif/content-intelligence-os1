@@ -1,6 +1,9 @@
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
-import { classificarLayouts, idLayout } from './layoutSuggestions'
+import { classificarLayouts, conteudoLayout, idLayout } from './layoutSuggestions'
+
+import { normalizar } from './marca'
+import { TEMPLATES } from './Templates'
 
 const dentro = (a, b, folga = 3) => a.left >= b.left - folga && a.top >= b.top - folga && a.right <= b.right + folga && a.bottom <= b.bottom + folga
 const sobrepoe = (a, b) => {
@@ -48,7 +51,7 @@ export function conferirTexto(canvas) {
   return { cabe: problemas.size === 0, problemas: [...problemas] }
 }
 
-/** Até três opções aprovadas; sem opção segura, o conteúdo original é mantido. */
+/** Só retorna opções aprovadas na geometria real; nunca aprova o original por falta de alternativa. */
 export async function avaliarLayouts(source, contexto, renderizar) {
   const candidatos = classificarLayouts(source, contexto)
   const container = document.createElement('div')
@@ -75,6 +78,34 @@ export async function avaliarLayouts(source, contexto, renderizar) {
       if (!teste.cabe) continue
       opcoes.push({ id: candidato.id, nome: candidato.nome, pontos: candidato.pontos, motivos: [...candidato.motivos, 'Texto conferido na prévia'], slide: candidato.slide })
       if (opcoes.length === 3) break
+    }
+    // Reserva editorial: fluxo vertical medido, sem truncar ou comprimir até ficar ilegível.
+    // Não ressuscita elementos ocultos nem descarta fotos de uma composição.
+    const ocultos = [...Object.values(source.est || {}), ...Object.values(source.camadas || {})].some(e => e?.oculto)
+    const conteudo = conteudoLayout(source)
+    if (!opcoes.length && !ocultos && conteudo.fotos.length <= 1) {
+      for (const [titulo, texto] of [[100, 42], [84, 38], [68, 34], [60, 32]]) {
+        const slide = normalizar({
+          ...(source.template !== 'cartao' ? source : {}),
+          template: 'corCheia', titulo: conteudo.titulo, texto: conteudo.corpo, detalhe: '',
+          foto: conteudo.fotos[0] || '', recorte: '', emojis: [],
+          est: { titulo: { tamanho: titulo, largura: 880 }, texto: { tamanho: texto, largura: 880 } },
+          pos: { titulo: { x: 100, y: 150 }, texto: { x: 100, y: 150 } },
+        }, TEMPLATES.corCheia.padrao)
+        await verificar(slide)
+        const canvas = container.firstElementChild
+        const alturaTitulo = canvas.querySelector('[data-elemento="titulo"]')?.getBoundingClientRect().height || 0
+        const alturaTexto = canvas.querySelector('[data-elemento="texto"]')?.getBoundingClientRect().height || 0
+        const altura = canvas.getBoundingClientRect().height
+        const espaco = slide.texto && slide.titulo ? 64 : 0
+        if (150 + alturaTitulo + espaco + alturaTexto > altura - 100) continue
+        slide.pos.texto.y = 150 + alturaTitulo + espaco
+        const teste = await verificar({ ...slide, pos: { ...slide.pos } })
+        if (!teste.cabe) continue
+        opcoes.push({ id: 'corCheia', nome: 'Diagramação ajustada', pontos: 50,
+          motivos: ['Espaçamento calculado pela altura do texto', 'Conteúdo completo, sem cortes', 'Texto conferido na prévia'], slide })
+        break
+      }
     }
     return { opcoes, problemas: atual.problemas, avaliados: conferidos, compativeis: candidatos.length }
   } finally {

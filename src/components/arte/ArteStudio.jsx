@@ -350,7 +350,8 @@ export default function ArteStudio() {
         setOcupado(`Conferindo layout ${i + 1} de ${novo.slides.length}…`)
         const original = novo.slides[i]
         const resultado = await avaliarLayouts(original, { formato: novo.formato, papel: papelLayout(original, i, novo.slides.length, resposta.slides?.[i]?.papel), anteriores: usados.slice(-2), preferido: explicito }, s => renderLayout(s, novo.formato, novo.contador ? `${i + 1}/${novo.slides.length}` : ''))
-        const escolhido = resultado.opcoes[0]?.slide || original
+        if (!resultado.opcoes.length) throw new Error(`Não foi possível diagramar o slide ${i + 1} sem sobreposição ou cortes. Divida o conteúdo em mais slides ou reduza o texto. Sua arte anterior foi mantida.`)
+        const escolhido = resultado.opcoes[0].slide
         novo.slides[i] = escolhido
         resultados[i] = { ...resultado, origem: escolhido, problemas: resultado.opcoes.length ? [] : resultado.problemas }
         usados.push(idLayout(escolhido))
@@ -375,11 +376,11 @@ export default function ArteStudio() {
     setOcupado(`Montando o carrossel que veio do ${entrada.origem}…`)
     setAviso('')
     pedirArte(pedidoDeSlides(entrada.slides))
-      .then((resposta) => aplicarPedido(fixarTextos(resposta, entrada.slides)))
-      .catch(() => {
-        aplicarPedido({ slides: entrada.slides.map((s) => ({ template: 'corCheia', titulo: s.titulo, texto: s.texto })) })
-        setAviso('A IA não respondeu agora. Montei os slides em cor cheia, com o texto do gerador, para você ajustar.')
-      })
+      .then(resposta => fixarTextos(resposta, entrada.slides), () => ({
+        slides: entrada.slides.map(s => ({ template: 'corCheia', titulo: s.titulo, texto: s.texto })),
+      }))
+      .then(resposta => aplicarPedido(resposta))
+      .catch(err => setAviso(err?.message || 'Não foi possível diagramar os slides. Sua arte anterior foi mantida.'))
       .finally(() => setOcupado(''))
   }, [carregado]) // eslint-disable-line react-hooks/exhaustive-deps
 
