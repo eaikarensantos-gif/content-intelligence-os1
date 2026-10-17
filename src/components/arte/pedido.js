@@ -74,6 +74,57 @@ export function montarProjeto(resposta, foto = '') {
   }
 }
 
+// ── Entrada vinda dos geradores do Content (ex.: Carrossel Studio) ──────────
+const CHAVE_ENTRADA = 'studio-arte:entrada'
+
+/** Guarda os slides de um gerador para o Studio de Arte montar ao abrir. slides: [{titulo, texto, papel, visual}] */
+export function guardarEntrada(origem, slides) {
+  try {
+    localStorage.setItem(CHAVE_ENTRADA, JSON.stringify({ origem, slides, em: Date.now() }))
+  } catch { /* sem armazenamento: o Studio abre vazio */ }
+}
+
+/** Lê e apaga a entrada pendente (vale por 10 minutos, para não reaparecer dias depois). */
+export function pegarEntrada() {
+  try {
+    const bruto = localStorage.getItem(CHAVE_ENTRADA)
+    localStorage.removeItem(CHAVE_ENTRADA)
+    const e = JSON.parse(bruto ?? 'null')
+    if (!e?.slides?.length || Date.now() - (e.em ?? 0) > 10 * 60 * 1000) return null
+    return e
+  } catch {
+    return null
+  }
+}
+
+/** Pedido para a IA só diagramar: os textos já estão prontos. */
+export function pedidoDeSlides(slides) {
+  const lista = slides.map((s, i) => [
+    `Slide ${i + 1}${s.papel ? ` (${s.papel})` : ''}:`,
+    `titulo: ${s.titulo || ''}`,
+    `texto: ${s.texto || ''}`,
+    s.visual ? `sugestão visual do gerador: ${s.visual}` : '',
+  ].filter(Boolean).join('\n')).join('\n\n')
+  return `Diagrame este carrossel já escrito. Gere exatamente ${slides.length} slides, na mesma ordem.
+Copie título e texto de cada slide sem mudar nenhuma palavra; você só pode marcar um trecho com *asteriscos*.
+Escolha template, cores e emojis pelo papel de cada slide e pela sugestão visual. Capa forte, miolo legível, último slide fechando.
+Use chat ou busca só se o texto já vier com uma linha por mensagem ou sugestão; texto corrido vai em corCheia, caixa, tarjas ou selecao.
+
+${lista}`
+}
+
+const semDestaque = (t = '') => t.replace(/\*/g, '').replace(/\s+/g, ' ').trim()
+
+/** Garante o texto do gerador: se a IA mudou uma palavra, volta o original (aceita só os asteriscos). */
+export function fixarTextos(resposta, slides) {
+  const saida = slides.map((orig, i) => {
+    const s = resposta?.slides?.[i] ?? { template: 'corCheia' }
+    const fiel = (k) => (semDestaque(s[k]) === semDestaque(orig[k]) ? s[k] : orig[k] || '')
+    return { ...s, titulo: fiel('titulo'), texto: fiel('texto') }
+  })
+  return { ...resposta, slides: saida }
+}
+
 export async function pedirArte(pedido) {
   const res = await fetch('/api/ai?action=openai', {
     method: 'POST',

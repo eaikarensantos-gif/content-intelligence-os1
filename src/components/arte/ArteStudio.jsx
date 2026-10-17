@@ -5,7 +5,7 @@ import { CORES, EMOJIS, FONTES_TITULO, FONTE_DETALHE, FORMATOS, emojiUrl, hex, n
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
-import { montarProjeto } from './pedido'
+import { fixarTextos, montarProjeto, pedidoDeSlides, pedirArte, pegarEntrada } from './pedido'
 import Pedido from './Pedido'
 import Banco from './Banco'
 import './marca.css'
@@ -176,6 +176,22 @@ export default function ArteStudio() {
     if (precisa) gerarRecorte(precisa.foto)
   }
   const desfazerPedido = () => { setProjeto(anterior); setAnterior(null); setSelecionado(null) }
+
+  // Slides vindos de um gerador do Content: a IA só diagrama, o texto fica como veio.
+  useEffect(() => {
+    if (!carregado) return
+    const entrada = pegarEntrada()
+    if (!entrada) return
+    setOcupado(`Montando o carrossel que veio do ${entrada.origem}…`)
+    setAviso('')
+    pedirArte(pedidoDeSlides(entrada.slides))
+      .then((resposta) => aplicarPedido(fixarTextos(resposta, entrada.slides)))
+      .catch(() => {
+        aplicarPedido({ slides: entrada.slides.map((s) => ({ template: 'corCheia', titulo: s.titulo, texto: s.texto })) })
+        setAviso('A IA não respondeu agora. Montei os slides em cor cheia, com o texto do gerador, para você ajustar.')
+      })
+      .finally(() => setOcupado(''))
+  }, [carregado]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Slides
   const irPara = (i) => { mudarProjeto({ atual: i }); setSelecionado(null) }

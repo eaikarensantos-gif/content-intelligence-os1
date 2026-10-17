@@ -1,5 +1,43 @@
 import { describe, expect, it } from 'vitest'
-import { instrucoes, montarProjeto } from './pedido'
+import { fixarTextos, guardarEntrada, instrucoes, montarProjeto, pedidoDeSlides, pegarEntrada } from './pedido'
+
+describe('entrada vinda dos geradores', () => {
+  const slides = [
+    { titulo: 'organizar a semana', texto: 'três coisas e só três.', papel: 'capa', visual: 'fundo escuro com destaque' },
+    { titulo: 'o resto vai para quarta', texto: 'sem culpa.', papel: 'cta' },
+  ]
+
+  it('mantém o texto do gerador e aceita só os asteriscos de destaque', () => {
+    const r = fixarTextos({ slides: [
+      { template: 'tarjas', titulo: 'organizar a *semana*', texto: 'três coisas e só três.' },
+      { template: 'corCheia', titulo: 'o resto pode ir pra quarta', texto: 'sem culpa nenhuma.' },
+    ] }, slides)
+    expect(r.slides[0].titulo).toBe('organizar a *semana*')
+    expect(r.slides[1].titulo).toBe('o resto vai para quarta')
+    expect(r.slides[1].texto).toBe('sem culpa.')
+  })
+
+  it('completa slides que a IA deixou de fora, na mesma ordem', () => {
+    const r = fixarTextos({ slides: [{ template: 'tarjas', titulo: 'organizar a semana', texto: 'três coisas e só três.' }] }, slides)
+    expect(r.slides).toHaveLength(2)
+    expect(r.slides[1]).toMatchObject({ template: 'corCheia', titulo: 'o resto vai para quarta' })
+  })
+
+  it('o pedido lista cada slide com papel e sugestão visual', () => {
+    const p = pedidoDeSlides(slides)
+    expect(p).toContain('exatamente 2 slides')
+    expect(p).toContain('Slide 1 (capa)')
+    expect(p).toContain('sugestão visual do gerador: fundo escuro com destaque')
+  })
+
+  it('a entrada é lida uma vez só', () => {
+    const mem = {}
+    globalThis.localStorage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v }, removeItem: (k) => { delete mem[k] } }
+    guardarEntrada('Carrossel Studio', slides)
+    expect(pegarEntrada()?.slides).toHaveLength(2)
+    expect(pegarEntrada()).toBeNull()
+  })
+})
 
 describe('pedido de arte', () => {
   it('monta os slides e descarta o que a identidade não aceita', () => {

@@ -7,9 +7,11 @@ import {
   Copy, Save, BarChart2, TrendingUp, Zap, Eye, Heart, MessageSquare,
   Share2, Bookmark, ArrowRight, RotateCcw, Wand2, FileText, Layers,
   Target, Brain, AlertCircle, Check, Image as ImageIcon, Type, User, Settings,
-  ExternalLink, Download, ThumbsDown, LayoutTemplate,
+  ExternalLink, Download, ThumbsDown, LayoutTemplate, Palette,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import useStore from '../../store/useStore'
+import { guardarEntrada } from '../arte/pedido'
 import { buildVoiceContext, buildRegenerateInstruction } from '../../utils/voiceContext'
 import CarouselTemplateManager from './CarouselTemplateManager'
 import FigmaCarouselPanel from './FigmaCarouselPanel'
@@ -651,6 +653,7 @@ export default function CarouselStudio() {
   const bannedWords = useStore(s => s.posicionamento.lista_negra) || []
   const posicionamento = useStore(s => s.posicionamento)
   const carouselTemplates = useStore((s) => s.carouselTemplates)
+  const navigate = useNavigate()
 
   const [step, setStep] = useState('config') // config | generating | editor
   const [carouselType, setCarouselType] = useState('')
@@ -1150,6 +1153,16 @@ Estilo: Design minimalista e limpo. Tipografia bold grande como elemento princip
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                guardarEntrada('Carrossel Studio', (result.slides || []).map((s) => ({ titulo: s.headline || '', texto: s.subtext || '', papel: s.type || '', visual: s.visual_suggestion || '' })))
+                navigate('/arte')
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+              title="Leva os slides para o Studio de Arte, na identidade visual, com o texto como está"
+            >
+              <Palette size={12} /> Abrir no Studio de Arte
+            </button>
             <button onClick={handleCopyScript} className="btn-ghost text-xs border border-gray-200">
               <Copy size={12} /> Copiar
             </button>
