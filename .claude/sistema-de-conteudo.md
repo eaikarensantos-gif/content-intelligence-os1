@@ -33,7 +33,7 @@ Ideia nova no meio da semana vai pro Banco de Ativos do Notion. Nunca pro calend
 - **Reels de teste:** humor sobre comportamento profissional. Rodam como reel de teste do Instagram, fora do perfil. O que performar sobe na quinta A.
 - **Publis:** não ocupam slot orgânico.
 - **Mínimo de 4 amostras** antes de decidir qualquer coisa sobre um formato.
-- **Cortados:** reel de dica técnica de IA, post sem legenda, piada de uma linha sem cena, post "leve" sem motor.
+- **Cortados:** lista de ferramentas ou de prompts ("5 prompts que..."), dica técnica de IA solta, post sem legenda, piada de uma linha sem cena, post "leve" sem motor. Tutorial de critério continua permitido (ver seção 11).
 
 ---
 
@@ -159,7 +159,7 @@ Também na fila do Notion, já escritos (terça):
 | qui 29/10 | Desafio de câmera do Engage | roteiro |
 | ter 03/11 | Pauta 2, falhas separadas | texto pronto, produzir até 30/10 (Finados) |
 | qui 05/11 | vazio, CPF com credencial | escolher tema |
-| ter 10/11 | Anos no mesmo nível de decisão | revisar |
+| ter 10/11 | Anos no mesmo nível de decisão (ou Teste IA 4, contagem sobre IA, em 10/11 ou 17/11) | revisar |
 | qui 12/11 | quinta A | vencedor do teste ou B.O. |
 | ter 17/11 | Pauta 6 | roteiro |
 | qui 19/11 | quinta B | a definir |
@@ -175,10 +175,34 @@ A lista "O que está na minha mão esta semana" filtra pela propriedade Próximo
 
 ---
 
-## 11. Pendências
+## 11. IA no conteúdo
+
+O perfil promete "Tech para Negócios e Carreira", mas no último mês a IA só apareceu em publi e num tutorial que não performou. A direção é falar de IA a partir do critério e da experiência da Karen. Lista de ferramentas e de prompts fica de fora.
+
+**7 formatos em teste.** Rodam como reel de teste, fora do perfil. O que performar sobe numa quinta A. Os roteiros estão no Calendário Editorial do Notion como "Teste IA 1 a 7", em Backlog.
+
+| # | Formato | Ideia |
+|---|---|---|
+| 1 | Bastidor de uso real | o que foi pra IA e o que ficou com a Karen na pesquisa da 99 |
+| 2 | Teste próprio | a IA classificaria as candidatas do ROTA igual a Karen? (10 respostas anonimizadas, mostrar só o placar) |
+| 3 | IA como sparring de decisão | decisão real de negócio, pedindo à IA os argumentos contra |
+| 4 | Contagem sobre IA (carrossel de terça) | quantas tarefas da sua semana uma IA faria tão bem quanto você? |
+| 5 | Desmontar promessa (react) | a lista de prompts salva e nunca usada |
+| 6 | Hot take de caso de negócio | IA usada como desculpa pra demitir (conferir as fontes antes) |
+| 7 | Tutorial de critério | 4 perguntas antes de mandar uma tarefa pra IA |
+
+**Bastidor do próprio sistema Content.** Uma funcionalidade por vídeo, como reel de teste, sem mostrar o sistema inteiro. Estrutura: o problema (0 a 4s), uma funcionalidade funcionando na tela, o limite (fissura) e a ponte. Ordem de escolha: dor que a audiência reconhece, cabe em menos de 30s de tela, tem um antes e depois, não entrega prompt nem estrutura própria. Se o sistema roda no Claude, esses posts não levam as hashtags do Engage.
+
+**Regra do Engage pra IA:** só o Gemini pode aparecer. Post que mostra ou cita outra IA sai sem as hashtags.
+
+---
+
+## 12. Pendências
 
 - Frase de leitura da pauta 1 até quinta 22/10.
 - Recurso e situação do desafio de câmera até segunda 26/10.
 - Tema do CPF de quinta 05/11.
 - Perguntar à agência se o Galaxy só aparecendo na cena, sem recurso em destaque, pontua no Engage.
 - Limpeza do Notion: marcadores "Sprint 11 a 16" vazios e linhas duplicadas na Revisão & Performance.
+- Listar 3 a 5 funcionalidades do Content pra escolher o primeiro vídeo de bastidor.
+- Preencher os colchetes dos roteiros de IA 1, 2 e 3 com o que aconteceu de verdade.
