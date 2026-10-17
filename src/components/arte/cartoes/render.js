@@ -69,10 +69,14 @@ export const camadaDe = (raiz, el) => {
 /** Aplica os ajustes da pessoa sobre o HTML original, guardando o estilo de origem para poder voltar. */
 export function aplicarCamadas(raiz, camadas = {}, selecionado = null) {
   if (!raiz) return
-  ;[...raiz.children].forEach((el, i) => {
+  const elementos = [...raiz.children]
+  const recorte = elementos.findIndex((el) => el.hasAttribute('data-recorte-pessoa'))
+  elementos.forEach((el, i) => {
     if (!el.dataset.orig) el.dataset.orig = JSON.stringify({ color: el.style.color, fontFamily: el.style.fontFamily, clipPath: el.style.clipPath })
     const orig = JSON.parse(el.dataset.orig)
     const o = camadas[i] ?? {}
+    // Ordem explícita sem mover nós: os índices de camadas dos rascunhos continuam válidos.
+    if (recorte >= 0) el.style.zIndex = String(o.plano === 'atras' ? recorte * 10 - 1 : o.plano === 'frente' ? recorte * 10 + 1 : i * 10)
     el.style.translate = o.dx || o.dy ? `${o.dx ?? 0}px ${o.dy ?? 0}px` : ''
     el.style.scale = o.escala && o.escala !== 1 ? String(o.escala) : ''
     el.style.color = o.cor ? hex(o.cor) : orig.color

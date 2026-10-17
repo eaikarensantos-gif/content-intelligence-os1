@@ -39,7 +39,7 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
       onPointerDown={iniciar}
       onPointerMove={mover}
       onPointerUp={soltar}
-      style={{ position: 'absolute', left: 0, top: 0, width: def.w, height: def.h, cursor: interativo ? 'move' : undefined, touchAction: interativo ? 'none' : undefined }}
+      style={{ position: 'absolute', left: 0, top: 0, width: def.w, height: def.h, isolation: 'isolate', cursor: interativo ? 'move' : undefined, touchAction: interativo ? 'none' : undefined }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
