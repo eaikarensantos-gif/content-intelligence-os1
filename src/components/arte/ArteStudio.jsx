@@ -17,6 +17,7 @@ import { CartaoCorpo } from './cartoes/Cartao'
 import Galeria from './Galeria'
 import Pedido from './Pedido'
 import Banco from './Banco'
+import ArtesSalvas from './ArtesSalvas'
 import './marca.css'
 
 const novoSlide = (template = 'tarjas', herdado = {}) => normalizar(herdado, { ...TEMPLATES[template].padrao, template })
@@ -552,6 +553,14 @@ export default function ArteStudio() {
       </div>
       <p className="text-sm text-gray-500 mb-5">Selecione um elemento na arte ou na lista para editar ou apagar. Arraste textos, emojis e a foto para reposicionar.</p>
 
+      <ArtesSalvas projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={p => {
+        encerrarGrupo('texto'); encerrarGrupo('pointer')
+        setProjeto(p); setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
+      }} onLimpar={() => {
+        encerrarGrupo('texto'); encerrarGrupo('pointer')
+        setProjeto({ ...PROJETO_INICIAL, slides: [novoSlide('corCheia', { titulo: '', texto: '', detalhe: '', foto: '', recorte: '', emojis: [] })] })
+        setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
+      }} />
       <Pedido onResposta={aplicarPedido} desfazer={anterior ? desfazerPedido : null} />
       {bancoAberto && <Banco onFechar={() => setBancoAberto(false)} onEscolher={(origem) => { setBancoAberto(false); usarFoto(origem) }} />}
       {galeria && <Galeria itens={itensGaleria} categorias={{ ...CATEGORIAS, base: 'Base do Studio' }} renderMini={renderMini} onFechar={() => setGaleria(false)} onAplicar={aplicarModelo} />}
