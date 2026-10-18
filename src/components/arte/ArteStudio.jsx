@@ -801,9 +801,15 @@ export default function ArteStudio() {
                   <button key={v} type="button" onClick={() => mudarEst(selecionado, { alinhar: v })} className={`p-2 rounded-lg border ${est.alinhar === v ? 'border-orange-500 bg-white' : 'border-gray-200'}`}><Icone size={15} /></button>
                 ))}
               </div>
-              <Campo rotulo={selecionado === 'titulo' ? 'Cor' : selecionado === 'texto' ? 'Cor' : 'Cor (destaque)'}>
-                <Cores valor={selecionado === 'titulo' ? arte.corTitulo : selecionado === 'texto' ? arte.corTexto : arte.corDestaque} onChange={(c) => mudar(selecionado === 'titulo' ? { corTitulo: c } : selecionado === 'texto' ? { corTexto: c } : { corDestaque: c })} />
+              <Campo rotulo="Cor do texto">
+                <Cores valor={selecionado === 'titulo' ? arte.corTitulo : selecionado === 'texto' ? (arte.template === 'tarjas' ? est.cor ?? (arte.semEnfeites ? arte.corTexto : 'creme') : arte.corTexto) : arte.corDestaque} onChange={(c) => arte.template === 'tarjas' && selecionado === 'texto' ? mudarEst('texto', { cor: c }) : mudar(selecionado === 'titulo' ? { corTitulo: c } : selecionado === 'texto' ? { corTexto: c } : { corDestaque: c })} />
               </Campo>
+              {arte.template === 'tarjas' && ['titulo', 'texto'].includes(selecionado) && <Campo rotulo="Cor do bloco">
+                <Cores valor={selecionado === 'titulo' ? arte.corTarja : est.fundo ?? arte.corDestaque} onChange={cor => {
+                  if (selecionado === 'titulo') mudar({ corTarja: cor, semEnfeites: false })
+                  else mudarSlide(s => ({ ...s, semEnfeites: false, est: { ...s.est, texto: { ...s.est?.texto, fundo: cor } } }))
+                }} />
+              </Campo>}
             </div>
           ) : (
             <>

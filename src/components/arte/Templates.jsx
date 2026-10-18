@@ -71,7 +71,7 @@ const Tarjas = ({ a, Bloco }) => (
     {a.texto && (
       <Bloco id="texto" largura={880}>
         <div style={{ ...estiloCorpo(a, 40), lineHeight: 1.45, textAlign: alin(a, 'texto') }}>
-          <Tarja fundo={a.semEnfeites ? undefined : hex(a.corDestaque)} cor={a.semEnfeites ? hex(a.corTexto) : hex('creme')} padding="4px 14px">{a.texto}</Tarja>
+          <Tarja fundo={a.semEnfeites ? undefined : hex(a.est?.texto?.fundo ?? a.corDestaque)} cor={hex(a.est?.texto?.cor ?? (a.semEnfeites ? a.corTexto : 'creme'))} padding="4px 14px">{a.texto}</Tarja>
         </div>
       </Bloco>
     )}
