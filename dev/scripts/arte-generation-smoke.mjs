@@ -34,11 +34,12 @@ try {
  assert.ok(!(await canvas.textContent()).includes('SEM'))
  assert.match(await page.getByRole('button', { name: /Baixar todos/ }).innerText(), /\(4\)/)
  for (const [i, label] of [[1, 'Faça uma pausa'], [2, 'tempo']]) {
-  await page.locator('button').filter({ has: page.locator('[data-canvas="miniatura"]') }).nth(i).click()
+  await page.locator('button:visible').filter({ has: page.locator('[data-canvas="miniatura"]') }).nth(i).click()
   assert.ok((await canvas.textContent()).includes(label))
  }
  const download = page.waitForEvent('download')
  await page.getByRole('button', { name: 'Baixar este', exact: true }).click()
+ await page.getByRole('button', { name: 'Conferi os avisos · baixar', exact: true }).click()
  assert.equal(await (await download).failure(), null)
  const antesDoErro = await canvas.textContent()
  mode = 'invalid'

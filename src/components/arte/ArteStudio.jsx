@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { toPng } from 'html-to-image'
 import useHistorico from './useHistorico'
 import { avaliarLayouts } from './avaliarLayouts'
 import { CATALOGO_LAYOUTS, idLayout } from './layoutSuggestions'
@@ -18,6 +17,10 @@ import Pedido from './Pedido'
 import Banco from './Banco'
 import ArtesSalvas from './ArtesSalvas'
 import EdicaoNaArte from './EdicaoNaArte'
+import VisaoGeral from './VisaoGeral'
+import RevisaoFinal from './RevisaoFinal'
+import { revisarCards, gerarDownload, mesmaArte } from './exportacaoArte'
+import { aplicarEmLote, reordenarProjeto, encaixarBloco } from './ajustesProjeto'
 import './marca.css'
 
 const novoSlide = (template = 'tarjas', herdado = {}) => normalizar(herdado, { ...TEMPLATES[template].padrao, template })
@@ -33,7 +36,7 @@ const BASE_COM_FOTO = ['tarjas', 'atrasCabeca', 'cabecaCaixa', 'caixa', 'selecao
 /** Tamanho da arte: os cards da coleção têm o tamanho do original; os modelos base seguem o formato do projeto. */
 const tamanho = (slide, formato) => (ehCartao(slide) ? { w: CARTAO[slide.cartao].w, h: CARTAO[slide.cartao].h } : FORMATOS[formato])
 const padraoDe = (s) => (ehCartao(s) ? novoCartao(s.cartao) : novoSlide(s.template))
-const tituloDoSlide = (s) => (ehCartao(s) ? (CARTAO[s.cartao].titulo ? textosDe(CARTAO[s.cartao], s)[CARTAO[s.cartao].titulo] : CARTAO[s.cartao].nome) : s.titulo)
+
 
 /** Título, texto e foto que ela mesma colocou no slide (o exemplo do modelo não conta). */
 function conteudoProprio(s) {
@@ -96,7 +99,8 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onMoverCamada, o
   const mover = (e) => {
     const d = arrasto.current
     if (!d) return
-    if (Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 3) return
+    if (!d.movendo && Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 3) return
+    d.movendo = true
     onMover(d.chave, Math.round(d.x + (e.clientX - d.x0) / escala), Math.round(d.y + (e.clientY - d.y0) / escala))
   }
   const soltar = () => { arrasto.current = null }
@@ -112,6 +116,7 @@ function Canvas({ arte, formato, contador, escala = 1, onMover, onMoverCamada, o
         </ArrastoCtx.Provider>
       )}
       <Emojis a={arte} />
+      {arte.assinatura && <div style={{ position: 'absolute', left: 64, bottom: 36, maxWidth: w - 128, padding: '8px 16px', fontFamily: 'Arial, sans-serif', fontSize: 28, lineHeight: 1.2, color: '#2B211B', background: '#F4EFE7', whiteSpace: 'pre-wrap' }}>{arte.assinatura}</div>}
       {contador && (
         <div style={{ position: 'absolute', right: 70, top: 56, fontFamily: FONTE_DETALHE, fontSize: 40, color: hex(['cafe', 'tinta', 'terracota'].includes(arte.fundo) ? 'creme' : 'cafe') }}>{contador}</div>
       )}
@@ -144,7 +149,7 @@ const Faixa = ({ rotulo, valor, min, max, passo = 1, onChange }) => (
   </Campo>
 )
 
-const nomeArquivo = (s, n) => `${String(n).padStart(2, '0')}-${(s || 'arte').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}.png`
+
 
 export default function ArteStudio() {
   const { projeto, setProjeto, navegar, reset, desfazer, refazer, podeDesfazer, podeRefazer, iniciarGrupo, encerrarGrupo } = useHistorico(PROJETO_INICIAL)
@@ -157,6 +162,9 @@ export default function ArteStudio() {
   const [fotoAlvo, setFotoAlvo] = useState(null)
   const [galeria, setGaleria] = useState(false)
   const [edicao, setEdicao] = useState(null)
+  const [revisao, setRevisao] = useState(null)
+  const [guiasAtivas, setGuiasAtivas] = useState(true)
+  const [guias, setGuias] = useState([])
   const node = useRef(null)
   const projetoAtual = useRef(projeto)
   projetoAtual.current = projeto
@@ -230,7 +238,7 @@ export default function ArteStudio() {
   const voltarEdicao = () => { desfazer(); setSelecionado(null); setAnterior(null) }
   const repetirEdicao = () => { refazer(); setSelecionado(null); setAnterior(null) }
   useEffect(() => {
-    const encerrar = () => encerrarGrupo('pointer')
+    const encerrar = () => { encerrarGrupo('pointer'); setGuias([]) }
     window.addEventListener('pointerup', encerrar)
     window.addEventListener('pointercancel', encerrar)
     return () => {
@@ -266,16 +274,36 @@ export default function ArteStudio() {
     setSelecionado(null)
     if (TEMPLATES[id].recorta && arte.foto && !arte.recorte) gerarRecorte(arte.foto)
   }
-  const mover = (chave, x, y) =>
-    mudarSlide((s) => {
-      if (chave === 'foto') return { ...s, fotoDX: x, fotoDY: y }
-      if (chave.startsWith('emoji:')) {
-        const i = Number(chave.slice(6))
-        return { ...s, emojis: s.emojis.map((e, j) => (j === i ? { ...e, x, y } : e)) }
+  const alinharMovimento = (elemento, dx, dy) => {
+    if (!guiasAtivas || !elemento || !node.current) return { dx, dy }
+    const bounds = node.current.getBoundingClientRect()
+    const rect = el => { const r = el.getBoundingClientRect(); return { x: (r.left - bounds.left) / escala, y: (r.top - bounds.top) / escala, w: r.width / escala, h: r.height / escala } }
+    const atual = rect(elemento)
+    const elementos = cartao ? [...node.current.querySelector('.kc').children] : [...node.current.querySelectorAll('[data-elemento]')]
+    const outros = elementos.filter(el => el !== elemento && getComputedStyle(el).visibility !== 'hidden').map(rect).filter(r => r.w && r.h && r.w * r.h < w * h * 0.9)
+    const ajuste = encaixarBloco({ ...atual, x: atual.x + dx, y: atual.y + dy }, outros, w, h)
+    setGuias(ajuste.linhas)
+    return { dx: ajuste.x - atual.x, dy: ajuste.y - atual.y }
+  }
+  const mover = (chave, x, y) => {
+    if (chave !== 'foto') {
+      const pos = chave.startsWith('emoji:') ? arte.emojis[Number(chave.slice(6))] : arte.pos[chave]
+      if (pos) {
+        const d = alinharMovimento(node.current?.querySelector(`[data-elemento="${chave}"]`), x - pos.x, y - pos.y)
+        x = Math.round(pos.x + d.dx); y = Math.round(pos.y + d.dy)
       }
+    }
+    mudarSlide(s => {
+      if (chave === 'foto') return { ...s, fotoDX: x, fotoDY: y }
+      if (chave.startsWith('emoji:')) return { ...s, emojis: s.emojis.map((e, j) => j === Number(chave.slice(6)) ? { ...e, x, y } : e) }
       return { ...s, pos: { ...s.pos, [chave]: { x, y } } }
     })
-  const moverCamada = (i, dx, dy) => mudarCamada(i, { dx, dy })
+  }
+  const moverCamada = (i, dx, dy) => {
+    const c = arte.camadas?.[i] || {}
+    const d = alinharMovimento(node.current?.querySelector('.kc')?.children[i], dx - (c.dx || 0), dy - (c.dy || 0))
+    mudarCamada(i, { dx: (c.dx || 0) + d.dx, dy: (c.dy || 0) + d.dy })
+  }
 
   const gerarRecorte = async (foto) => {
     setOcupado('Recortando a pessoa da foto…')
@@ -464,42 +492,45 @@ export default function ArteStudio() {
     return { ...p, slides: s, atual: j }
   })
 
-  const baixar = (url, nome) => {
-    const link = document.createElement('a')
-    link.href = url
-    link.download = nome
-    link.click()
-  }
-  const png = (s) => {
-    const t = tamanho(s, formato)
-    return toPng(node.current, { width: t.w, height: t.h, pixelRatio: 1, cacheBust: true })
-  }
-
-  const exportarAtual = async () => {
-    setSelecionado(null)
-    setOcupado('Exportando…')
+  const renderProjeto = (p, slide, i) => <Canvas arte={slide} formato={p.formato} contador={p.contador && p.slides.length > 1 ? `${i + 1}/${p.slides.length}` : ''} interativo={false} />
+  const baixarRevisao = async r => {
+    if (!mesmaArte(projetoAtual.current, r.origem)) { setAviso('A arte mudou. Revise novamente antes de baixar.'); return }
+    setOcupado('Preparando download…')
     try {
-      await new Promise((r) => requestAnimationFrame(r))
-      baixar(await png(arte), nomeArquivo(tituloDoSlide(arte), atual + 1))
-    } finally {
-      setOcupado('')
-    }
+      const arquivo = await gerarDownload(r.origem, r.indices, (s, i) => renderProjeto(r.origem, s, i), r.zip, setOcupado)
+      const url = URL.createObjectURL(arquivo.blob)
+      const link = document.createElement('a'); link.href = url; link.download = arquivo.nome; link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 30000)
+    } catch { setAviso('Não foi possível exportar. Confira as imagens e tente novamente; sua arte foi mantida.') }
+    finally { setOcupado('') }
   }
-  const exportarTodos = async () => {
-    setSelecionado(null)
-    const volta = atual
+  const revisarExportacao = async (indices, zip = true, automatico = true) => {
+    const origem = projetoAtual.current
+    indices = [...new Set(indices)].filter(i => i >= 0 && i < origem.slides.length).sort((a, b) => a - b)
+    if (!indices.length) { setAviso('Selecione pelo menos um card para revisar.'); return }
+    setOcupado('Revisando textos e diagramação…'); setAviso(''); setSelecionado(null)
     try {
-      for (let i = 0; i < slides.length; i++) {
-        setOcupado(`Exportando ${i + 1} de ${slides.length}…`)
-        navegar((p) => ({ ...p, atual: i }))
-        await new Promise((r) => setTimeout(r, 350))
-        baixar(await png(slides[i]), nomeArquivo(tituloDoSlide(slides[i]), i + 1))
-      }
-    } finally {
-      navegar((p) => ({ ...p, atual: volta }))
-      setOcupado('')
-    }
+      const cards = await revisarCards(origem, indices, (s, i) => renderProjeto(origem, s, i))
+      const resultado = { origem, indices, zip, cards }
+      setRevisao(resultado)
+      if (automatico && cards.every(c => !c.problemas.length)) await baixarRevisao(resultado)
+    } catch { setAviso('Não foi possível concluir a revisão. Tente novamente antes de baixar.') }
+    finally { setOcupado('') }
   }
+  const corrigirRevisao = async i => {
+    const origem = projetoAtual.current
+    setOcupado(`Conferindo alternativas para o card ${i + 1}…`)
+    try {
+      const resultado = await avaliarLayouts(origem.slides[i], { formato: origem.formato, papel: papelLayout(origem.slides[i], i, origem.slides.length) }, s => renderProjeto(origem, s, i))
+      if (projetoAtual.current !== origem) return
+      navegar(p => ({ ...p, atual: i }))
+      setSugestoes(prev => ({ ...prev, [i]: { ...resultado, origem: origem.slides[i] } }))
+      setAviso('Confira as sugestões de layout no painel. Depois de aplicar uma opção, revise novamente; cores podem precisar de ajuste manual.')
+    } catch { setAviso('Não foi possível sugerir ajustes. O card foi mantido.') }
+    finally { setOcupado('') }
+  }
+  const exportarAtual = () => revisarExportacao([atual], false)
+  const exportarTodos = () => revisarExportacao(slides.map((_, i) => i), true)
 
   const est = selecionado ? arte.est?.[selecionado] ?? {} : {}
   const tamanhoPadrao = { titulo: 100, texto: 40, detalhe: 46 }
@@ -560,7 +591,7 @@ export default function ArteStudio() {
       onFocusCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) iniciarGrupo('texto') }}
       onBlurCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) encerrarGrupo('texto') }}
     >
-      <ArtesSalvas projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={p => {
+      <ArtesSalvas onVincular={(id, nome, origem) => navegar(p => mesmaArte(p, origem) ? { ...p, bibliotecaId: id, nomeArte: nome } : p)} projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={p => {
         encerrarGrupo('texto'); encerrarGrupo('pointer')
         setProjeto(p); setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
       }} onLimpar={() => {
@@ -594,6 +625,13 @@ export default function ArteStudio() {
         </div>
       )}
 
+      <VisaoGeral key={slides.length + ':' + (projeto.bibliotecaId || '')} projeto={projeto} bloqueado={!!ocupado} renderizar={(s, i) => renderProjeto(projeto, s, i)} tamanho={s => tamanho(s, formato)} onAbrir={i => { irPara(i); node.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} onReordenar={(de, para) => setProjeto(p => reordenarProjeto(p, de, para))} onLote={(indices, ajustes) => { setProjeto(p => aplicarEmLote(p, indices, ajustes)); setAviso('Ajustes aplicados. Revise o carrossel antes de exportar.'); }} onExportar={indices => revisarExportacao([...indices].sort((a, b) => a - b), true)} />
+      <RevisaoFinal revisao={revisao} atual={projeto} bloqueado={!!ocupado} onAbrir={irPara} onCorrigir={corrigirRevisao} onRevisar={() => revisarExportacao(revisao.indices, revisao.zip, false)} onBaixar={() => baixarRevisao(revisao)} />
+      <div className="flex flex-wrap gap-3 mb-3 text-xs">
+        <label className="flex gap-2 items-center"><input type="checkbox" checked={guiasAtivas} onChange={e => { setGuiasAtivas(e.target.checked); setGuias([]) }} />Guias e alinhamento automático</label>
+        <button className="text-orange-800 underline" disabled={!!ocupado} onClick={() => revisarExportacao(slides.map((_, i) => i), true, false)}>Revisar carrossel</button>
+        <span>Baixar todos gera um ZIP com os cards em ordem.</span>
+      </div>
       {/* Slides do carrossel */}
       <div className="flex items-end gap-3 mb-5 overflow-x-auto pb-2">
         {slides.map((s, i) => {
@@ -626,6 +664,10 @@ export default function ArteStudio() {
           <div style={{ transform: `scale(${escala})`, transformOrigin: 'top left' }}>
             <Canvas arte={arte} formato={formato} contador={contadorDe(atual)} escala={escala} onMover={mover} onMoverCamada={moverCamada} onSelecionar={setSelecionado} selecionado={selecionado} nodeRef={node} />
           </div>
+          {guiasAtivas && <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div className="absolute border border-dashed border-cyan-500/40" style={{ inset: 64 * escala }} />
+            {guias.map((g, i) => <div key={i} className="absolute border-cyan-500" style={g.eixo === 'x' ? { left: g.valor * escala, top: 0, bottom: 0, borderLeftWidth: 1 } : { top: g.valor * escala, left: 0, right: 0, borderTopWidth: 1 }}>{g.iguais && <span className="bg-white text-cyan-800 text-xs">Espaços iguais</span>}</div>)}
+          </div>}
           {edicao && <EdicaoNaArte key={`${atual}:${edicao.id}`} campo={edicao} onCancelar={() => setEdicao(null)} onConcluir={valor => {
             if (valor !== edicao.valor) {
               if (edicao.cartao) mudarTexto(edicao.id, valor)
@@ -802,7 +844,7 @@ export default function ArteStudio() {
                 ))}
               </div>
               <Campo rotulo="Cor do texto">
-                <Cores valor={selecionado === 'titulo' ? arte.corTitulo : selecionado === 'texto' ? (arte.template === 'tarjas' ? est.cor ?? (arte.semEnfeites ? arte.corTexto : 'creme') : arte.corTexto) : arte.corDestaque} onChange={(c) => arte.template === 'tarjas' && selecionado === 'texto' ? mudarEst('texto', { cor: c }) : mudar(selecionado === 'titulo' ? { corTitulo: c } : selecionado === 'texto' ? { corTexto: c } : { corDestaque: c })} />
+                <Cores valor={selecionado === 'titulo' ? arte.corTitulo : selecionado === 'texto' ? (arte.template === 'tarjas' ? est.cor ?? (arte.semEnfeites ? arte.corTexto : 'creme') : arte.corTexto) : arte.corDestaque} onChange={(c) => selecionado === 'texto' ? mudarSlide(s => ({ ...s, corTexto: c, est: { ...s.est, texto: { ...s.est?.texto, cor: c } } })) : mudar(selecionado === 'titulo' ? { corTitulo: c } : selecionado === 'texto' ? { corTexto: c } : { corDestaque: c })} />
               </Campo>
               {arte.template === 'tarjas' && ['titulo', 'texto'].includes(selecionado) && <Campo rotulo="Cor do bloco">
                 <Cores valor={selecionado === 'titulo' ? arte.corTarja : est.fundo ?? arte.corDestaque} onChange={cor => {

@@ -12,7 +12,7 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
   const raiz = useRef(null)
   const arrasto = useRef(null)
 
-  useLayoutEffect(() => { aplicarCamadas(raiz.current, arte.camadas, interativo ? selecionado : null) })
+  useLayoutEffect(() => { aplicarCamadas(raiz.current, arte.camadas, interativo ? selecionado : null, arte.estiloLote) })
 
   const iniciar = (e) => {
     if (!interativo) return
@@ -27,7 +27,8 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
   const mover = (e) => {
     const d = arrasto.current
     if (!d) return
-    if (Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 3) return
+    if (!d.movendo && Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 3) return
+    d.movendo = true
     e.currentTarget.setPointerCapture(e.pointerId)
     onMoverCamada?.(d.i, Math.round(d.dx + (e.clientX - d.x0) / escala), Math.round(d.dy + (e.clientY - d.y0) / escala))
   }

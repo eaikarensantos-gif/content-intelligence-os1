@@ -125,7 +125,7 @@ const Chat = ({ a, Bloco }) => {
           {linhas.map((l, i) => {
             const eu = l.startsWith('>')
             return (
-              <div key={i} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '72%', background: eu ? hex('terracota') : '#FBF8F3', color: eu ? hex('creme') : hex('tinta'), borderRadius: eu ? '30px 30px 8px 30px' : '30px 30px 30px 8px', padding: '18px 26px', ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: tam(a, 'texto', 32), lineHeight: 1.3 }}>
+              <div key={i} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '72%', background: eu ? hex('terracota') : '#FBF8F3', color: hex(a.est?.texto?.cor ?? (eu ? 'creme' : 'tinta')), borderRadius: eu ? '30px 30px 8px 30px' : '30px 30px 30px 8px', padding: '18px 26px', ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: tam(a, 'texto', 32), lineHeight: 1.3 }}>
                 {eu ? l.slice(1).trim() : l}
               </div>
             )
@@ -151,13 +151,13 @@ const Busca = ({ a, Bloco }) => {
         <div style={{ ...estiloTitulo(a, 100), textAlign: alin(a, 'titulo') }}><Rico texto={a.titulo} cor={hex(a.corDestaque)} /></div>
       </Bloco>
       <Bloco id="texto" largura={940}>
-        <div style={{ background: hex('creme'), borderRadius: 56, padding: '26px 34px', display: 'flex', alignItems: 'center', gap: 20, ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: t, color: hex('tinta') }}>
+        <div style={{ background: hex('creme'), borderRadius: 56, padding: '26px 34px', display: 'flex', alignItems: 'center', gap: 20, ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: t, color: hex(a.est?.texto?.cor ?? 'tinta') }}>
           <Lupa cor={hex('cafe')} /><span>{busca}</span>
         </div>
         {itens.length > 0 && (
           <div style={{ marginTop: 16, background: hex('creme'), borderRadius: 30, padding: '14px 0', overflow: 'hidden' }}>
             {itens.map((it, i) => (
-              <div key={i} style={{ display: 'flex', gap: 22, alignItems: 'center', padding: '22px 34px', background: i === itens.length - 1 ? hex('pessego') : 'transparent', ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: t * 0.95, color: hex('tinta') }}>
+              <div key={i} style={{ display: 'flex', gap: 22, alignItems: 'center', padding: '22px 34px', background: i === itens.length - 1 ? hex('pessego') : 'transparent', ...estiloFonte(a, 'texto', 'inter'), fontWeight: 500, fontSize: t * 0.95, color: hex(a.est?.texto?.cor ?? 'tinta') }}>
                 <Lupa cor="#7A6E64" /><span>{it}</span>
               </div>
             ))}
@@ -212,7 +212,7 @@ const AtrasCabeca = ({ a, Bloco }) => (
     <Camada a={a} src={a.recorte} />
     {a.texto && (
       <Bloco id="texto" largura={900}>
-        <div style={{ ...estiloCorpo(a, 64), ...estiloFonte(a, 'texto', a.fonteTitulo), fontSize: tam(a, 'texto', 64), lineHeight: 1.25, color: hex('cafe'), textAlign: alin(a, 'texto') }}>
+        <div style={{ ...estiloCorpo(a, 64), ...estiloFonte(a, 'texto', a.fonteTitulo), fontSize: tam(a, 'texto', 64), lineHeight: 1.25, color: hex(a.est?.texto?.cor ?? 'cafe'), textAlign: alin(a, 'texto') }}>
           <Tarja fundo={hex('creme')} padding="2px 16px">{a.texto}</Tarja>
         </div>
       </Bloco>

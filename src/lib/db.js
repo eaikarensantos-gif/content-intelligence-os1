@@ -24,7 +24,7 @@ export async function dbLoadAll() {
   if (!isSupabaseConfigured()) return null
   const db = getSupabase()
 
-  const { data, error } = await db.from('user_data').select('key, value')
+  const { data, error } = await db.from('user_data').select('key, value').in('key', COLLECTIONS)
   if (error) throw new Error(error.message)
 
   const result = {}
