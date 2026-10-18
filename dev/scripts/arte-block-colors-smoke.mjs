@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict'
+import { chromium } from 'playwright'
+const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox'] })
+try {
+ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+ await page.addInitScript(() => localStorage.setItem('cio-auth-session', JSON.stringify({ email: 'local@example.test', loginAt: Date.now(), isOwner: true })))
+ await page.goto('http://127.0.0.1:5173/arte')
+ const canvas = page.locator('[data-canvas="editor"]')
+ const title = canvas.locator('[data-elemento="titulo"]')
+ const body = canvas.locator('[data-elemento="texto"]')
+ const background = el => el.locator('span').first().evaluate(e => getComputedStyle(e).backgroundColor)
+ const originalBody = await background(body)
+ await title.click()
+ await page.locator('label').filter({ has: page.getByText('Cor do bloco', { exact: true }) }).getByTitle('Mostarda', { exact: true }).click()
+ assert.equal(await background(title), 'rgb(233, 196, 106)')
+ assert.equal(await background(body), originalBody)
+ await body.click()
+ await page.locator('label').filter({ has: page.getByText('Cor do bloco', { exact: true }) }).getByTitle('Café', { exact: true }).click()
+ assert.equal(await background(body), 'rgb(92, 59, 43)')
+ assert.equal(await background(title), 'rgb(233, 196, 106)')
+ await page.locator('label').filter({ has: page.getByText('Cor do texto', { exact: true }) }).getByTitle('Areia', { exact: true }).click()
+ assert.equal(await body.locator('span').first().evaluate(e => getComputedStyle(e).color), 'rgb(241, 223, 196)')
+ assert.equal(await background(body), 'rgb(92, 59, 43)')
+ await page.getByRole('button', { name: 'Desfazer', exact: true }).click()
+ assert.equal(await body.locator('span').first().evaluate(e => getComputedStyle(e).color), 'rgb(244, 239, 231)')
+ console.log('Independent title/body backgrounds, text color and undo passed')
+} finally { await browser.close() }

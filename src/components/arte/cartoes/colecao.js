@@ -10,7 +10,11 @@ const emo = (c) => `/marca/emoji/${c}.png`
 // ---------- texto ----------
 const esc = (s = '') => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 /** Texto simples: quebra de linha vira <br>. */
-const T = (s) => esc(s).replace(/\n/g, '<br>')
+const T = (s) => {
+  const texto = esc(s).replace(/\r\n?/g, '\n')
+  // Um único item de flex: balões e etiquetas também respeitam as quebras.
+  return texto.includes('\n') ? `<span>${texto.replace(/\n/g, '<br>')}</span>` : texto
+}
 /** Texto com *trecho* marcado: o trecho ganha o invólucro do card original. */
 const rico = (s, abre, fecha) => T(s).replace(/\*(.+?)\*/g, `${abre}$1${fecha}`)
 const linhas = (s = '') => String(s).split('\n')
@@ -92,7 +96,7 @@ const sobrepoe = ({ cabeca, big = 300, cor = cr, dest = cr }) => ({ t, F, R }) =
   return `<div class=ft style="background:${F('pessoa')} center/cover"></div><div class=ab style="inset:0;background:rgba(43,33,27,.3)"></div>` +
     `<div class=ab style="left:0;right:0;top:${tb - 80}px;text-align:center;font-family:Bootzy;font-size:68px;letter-spacing:.03em;color:${cor}">${T(t.l1)}</div>` +
     `<div class=ab style="left:0;right:0;top:${tb}px;text-align:center;font-family:Bootzy;font-size:${big}px;line-height:1;letter-spacing:.02em;color:${dest}">${T(t.l2)}</div>` +
-    `<div class=ab style="left:0;top:0;width:1080px;height:1350px;background:${R('pessoa')} center/cover no-repeat"></div>` +
+    `<div class=ab data-recorte-pessoa style="left:0;top:0;width:1080px;height:1350px;background:${R('pessoa')} center/cover no-repeat"></div>` +
     `<div class=ab style="left:80px;top:1070px;font-family:Bootzy;font-size:64px;line-height:1.25;letter-spacing:.03em;color:${ca}">` + linhas(t.l3).map((x) => `<span style="background:${cr};padding:2px 16px">${T(x)}</span><br>`).join('') + '</div>' +
     `<div class=ab style="right:80px;top:1250px;text-align:right;font:44px/1.1 Hand;color:${cor}">${T(t.nota)}</div>`
 }
@@ -506,7 +510,7 @@ ${pol(F, 760, 880, 230, 260, 'g-elevador-zoom.jpg', '50% 30%', T(t.legenda), 2)}
     return c(id, nome, 'cabeca', [
       campo('l1', 'Linha de cima', txt.l1), campo('l2', 'Palavra gigante (sem p, g, q, j, y)', txt.l2),
       campo('l3', 'Tarjas de baixo', txt.l3), campo('nota', 'Nota manuscrita', txt.nota),
-    ], (a) => corpo(a) + Eseco(...emoji), { titulo: 'l2', texto: 'l3', cabeca: { slot: 'pessoa', base: `${foto}-base.jpg`, recorte: `${foto}-recorte.webp` } })
+    ], (a) => corpo(a) + Eseco(...emoji), { titulo: 'l2', texto: 'l3', camadasTexto: { l1: 2, l2: 3, l3: 5, nota: 6 }, cabeca: { slot: 'pessoa', base: `${foto}-base.jpg`, recorte: `${foto}-recorte.webp` } })
   }),
 ]
 

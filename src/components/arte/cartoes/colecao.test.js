@@ -9,6 +9,12 @@ const ORIGINAIS = ['16-tarefas', '17a-serie-bootzy', '18-selecao', '19-agenda', 
 const publico = (url) => existsSync(new URL(`../../../../public${url}`, import.meta.url))
 
 describe('coleção de cards', () => {
+  it('mantém quebras e linhas vazias dentro de um único item nos balões flex', () => {
+    const def = CARTOES.find((c) => c.id === '26-cachorro')
+    const html = htmlCartao(def, novoCartao(def.id, { textos: { balao: 'Primeira\r\n\r\n<segunda>' } }))
+    expect(html).toContain('<span>Primeira<br><br>&lt;segunda&gt;</span>')
+  })
+
   it('tem os 41 cards do design system, sem repetir', () => {
     expect(CARTOES.map((c) => c.id).sort()).toEqual([...ORIGINAIS].sort())
     expect(new Set(CARTOES.map((c) => c.id)).size).toBe(41)

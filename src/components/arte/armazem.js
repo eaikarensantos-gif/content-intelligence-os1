@@ -24,10 +24,44 @@ export async function lerRascunho() {
 }
 
 export async function salvarRascunho(projeto) {
+  let db
   try {
-    const db = await abrir()
-    db.transaction(LOJA, 'readwrite').objectStore(LOJA).put(projeto, 'atual')
+    db = await abrir()
+    await new Promise((ok, erro) => {
+      const tx = db.transaction(LOJA, 'readwrite')
+      tx.objectStore(LOJA).put(projeto, 'atual')
+      tx.oncomplete = ok
+      tx.onerror = () => erro(tx.error)
+      tx.onabort = () => erro(tx.error)
+    })
   } catch {
-    /* navegador sem IndexedDB (aba anônima): segue sem rascunho */
-  }
+    /* navegador sem IndexedDB: segue sem rascunho */
+  } finally { db?.close() }
+}
+
+// Cópias independentes do rascunho; só anuncia sucesso após a transação confirmar.
+export async function salvarArte(nome, projeto, versao) {
+  const db = await abrir()
+  const arte = versao || { id: `arte:${crypto.randomUUID()}`, nome, projeto, salvoEm: Date.now() }
+  try {
+    await new Promise((ok, erro) => {
+      const tx = db.transaction(LOJA, 'readwrite')
+      tx.objectStore(LOJA).put(arte, arte.id)
+      tx.oncomplete = ok
+      tx.onerror = () => erro(tx.error)
+      tx.onabort = () => erro(tx.error || new Error('Gravação cancelada'))
+    })
+    return arte
+  } finally { db.close() }
+}
+
+export async function listarArtes() {
+  const db = await abrir()
+  try {
+    return await new Promise((ok, erro) => {
+      const req = db.transaction(LOJA).objectStore(LOJA).getAll()
+      req.onsuccess = () => ok(req.result.filter(a => a.id?.startsWith('arte:')).sort((a, b) => b.salvoEm - a.salvoEm))
+      req.onerror = () => erro(req.error)
+    })
+  } finally { db.close() }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Mic, Square, Wand2 } from 'lucide-react'
-import { pedirArte } from './pedido'
+import { pedirArte, TOTAL_MODELOS } from './pedido'
 import { SEM_CHAVE } from '../../utils/apiError'
 
 // Ditado pelo próprio navegador (Chrome, Edge, Safari): sem servidor e sem custo de transcrição.
@@ -53,7 +53,7 @@ export default function Pedido({ onResposta, desfazer }) {
     setCriando(true)
     setErro('')
     try {
-      onResposta(await pedirArte(texto.trim()))
+      await onResposta(await pedirArte(texto.trim()), texto.trim())
     } catch (err) {
       setErro(err?.message ?? String(err))
     } finally {
@@ -65,10 +65,10 @@ export default function Pedido({ onResposta, desfazer }) {
     <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50/40 p-4">
       <label htmlFor="pedido-arte" className="block text-sm font-semibold text-gray-900 mb-1">Descreva a arte</label>
       <p className="text-xs text-gray-500 mb-2">
-        Escreva ou fale como você quer: quantos slides, o texto de cada um, cores, se vai foto. Para usar uma foto, coloque ela antes no slide atual.
+        O gerador pode escolher entre os {TOTAL_MODELOS} modelos da galeria. Descreva o conteúdo e o estilo, ou peça um modelo pelo nome. Para usar sua foto, coloque ela antes no slide atual.
       </p>
       <textarea id="pedido-arte" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)}
-        placeholder="carrossel de 4 slides sobre organizar a semana. capa com minha foto e a palavra segunda atrás da cabeça, fundo café. depois três dicas curtas em cor cheia mostarda."
+        placeholder="carrossel de 4 slides sobre organizar a semana. escolha modelos variados da galeria: capa com minha foto e texto atrás da cabeça, cartão tipográfico e conversa."
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" />
       <div className="flex flex-wrap items-center gap-2 mt-2">
         {Reconhecimento && (

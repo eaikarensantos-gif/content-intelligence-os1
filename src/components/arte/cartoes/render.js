@@ -129,16 +129,28 @@ export const camadaDe = (raiz, el) => {
 }
 
 /** Aplica os ajustes da pessoa sobre o HTML original, guardando o estilo de origem para poder voltar. */
-export function aplicarCamadas(raiz, camadas = {}, selecionado = null) {
+export function aplicarCamadas(raiz, camadas = {}, selecionado = null, estiloLote = {}) {
   if (!raiz) return
-  ;[...raiz.children].forEach((el, i) => {
-    if (!el.dataset.orig) el.dataset.orig = JSON.stringify({ color: el.style.color, fontFamily: el.style.fontFamily, clipPath: el.style.clipPath })
+  const elementos = [...raiz.children]
+  const recorte = elementos.findIndex((el) => el.hasAttribute('data-recorte-pessoa'))
+  elementos.forEach((el, i) => {
+    if (!el.dataset.orig) el.dataset.orig = JSON.stringify({ color: el.style.color, fontFamily: el.style.fontFamily, clipPath: el.style.clipPath, backgroundColor: el.style.backgroundColor })
     const orig = JSON.parse(el.dataset.orig)
     const o = camadas[i] ?? {}
+    // Ordem explícita sem mover nós: os índices de camadas dos rascunhos continuam válidos.
+    if (recorte >= 0) el.style.zIndex = String(o.plano === 'atras' ? recorte * 10 - 1 : o.plano === 'frente' ? recorte * 10 + 1 : i * 10)
     el.style.translate = o.dx || o.dy ? `${o.dx ?? 0}px ${o.dy ?? 0}px` : ''
     el.style.scale = o.escala && o.escala !== 1 ? String(o.escala) : ''
-    el.style.color = o.cor ? hex(o.cor) : orig.color
-    el.style.fontFamily = o.fonte && FONTES[o.fonte] ? FONTES[o.fonte].css : orig.fontFamily
+    if (el.classList.contains('ft') && !el.style.backgroundImage.includes('url(')) el.style.backgroundColor = estiloLote.fundo ? hex(estiloLote.fundo) : orig.backgroundColor || ''
+    el.style.color = o.cor ? hex(o.cor) : estiloLote.cor && el.textContent.trim() ? hex(estiloLote.cor) : orig.color
+    el.style.fontFamily = o.fonte && FONTES[o.fonte] ? FONTES[o.fonte].css : estiloLote.fonte && el.textContent.trim() ? FONTES[estiloLote.fonte]?.css || orig.fontFamily : orig.fontFamily
+    for (const filho of el.querySelectorAll('*')) {
+      if (!filho.textContent.trim() || filho.closest('svg')) continue
+      if (!filho.dataset.loteOriginal) filho.dataset.loteOriginal = JSON.stringify({ color: filho.style.color, fontFamily: filho.style.fontFamily })
+      const original = JSON.parse(filho.dataset.loteOriginal)
+      filho.style.color = estiloLote.cor ? hex(o.cor || estiloLote.cor) : original.color
+      filho.style.fontFamily = estiloLote.fonte ? FONTES[o.fonte || estiloLote.fonte]?.css || original.fontFamily : original.fontFamily
+    }
     const { cima = 0, dir = 0, baixo = 0, esq = 0 } = o.corte ?? {}
     el.style.clipPath = cima || dir || baixo || esq ? `inset(${cima}% ${dir}% ${baixo}% ${esq}%)` : orig.clipPath
     el.style.visibility = o.oculto ? 'hidden' : ''
@@ -156,4 +168,17 @@ export function descreverCamada(el) {
   if (texto) return `“${texto.length > 32 ? `${texto.slice(0, 32)}…` : texto}”`
   if (/url\(/.test(el.getAttribute('style') ?? '') || el.querySelector?.('[style*="url("]')) return 'Foto'
   return 'Forma'
+}
+
+/** Identifica os campos que desenham a camada, inclusive textos divididos em linhas ou sílabas. */
+export function camposDaCamada(def, arte, indice) {
+  if (indice < 0) return []
+  const valores = textosDe(def, arte)
+  return def.campos.filter((campo, i) => {
+    const marca = `CIOCAMPO${i}MARCADOR`
+    const valor = String(valores[campo.id] ?? '').replace(/(^|[\n-])/g, `$1${marca}`)
+    const fragmento = document.createElement('template')
+    fragmento.innerHTML = def.html({ t: { ...valores, [campo.id]: valor }, F: () => 'none', R: () => 'none' })
+    return fragmento.content.children[indice]?.textContent.includes(marca)
+  })
 }
