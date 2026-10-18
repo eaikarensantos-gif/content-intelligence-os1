@@ -61,10 +61,11 @@ try {
   assert.equal(repair.name, 'Diagramação ajustada')
   assert.equal(repair.valid, true)
   assert.equal(repair.preserved, true)
-  for (const [label, value] of [[/^Título/, 'Uma ideia'], [/^Texto/, 'Um passo por vez.']]) {
-   await page.getByLabel('Elementos da arte').getByRole('button', { name: label }).click()
-   await page.getByRole('combobox', { name: 'Fonte', exact: true }).locator('../..').locator('textarea').fill(value)
-   await page.getByRole('button', { name: 'Fechar', exact: true }).click()
+  for (const [id, value] of [['titulo', 'Uma ideia'], ['texto', 'Um passo por vez.']]) {
+   await page.locator(`[data-canvas="editor"] [data-elemento="${id}"]`).dblclick()
+   const editor = page.getByRole('textbox', { name: 'Editar texto na arte', exact: true })
+   await editor.fill(value)
+   await editor.press('Control+Enter')
   }
   const panel = page.getByRole('region', { name: 'Sugestões de layout' })
   await panel.getByRole('button', { name: 'Sugerir layouts', exact: true }).click()
@@ -79,6 +80,7 @@ try {
   await page.getByRole('button', { name: 'Desfazer', exact: true }).click()
   await panel.getByText('A arte mudou. Reavalie para conferir o conteúdo atual.').waitFor()
   assert.equal(await panel.locator('[data-layout-sugestao]').count(), 0)
+  await page.getByText('Criar com IA · descrever uma nova arte', { exact: true }).click()
   await page.getByLabel('Descreva a arte').fill('Crie dois slides sobre começar um projeto')
   await page.getByRole('button', { name: 'Criar arte', exact: true }).click()
   await page.getByRole('button', { name: /Baixar todos \(2\)/ }).waitFor({ timeout: 60000 })

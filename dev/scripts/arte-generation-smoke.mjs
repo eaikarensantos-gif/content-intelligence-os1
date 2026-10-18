@@ -24,6 +24,7 @@ try {
   await route.fulfill({ json: { content: [{ type: 'text', text: JSON.stringify({ formato: 'feed', slides }) }] } })
  })
  await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
+ await page.getByText('Criar com IA · descrever uma nova arte', { exact: true }).click()
  await page.getByLabel('Descreva a arte').fill('Quatro slides com modelos diferentes da galeria')
  await page.getByRole('button', { name: 'Criar arte', exact: true }).click()
  await page.getByRole('button', { name: /Baixar todos \(4\)/ }).waitFor({ timeout: 60000 })

@@ -20,7 +20,6 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
     if (i < 0) return
     e.preventDefault()
     e.stopPropagation()
-    e.currentTarget.setPointerCapture(e.pointerId)
     const c = arte.camadas?.[i] ?? {}
     arrasto.current = { i, x0: e.clientX, y0: e.clientY, dx: c.dx ?? 0, dy: c.dy ?? 0 }
     onSelecionar?.(`camada:${i}`)
@@ -28,6 +27,8 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
   const mover = (e) => {
     const d = arrasto.current
     if (!d) return
+    if (Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 3) return
+    e.currentTarget.setPointerCapture(e.pointerId)
     onMoverCamada?.(d.i, Math.round(d.dx + (e.clientX - d.x0) / escala), Math.round(d.dy + (e.clientY - d.y0) / escala))
   }
   const soltar = () => { arrasto.current = null }
@@ -39,6 +40,8 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
       onPointerDown={iniciar}
       onPointerMove={mover}
       onPointerUp={soltar}
+      onPointerCancel={soltar}
+      onLostPointerCapture={soltar}
       style={{ position: 'absolute', left: 0, top: 0, width: def.w, height: def.h, isolation: 'isolate', cursor: interativo ? 'move' : undefined, touchAction: interativo ? 'none' : undefined }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
