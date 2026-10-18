@@ -514,4 +514,22 @@ ${pol(F, 760, 880, 230, 260, 'g-elevador-zoom.jpg', '50% 30%', T(t.legenda), 2)}
   }),
 ]
 
+// Onde entram o título e o texto dela quando o slide troca para este card: [título, texto, campos que esvaziam].
+// Escolhidos olhando cada desenho, para cair em lugar de frase e não deixar pedaços do exemplo
+// misturados com a frase dela (nos cards em que o título original é montado em várias linhas).
+const RECEBE = {
+  '16-tarefas': ['p1', 'p2'], '17a-serie-bootzy': ['t1', null, ['t2']], '18-selecao': ['sel', 'resto'], '19-agenda': ['evento', 'duracao'],
+  '20-conversa': ['b1', 'b2'], '22-discos': ['balao', null], '23-roteiro': ['balao', null], '24-bastidores': ['titulo', 'mensagem'],
+  '25-janela': ['nota', null], '26-cachorro': ['balao', null], '38-guia': ['g1', 'l1', ['g2', 'g3', 'g4', 'dest', 'l2', 'it', 'mini']],
+  '39-leves': ['w2', 'rodape', ['w1', 'w3', 'faixa']], '41-quem-sou': ['a', null, ['b', 'c', 'd', 'e']], '42-templates': ['t1', null, ['t2', 'serif', 'dest']],
+  '43-baloes': ['b1', 'b2'], '44-album': ['titulo', null], '45-favoritos': ['titulo', 'b1'], '46-chique': ['titulo', 'selo', ['serif']],
+  '47-liberdade': ['l1', 'l2', ['l3']], '48-comentarios': ['c1', 'c2'], '49-ideias': ['t1', 'texto', ['serif']], '50-chamada': ['titulo', null],
+  '51-player': ['titulo', 'artista'], '52-play': ['titulo', 'legenda'], '53-pastas': ['a1', null, ['vs', 'a2']], '54-eu-voce': ['local', null],
+  '55-tendencias': ['t1', 'serif', ['t2']], '57-motivos': ['titulo', 'n1', ['dest', 'sub']], '58-um-dia': ['t1', 'b1', ['t2']],
+  '59-livros': ['l1', null, ['l2', 'l3']], '60-processo': ['titulo', null], '61-gravar': ['b', null, ['a', 'a2', 'c', 'c2']],
+  '62-cartao': ['l1', null, ['l2', 'l3']], '63-busca': ['busca', 'i1'], 'meses-01-janeiro': [null, null], 'notas-01-capa': ['titulo', 'corpo'],
+  'rotina-01-capa': ['titulo', null], '79-planilha': ['l3', 'l1'], '80-aula': ['l3', 'l1'], '81-rabisco': ['l3', 'l1'], '82-quinta': ['l3', 'l1'],
+}
+for (const k of CARTOES) k.recebe = RECEBE[k.id]
+
 export const CARTAO = Object.fromEntries(CARTOES.map((k) => [k.id, k]))

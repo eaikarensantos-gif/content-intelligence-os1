@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import useHistorico from './useHistorico'
 import { avaliarLayouts } from './avaliarLayouts'
 import { CATALOGO_LAYOUTS, idLayout } from './layoutSuggestions'
@@ -10,7 +10,7 @@ import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
 import { fixarTextos, montarProjeto, pedidoDeSlides, pedirArte, pegarEntrada } from './pedido'
 import { CARTAO, CARTOES, CATEGORIAS } from './cartoes/colecao'
-import { camposDaCamada, descreverCamada, ehCartao, formatoDe, fotosDe, normalizarCartao, novoCartao, textosDe, urlFoto } from './cartoes/render'
+import { camposDaCamada, camposPrincipais, descreverCamada, ehCartao, formatoDe, fotosDe, normalizarCartao, novoCartao, textosDe, urlFoto } from './cartoes/render'
 import { CartaoCorpo } from './cartoes/Cartao'
 import Galeria from './Galeria'
 import Pedido from './Pedido'
@@ -38,32 +38,63 @@ const tamanho = (slide, formato) => (ehCartao(slide) ? { w: CARTAO[slide.cartao]
 const padraoDe = (s) => (ehCartao(s) ? novoCartao(s.cartao) : novoSlide(s.template))
 
 
-/** Título, texto e foto que ela mesma colocou no slide (o exemplo do modelo não conta). */
+/**
+ * Título, texto e foto que ela mesma colocou no slide (o exemplo do modelo não conta).
+ * O slide guarda isso em s.conteudo, então o texto atravessa qualquer troca de modelo,
+ * mesmo passando por um modelo que não tinha lugar para ele.
+ */
 function conteudoProprio(s) {
+  const guardado = s.conteudo ?? {}
+  let atual
   if (ehCartao(s)) {
     const def = CARTAO[s.cartao]
+    const { titulo, texto } = camposPrincipais(def)
     const proprio = (id) => (id && s.textos?.[id] != null && s.textos[id] !== def.campos.find((c) => c.id === id)?.padrao ? s.textos[id] : undefined)
-    return { titulo: proprio(def.titulo), texto: proprio(def.texto), foto: s.fotos?.[fotosDe(def)[0]] }
+    atual = { titulo: proprio(titulo), texto: proprio(texto), foto: s.fotos?.[fotosDe(def)[0]] }
+  } else {
+    const p = TEMPLATES[s.template].padrao
+    atual = { titulo: s.titulo !== p.titulo ? s.titulo : undefined, texto: s.texto !== p.texto ? s.texto : undefined, foto: s.foto || undefined }
   }
-  const p = TEMPLATES[s.template].padrao
-  return { titulo: s.titulo !== p.titulo ? s.titulo : undefined, texto: s.texto !== p.texto ? s.texto : undefined, foto: s.foto || undefined }
+  return { titulo: atual.titulo ?? guardado.titulo, texto: atual.texto ?? guardado.texto, foto: atual.foto ?? guardado.foto }
 }
 
-/** Passa para o slide novo o que ela já tinha escrito e a foto, quando o modelo novo tem lugar para isso. */
+/** Passa para o slide novo o que ela já tinha escrito e a foto. */
 function levarConteudo(de, para) {
-  const { titulo, texto, foto } = conteudoProprio(de)
+  const conteudo = conteudoProprio(de)
+  const { titulo, texto, foto } = conteudo
   if (ehCartao(para)) {
     const def = CARTAO[para.cartao]
+    const campos = camposPrincipais(def)
     const textos = { ...para.textos }
     // *trecho* só faz sentido onde o campo do modelo usa essa marca.
-    const usaMarca = def.campos.find((c) => c.id === def.titulo)?.padrao.includes('*')
-    if (titulo != null && def.titulo) textos[def.titulo] = usaMarca ? titulo : titulo.replace(/\*/g, '')
-    if (texto != null && def.texto) textos[def.texto] = texto
+    const usaMarca = def.campos.find((c) => c.id === campos.titulo)?.padrao.includes('*')
+    if (titulo != null && campos.titulo) textos[campos.titulo] = usaMarca ? titulo : titulo.replace(/\*/g, '')
+    if (texto != null && campos.texto) textos[campos.texto] = texto
+    // Pedaços da frase de exemplo que ficariam colados na frase dela.
+    if (titulo != null && campos.titulo) for (const id of def.recebe?.[2] ?? []) textos[id] = ''
     const slot = fotosDe(def)[0]
-    return { ...para, textos, fotos: foto && slot ? { ...para.fotos, [slot]: foto } : para.fotos }
+    return { ...para, conteudo, textos, fotos: foto && slot ? { ...para.fotos, [slot]: foto } : para.fotos }
   }
-  return normalizar({ ...(titulo != null && { titulo }), ...(texto != null && { texto }), ...(foto && { foto, veu: 0.3 }) }, para)
+  return normalizar({ conteudo, ...(titulo != null && { titulo }), ...(texto != null && { texto }), ...(foto && { foto, veu: 0.3 }) }, para)
 }
+
+// Foto em data URL vira um endereço curto (blob) nas miniaturas: 49 cópias da foto inteira pesariam no celular.
+const fotosLeves = new Map()
+const leve = (url) => {
+  if (typeof url !== 'string' || !url.startsWith('data:')) return url
+  if (!fotosLeves.has(url)) {
+    const [cab, dados] = url.split(',')
+    const bytes = Uint8Array.from(atob(dados), (c) => c.charCodeAt(0))
+    fotosLeves.set(url, URL.createObjectURL(new Blob([bytes], { type: cab.slice(5).split(';')[0] })))
+  }
+  return fotosLeves.get(url)
+}
+const aliviar = (s) => (ehCartao(s)
+  ? { ...s, fotos: Object.fromEntries(Object.entries(s.fotos ?? {}).map(([k, v]) => [k, leve(v)])) }
+  : { ...s, foto: leve(s.foto), recorte: leve(s.recorte) })
+
+/** Ajustes de posição, tamanho, fonte ou corte que se perdem na troca de modelo. */
+const temAjustes = (s) => (ehCartao(s) ? Object.keys(s.camadas ?? {}).length > 0 : Object.keys(s.est ?? {}).length > 0 || JSON.stringify(s.pos) !== JSON.stringify(TEMPLATES[s.template].padrao.pos))
 
 // Bloco fica fora do Canvas para manter a mesma identidade entre renders: recriado a cada
 // movimento, ele remontaria e perderia o arrasto no meio.
@@ -161,6 +192,7 @@ export default function ArteStudio() {
   const [bancoAberto, setBancoAberto] = useState(false)
   const [fotoAlvo, setFotoAlvo] = useState(null)
   const [galeria, setGaleria] = useState(false)
+  const [catVisual, setCatVisual] = useState(null)
   const [edicao, setEdicao] = useState(null)
   const [revisao, setRevisao] = useState(null)
   const [guiasAtivas, setGuiasAtivas] = useState(true)
@@ -270,7 +302,11 @@ export default function ArteStudio() {
   const trocarTemplate = (id) => {
     // Texto que ainda é o exemplo do template antigo dá lugar ao exemplo do novo; texto escrito por ela fica.
     const proprio = (s, k) => (s[k] !== TEMPLATES[s.template].padrao[k] ? { [k]: s[k] } : {})
-    mudarSlide((s) => novoSlide(id, { ...proprio(s, 'titulo'), ...proprio(s, 'texto'), ...proprio(s, 'detalhe'), foto: s.foto, recorte: s.recorte, fotoX: s.fotoX, fotoY: s.fotoY, fotoZoom: s.fotoZoom, fotoDX: s.fotoDX, fotoDY: s.fotoDY, fotoCorte: s.fotoCorte }))
+    setAnterior(projeto)
+    mudarSlide((s) => {
+      const c = conteudoProprio(s)
+      return novoSlide(id, { conteudo: c, ...(c.titulo != null && { titulo: c.titulo }), ...(c.texto != null && { texto: c.texto }), ...proprio(s, 'detalhe'), foto: s.foto, recorte: s.recorte, fotoX: s.fotoX, fotoY: s.fotoY, fotoZoom: s.fotoZoom, fotoDX: s.fotoDX, fotoDY: s.fotoDY, fotoCorte: s.fotoCorte })
+    })
     setSelecionado(null)
     if (TEMPLATES[id].recorta && arte.foto && !arte.recorte) gerarRecorte(arte.foto)
   }
@@ -462,8 +498,8 @@ export default function ArteStudio() {
   const aplicarModelo = (id, modo) => {
     let novo = id.startsWith('cartao:') ? novoCartao(id.slice(7)) : novoSlide(id)
     if (modo === 'atual') {
-      const editado = JSON.stringify(arte) !== JSON.stringify(padraoDe(arte))
-      if (editado && !window.confirm('Trocar o modelo deste slide? O texto principal e a foto vão para o novo modelo quando ele tiver lugar para eles; posições e ajustes do modelo atual saem. Dá para voltar com "Voltar para a arte anterior".')) return
+      // O texto e a foto sempre vão junto; só posições e ajustes finos ficam para trás, então só aí ela é avisada.
+      if (temAjustes(arte) && !window.confirm('Trocar o modelo deste slide? Seu título, seu texto e a foto vão para o novo modelo. As posições e ajustes que você fez neste modelo ficam para trás. Dá para voltar com "Voltar para a arte anterior".')) return
       novo = levarConteudo(arte, novo)
     }
     setAnterior(projeto)
@@ -540,6 +576,61 @@ export default function ArteStudio() {
   const elCamada = camadaSel >= 0 ? node.current?.querySelector('.kc')?.children[camadaSel] : null
   const camadasOcultas = cartao ? Object.entries(arte.camadas ?? {}).filter(([, c]) => c.oculto).map(([i]) => Number(i)) : []
   const fotosCartao = cartao ? fotosDe(def) : []
+
+  // Lista com todos os modelos: trocar aqui leva o título, o texto e a foto do slide para o modelo escolhido.
+  const trocarPelaLista = (id) => (!cartao && id in TEMPLATES ? trocarTemplate(id) : aplicarModelo(id, 'atual'))
+  const seletorModelo = (
+    <select value={cartao ? `cartao:${arte.cartao}` : arte.template} onChange={(e) => trocarPelaLista(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" aria-label="Template">
+      {Object.entries(CATEGORIAS).map(([cat, nome]) => (
+        <optgroup key={cat} label={nome}>
+          {CARTOES.filter((k) => k.categoria === cat).map((k) => <option key={k.id} value={`cartao:${k.id}`}>{k.nome}</option>)}
+        </optgroup>
+      ))}
+      <optgroup label="Base do Studio">
+        {Object.entries(TEMPLATES).map(([k, t]) => <option key={k} value={k}>{t.nome}</option>)}
+      </optgroup>
+    </select>
+  )
+
+  // Miniaturas de todos os modelos já com o título, o texto e a foto deste slide.
+  const modeloAtual = cartao ? `cartao:${arte.cartao}` : arte.template
+  const categoriaAtual = catVisual ?? (cartao ? def.categoria : 'base')
+  const arteAdiada = useDeferredValue(arte)
+  const previas = useMemo(() => itensGaleria
+    .filter((it) => categoriaAtual === 'todas' || it.categoria === categoriaAtual)
+    .map((it) => ({ it, slide: aliviar(levarConteudo(arteAdiada, it.id.startsWith('cartao:') ? novoCartao(it.id.slice(7)) : novoSlide(it.id))) })),
+  [itensGaleria, categoriaAtual, arteAdiada])
+  const chipVisual = (ativo) => `shrink-0 px-2.5 py-1 rounded-full text-xs border ${ativo ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`
+  const seletorVisual = (
+    <div className="rounded-xl border border-gray-200 p-3 space-y-2" aria-label="Modelos com o seu texto">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-gray-900">Modelos com o seu texto</span>
+        <span className="text-xs text-gray-500">{previas.length} {previas.length === 1 ? 'modelo' : 'modelos'}</span>
+      </div>
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <button type="button" className={chipVisual(categoriaAtual === 'todas')} onClick={() => setCatVisual('todas')}>Todos</button>
+        {Object.entries({ ...CATEGORIAS, base: 'Base do Studio' }).map(([k, nome]) => (
+          <button key={k} type="button" className={chipVisual(categoriaAtual === k)} onClick={() => setCatVisual(k)}>{nome}</button>
+        ))}
+      </div>
+      <div className="grid gap-2 max-h-80 overflow-y-auto pr-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))' }}>
+        {previas.map(({ it, slide }) => {
+          const t = tamanho(slide, 'feed')
+          const k = 92 / t.w
+          return (
+            <button key={it.id} type="button" data-escolha={it.id} onClick={() => trocarPelaLista(it.id)} title={it.nome} className="text-left group" style={{ contentVisibility: 'auto', containIntrinsicSize: '92px 140px' }}>
+              <div className={`rounded-md overflow-hidden ring-1 ${it.id === modeloAtual ? 'ring-2 ring-orange-500' : 'ring-gray-200 group-hover:ring-orange-300'}`} style={{ width: 92, height: t.h * k }}>
+                <div style={{ transform: `scale(${k})`, transformOrigin: 'top left', pointerEvents: 'none' }}>
+                  <Canvas arte={slide} formato="feed" interativo={false} grao={false} />
+                </div>
+              </div>
+              <span className="block mt-1 text-[11px] leading-tight text-gray-700 line-clamp-2">{it.nome}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 
   const painelEmojis = (
     <Campo rotulo="Emojis (clique para adicionar e arraste na arte)">
@@ -805,8 +896,10 @@ export default function ArteStudio() {
                   <p className="text-sm font-semibold text-gray-900 truncate" data-testid="modelo-atual">{def.nome}</p>
                   <p className="text-xs text-gray-500">{CATEGORIAS[def.categoria]} · {formatoDe(def) === 'story' ? 'Story 9:16' : 'Feed 4:5'}</p>
                 </div>
-                <button type="button" onClick={() => setGaleria(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><LayoutGrid size={14} />Trocar modelo</button>
+                <button type="button" onClick={() => setGaleria(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><LayoutGrid size={14} />Ver galeria</button>
               </div>
+              {seletorVisual}
+              <Campo rotulo="Template (pelo nome)">{seletorModelo}</Campo>
               <p className="text-xs text-gray-500">Clique em qualquer elemento da arte para mudar tamanho, fonte, cor, cortar ou apagar.</p>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={projeto.contador} onChange={(e) => mudarProjeto({ contador: e.target.checked })} />
@@ -856,18 +949,14 @@ export default function ArteStudio() {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <Campo rotulo="Template">
-                  <select value={arte.template} onChange={(e) => trocarTemplate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
-                    {Object.entries(TEMPLATES).map(([k, t]) => <option key={k} value={k}>{t.nome}</option>)}
-                  </select>
-                </Campo>
+                <Campo rotulo="Template">{seletorModelo}</Campo>
                 <Campo rotulo="Formato (todos os slides)">
                   <select value={formato} onChange={(e) => mudarProjeto({ formato: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
                     {Object.entries(FORMATOS).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
                   </select>
                 </Campo>
               </div>
-              <button type="button" onClick={() => setGaleria(true)} className="flex items-center gap-1.5 text-sm text-orange-700 hover:underline"><LayoutGrid size={14} />Ver todos os {itensGaleria.length} modelos de arte</button>
+              {seletorVisual}
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={projeto.contador} onChange={(e) => mudarProjeto({ contador: e.target.checked })} />
                 Numerar os slides (1/{slides.length}) em manuscrita

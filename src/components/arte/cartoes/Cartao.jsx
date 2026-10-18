@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { CARTAO } from './colecao'
-import { aplicarCamadas, camadaDe, htmlCartao } from './render'
+import { aplicarCamadas, caberNoQuadro, camadaDe, htmlCartao } from './render'
 
 /**
  * Desenha um card da coleção em tamanho real. Cada filho direto é uma camada: clicar seleciona,
@@ -12,7 +12,17 @@ export function CartaoCorpo({ arte, interativo = false, selecionado = null, onSe
   const raiz = useRef(null)
   const arrasto = useRef(null)
 
-  useLayoutEffect(() => { aplicarCamadas(raiz.current, arte.camadas, interativo ? selecionado : null, arte.estiloLote) })
+  useLayoutEffect(() => {
+    const ajustar = () => {
+      aplicarCamadas(raiz.current, arte.camadas, interativo ? selecionado : null, arte.estiloLote)
+      caberNoQuadro(raiz.current, def, arte)
+    }
+    ajustar()
+    // A medida muda quando as fontes da marca terminam de carregar.
+    let vivo = true
+    document.fonts?.ready.then(() => { if (vivo) ajustar() })
+    return () => { vivo = false }
+  })
 
   const iniciar = (e) => {
     if (!interativo) return
