@@ -71,6 +71,7 @@ try {
   await panel.getByRole('button', { name: 'Reavaliar', exact: true }).waitFor({ timeout: 60000 })
   const count = await panel.locator('[data-layout-sugestao]').count()
   assert.equal(count, 3)
+  assert.ok(await panel.getByText('Com foto de referência · substitua pela sua', { exact: true }).count() > 0)
   assert.equal(await panel.getByText('Texto conferido na prévia', { exact: false }).count(), 3)
   await panel.getByRole('button', { name: 'Usar este layout', exact: true }).nth(1).click()
   assert.ok((await page.locator('[data-canvas="editor"]').innerText()).includes('Uma ideia'))

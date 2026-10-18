@@ -50,6 +50,7 @@ Regras da coleção:
 - As dimensões da coleção são fixas: use modelos feed para feed e story para story.
 - Para slides já escritos, selecione um modelo cujo título principal e corpo comportem os textos originais. Nunca corte ou reescreva conteúdo para caber.
 - Varie entre as famílias da coleção conforme a função do slide, mantendo coerência visual; não repita um único modelo por padrão.
+- Alterne composições fotográficas, recortes, colagens, balões e tipografia quando o conteúdo e formato comportarem. Não limite o carrossel a cartões de texto. Sem foto fornecida, pode sugerir as fotos de referência dos modelos da coleção, que a pessoa poderá substituir. Preserve pedidos explícitos de arte sem foto.
 
 Cores permitidas (use a chave): ${cores}.
 Fontes do título: bootzy (padrão, títulos curtos e fortes) ou instrument (serifa itálica, editorial).

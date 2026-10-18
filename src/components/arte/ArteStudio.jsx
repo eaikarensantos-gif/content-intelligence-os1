@@ -350,7 +350,7 @@ export default function ArteStudio() {
       for (let i = 0; i < novo.slides.length; i++) {
         setOcupado(`Conferindo layout ${i + 1} de ${novo.slides.length}…`)
         const original = novo.slides[i]
-        const resultado = await avaliarLayouts(original, { formato: novo.formato, papel: papelLayout(original, i, novo.slides.length, resposta.slides?.[i]?.papel), anteriores: usados.slice(-2), preferido: explicito }, s => renderLayout(s, novo.formato, novo.contador ? `${i + 1}/${novo.slides.length}` : ''))
+        const resultado = await avaliarLayouts(original, { formato: novo.formato, papel: papelLayout(original, i, novo.slides.length, resposta.slides?.[i]?.papel), anteriores: usados.slice(-2), preferido: explicito, permitirFotoReferencia: !/sem fotos?|s[oó] (?:com )?textos?|apenas textos?/i.test(pedido) }, s => renderLayout(s, novo.formato, novo.contador ? `${i + 1}/${novo.slides.length}` : ''))
         if (!resultado.opcoes.length) throw new Error(`Não foi possível diagramar o slide ${i + 1} sem sobreposição ou cortes. Divida o conteúdo em mais slides ou reduza o texto. Sua arte anterior foi mantida.`)
         const escolhido = resultado.opcoes[0].slide
         novo.slides[i] = escolhido

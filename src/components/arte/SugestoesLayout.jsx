@@ -21,6 +21,7 @@ export default function SugestoesLayout({ arte, resultado, analisando, onAnalisa
             </div>
             <div className="min-w-0 text-xs space-y-1">
               <p className="font-semibold">{i + 1}. {opcao.nome}</p>
+              {opcao.comFoto && <p className="font-medium text-orange-800">{opcao.referencia ? 'Com foto de referência · substitua pela sua' : 'Com foto'}</p>}
               <p className="text-gray-500">Afinidade editorial: {opcao.pontos}/100</p>
               <p className="text-gray-600">{opcao.motivos.join(' · ')}</p>
               <button type="button" onClick={() => onAplicar(opcao)} className="min-h-11 text-orange-800 font-medium">Usar este layout</button>

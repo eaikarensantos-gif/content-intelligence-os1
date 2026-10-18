@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
-import { classificarLayouts, conteudoLayout, idLayout } from './layoutSuggestions'
+import { classificarLayouts, conteudoLayout, idLayout, proximoLayout } from './layoutSuggestions'
 
 import { normalizar } from './marca'
 import { TEMPLATES } from './Templates'
@@ -73,10 +73,15 @@ export async function avaliarLayouts(source, contexto, renderizar) {
       return conferirTexto(container.firstElementChild)
     }
     atual = await verificar(source)
-    for (const candidato of candidatos) {
+    const pendentes = [...candidatos]
+    const aprovados = []
+    while (pendentes.length) {
+      const candidato = proximoLayout(pendentes, aprovados)
+      pendentes.splice(pendentes.indexOf(candidato), 1)
       const teste = candidato === origem ? atual : await verificar(candidato.slide)
       if (!teste.cabe) continue
-      opcoes.push({ id: candidato.id, nome: candidato.nome, pontos: candidato.pontos, motivos: [...candidato.motivos, 'Texto conferido na prévia'], slide: candidato.slide })
+      aprovados.push(candidato)
+      opcoes.push({ comFoto: candidato.comFoto, referencia: candidato.referencia, id: candidato.id, nome: candidato.nome, pontos: candidato.pontos, motivos: [...candidato.motivos, 'Texto conferido na prévia'], slide: candidato.slide })
       if (opcoes.length === 3) break
     }
     // Reserva editorial: fluxo vertical medido, sem truncar ou comprimir até ficar ilegível.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CATALOGO_LAYOUTS, classificarLayouts, conteudoLayout, idLayout } from './layoutSuggestions'
+import { CATALOGO_LAYOUTS, classificarLayouts, conteudoLayout, idLayout, proximoLayout } from './layoutSuggestions'
 import { TEMPLATES } from './Templates'
 import { novoCartao } from './cartoes/render'
 
@@ -23,7 +23,12 @@ describe('seleção editorial de layouts', () => {
   it('preserva todos os campos e as fotos ao oferecer alternativas', () => {
     const source = novoCartao('62-cartao', { textos: { l1: 'Ideia', l2: 'Primeiro', l3: 'Segundo', s1: 'A', s2: 'B', s3: 'C', s4: 'D' } })
     const original = conteudoLayout(source)
-    for (const c of classificarLayouts(source)) expect(conteudoLayout(c.slide)).toEqual(original)
+    for (const c of classificarLayouts(source)) {
+      const convertido = conteudoLayout(c.slide)
+      expect(convertido.titulo).toBe(original.titulo)
+      expect(convertido.corpo).toBe(original.corpo)
+      if (convertido.fotos.length) expect(c.referencia).toBe(true)
+    }
     const foto = base({ template: 'tarjas', foto: 'data:minha-foto' })
     for (const c of classificarLayouts(foto)) expect(conteudoLayout(c.slide).fotos).toContain('data:minha-foto')
   })
@@ -41,6 +46,20 @@ describe('seleção editorial de layouts', () => {
     const com = classificarLayouts(source, { papel: 'capa', anteriores: ['corCheia'] }).find(c => c.id === 'corCheia')
     expect(com.pontos).toBeLessThan(sem.pontos)
     expect(classificarLayouts(source, { preferido: 'cartao:62-cartao' })[0].id).toBe('cartao:62-cartao')
+  })
+  it('oferece fotos de referência e diversifica famílias sem exigir upload', () => {
+    const candidatos = classificarLayouts(base())
+    expect(candidatos.some(c => c.comFoto && c.referencia && c.def)).toBe(true)
+    const aprovados = []
+    const pendentes = [...candidatos]
+    for (let i = 0; i < 3; i++) {
+      const proximo = proximoLayout(pendentes, aprovados)
+      aprovados.push(proximo)
+      pendentes.splice(pendentes.indexOf(proximo), 1)
+    }
+    expect(aprovados.some(c => c.comFoto)).toBe(true)
+    expect(new Set(aprovados.map(c => c.familia)).size).toBeGreaterThan(1)
+    expect(classificarLayouts(base(), { permitirFotoReferencia: false }).some(c => c.referencia)).toBe(false)
   })
   it('texto extenso nunca é cortado só para caber num candidato', () => {
     const source = base({ texto: 'Texto longo. '.repeat(200) })

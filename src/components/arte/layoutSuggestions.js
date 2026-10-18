@@ -53,7 +53,7 @@ function transferir(source, item, conteudo) {
 }
 
 /** Pré-filtro e pontuação editorial; não é previsão de desempenho nas redes. */
-export function classificarLayouts(source, { formato = 'feed', papel = 'explicacao', anteriores = [], preferido = '' } = {}) {
+export function classificarLayouts(source, { formato = 'feed', papel = 'explicacao', anteriores = [], preferido = '', permitirFotoReferencia = true } = {}) {
   const conteudo = conteudoLayout(source)
   const atual = idLayout(source)
   const ocultos = Object.values(source.camadas || source.est || {}).some(c => c.oculto)
@@ -63,14 +63,19 @@ export function classificarLayouts(source, { formato = 'feed', papel = 'explicac
     if (ocultos && item.id !== atual) return [] // Não ressuscitar elementos apagados ao trocar o modelo.
     if (item.id !== atual) {
       if (limpo(conteudo.titulo).length > item.titulo || limpo(conteudo.corpo).length > item.corpo) return []
-      if (conteudo.fotos.length > item.fotos || (item.def && conteudo.fotos.length !== item.fotos)) return []
-      if (!conteudo.fotos.length && item.fotos > 0 && item.def) return [] // Não introduzir fotos de outra arte.
-      if ((item.def?.cabeca || TEMPLATES[item.id]?.recorta) && (!conteudo.fotos.length || !conteudo.recorte)) return []
+      if (conteudo.fotos.length > item.fotos || (item.def && conteudo.fotos.length > 0 && conteudo.fotos.length !== item.fotos)) return []
+      if (item.def?.cabeca && conteudo.fotos.length && !conteudo.recorte) return []
+      if (TEMPLATES[item.id]?.recorta && (!conteudo.fotos.length || !conteudo.recorte)) return []
       if (['chat', 'busca'].includes(item.id) && !['conversa', 'lista'].includes(papel)) return []
     }
+    const comFoto = item.def ? item.fotos > 0 : conteudo.fotos.length > 0
+    const referencia = comFoto && !conteudo.fotos.length
+    if (referencia && !permitirFotoReferencia) return []
     const motivos = ['Formato compatível', 'Conteúdo preservado']
+    if (referencia) motivos.push('Foto de referência do modelo — troque pela sua')
     let pontos = 55
     if (afinidade[papel]?.includes(item.familia)) { pontos += 18; motivos.push(`Composição adequada para ${papel === 'explicacao' ? 'explicação' : papel}`) }
+    if (comFoto && papel === 'capa') { pontos += 12; motivos.push('Capa com presença visual da foto') }
     if (conteudo.fotos.length) { pontos += 10; motivos.push('Mantém as fotos do slide') }
     if (item.id === preferido) { pontos += 40; motivos.push('Modelo pedido por você') }
     if (anteriores.includes(item.id)) { pontos -= 20; motivos.push('Repete um modelo recente') }
@@ -78,6 +83,16 @@ export function classificarLayouts(source, { formato = 'feed', papel = 'explicac
     const ocupacao = Math.max(limpo(conteudo.titulo).length / item.titulo, conteudo.corpo ? limpo(conteudo.corpo).length / (item.corpo || 1) : 0)
     if (ocupacao > 0.85) pontos -= 12
     if (item.id === atual) pontos += 2
-    return [{ ...item, pontos: Math.max(0, Math.min(100, pontos)), motivos, slide: transferir(source, item, conteudo) }]
+    return [{ ...item, comFoto, referencia, pontos: Math.max(0, Math.min(100, pontos)), motivos, slide: transferir(source, item, conteudo) }]
   }).sort((a, b) => b.pontos - a.pontos || a.id.localeCompare(b.id))
+}
+
+/** Diversifica apenas entre candidatos compatíveis; a aprovação geométrica vem depois. */
+export function proximoLayout(candidatos, aprovados = []) {
+  const nota = c => c.pontos
+    - (aprovados.some(a => a.familia === c.familia) ? 24 : 0)
+    - (aprovados.some(a => a.comFoto === c.comFoto) ? 16 : 0)
+  const faltaFoto = aprovados.length === 2 && !aprovados.some(a => a.comFoto)
+  const pool = faltaFoto && candidatos.some(c => c.comFoto) ? candidatos.filter(c => c.comFoto) : candidatos
+  return [...pool].sort((a, b) => nota(b) - nota(a) || a.id.localeCompare(b.id))[0]
 }
