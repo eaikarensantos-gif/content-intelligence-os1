@@ -1,5 +1,6 @@
 import MetricsCoverage from '../common/MetricsCoverage'
 import FollowersSummary from './FollowersSummary'
+import PerformanceLab from './PerformanceLab'
 // Build cache buster: 2026-04-02T13:57:00Z
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -140,6 +141,7 @@ function classifyPerformance(enriched) {
 }
 
 const TABS = [
+  { id: 'desempenho', label: 'Desempenho e crescimento' },
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'posts', label: 'Posts' },
   { id: 'publi', label: 'Publi' },
@@ -480,7 +482,7 @@ export default function Analytics() {
       <MetricsCoverage metrics={metrics} />
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+        <div className="flex flex-wrap gap-1 p-1 bg-gray-100 rounded-lg">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -498,6 +500,7 @@ export default function Analytics() {
         </button>
       </div>
 
+      {tab === 'desempenho' && <PerformanceLab />}
       {/* ===== VISÃO GERAL ===== */}
       {tab === 'visao-geral' && (
         <>
