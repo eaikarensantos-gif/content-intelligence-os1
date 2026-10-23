@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useStore from '../../store/useStore'
+import { recordFollowers } from '../../utils/performanceAnalytics'
 
 const PLATFORMS = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn', youtube: 'YouTube', twitter: 'X/Twitter', facebook: 'Facebook' }
 
@@ -13,7 +14,7 @@ export default function FollowersSummary() {
 
   const save = (event) => {
     event.preventDefault()
-    setProfile({ followersByPlatform: { ...followers, ...draft }, followersUpdatedAt: new Date().toISOString() })
+    setProfile(recordFollowers(profile, { ...followers, ...draft }, new Date().toISOString()))
     setEditing(false)
   }
 
