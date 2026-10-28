@@ -548,6 +548,7 @@ export default function AdManager() {
   const [newClientHashtags, setNewClientHashtags] = useState('')
   const [newClientValue, setNewClientValue] = useState('')
   const [newClientSource, setNewClientSource] = useState('')
+  const [newClientPaymentTerms, setNewClientPaymentTerms] = useState('')
   const [clientError, setClientError] = useState('')
   const [editingClient, setEditingClient] = useState(null)
   const [ledgerClientId, setLedgerClientId] = useState('')
@@ -870,6 +871,12 @@ export default function AdManager() {
                   </div>
                 </div>
                 <div>
+                  <label htmlFor="edit-client-payment-terms" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Prazo de pagamento</label>
+                  <input id="edit-client-payment-terms" type="text" value={editingClient.payment_terms || ''} onChange={e => setEditingClient({ ...editingClient, payment_terms: e.target.value })}
+                    placeholder="Ex: 30 dias após emissão da nota" maxLength={300}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                </div>
+                <div>
                   <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Observações</label>
                   <textarea value={editingClient.notes || ''} onChange={e => setEditingClient({ ...editingClient, notes: e.target.value })}
                     rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300 resize-none" />
@@ -892,6 +899,7 @@ export default function AdManager() {
                           service: (editingClient.service || '').trim(),
                           value: value ?? '',
                           source: (editingClient.source || '').trim(),
+                          payment_terms: (editingClient.payment_terms || '').trim(),
                           notes: (editingClient.notes || '').trim(),
                         })
                         setEditingClient(null)
@@ -908,7 +916,7 @@ export default function AdManager() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 <div className="flex-1">
                   <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Nome do Cliente</label>
                   <input type="text" value={newClientName} onChange={e => setNewClientName(e.target.value)}
@@ -933,6 +941,12 @@ export default function AdManager() {
                     {CLIENT_SOURCES.map(source => <option key={source} value={source}>{source}</option>)}
                   </select>
                 </div>
+                <div>
+                  <label htmlFor="new-client-payment-terms" className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Prazo de pagamento</label>
+                  <input id="new-client-payment-terms" type="text" value={newClientPaymentTerms} onChange={e => setNewClientPaymentTerms(e.target.value)}
+                    placeholder="Ex: 30 dias após emissão da nota" maxLength={300}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-300" />
+                </div>
                 <div className="flex items-end">
                   <button
                     onClick={() => {
@@ -940,7 +954,8 @@ export default function AdManager() {
                         const value = parseClientValue(newClientValue)
                         if (value === null && newClientValue.trim()) { setClientError('Informe um valor válido, como 1.500,00.'); return }
                         setClientError('')
-                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim(), value: value ?? '', source: newClientSource })
+                        addClient({ name: newClientName.trim(), hashtags: newClientHashtags.trim(), value: value ?? '', source: newClientSource, payment_terms: newClientPaymentTerms.trim() })
+                        setNewClientPaymentTerms('')
                         setNewClientValue('')
                         setNewClientSource('')
                         setNewClientName('')
@@ -997,6 +1012,7 @@ export default function AdManager() {
                     </div>
                   </div>
                   {/* Detalhes do cliente */}
+                  <p className="text-[11px] text-gray-500 break-words"><span className="text-gray-400">Prazo de pagamento:</span> {client.payment_terms || 'Não informado'}</p>
                   <div className="mt-2 space-y-1">
                     {client.contact && (
                       <p className="text-[11px] text-gray-500"><span className="text-gray-400">Contato:</span> {client.contact}</p>
