@@ -76,7 +76,7 @@ export function classificarLayouts(source, { formato = 'feed', papel = 'explicac
     let pontos = 55
     if (afinidade[papel]?.includes(item.familia)) { pontos += 18; motivos.push(`Composição adequada para ${papel === 'explicacao' ? 'explicação' : papel}`) }
     if (comFoto && papel === 'capa') { pontos += 12; motivos.push('Capa com presença visual da foto') }
-    if (conteudo.fotos.length) { pontos += 10; motivos.push('Mantém as fotos do slide') }
+    if (conteudo.fotos.length) { pontos += 10; motivos.push('Mantém as fotos do card') }
     if (item.id === preferido) { pontos += 40; motivos.push('Modelo pedido por você') }
     if (anteriores.includes(item.id)) { pontos -= 20; motivos.push('Repete um modelo recente') }
     else { pontos += 8; motivos.push('Varia a composição da sequência') }

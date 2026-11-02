@@ -71,7 +71,7 @@ Regras:
 /** Converte a resposta da IA num projeto do Studio. Pura: dá para testar sem rede. */
 export function montarProjeto(resposta, foto = '') {
   const slidesIA = Array.isArray(resposta?.slides) ? resposta.slides.slice(0, 12) : []
-  if (!slidesIA.length) throw new Error('A IA não devolveu nenhum slide. Tente descrever de outro jeito.')
+  if (!slidesIA.length) throw new Error('A IA não devolveu nenhum card. Tente descrever de outro jeito.')
   const slides = slidesIA.map((s) => {
     if (s?.template === 'cartao') {
       const def = CARTAO[s.cartao]

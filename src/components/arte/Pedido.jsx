@@ -65,23 +65,23 @@ export default function Pedido({ onResposta, desfazer }) {
     <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50/40 p-4">
       <label htmlFor="pedido-arte" className="block text-sm font-semibold text-gray-900 mb-1">Descreva a arte</label>
       <p className="text-xs text-gray-500 mb-2">
-        O gerador pode escolher entre os {TOTAL_MODELOS} modelos da galeria. Descreva o conteúdo e o estilo, ou peça um modelo pelo nome. Para usar sua foto, coloque ela antes no slide atual.
+        O gerador pode escolher entre os {TOTAL_MODELOS} modelos da galeria. Descreva o conteúdo e o estilo, ou peça um modelo pelo nome. Para usar sua foto, coloque ela antes no card atual.
       </p>
       <textarea id="pedido-arte" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)}
-        placeholder="carrossel de 4 slides sobre organizar a semana. escolha modelos variados da galeria: capa com minha foto e texto atrás da cabeça, cartão tipográfico e conversa."
+        placeholder="carrossel de 4 cards sobre organizar a semana. escolha modelos variados da galeria: capa com minha foto e texto atrás da cabeça, cartão tipográfico e conversa."
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" />
       <div className="flex flex-wrap items-center gap-2 mt-2">
         {Reconhecimento && (
           <button type="button" onClick={falar} disabled={criando}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border ${ouvindo ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
+            className={`flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border ${ouvindo ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
             {ouvindo ? <><Square size={14} />Parar</> : <><Mic size={15} />Falar</>}
           </button>
         )}
         <button type="button" onClick={criar} disabled={criando || !texto.trim()}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">
+          className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-40">
           {criando ? <Loader2 size={15} className="animate-spin" /> : <Wand2 size={15} />}{criando ? 'Criando…' : 'Criar arte'}
         </button>
-        {desfazer && <button type="button" onClick={desfazer} className="text-sm text-gray-600 hover:underline">Voltar para a arte anterior</button>}
+        {desfazer && <button type="button" onClick={desfazer} className="min-h-11 text-sm text-gray-600 hover:underline">Voltar para a arte anterior</button>}
         {ouvindo && <span className="text-xs text-red-600">Ouvindo… fale e clique em Parar.</span>}
         {!Reconhecimento && <span className="text-xs text-gray-500">Para falar, use o microfone do teclado do celular ou abra no Chrome.</span>}
       </div>
@@ -91,7 +91,7 @@ export default function Pedido({ onResposta, desfazer }) {
           <input type="password" value={chave} onChange={(e) => setChave(e.target.value)} placeholder="sk-…" autoComplete="off"
             className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" />
           <button type="button" onClick={salvarChave} disabled={!chave.trim().startsWith('sk-')}
-            className="px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">Salvar chave neste aparelho</button>
+            className="min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-40">Salvar chave neste aparelho</button>
         </div>
       )}
     </div>

@@ -11,7 +11,7 @@ try {
  const background = el => el.locator('span').first().evaluate(e => getComputedStyle(e).backgroundColor)
  const originalBody = await background(body)
  await title.click()
- await page.locator('label').filter({ has: page.getByText('Cor do bloco', { exact: true }) }).getByTitle('Mostarda', { exact: true }).click()
+ await page.locator('label').filter({ has: page.getByText('Cor da tarja', { exact: true }) }).getByTitle('Mostarda', { exact: true }).click()
  assert.equal(await background(title), 'rgb(233, 196, 106)')
  assert.equal(await background(body), originalBody)
  await body.click()

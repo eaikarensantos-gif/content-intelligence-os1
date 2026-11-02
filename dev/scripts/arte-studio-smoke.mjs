@@ -42,7 +42,7 @@ try {
     const templates = viewport.width > 1000 ? ['tarjas', 'atrasCabeca', 'cabecaCaixa', 'corCheia', 'caixa', 'selecao', 'chat', 'busca'] : ['tarjas']
     for (const template of templates) {
       console.log(`Checking ${viewport.width}px ${template}`)
-      await page.getByRole('combobox', { name: 'Template', exact: true }).selectOption(template)
+      await page.getByRole('combobox', { name: 'Modelo', exact: true }).selectOption(template)
       for (const [id, name, font, css] of [['titulo', /^Título/, 'georgia', 'Georgia'], ['texto', /^Texto/, 'bootzy', 'KS Bootzy'], ['detalhe', /^Detalhe manuscrito/, 'arial', 'Arial']]) {
         await elements.getByRole('button', { name }).click()
         const panel = page.getByRole('combobox', { name: 'Fonte', exact: true }).locator('../..')
@@ -58,7 +58,7 @@ try {
       await elements.getByRole('button', { name: 'Restaurar título', exact: true }).click()
       await page.getByRole('button', { name: 'Fechar', exact: true }).click()
     }
-    await page.getByRole('combobox', { name: 'Template', exact: true }).selectOption('tarjas')
+    await page.getByRole('combobox', { name: 'Modelo', exact: true }).selectOption('tarjas')
     await elements.getByRole('button', { name: /^Título/ }).click()
     await page.keyboard.press('Delete')
     assert.equal(await editor.locator('[data-elemento="titulo"]').count(), 0)

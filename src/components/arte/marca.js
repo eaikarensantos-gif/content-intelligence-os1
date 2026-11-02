@@ -53,6 +53,9 @@ export const emojiUrl = (cod) => `/marca/emoji/${cod}.png`
 
 export const hex = (cor) => CORES[cor]?.hex ?? cor
 
+/** "1 card", "2 cards". */
+export const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`
+
 /** Corta "*trecho*" em partes para a cor de destaque. */
 export const partesDestaque = (texto = '') =>
   texto.split('*').map((t, i) => ({ t, destaque: i % 2 === 1 })).filter((p) => p.t)

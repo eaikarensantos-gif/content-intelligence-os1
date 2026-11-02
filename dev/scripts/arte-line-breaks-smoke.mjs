@@ -27,7 +27,7 @@ for (const width of [1440,1280,390]) {
  const fieldId = screenshotModel ? 'titulo' : 'balao'
  await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill(screenshotModel ? 'Bastidores com campo de mensagem' : 'Balão e polaroid com pet')
  await page.locator(`[data-modelo="cartao:${screenshotModel ? '24-bastidores' : '26-cachorro'}"]`).click()
- await page.getByRole('button',{name:'Usar neste slide',exact:true}).click()
+ await page.getByRole('button',{name:'Usar neste card',exact:true}).click()
  const field=page.locator(`textarea[data-campo="${fieldId}"]`)
  await field.fill('PrimeiraSegunda')
  await page.locator('[data-canvas="editor"] .kc').getByText('PrimeiraSegunda',{exact:true}).click()

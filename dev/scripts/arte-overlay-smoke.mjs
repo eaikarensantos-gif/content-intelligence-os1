@@ -14,7 +14,7 @@ try {
       await page.getByRole('button', { name: /^Modelos de arte/ }).click()
       await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Atrás da cabeça')
       await page.locator(`[data-modelo="cartao:${id}"]`).click()
-      await page.getByRole('button', { name: 'Usar neste slide', exact: true }).click()
+      await page.getByRole('button', { name: 'Usar neste card', exact: true }).click()
       const editor = page.locator('[data-canvas="editor"] .kc')
       const order = () => editor.evaluate(root => [...root.children].map(el => Number(getComputedStyle(el).zIndex)))
       for (const [label, index] of [['Linha de cima', 2], ['Palavra gigante (sem p, g, q, j, y)', 3], ['Tarjas de baixo', 5], ['Nota manuscrita', 6]]) {

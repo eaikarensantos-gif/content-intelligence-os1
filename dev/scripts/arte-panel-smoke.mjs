@@ -25,7 +25,7 @@ try {
   await page.getByRole('button', { name: /^Modelos de arte/ }).click()
   await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Cartão tipográfico')
   await page.locator('[data-modelo="cartao:62-cartao"]').click()
-  await page.getByRole('button', { name: 'Usar neste slide', exact: true }).click()
+  await page.getByRole('button', { name: 'Usar neste card', exact: true }).click()
   await page.locator('textarea[data-campo="l1"]').fill('Feedback vago consome tempo duas vezes')
   const canvas = page.locator('[data-canvas="editor"] .kc')
   await canvas.getByText('Feedback vago consome tempo duas vezes', { exact: true }).tap({ position: { x: 20, y: 20 } })

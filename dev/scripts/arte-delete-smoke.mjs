@@ -25,7 +25,7 @@ try {
     await page.getByRole('button', { name: /^Modelos de arte/ }).click()
     await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Balão e polaroid com pet')
     await page.locator('[data-modelo="cartao:26-cachorro"]').click()
-    await page.getByRole('button', { name: 'Usar neste slide', exact: true }).click()
+    await page.getByRole('button', { name: 'Usar neste card', exact: true }).click()
     const canvas = page.locator('[data-canvas="editor"]')
     const field = page.locator('textarea[data-campo="balao"]')
     await field.fill('Teste para apagar')
