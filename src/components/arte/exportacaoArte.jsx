@@ -68,14 +68,38 @@ export async function revisarCards(projeto, indices, renderizar) {
   return resultado
 }
 
-export async function gerarDownload(projeto, indices, renderizar, zip, progresso = () => {}) {
-  const arquivos = {}
+/** Uma página por card, no tamanho da arte (1080 de largura): o formato que o LinkedIn aceita para carrossel. */
+export async function montarPdf(imagens) {
+  const { jsPDF } = await import('jspdf')
+  let doc
+  for (const { url, w, h } of imagens) {
+    const orientacao = w > h ? 'l' : 'p'
+    if (!doc) doc = new jsPDF({ unit: 'px', format: [w, h], orientation: orientacao, hotfixes: ['px_scaling'], compress: true })
+    else doc.addPage([w, h], orientacao)
+    doc.addImage(url, 'PNG', 0, 0, w, h, undefined, 'FAST')
+  }
+  return doc.output('blob')
+}
+
+/** formato: 'zip' (PNGs em ordem), 'png' (um card) ou 'pdf' (uma página por card). Booleano segue valendo: true = zip, false = png. */
+export async function gerarDownload(projeto, indices, renderizar, formato, progresso = () => {}) {
+  const tipo = formato === true ? 'zip' : formato === false ? 'png' : formato
+  const imagens = []
   for (const [n, i] of indices.entries()) {
     progresso(`Preparando imagem ${n + 1} de ${indices.length}…`)
-    const url = await comCanvas(projeto.slides[i], i, renderizar, canvas => toPng(canvas, { width: canvas.offsetWidth, height: canvas.offsetHeight, pixelRatio: 1, cacheBust: true }))
-    arquivos[`card-${String(i + 1).padStart(2, '0')}.png`] = new Uint8Array(await (await fetch(url)).arrayBuffer())
+    const imagem = await comCanvas(projeto.slides[i], i, renderizar, async canvas => ({
+      i, w: canvas.offsetWidth, h: canvas.offsetHeight,
+      url: await toPng(canvas, { width: canvas.offsetWidth, height: canvas.offsetHeight, pixelRatio: 1, cacheBust: true }),
+    }))
+    imagens.push(imagem)
   }
-  if (zip) return { blob: new Blob([zipSync(arquivos, { level: 0 })], { type: 'application/zip' }), nome: 'carrossel.zip' }
+  if (tipo === 'pdf') {
+    progresso('Montando o PDF…')
+    return { blob: await montarPdf(imagens), nome: 'carrossel.pdf' }
+  }
+  const arquivos = {}
+  for (const { i, url } of imagens) arquivos[`card-${String(i + 1).padStart(2, '0')}.png`] = new Uint8Array(await (await fetch(url)).arrayBuffer())
+  if (tipo === 'zip') return { blob: new Blob([zipSync(arquivos, { level: 0 })], { type: 'application/zip' }), nome: 'carrossel.zip' }
   const [nome, bytes] = Object.entries(arquivos)[0]
   return { blob: new Blob([bytes], { type: 'image/png' }), nome }
 }

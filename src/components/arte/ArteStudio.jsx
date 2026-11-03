@@ -3,7 +3,7 @@ import useHistorico from './useHistorico'
 import { avaliarLayouts } from './avaliarLayouts'
 import { CATALOGO_LAYOUTS, idLayout } from './layoutSuggestions'
 import SugestoesLayout from './SugestoesLayout'
-import { Download, LayoutGrid, Loader2, RotateCcw, Undo2, Redo2 } from 'lucide-react'
+import { Download, FileText, LayoutGrid, Loader2, RotateCcw, Undo2, Redo2 } from 'lucide-react'
 import { FORMATOS, normalizar } from './marca'
 import { TEMPLATES } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
@@ -391,21 +391,21 @@ export default function ArteStudio() {
     if (!mesmaArte(projetoAtual.current, r.origem)) { setAviso('A arte mudou. Revise novamente antes de baixar.'); return }
     setOcupado('Preparando download…')
     try {
-      const arquivo = await gerarDownload(r.origem, r.indices, (s, i) => renderProjeto(r.origem, s, i), r.zip, setOcupado)
+      const arquivo = await gerarDownload(r.origem, r.indices, (s, i) => renderProjeto(r.origem, s, i), r.formato, setOcupado)
       const url = URL.createObjectURL(arquivo.blob)
       const link = document.createElement('a'); link.href = url; link.download = arquivo.nome; link.click()
       setTimeout(() => URL.revokeObjectURL(url), 30000)
     } catch { setAviso('Não foi possível exportar. Confira as imagens e tente novamente; sua arte foi mantida.') }
     finally { setOcupado('') }
   }
-  const revisarExportacao = async (indices, zip = true, automatico = true) => {
+  const revisarExportacao = async (indices, formato = 'zip', automatico = true) => {
     const origem = projetoAtual.current
     indices = [...new Set(indices)].filter(i => i >= 0 && i < origem.slides.length).sort((a, b) => a - b)
     if (!indices.length) { setAviso('Selecione pelo menos um card para revisar.'); return }
     setOcupado('Revisando textos e diagramação…'); setAviso(''); setSelecionado(null)
     try {
       const cards = await revisarCards(origem, indices, (s, i) => renderProjeto(origem, s, i))
-      const resultado = { origem, indices, zip, cards }
+      const resultado = { origem, indices, formato, cards }
       setRevisao(resultado)
       const comAvisos = cards.some(c => c.problemas.length)
       if (comAvisos) setAviso('A revisão encontrou avisos. Confira o painel "Revisão antes de baixar" antes de exportar.')
@@ -426,8 +426,9 @@ export default function ArteStudio() {
     } catch { setAviso('Não foi possível sugerir ajustes. O card foi mantido.') }
     finally { setOcupado('') }
   }
-  const exportarAtual = () => revisarExportacao([atual], false)
-  const exportarTodos = () => revisarExportacao(slides.map((_, i) => i), true)
+  const exportarAtual = () => revisarExportacao([atual], 'png')
+  const exportarTodos = () => revisarExportacao(slides.map((_, i) => i), 'zip')
+  const exportarPdf = () => revisarExportacao(slides.map((_, i) => i), 'pdf')
 
   const est = selecionado ? arte.est?.[selecionado] ?? {} : {}
   const tamanhoPadrao = { titulo: 100, texto: 40, detalhe: 46 }
@@ -494,6 +495,7 @@ export default function ArteStudio() {
         <div className="flex flex-wrap gap-2">
 
           <button type="button" onClick={exportarAtual} disabled={!!ocupado} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-50 disabled:opacity-40"><Download size={15} />Baixar este</button>
+          <button type="button" onClick={exportarPdf} disabled={!!ocupado} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-50 disabled:opacity-40"><FileText size={15} />Baixar PDF</button>
           <button type="button" onClick={exportarTodos} disabled={!!ocupado} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-40"><Download size={15} />Baixar todos ({slides.length})</button>
         </div>
       </div>
@@ -512,12 +514,12 @@ export default function ArteStudio() {
         </div>
       )}
 
-      <VisaoGeral key={slides.length + ':' + (projeto.bibliotecaId || '')} projeto={projeto} bloqueado={!!ocupado} renderizar={(s, i) => renderProjeto(projeto, s, i)} tamanho={s => tamanho(s, formato)} onAbrir={i => { irPara(i); node.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} onReordenar={(de, para) => setProjeto(p => reordenarProjeto(p, de, para))} onLote={(indices, ajustes) => { setProjeto(p => aplicarEmLote(p, indices, ajustes)); setAviso('Ajustes aplicados. Revise o carrossel antes de exportar.'); }} onExportar={indices => revisarExportacao([...indices].sort((a, b) => a - b), true)} />
-      <RevisaoFinal revisao={revisao} atual={projeto} bloqueado={!!ocupado} onAbrir={irPara} onCorrigir={corrigirRevisao} onRevisar={() => revisarExportacao(revisao.indices, revisao.zip, false)} onBaixar={() => baixarRevisao(revisao)} />
+      <VisaoGeral key={slides.length + ':' + (projeto.bibliotecaId || '')} projeto={projeto} bloqueado={!!ocupado} renderizar={(s, i) => renderProjeto(projeto, s, i)} tamanho={s => tamanho(s, formato)} onAbrir={i => { irPara(i); node.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} onReordenar={(de, para) => setProjeto(p => reordenarProjeto(p, de, para))} onLote={(indices, ajustes) => { setProjeto(p => aplicarEmLote(p, indices, ajustes)); setAviso('Ajustes aplicados. Revise o carrossel antes de exportar.'); }} onExportar={indices => revisarExportacao([...indices].sort((a, b) => a - b), 'zip')} />
+      <RevisaoFinal revisao={revisao} atual={projeto} bloqueado={!!ocupado} onAbrir={irPara} onCorrigir={corrigirRevisao} onRevisar={() => revisarExportacao(revisao.indices, revisao.formato, false)} onBaixar={() => baixarRevisao(revisao)} />
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label className="flex gap-2 items-center min-h-11"><input type="checkbox" checked={guiasAtivas} onChange={e => { setGuiasAtivas(e.target.checked); setGuias([]) }} />Guias e alinhamento automático</label>
-        <button type="button" className="min-h-11 px-2 text-orange-800 underline disabled:opacity-40" disabled={!!ocupado} onClick={() => revisarExportacao(slides.map((_, i) => i), true, false)}>Revisar carrossel</button>
-        <span className="self-center">Baixar todos gera um ZIP com os cards em ordem.</span>
+        <button type="button" className="min-h-11 px-2 text-orange-800 underline disabled:opacity-40" disabled={!!ocupado} onClick={() => revisarExportacao(slides.map((_, i) => i), 'zip', false)}>Revisar carrossel</button>
+        <span className="self-center">Baixar todos gera um ZIP com os cards em ordem. Baixar PDF junta os cards, uma página cada, para o LinkedIn.</span>
       </div>
       {/* Slides do carrossel */}
       <BarraCards slides={slides} formato={formato} atual={atual} irPara={irPara} contadorDe={contadorDe} adicionar={adicionar} duplicar={duplicar} mudarOrdem={mudarOrdem} apagar={apagar} />
