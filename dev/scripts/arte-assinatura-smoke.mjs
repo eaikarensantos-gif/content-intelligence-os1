@@ -30,7 +30,7 @@ try {
   // 2. Recarregando, a assinatura volta preenchida e se aplica no card
   await abrirVisaoGeral()
   assert.equal(await campo().inputValue(), '@karensantosperfil')
-  await page.getByText('Card 1', { exact: true }).click()
+  await page.getByLabel('Visão geral do carrossel').getByText('Card 1', { exact: true }).click()
   await page.getByRole('button', { name: 'Aplicar em 1 card', exact: true }).click()
   assert.ok((await page.locator('[data-canvas="editor"]').innerText()).includes('@karensantosperfil'))
 

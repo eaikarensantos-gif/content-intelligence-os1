@@ -17,6 +17,8 @@ import Banco from './Banco.jsx'
 import ArtesSalvas from './ArtesSalvas'
 import EdicaoNaArte from './EdicaoNaArte'
 import VisaoGeral from './VisaoGeral'
+import PacotePublicacao from './PacotePublicacao'
+import { arquivosDoPacote, pacoteDe } from './pacotePublicacao'
 import RevisaoFinal from './RevisaoFinal'
 import { revisarCards, gerarDownload, mesmaArte } from './exportacaoArte'
 import { aplicarEmLote, reordenarProjeto, encaixarBloco, restaurarPosicoes } from './ajustesProjeto'
@@ -84,6 +86,9 @@ export default function ArteStudio() {
   useEffect(() => { if (carregado) salvarRascunho(projeto) }, [projeto, carregado])
 
   const mudarProjeto = (campos) => setProjeto((p) => ({ ...p, ...campos }))
+  const mudarPacote = (campos) => setProjeto((p) => ({ ...p, pacote: { ...pacoteDe(p), ...campos } }))
+  const mudarGate = (id, valor) => setProjeto((p) => { const pacote = pacoteDe(p); return { ...p, pacote: { ...pacote, gates: { ...pacote.gates, [id]: valor } } } })
+  const mudarAlt = (i, texto) => setProjeto((p) => ({ ...p, slides: p.slides.map((s, j) => (j === i ? { ...s, alt: texto } : s)) }))
   const mudarSlide = (fn) => setProjeto((p) => ({ ...p, slides: p.slides.map((s, i) => (i === p.atual ? fn(s) : s)) }))
   const mudar = (campos) => mudarSlide((s) => ({ ...s, ...campos }))
   const mudarEst = (id, campos) => mudarSlide((s) => ({ ...s, est: { ...s.est, [id]: { ...(s.est?.[id] ?? {}), ...campos } } }))
@@ -376,7 +381,7 @@ export default function ArteStudio() {
   // Slides
   const irPara = (i) => { navegar((p) => ({ ...p, atual: i })); setSelecionado(null) }
   const adicionar = () => setProjeto((p) => ({ ...p, slides: [...p.slides, padraoDe(p.slides[p.atual])], atual: p.slides.length }))
-  const duplicar = () => setProjeto((p) => ({ ...p, slides: [...p.slides.slice(0, p.atual + 1), structuredClone(p.slides[p.atual]), ...p.slides.slice(p.atual + 1)], atual: p.atual + 1 }))
+  const duplicar = () => setProjeto((p) => ({ ...p, slides: [...p.slides.slice(0, p.atual + 1), { ...structuredClone(p.slides[p.atual]), alt: '' }, ...p.slides.slice(p.atual + 1)], atual: p.atual + 1 }))
   const apagar = () => setProjeto((p) => (p.slides.length < 2 ? p : { ...p, slides: p.slides.filter((_, i) => i !== p.atual), atual: Math.max(0, p.atual - 1) }))
   const mudarOrdem = (d) => setProjeto((p) => {
     const j = p.atual + d
@@ -391,7 +396,7 @@ export default function ArteStudio() {
     if (!mesmaArte(projetoAtual.current, r.origem)) { setAviso('A arte mudou. Revise novamente antes de baixar.'); return }
     setOcupado('Preparando download…')
     try {
-      const arquivo = await gerarDownload(r.origem, r.indices, (s, i) => renderProjeto(r.origem, s, i), r.formato, setOcupado)
+      const arquivo = await gerarDownload(r.origem, r.indices, (s, i) => renderProjeto(r.origem, s, i), r.formato, setOcupado, r.formato === 'zip' ? arquivosDoPacote(projetoAtual.current, r.indices) : {})
       const url = URL.createObjectURL(arquivo.blob)
       const link = document.createElement('a'); link.href = url; link.download = arquivo.nome; link.click()
       setTimeout(() => URL.revokeObjectURL(url), 30000)
@@ -515,6 +520,7 @@ export default function ArteStudio() {
       )}
 
       <VisaoGeral key={slides.length + ':' + (projeto.bibliotecaId || '')} projeto={projeto} bloqueado={!!ocupado} renderizar={(s, i) => renderProjeto(projeto, s, i)} tamanho={s => tamanho(s, formato)} onAbrir={i => { irPara(i); node.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} onReordenar={(de, para) => setProjeto(p => reordenarProjeto(p, de, para))} onLote={(indices, ajustes) => { setProjeto(p => aplicarEmLote(p, indices, ajustes)); setAviso('Ajustes aplicados. Revise o carrossel antes de exportar.'); }} onExportar={indices => revisarExportacao([...indices].sort((a, b) => a - b), 'zip')} />
+      <PacotePublicacao projeto={projeto} bloqueado={!!ocupado} onLegenda={(legenda) => mudarPacote({ legenda })} onGate={mudarGate} onAlt={mudarAlt} />
       <RevisaoFinal revisao={revisao} atual={projeto} bloqueado={!!ocupado} onAbrir={irPara} onCorrigir={corrigirRevisao} onRevisar={() => revisarExportacao(revisao.indices, revisao.formato, false)} onBaixar={() => baixarRevisao(revisao)} />
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label className="flex gap-2 items-center min-h-11"><input type="checkbox" checked={guiasAtivas} onChange={e => { setGuiasAtivas(e.target.checked); setGuias([]) }} />Guias e alinhamento automático</label>

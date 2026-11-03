@@ -1,10 +1,18 @@
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { toPng } from 'html-to-image'
-import { zipSync } from 'fflate'
+import { strToU8, zipSync } from 'fflate'
 import { conferirTexto } from './avaliarLayouts'
 
-export const mesmaArte = (a, b) => a.slides === b.slides && a.formato === b.formato && a.contador === b.contador
+// O texto alternativo (slide.alt) não muda a arte desenhada: editar não pode invalidar a revisão.
+const igualSemAlt = (s, t) => {
+  if (s === t) return true
+  const chaves = (o) => Object.keys(o).filter((k) => k !== 'alt')
+  const ks = chaves(s)
+  return ks.length === chaves(t).length && ks.every((k) => s[k] === t[k])
+}
+export const mesmaArte = (a, b) => a.formato === b.formato && a.contador === b.contador
+  && (a.slides === b.slides || (a.slides.length === b.slides.length && a.slides.every((s, i) => igualSemAlt(s, b.slides[i]))))
 
 export function contraste(a, b) {
   const lum = rgb => rgb.map(v => v / 255).map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0)
@@ -82,7 +90,7 @@ export async function montarPdf(imagens) {
 }
 
 /** formato: 'zip' (PNGs em ordem), 'png' (um card) ou 'pdf' (uma página por card). Booleano segue valendo: true = zip, false = png. */
-export async function gerarDownload(projeto, indices, renderizar, formato, progresso = () => {}) {
+export async function gerarDownload(projeto, indices, renderizar, formato, progresso = () => {}, extras = {}) {
   const tipo = formato === true ? 'zip' : formato === false ? 'png' : formato
   const imagens = []
   for (const [n, i] of indices.entries()) {
@@ -99,6 +107,7 @@ export async function gerarDownload(projeto, indices, renderizar, formato, progr
   }
   const arquivos = {}
   for (const { i, url } of imagens) arquivos[`card-${String(i + 1).padStart(2, '0')}.png`] = new Uint8Array(await (await fetch(url)).arrayBuffer())
+  if (tipo === 'zip') for (const [nome, texto] of Object.entries(extras)) arquivos[nome] = strToU8(texto)
   if (tipo === 'zip') return { blob: new Blob([zipSync(arquivos, { level: 0 })], { type: 'application/zip' }), nome: 'carrossel.zip' }
   const [nome, bytes] = Object.entries(arquivos)[0]
   return { blob: new Blob([bytes], { type: 'image/png' }), nome }

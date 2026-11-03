@@ -62,7 +62,8 @@ for (const script of scripts) {
   let r = await rodar(script)
   let instavel = false
   if (!r.ok) {
-    console.log(`  ${script} falhou; tentando de novo…`)
+    console.log(`  ${script} falhou; tentando de novo. Fim da saída da primeira tentativa:`)
+    console.log(r.saida.split('\n').filter((l) => l.trim()).slice(-12).map((l) => `    | ${l}`).join('\n'))
     const segunda = await rodar(script)
     instavel = segunda.ok
     r = segunda.ok ? segunda : { ...segunda, saida: `${r.saida}\n--- nova tentativa ---\n${segunda.saida}` }
