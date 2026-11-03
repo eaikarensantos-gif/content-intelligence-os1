@@ -9,12 +9,13 @@ try {
     await context.addInitScript(() => localStorage.setItem('cio-auth-session', JSON.stringify({ email: 'local@example.test', loginAt: Date.now(), isOwner: true })))
     const page = await context.newPage()
     page.on('dialog', dialog => dialog.accept())
+    await page.addInitScript(() => { const abrir = () => document.querySelectorAll('details').forEach(d => { d.open = true }); new MutationObserver(abrir).observe(document, { childList: true, subtree: true }) }) // os testes editam campos que ficam em blocos recolhidos
     await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
     for (const id of ['79-planilha', '80-aula', '81-rabisco', '82-quinta']) {
       await page.getByRole('button', { name: /^Modelos de arte/ }).click()
       await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Atrás da cabeça')
       await page.locator(`[data-modelo="cartao:${id}"]`).click()
-      await page.getByRole('button', { name: 'Usar neste slide', exact: true }).click()
+      await page.getByRole('button', { name: 'Usar neste card', exact: true }).click()
       const editor = page.locator('[data-canvas="editor"] .kc')
       const order = () => editor.evaluate(root => [...root.children].map(el => Number(getComputedStyle(el).zIndex)))
       for (const [label, index] of [['Linha de cima', 2], ['Palavra gigante (sem p, g, q, j, y)', 3], ['Tarjas de baixo', 5], ['Nota manuscrita', 6]]) {
@@ -46,6 +47,9 @@ try {
       if (id === '82-quinta') {
         const download = page.waitForEvent('download')
         await page.getByRole('button', { name: 'Baixar este', exact: true }).click()
+        // Com avisos na revisão o download espera a confirmação.
+        const conferi = page.getByRole('button', { name: /Conferi os avisos/ })
+        await Promise.race([download.catch(() => {}), conferi.waitFor({ timeout: 30000 }).then(() => conferi.click()).catch(() => {})])
         assert.equal(await (await download).failure(), null)
       }
     }

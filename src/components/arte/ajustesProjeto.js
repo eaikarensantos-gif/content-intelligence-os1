@@ -24,8 +24,21 @@ export function aplicarEmLote(projeto, indices, ajustes) {
     const est = { ...s.est }
     for (const id of ['titulo', 'texto', 'detalhe']) est[id] = { ...est[id], ...(ajustes.fonte ? { fonte: ajustes.fonte } : {}), ...(ajustes.cor ? { cor: ajustes.cor } : {}) }
     if (ajustes.cor && s.template === 'tarjas') est.texto.fundo = s.est?.texto?.fundo ?? s.corDestaque
-    return { ...s, ...comum, est, ...(ajustes.cor ? { corTitulo: ajustes.cor, corTexto: ajustes.cor, corDestaque: ajustes.cor } : {}) }
+    // corDestaque fica de fora: é a cor dos *trechos* do título, que não faz parte do "texto".
+    return { ...s, ...comum, est, ...(ajustes.cor ? { corTitulo: ajustes.cor, corTexto: ajustes.cor } : {}) }
   }) }
+}
+
+/** Devolve só a posição dos elementos ao padrão; fonte, cor, tamanho e elementos apagados ficam. */
+export function restaurarPosicoes(slide, posPadrao) {
+  if (ehCartao(slide)) {
+    const camadas = Object.fromEntries(Object.entries(slide.camadas ?? {}).map(([i, c]) => {
+      const { dx, dy, ...resto } = c // eslint-disable-line no-unused-vars
+      return [i, resto]
+    }))
+    return { ...slide, camadas }
+  }
+  return { ...slide, pos: posPadrao }
 }
 
 // Coordenadas reais da arte (1080px). Encosta bordas/centros e equilibra o vão entre vizinhos.

@@ -44,7 +44,7 @@ const Veu = ({ a, recorte = 0 }) =>
 const Detalhe = ({ a, Bloco }) =>
   a.detalhe ? (
     <Bloco id="detalhe" largura={460}>
-      <div style={{ ...estiloFonte(a, 'detalhe', 'kinder'), fontSize: tam(a, 'detalhe', 46), lineHeight: 1.15, color: hex(a.corDestaque), whiteSpace: 'pre-wrap', textAlign: alin(a, 'detalhe') }}>{a.detalhe}</div>
+      <div style={{ ...estiloFonte(a, 'detalhe', 'kinder'), fontSize: tam(a, 'detalhe', 46), lineHeight: 1.15, color: hex(a.est?.detalhe?.cor ?? a.corDestaque), whiteSpace: 'pre-wrap', textAlign: alin(a, 'detalhe') }}>{a.detalhe}</div>
     </Bloco>
   ) : null
 

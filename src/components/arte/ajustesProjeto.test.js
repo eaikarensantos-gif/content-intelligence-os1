@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aplicarEmLote, encaixarBloco, reordenarProjeto } from './ajustesProjeto'
+import { aplicarEmLote, encaixarBloco, reordenarProjeto, restaurarPosicoes } from './ajustesProjeto'
 import { agruparVersoes } from './projetosConta'
 import { contraste } from './exportacaoArte'
 
@@ -27,6 +27,19 @@ describe('acabamento e organização', () => {
     expect(novo.slides[1].camadas[1]).toEqual({ dx: 20 })
     expect(novo.slides[1].textos).toBe(p.slides[1].textos)
     expect(novo.slides[1].fotos).toBe(p.slides[1].fotos)
+  })
+  it('cor em lote não troca a cor de destaque e chega ao detalhe manuscrito', () => {
+    const novo = aplicarEmLote({ slides: [{ template: 'corCheia', corDestaque: 'mostarda' }] }, [0], { cor: 'creme' })
+    expect(novo.slides[0].corDestaque).toBe('mostarda')
+    expect(novo.slides[0].corTitulo).toBe('creme')
+    expect(novo.slides[0].est.detalhe.cor).toBe('creme')
+  })
+  it('restaura só as posições, preservando fonte, cor, tamanho e elementos apagados', () => {
+    const base = { template: 'tarjas', pos: { titulo: { x: 9, y: 9 } }, est: { titulo: { fonte: 'inter', tamanho: 70, oculto: true } } }
+    const padrao = { titulo: { x: 80, y: 200 } }
+    expect(restaurarPosicoes(base, padrao)).toMatchObject({ pos: padrao, est: base.est })
+    const cartao = { template: 'cartao', cartao: '62-cartao', camadas: { 1: { dx: 20, dy: 5, escala: 1.4, fonte: 'inter', cor: 'creme', oculto: true } } }
+    expect(restaurarPosicoes(cartao).camadas[1]).toEqual({ escala: 1.4, fonte: 'inter', cor: 'creme', oculto: true })
   })
   it('encaixa no centro e equilibra o vão entre elementos', () => {
     expect(encaixarBloco({ x: 443, y: 200, w: 200, h: 100 }, [], 1080, 1350).x).toBe(440)

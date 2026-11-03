@@ -42,7 +42,7 @@ export default function Galeria({ itens, categorias, renderMini, onFechar, onApl
       (!q || semAcento(`${it.nome} ${it.categoriaNome} ${it.busca}`).includes(q)))
   }, [itens, busca, categoria, foto, formato])
 
-  const chip = (ativo) => `shrink-0 px-3 py-1.5 rounded-full text-xs border ${ativo ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`
+  const chip = (ativo) => `shrink-0 px-3 py-1.5 rounded-full text-xs border ${ativo ? 'bg-orange-700 border-orange-700 text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`
   const item = aberto && itens.find((i) => i.id === aberto)
   const larguraPrevia = typeof window !== 'undefined' ? Math.min(380, window.innerWidth - 64) : 380
 
@@ -54,20 +54,20 @@ export default function Galeria({ itens, categorias, renderMini, onFechar, onApl
             <h2 className="text-base font-semibold text-gray-900">Modelos de arte</h2>
             <p className="text-xs text-gray-500" data-testid="contagem">{itens.length} modelos · mostrando {visiveis.length}</p>
           </div>
-          <button type="button" onClick={onFechar} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Fechar"><X size={18} /></button>
+          <button type="button" onClick={onFechar} className="flex items-center justify-center min-h-11 min-w-11 rounded-lg hover:bg-gray-100" aria-label="Fechar"><X size={18} /></button>
         </div>
 
         {item ? (
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
-            <button type="button" onClick={() => setAberto(null)} className="flex items-center gap-1 text-sm text-gray-600 hover:underline mb-4"><ArrowLeft size={15} />Voltar para a galeria</button>
+            <button type="button" onClick={() => setAberto(null)} className="flex items-center gap-1 min-h-11 text-sm text-gray-600 hover:underline mb-2"><ArrowLeft size={15} />Voltar para a galeria</button>
             <div className="flex flex-col md:flex-row gap-6 items-start">
               <Mini item={item} largura={larguraPrevia} renderMini={renderMini} />
               <div className="space-y-3 max-w-sm">
                 <h3 className="text-lg font-semibold text-gray-900">{item.nome}</h3>
                 <p className="text-sm text-gray-500">{item.categoriaNome} · {item.formato === 'story' ? 'Story 9:16' : 'Feed 4:5'} · {item.comFoto ? 'com foto' : 'sem foto'}</p>
                 <div className="flex flex-col gap-2 pt-2">
-                  <button type="button" onClick={() => onAplicar(item.id, 'atual')} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600"><Replace size={15} />Usar neste slide</button>
-                  <button type="button" onClick={() => onAplicar(item.id, 'novo')} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-50"><Plus size={15} />Adicionar como novo slide</button>
+                  <button type="button" onClick={() => onAplicar(item.id, 'atual')} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800"><Replace size={15} />Usar neste card</button>
+                  <button type="button" onClick={() => onAplicar(item.id, 'novo')} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-50"><Plus size={15} />Adicionar como novo card</button>
                 </div>
               </div>
             </div>

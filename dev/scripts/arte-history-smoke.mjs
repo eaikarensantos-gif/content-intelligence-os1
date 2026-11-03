@@ -7,6 +7,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 1000 }, hasTouch: true })
     await context.addInitScript(() => localStorage.setItem('cio-auth-session', JSON.stringify({ email: 'local@example.test', loginAt: Date.now(), isOwner: true })))
     const page = await context.newPage()
+    await page.addInitScript(() => { const abrir = () => document.querySelectorAll('details').forEach(d => { d.open = true }); new MutationObserver(abrir).observe(document, { childList: true, subtree: true }) }) // os testes editam campos que ficam em blocos recolhidos
     await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
     const undo = page.getByRole('button', { name: 'Desfazer', exact: true })
     const redo = page.getByRole('button', { name: 'Refazer', exact: true })
@@ -40,7 +41,7 @@ try {
     await undo.click()
     // One continuous slider gesture must be one undo, not one step per mouse move.
     await selectTitle()
-    const size = page.getByRole('slider', { name: /^Tamanho:/ })
+    const size = page.getByRole('slider', { name: /^Tamanho/ })
     const before = await size.inputValue()
     await size.scrollIntoViewIfNeeded()
     const box = await size.boundingBox()

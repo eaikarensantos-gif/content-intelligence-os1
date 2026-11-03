@@ -8,6 +8,7 @@ try {
     await context.addInitScript(() => localStorage.setItem('cio-auth-session', JSON.stringify({ email: 'local@example.test', loginAt: Date.now(), isOwner: true })))
     const page = await context.newPage()
     page.on('dialog', dialog => dialog.accept())
+    await page.addInitScript(() => { const abrir = () => document.querySelectorAll('details').forEach(d => { d.open = true }); new MutationObserver(abrir).observe(document, { childList: true, subtree: true }) }) // os testes editam campos que ficam em blocos recolhidos
     await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
     const base = page.locator('[data-canvas="editor"]')
     await page.getByLabel('Elementos da arte').getByRole('button', { name: /^Título/ }).click()
@@ -25,7 +26,7 @@ try {
     await page.getByRole('button', { name: /^Modelos de arte/ }).click()
     await page.getByPlaceholder('Buscar por nome, categoria ou texto').fill('Balão e polaroid com pet')
     await page.locator('[data-modelo="cartao:26-cachorro"]').click()
-    await page.getByRole('button', { name: 'Usar neste slide', exact: true }).click()
+    await page.getByRole('button', { name: 'Usar neste card', exact: true }).click()
     const canvas = page.locator('[data-canvas="editor"]')
     const field = page.locator('textarea[data-campo="balao"]')
     await field.fill('Teste para apagar')

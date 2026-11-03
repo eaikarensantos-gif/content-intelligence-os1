@@ -8,7 +8,7 @@ describe('parseWebhookPayload', () => {
       entry: [{
         id: 'page1',
         time: 1700000000,
-        changes: [{ field: 'comments', value: { id: 'c1', media_id: 'm1', text: 'quero o link', from: { id: 'u1', username: 'fulano' } } }],
+        changes: [{ field: 'comments', value: { id: 'c1', media: { id: 'm1', media_product_type: 'FEED' }, text: 'quero o link', from: { id: 'u1', username: 'fulano' } } }],
       }],
     }
     const [event] = parseWebhookPayload(body)
@@ -16,6 +16,16 @@ describe('parseWebhookPayload', () => {
       type: 'comment', eventKey: 'page1:comments:c1', commentId: 'c1', mediaId: 'm1',
       text: 'quero o link', senderId: 'u1', fromUsername: 'fulano',
     })
+  })
+
+  it('lê o ID da publicação em value.media.id, como a Meta envia nos comentários', () => {
+    const body = { entry: [{ id: 'page1', time: 1700000000, changes: [{ field: 'comments', value: { id: 'c1', media: { id: '18146854624569957' }, text: 'Site', from: { id: 'u1' } } }] }] }
+    expect(parseWebhookPayload(body)[0].mediaId).toBe('18146854624569957')
+  })
+
+  it('ainda aceita value.media_id (formato das menções)', () => {
+    const body = { entry: [{ id: 'page1', time: 1700000000, changes: [{ field: 'comments', value: { id: 'c1', media_id: 'm9', from: {} } }] }] }
+    expect(parseWebhookPayload(body)[0].mediaId).toBe('m9')
   })
 
   it('normaliza um evento de menção', () => {

@@ -34,6 +34,7 @@ try {
     })
     const page = await context.newPage()
     page.on('pageerror', error => errors.push(error.message))
+    await page.addInitScript(() => { const abrir = () => document.querySelectorAll('details').forEach(d => { d.open = true }); new MutationObserver(abrir).observe(document, { childList: true, subtree: true }) }) // os testes editam campos que ficam em blocos recolhidos
     await page.goto(`${baseURL}/arte`)
     const editor = page.locator('[data-canvas="editor"]')
     const elements = page.getByLabel('Elementos da arte')
@@ -42,7 +43,7 @@ try {
     const templates = viewport.width > 1000 ? ['tarjas', 'atrasCabeca', 'cabecaCaixa', 'corCheia', 'caixa', 'selecao', 'chat', 'busca'] : ['tarjas']
     for (const template of templates) {
       console.log(`Checking ${viewport.width}px ${template}`)
-      await page.getByRole('combobox', { name: 'Template', exact: true }).selectOption(template)
+      await page.getByRole('combobox', { name: 'Modelo', exact: true }).selectOption(template)
       for (const [id, name, font, css] of [['titulo', /^Título/, 'georgia', 'Georgia'], ['texto', /^Texto/, 'bootzy', 'KS Bootzy'], ['detalhe', /^Detalhe manuscrito/, 'arial', 'Arial']]) {
         await elements.getByRole('button', { name }).click()
         const panel = page.getByRole('combobox', { name: 'Fonte', exact: true }).locator('../..')
@@ -58,7 +59,7 @@ try {
       await elements.getByRole('button', { name: 'Restaurar título', exact: true }).click()
       await page.getByRole('button', { name: 'Fechar', exact: true }).click()
     }
-    await page.getByRole('combobox', { name: 'Template', exact: true }).selectOption('tarjas')
+    await page.getByRole('combobox', { name: 'Modelo', exact: true }).selectOption('tarjas')
     await elements.getByRole('button', { name: /^Título/ }).click()
     await page.keyboard.press('Delete')
     assert.equal(await editor.locator('[data-elemento="titulo"]').count(), 0)
@@ -84,7 +85,7 @@ try {
     await range(page, /^Cortar em cima/, 12)
     await range(page, /^Cortar à esquerda/, 8)
     const layer = editor.locator('[data-foto]').first()
-    assert.equal(await layer.locator('div').evaluate(el => el.style.backgroundSize), '55%')
+    assert.equal(await layer.locator('div').evaluate(el => el.style.backgroundSize.replace(' auto', '')), '55%')
     assert.equal(await layer.locator('div').evaluate(el => el.style.transform), 'translate(0px, 300px)')
     assert.ok((await layer.evaluate(el => el.style.clipPath)).includes('12%'))
     // Dragging the image must translate it, including at the mobile canvas scale.
@@ -100,13 +101,16 @@ try {
     await editor.waitFor()
     await page.getByRole('heading', { name: 'Foto · tamanho, posição e corte' }).waitFor()
     assert.equal(await editor.locator('[data-elemento="titulo"]').count(), 0)
-    assert.equal(await layer.locator('div').evaluate(el => el.style.backgroundSize), '55%')
+    assert.equal(await layer.locator('div').evaluate(el => el.style.backgroundSize.replace(' auto', '')), '55%')
     assert.ok((await layer.evaluate(el => el.style.clipPath)).includes('8%'))
     // Duplicating retains the edits. Export must produce an actual 1080 × 1350 PNG.
     await page.getByRole('button', { name: 'Duplicar', exact: true }).click()
     assert.equal(await editor.locator('[data-elemento="titulo"]').count(), 0)
     const download = page.waitForEvent('download')
     await page.getByRole('button', { name: 'Baixar este', exact: true }).click()
+    // Com avisos na revisão o download espera a confirmação.
+    const conferi = page.getByRole('button', { name: /Conferi os avisos/ })
+    await Promise.race([download.catch(() => {}), conferi.waitFor({ timeout: 30000 }).then(() => conferi.click()).catch(() => {})])
     const file = await download
     const stream = await file.createReadStream(); const chunks = []
     for await (const chunk of stream) chunks.push(chunk)

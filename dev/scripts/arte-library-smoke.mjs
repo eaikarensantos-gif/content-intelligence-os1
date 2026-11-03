@@ -17,14 +17,14 @@ try {
     await page.getByRole('button', { name: 'Duplicar', exact: true }).click()
     await projects.getByRole('button', { name: 'Salvar arte / carrossel' }).click()
     await projects.getByLabel('Nome da arte').fill('Meu carrossel favorito')
-    await projects.getByRole('button', { name: 'Salvar cópia', exact: true }).click()
+    await projects.getByRole('button', { name: 'Salvar versão', exact: true }).click()
     await projects.getByText(/Versão salva somente neste navegador/).waitFor()
     await projects.getByRole('button', { name: 'Nova arte', exact: true }).click()
     assert.equal((await canvas.innerText()).trim(), '')
     await page.getByRole('button', { name: 'Desfazer', exact: true }).click()
     assert.equal(await canvas.innerText(), original)
     await page.getByRole('button', { name: 'Baixar todos (2)', exact: true }).waitFor()
-    await projects.getByRole('button', { name: 'Apagar todos os cards', exact: true }).click()
+    await projects.getByRole('button', { name: 'Nova arte', exact: true }).click()
     assert.equal((await canvas.innerText()).trim(), '')
     // Wait for the blank draft to commit before reloading.
     await page.waitForFunction(async () => {

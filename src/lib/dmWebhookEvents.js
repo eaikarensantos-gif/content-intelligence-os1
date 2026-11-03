@@ -1,12 +1,11 @@
 // Normaliza o payload bruto do webhook do Instagram numa lista plana de
 // eventos, usada pelo matcher de gatilho (dmTriggerMatcher.js).
 //
-// NÃO CONFIRMADO NA DOCUMENTAÇÃO OFICIAL: developers.facebook.com está
-// bloqueado neste ambiente (egress proxy), então esse formato foi montado a
-// partir de exemplos de terceiros que citam a doc oficial (entry[].changes[]
-// para comentários/menções, entry[].messaging[] para mensagens/respostas de
-// story, no padrão do Messenger Platform). Validar contra um payload real
-// antes de considerar a Fase 1 pronta (critério de aceite, seção 8).
+// Formato conferido em payloads reais gravados em ig_events (nov/2026):
+//   - comentário: entry[].changes[].value = { id, from, text, media: { id }, parent_id? }
+//     (o ID da publicação vem em value.media.id, NÃO em value.media_id)
+//   - menção: value = { comment_id, media_id }
+//   - mensagens e respostas de story: entry[].messaging[] (padrão Messenger).
 export function parseWebhookPayload(body) {
   const events = []
   const entries = body?.entry || []
@@ -27,7 +26,7 @@ export function parseWebhookPayload(body) {
         time: entry.time,
         raw: change,
         commentId: value.id || value.comment_id || null,
-        mediaId: value.media_id || null,
+        mediaId: value.media?.id || value.media_id || null,
         text: value.text || null,
         senderId: value.from?.id || null,
         fromUsername: value.from?.username || null,

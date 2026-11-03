@@ -92,7 +92,7 @@ try {
   await page.screenshot({ path: `/tmp/layout-suggestions-${width}.png` })
   excessivo = true
   await page.getByRole('button', { name: 'Criar arte', exact: true }).click()
-  await page.getByText(/Não foi possível diagramar o slide 1/).waitFor({ timeout: 60000 })
+  await page.getByText(/Não foi possível diagramar o card 1/).waitFor({ timeout: 60000 })
   assert.equal(await page.locator('[data-canvas="editor"]').innerText(), applied)
   assert.deepEqual(errors, [])
   console.log(`${width}px: measured overflow/overlap, three ranked previews, apply/undo, automatic generation and content preservation passed`)

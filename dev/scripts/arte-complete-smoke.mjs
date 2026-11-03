@@ -31,7 +31,7 @@ try {
   for (let v = 0; v < 2; v++) {
    await library.getByRole('button', { name: 'Salvar arte / carrossel' }).click()
    await library.getByLabel('Nome da arte').fill(`Projeto ${width}`)
-   await library.getByRole('button', { name: v ? 'Salvar nova versão' : 'Salvar cópia', exact: true }).click()
+   await library.getByRole('button', { name: v ? 'Salvar nova versão' : 'Salvar versão', exact: true }).click()
    await library.getByText(/Versão salva no banco da conta/).waitFor()
   }
   const recentes = rows.slice(-2)
@@ -48,7 +48,7 @@ try {
   await overview.getByLabel('Cor em lote').selectOption('areia')
   await overview.getByRole('checkbox', { name: 'Aplicar assinatura' }).check()
   await overview.getByRole('textbox', { name: 'Assinatura', exact: true }).fill('@perfil')
-  await overview.getByRole('button', { name: 'Aplicar em 3 card(s)', exact: true }).click()
+  await overview.getByRole('button', { name: 'Aplicar em 3 cards', exact: true }).click()
   const canvas = page.locator('[data-canvas="editor"]')
   assert.ok((await canvas.innerText()).includes('@perfil'))
   await page.getByRole('button', { name: 'Desfazer', exact: true }).click()

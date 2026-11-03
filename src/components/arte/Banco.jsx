@@ -13,6 +13,11 @@ export default function Banco({ onEscolher, onFechar }) {
 
   const carregar = () => listarBanco().then(setItens).catch((e) => { setErro(e.message); setItens([]) })
   useEffect(() => { if (bancoDisponivel()) carregar() }, [])
+  useEffect(() => {
+    const tecla = (e) => { if (e.key === 'Escape') onFechar() }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [onFechar])
 
   // O <video> é criado fora do React para já vir com crossOrigin; aqui só é colocado no palco.
   useEffect(() => {
@@ -58,11 +63,11 @@ export default function Banco({ onEscolher, onFechar }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onFechar}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="Meu banco de fotos e vídeos" onClick={onFechar}>
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-900">{video ? 'Escolha o quadro do vídeo' : 'Meu banco de fotos e vídeos'}</h2>
-          <button type="button" onClick={onFechar} aria-label="Fechar" className="p-1 text-gray-500 hover:text-gray-900"><X size={18} /></button>
+          <button type="button" onClick={onFechar} aria-label="Fechar" className="flex items-center justify-center min-h-11 min-w-11 text-gray-500 hover:text-gray-900"><X size={18} /></button>
         </div>
 
         {!bancoDisponivel() ? (
@@ -72,14 +77,14 @@ export default function Banco({ onEscolher, onFechar }) {
             <div ref={palco} />
             <input type="range" min={0} max={video.duracao} step={0.04} value={tempo} onChange={(e) => irPara(Number(e.target.value))} className="w-full" />
             <div className="flex gap-2">
-              <button type="button" onClick={() => onEscolher(quadroDoVideo(video.el))} className="px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600">Usar este quadro</button>
-              <button type="button" onClick={() => setVideo(null)} className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Voltar ao banco</button>
+              <button type="button" onClick={() => onEscolher(quadroDoVideo(video.el))} className="min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800">Usar este quadro</button>
+              <button type="button" onClick={() => setVideo(null)} className="min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">Voltar ao banco</button>
             </div>
           </div>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <label className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 cursor-pointer">
+              <label className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 cursor-pointer">
                 <Upload size={15} />Enviar fotos e vídeos
                 <input type="file" accept="image/*,video/*" multiple onChange={enviar} className="hidden" />
               </label>

@@ -12,7 +12,7 @@ export default function SugestoesLayout({ arte, resultado, analisando, onAnalisa
       {valido && resultado.problemas.length > 0 && <p role="status" className="text-xs text-amber-800">{resultado.problemas.join('. ')}. Revise o texto ou escolha uma opção conferida.</p>}
       {aberto && <>
         {!valido && <p className="text-xs text-gray-500">{resultado ? 'A arte mudou. Reavalie para conferir o conteúdo atual.' : 'Compara função do slide, quantidade de texto, fotos e formato; depois confere o texto na prévia.'}</p>}
-        {valido && !resultado.opcoes.length && <p className="text-sm text-gray-600">Nenhum layout passou na conferência. O conteúdo foi mantido. Reduza o texto ou divida-o em mais slides e tente novamente.</p>}
+        {valido && !resultado.opcoes.length && <p className="text-sm text-gray-600">Nenhum layout passou na conferência. O conteúdo foi mantido. Reduza o texto ou divida-o em mais cards e tente novamente.</p>}
         {valido && resultado.opcoes.map((opcao, i) => {
           const t = tamanho(opcao.slide)
           return <div key={opcao.id} className="flex gap-3 border-t border-gray-100 pt-3" data-layout-sugestao={opcao.id}>
