@@ -8,17 +8,17 @@ for (const width of [1440,1280,390]) {
  await context.addInitScript(()=>localStorage.setItem('cio-auth-session',JSON.stringify({email:'local@example.test',loginAt:Date.now(),isOwner:true})))
  const page=await context.newPage()
  page.on('dialog',dialog=>dialog.accept())
+ await page.addInitScript(() => { const abrir = () => document.querySelectorAll('details').forEach(d => { d.open = true }); new MutationObserver(abrir).observe(document, { childList: true, subtree: true }) }) // os testes editam campos que ficam em blocos recolhidos
  await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
  await page.locator('[data-canvas="editor"]').waitFor()
  // Reproduce the selected title panel from the tablet screenshot.
  await page.getByLabel('Elementos da arte').getByRole('button',{name:/^Título/}).click()
  const title = page.getByRole('combobox',{name:'Fonte',exact:true}).locator('../..').locator('textarea')
  await title.fill('A pergunta define o tipo de resposta')
- assert.ok((await title.boundingBox()).height >= 96)
+ assert.ok(await title.evaluate(el => el.scrollHeight <= el.clientHeight + 1), 'o campo não corta o texto')
  await title.evaluate(el=>{el.focus();el.setSelectionRange(11,11)})
- const breakButton = title.locator('..').getByRole('button',{name:'Quebrar linha',exact:true})
- if (width <= 1280) await breakButton.tap()
- else await breakButton.click()
+ // O botão "Quebrar linha" saiu da interface: a quebra agora é o Enter do próprio campo.
+ await title.press('Enter')
  assert.equal(await title.inputValue(),'A pergunta \ndefine o tipo de resposta')
  assert.ok((await page.locator('[data-canvas="editor"] [data-elemento="titulo"]').textContent()).includes('A pergunta \ndefine'))
  await page.getByRole('button',{name:'Fechar',exact:true}).click()
@@ -33,7 +33,7 @@ for (const width of [1440,1280,390]) {
  await page.locator('[data-canvas="editor"] .kc').getByText('PrimeiraSegunda',{exact:true}).click()
  await page.getByTestId('painel-camada').locator(`textarea[data-campo="${fieldId}"]`).waitFor()
  await field.evaluate(el=>{el.focus();el.setSelectionRange(8,8)})
- await field.locator('..').getByRole('button',{name:'Quebrar linha',exact:true}).click()
+ await field.press('Enter')
  assert.equal(await field.inputValue(),'Primeira\nSegunda')
  await field.press('Enter')
  assert.equal(await field.inputValue(),'Primeira\n\nSegunda')
@@ -49,6 +49,9 @@ for (const width of [1440,1280,390]) {
  assert.equal(await field.inputValue(),'Primeira\n\nSegunda')
  const downloaded=page.waitForEvent('download')
  await page.getByRole('button',{name:'Baixar este',exact:true}).click()
+ // Com avisos na revisão o download espera a confirmação.
+ const conferi=page.getByRole('button',{name:/Conferi os avisos/})
+ await Promise.race([downloaded.catch(()=>{}),conferi.waitFor({timeout:30000}).then(()=>conferi.click()).catch(()=>{})])
  const download=await downloaded
  assert.equal(await download.failure(),null)
  console.log(`${width}px: button, Enter, visual line positions, persistence and PNG passed`)

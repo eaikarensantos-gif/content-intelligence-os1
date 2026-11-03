@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { carregarBiblioteca, salvarVersao } from './projetosConta'
 import { plural } from './marca'
+import { ehCartao } from './cartoes/render'
 
 export default function ArtesSalvas({ projeto, bloqueado, onAbrir, onLimpar, onVincular }) {
   const [painel, setPainel] = useState('')
@@ -8,6 +9,9 @@ export default function ArtesSalvas({ projeto, bloqueado, onAbrir, onLimpar, onV
   const [artes, setArtes] = useState([])
   const [mensagem, setMensagem] = useState('')
   const [gravando, setGravando] = useState(false)
+  // Cards do último salvamento ou da última arte aberta: se ainda são os mesmos, não há nada a perder.
+  const guardados = useRef(null)
+  const vazio = projeto.slides.length === 1 && projeto.slides.every(s => !ehCartao(s) && !s.titulo && !s.texto && !s.detalhe && !s.foto && !s.emojis?.length)
   const disabled = bloqueado || gravando
   const botao = 'min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 disabled:opacity-40'
   const salvar = async () => {
@@ -16,6 +20,7 @@ export default function ArtesSalvas({ projeto, bloqueado, onAbrir, onLimpar, onV
     try {
       const resultado = await salvarVersao(nome.trim(), { ...projeto, nomeArte: nome.trim() })
       onVincular(resultado.versao.projetoId, nome.trim(), projeto)
+      guardados.current = projeto.slides
       setMensagem(resultado.nuvem ? 'Versão salva no banco da conta. Disponível nos dispositivos conectados ao mesmo banco.' : 'Versão salva somente neste navegador. O banco não está conectado ou não respondeu; salve novamente para sincronizar.')
       setPainel('')
     } catch { setMensagem('Não foi possível salvar. Sua arte continua no editor; tente novamente ou baixe os PNGs.') }
@@ -29,6 +34,7 @@ export default function ArtesSalvas({ projeto, bloqueado, onAbrir, onLimpar, onV
     finally { setGravando(false) }
   }
   const limpar = () => {
+    if (!vazio && guardados.current !== projeto.slides && !window.confirm('Começar uma nova arte? O que está no editor ainda não foi salvo. Dá para voltar com Desfazer enquanto esta página estiver aberta. Para guardar, cancele e use "Salvar arte / carrossel".')) return
     onLimpar()
     setPainel('')
     setMensagem('Editor limpo. Use Desfazer para recuperar o carrossel anterior. As artes salvas continuam na biblioteca.')
@@ -53,9 +59,9 @@ export default function ArtesSalvas({ projeto, bloqueado, onAbrir, onLimpar, onV
         {!artes.length && <p className="text-sm">Nenhuma arte salva ainda.</p>}
         {artes.map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 p-3">
           <div className="min-w-0"><p className="text-sm font-medium break-words">{a.nome}</p><p className="text-xs text-gray-500">{plural(a.projeto.slides.length, 'card', 'cards')} · {plural(a.versoes.length, 'versão', 'versões')} · {a.nuvem ? 'No banco' : 'Neste dispositivo'} · {new Date(a.salvoEm).toLocaleString('pt-BR')}</p></div>
-          <button className={botao} disabled={disabled} onClick={() => { onAbrir({ ...structuredClone(a.projeto), bibliotecaId: a.projetoId || undefined, nomeArte: a.nome }); setPainel(''); setMensagem('Cópia aberta para editar. A versão salva foi preservada.') }}>Abrir</button>
+          <button className={botao} disabled={disabled} onClick={() => { const aberto = { ...structuredClone(a.projeto), bibliotecaId: a.projetoId || undefined, nomeArte: a.nome }; guardados.current = aberto.slides; onAbrir(aberto); setPainel(''); setMensagem('Cópia aberta para editar. A versão salva foi preservada.') }}>Abrir</button>
           <details className="w-full"><summary className="text-xs cursor-pointer">Histórico de versões</summary>
-            {a.versoes.map(v => <button key={v.id} disabled={disabled} className="block text-xs text-orange-800 py-2 text-left" onClick={() => { onAbrir({ ...structuredClone(v.projeto), bibliotecaId: a.projetoId || undefined, nomeArte: a.nome }); setPainel(''); setMensagem('Versão recuperada. Salve para criar uma nova versão sem apagar o histórico.') }}>{new Date(v.salvoEm).toLocaleString('pt-BR')} · Recuperar versão</button>)}
+            {a.versoes.map(v => <button key={v.id} disabled={disabled} className="block text-xs text-orange-800 py-2 text-left" onClick={() => { const aberto = { ...structuredClone(v.projeto), bibliotecaId: a.projetoId || undefined, nomeArte: a.nome }; guardados.current = aberto.slides; onAbrir(aberto); setPainel(''); setMensagem('Versão recuperada. Salve para criar uma nova versão sem apagar o histórico.') }}>{new Date(v.salvoEm).toLocaleString('pt-BR')} · Recuperar versão</button>)}
           </details>
         </div>)}
       </div>}

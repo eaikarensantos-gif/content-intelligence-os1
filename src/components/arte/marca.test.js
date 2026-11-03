@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CORES, FONTES, FONTES_TITULO, corteFoto, fonteDoBloco, normalizar, partesDestaque } from './marca'
+import { CORES, EMOJIS, EMOJI_NOMES, FONTES, FONTES_TITULO, corteFoto, fonteDoBloco, normalizar, partesDestaque, plural } from './marca'
 import { TEMPLATES } from './Templates'
 
 describe('marca', () => {
@@ -47,5 +47,16 @@ describe('marca', () => {
     expect(a.fotoDY).toBe(250)
     expect(corteFoto(a, 680)).toBe('inset(max(680px, 10%) 5% 20% 15%)')
     expect(fonteDoBloco({ est: { texto: { fonte: 'inexistente' } } }, 'texto', 'inter')).toBe(FONTES.inter)
+  })
+
+  it('todo emoji tem nome para leitor de tela', () => {
+    for (const cod of EMOJIS) expect(EMOJI_NOMES[cod], cod).toBeTruthy()
+    expect(Object.keys(EMOJI_NOMES)).toHaveLength(EMOJIS.length)
+  })
+
+  it('plural concorda com a quantidade', () => {
+    expect(plural(1, 'card', 'cards')).toBe('1 card')
+    expect(plural(0, 'versão', 'versões')).toBe('0 versões')
+    expect(plural(3, 'card', 'cards')).toBe('3 cards')
   })
 })

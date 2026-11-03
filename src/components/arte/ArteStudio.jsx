@@ -4,7 +4,7 @@ import { avaliarLayouts } from './avaliarLayouts'
 import { CATALOGO_LAYOUTS, idLayout } from './layoutSuggestions'
 import SugestoesLayout from './SugestoesLayout'
 import { AlignCenter, AlignLeft, AlignRight, ChevronDown, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Undo2, Redo2, Scissors, Trash2 } from 'lucide-react'
-import { CORES, EMOJIS, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
+import { CORES, EMOJIS, EMOJI_NOMES, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
 import { TEMPLATES, Emojis } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
@@ -203,6 +203,12 @@ export default function ArteStudio() {
   projetoAtual.current = projeto
   const [sugestoes, setSugestoes] = useState({})
   const [analisandoLayout, setAnalisandoLayout] = useState(null)
+  const [larguraJanela, setLarguraJanela] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1280))
+  useEffect(() => {
+    const atualizar = () => setLarguraJanela(window.innerWidth)
+    window.addEventListener('resize', atualizar)
+    return () => window.removeEventListener('resize', atualizar)
+  }, [])
 
   const { formato, slides, atual } = projeto
   const arte = slides[atual]
@@ -210,7 +216,7 @@ export default function ArteStudio() {
   const def = cartao ? CARTAO[arte.cartao] : null
   const { w, h } = tamanho(arte, formato)
   // No celular a arte encolhe para caber na tela, com o painel logo abaixo.
-  const escala = Math.min(520, typeof window !== 'undefined' ? window.innerWidth - 48 : 520) / w
+  const escala = Math.min(520, larguraJanela - 48) / w
   const contadorDe = (i) => (projeto.contador && slides.length > 1 ? `${i + 1}/${slides.length}` : '')
 
   useEffect(() => {
@@ -550,7 +556,10 @@ export default function ArteStudio() {
       const cards = await revisarCards(origem, indices, (s, i) => renderProjeto(origem, s, i))
       const resultado = { origem, indices, zip, cards }
       setRevisao(resultado)
-      if (automatico && cards.every(c => !c.problemas.length)) await baixarRevisao(resultado)
+      const comAvisos = cards.some(c => c.problemas.length)
+      if (comAvisos) setAviso('A revisão encontrou avisos. Confira o painel "Revisão antes de baixar" antes de exportar.')
+      if (comAvisos || !automatico) requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('revisao-final')?.scrollIntoView({ behavior: 'smooth', block: 'center' })))
+      if (automatico && !comAvisos) await baixarRevisao(resultado)
     } catch { setAviso('Não foi possível concluir a revisão. Tente novamente antes de baixar.') }
     finally { setOcupado('') }
   }
@@ -571,6 +580,17 @@ export default function ArteStudio() {
 
   const est = selecionado ? arte.est?.[selecionado] ?? {} : {}
   const tamanhoPadrao = { titulo: 100, texto: 40, detalhe: 46 }
+  // Cada modelo tem o seu tamanho e largura de partida: lê o que está desenhado, e só cai no número fixo se não achar.
+  const medirBloco = (id, tipo, reserva) => {
+    const bloco = node.current?.querySelector(`[data-elemento="${id}"]`)
+    if (!bloco) return reserva
+    let valor = bloco.offsetWidth
+    if (tipo === 'tamanho') {
+      const no = document.createTreeWalker(bloco, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT) }).nextNode()
+      valor = no ? parseFloat(getComputedStyle(no.parentElement).fontSize) : NaN
+    }
+    return Number.isFinite(valor) && valor > 0 ? Math.round(valor) : reserva
+  }
   const emojiSelecionado = selecionado?.startsWith('emoji:') ? arte.emojis[Number(selecionado.slice(6))] : null
   const camadaSel = ehCamada(selecionado) ? Number(selecionado.slice(7)) : -1
   const camada = camadaSel >= 0 ? arte.camadas?.[camadaSel] ?? {} : {}
@@ -636,8 +656,8 @@ export default function ArteStudio() {
   const painelEmojis = (
     <Campo rotulo="Emojis (clique para adicionar e arraste na arte)">
       <div className="flex flex-wrap gap-1 mb-2 max-h-28 overflow-y-auto">
-        {EMOJIS.map((cod, n) => (
-          <button key={cod} type="button" aria-label={`Adicionar emoji ${n + 1}`} onClick={() => mudar({ emojis: [...arte.emojis, { cod, x: w / 2 - 50, y: h / 2 - 50, tam: 100 }] })} className="w-11 h-11 rounded-md border border-gray-200 hover:bg-gray-50 p-1.5">
+        {EMOJIS.map((cod) => (
+          <button key={cod} type="button" aria-label={`Adicionar emoji: ${EMOJI_NOMES[cod]}`} title={EMOJI_NOMES[cod]} onClick={() => mudar({ emojis: [...arte.emojis, { cod, x: w / 2 - 50, y: h / 2 - 50, tam: 100 }] })} className="w-11 h-11 rounded-md border border-gray-200 hover:bg-gray-50 p-1.5">
             <img src={emojiUrl(cod)} alt="" className="w-full h-full" />
           </button>
         ))}
@@ -931,8 +951,8 @@ export default function ArteStudio() {
                   </select>
                 </Campo>
               {est.oculto ? <button type="button" onClick={() => mudarEst(selecionado, { oculto: false })} className="text-sm text-orange-700">Restaurar elemento</button> : <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1 text-sm text-red-600"><Trash2 size={14} />Apagar elemento</button>}
-              <Faixa rotulo="Tamanho (px)" valor={est.tamanho ?? tamanhoPadrao[selecionado]} min={20} max={360} onChange={(tamanho) => mudarEst(selecionado, { tamanho })} />
-              <Faixa rotulo="Largura do bloco (px)" valor={est.largura ?? LARGURA_PADRAO[selecionado]} min={200} max={1040} passo={10} onChange={(largura) => mudarEst(selecionado, { largura })} />
+              <Faixa rotulo="Tamanho (px)" valor={est.tamanho ?? medirBloco(selecionado, 'tamanho', tamanhoPadrao[selecionado])} min={20} max={360} onChange={(tamanho) => mudarEst(selecionado, { tamanho })} />
+              <Faixa rotulo="Largura do bloco (px)" valor={est.largura ?? medirBloco(selecionado, 'largura', LARGURA_PADRAO[selecionado])} min={200} max={1040} passo={10} onChange={(largura) => mudarEst(selecionado, { largura })} />
               <div className="flex gap-1">
                 {[['left', AlignLeft, 'Alinhar à esquerda'], ['center', AlignCenter, 'Centralizar'], ['right', AlignRight, 'Alinhar à direita']].map(([v, Icone, nome]) => (
                   <button key={v} type="button" aria-label={nome} title={nome} aria-pressed={est.alinhar === v} onClick={() => mudarEst(selecionado, { alinhar: v })} className={`flex items-center justify-center min-h-11 min-w-11 rounded-lg border ${est.alinhar === v ? 'border-orange-500 bg-white' : 'border-gray-200'}`}><Icone size={15} /></button>

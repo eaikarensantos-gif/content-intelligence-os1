@@ -49,6 +49,17 @@ export const EMOJIS = [
   '1f4dd', '1f4d6', '1f4da', '1f4c5', '1f4ca', '1f4cc', '1f4cd', '1f4c1', '1f4c2', '1f4bb', '1f4f1', '1f4de',
   '1f4ac', '1f4e2', '1f4e7', '1f4f0', '1f517', '1f9e0', '1f916', '1f9f8', '1f9fe', '1f455', '2696-fe0f',
 ]
+// Nomes para leitor de tela e dica ao passar o mouse.
+export const EMOJI_NOMES = {
+  '2728': 'faíscas', '2b50': 'estrela', '1f31f': 'estrela brilhante', '1f4ab': 'estrela girando', '1f440': 'olhos', '1f525': 'fogo',
+  '1f914': 'rosto pensativo', '1f9d0': 'rosto com monóculo', '1f60d': 'olhos de coração', '1f970': 'rosto com corações', '1f60e': 'óculos escuros', '1faf6': 'mãos de coração',
+  '1f90d': 'coração branco', '1f497': 'coração crescendo', '1f496': 'coração brilhante', '1f495': 'dois corações', '1f9e1': 'coração laranja', '2764': 'coração vermelho',
+  '1f338': 'flor de cerejeira', '1f352': 'cerejas', '1f48e': 'gema', '2705': 'marca de verificação', '2615': 'café', '1f3a4': 'microfone',
+  '1f4dd': 'bloco de notas', '1f4d6': 'livro aberto', '1f4da': 'livros', '1f4c5': 'calendário', '1f4ca': 'gráfico de barras', '1f4cc': 'alfinete',
+  '1f4cd': 'alfinete de mapa', '1f4c1': 'pasta', '1f4c2': 'pasta aberta', '1f4bb': 'notebook', '1f4f1': 'celular', '1f4de': 'telefone',
+  '1f4ac': 'balão de fala', '1f4e2': 'megafone', '1f4e7': 'e-mail', '1f4f0': 'jornal', '1f517': 'link', '1f9e0': 'cérebro',
+  '1f916': 'robô', '1f9f8': 'urso de pelúcia', '1f9fe': 'recibo', '1f455': 'camiseta', '2696-fe0f': 'balança',
+}
 export const emojiUrl = (cod) => `/marca/emoji/${cod}.png`
 
 export const hex = (cor) => CORES[cor]?.hex ?? cor

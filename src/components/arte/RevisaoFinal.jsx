@@ -2,7 +2,7 @@ import { mesmaArte } from './exportacaoArte'
 export default function RevisaoFinal({ revisao, atual, bloqueado, onRevisar, onCorrigir, onAbrir, onBaixar }) {
   if (!revisao) return null
   const valido = mesmaArte(revisao.origem, atual)
-  return <section aria-label="Revisão antes de baixar" className="border border-orange-200 rounded-xl p-4 mb-4 space-y-3">
+  return <section id="revisao-final" aria-label="Revisão antes de baixar" className="border border-orange-200 rounded-xl p-4 mb-4 space-y-3">
     <h2 className="font-semibold text-sm">Revisão antes de baixar</h2>
     <div className="max-h-72 overflow-y-auto space-y-2">
     {!valido ? <p className="text-sm">A arte mudou. Revise novamente antes de baixar.</p> : revisao.cards.map(c => <div key={c.indice} className="border-t pt-2 text-sm">

@@ -8,6 +8,7 @@ try {
     await context.addInitScript(() => localStorage.setItem('cio-auth-session', JSON.stringify({ email: 'local@example.test', loginAt: Date.now(), isOwner: true })))
     const page = await context.newPage()
     page.on('dialog', dialog => dialog.accept())
+    await page.addInitScript(() => { const abrir = () => document.querySelectorAll('details').forEach(d => { d.open = true }); new MutationObserver(abrir).observe(document, { childList: true, subtree: true }) }) // os testes editam campos que ficam em blocos recolhidos
     await page.goto(`${process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'}/arte`)
     const base = page.locator('[data-canvas="editor"]')
     await page.getByLabel('Elementos da arte').getByRole('button', { name: /^Título/ }).click()
