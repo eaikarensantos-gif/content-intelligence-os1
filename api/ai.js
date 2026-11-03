@@ -10,6 +10,7 @@
 //   (default)          → AI chat completion
 
 import { ANTI_AI_FILTER } from '../src/lib/antiAIFilter.js'
+import { mapearPublicacoes } from '../src/lib/igMedia.js'
 import { apagarDoCofre, completarComCofre, listarCofre, salvarNoCofre } from '../src/lib/cofreServidor.js'
 
 const PROVIDER_URLS = {
@@ -497,6 +498,23 @@ async function instagramFetchMetrics(accessToken, limit) {
   }
 
   return { rows, insightsAvailable }
+}
+
+// ─── Instagram — lista leve de publicações (seletor de post das regras de DM) ─
+// Uma única chamada, sem insights: o seletor só precisa de ID, miniatura,
+// legenda, tipo e data.
+
+async function instagramListMedia(accessToken, limit) {
+  const n = Math.min(50, Math.max(1, Number(limit) || 30))
+  const mediaRes = await fetch(
+    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp` +
+    `&limit=${n}&access_token=${encodeURIComponent(accessToken)}`
+  )
+  const mediaData = await mediaRes.json().catch(() => ({}))
+  if (!mediaRes.ok) {
+    throw new Error(mediaData.error?.message || 'Falha ao buscar publicações do Instagram.')
+  }
+  return { posts: mapearPublicacoes(mediaData.data) }
 }
 
 // ─── Instagram — posts com thumbnail, tempo assistido e comentários ──────────
@@ -1397,6 +1415,12 @@ export default async function handler(req, res) {
       if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
       const result = await instagramFetchPosts(accessToken, limit || 25)
       return res.status(200).json(result)
+    }
+
+    if (action === 'instagram-list-media') {
+      const { accessToken, limit } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      return res.status(200).json(await instagramListMedia(accessToken, limit))
     }
 
     if (action === 'instagram-fetch-comments') {
