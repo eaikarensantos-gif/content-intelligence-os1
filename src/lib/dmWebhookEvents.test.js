@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseWebhookPayload } from './dmWebhookEvents'
+import { parseWebhookPayload, isOwnComment } from './dmWebhookEvents'
 
 describe('parseWebhookPayload', () => {
   it('normaliza um evento de comentário', () => {
@@ -73,5 +73,30 @@ describe('parseWebhookPayload', () => {
     }
     const [a, b] = parseWebhookPayload(body)
     expect(a.eventKey).not.toBe(b.eventKey)
+  })
+})
+
+describe('isOwnComment', () => {
+  const conexao = { ig_user_id: '27704320999260234', ig_username: 'karensantosperfil' }
+  const evento = (extra) => ({ type: 'comment', accountId: '17841400638703928', senderId: 'x', fromUsername: 'alguem', ...extra })
+
+  it('reconhece o comentário da própria conta pelo ID da conta que recebe o webhook', () => {
+    expect(isOwnComment(evento({ senderId: '17841400638703928' }), conexao)).toBe(true)
+  })
+
+  it('reconhece pelo ID salvo na conexão e pelo nome de usuário', () => {
+    expect(isOwnComment(evento({ senderId: '27704320999260234' }), conexao)).toBe(true)
+    expect(isOwnComment(evento({ fromUsername: 'KarenSantosPerfil' }), conexao)).toBe(true)
+  })
+
+  it('não bloqueia comentário de outra pessoa nem eventos que não são comentário', () => {
+    expect(isOwnComment(evento({ senderId: '2511035439392621', fromUsername: 'dessatavarees' }), conexao)).toBe(false)
+    expect(isOwnComment(evento({ type: 'mention', senderId: '17841400638703928' }), conexao)).toBe(false)
+    expect(isOwnComment(evento({ senderId: null, fromUsername: null }), null)).toBe(false)
+  })
+
+  it('o payload real da resposta automática é detectado ponta a ponta', () => {
+    const body = { entry: [{ id: '17841400638703928', time: 1, changes: [{ field: 'comments', value: { id: 'r1', parent_id: 'c1', text: 'Oie, te mandei uma DM!', media: { id: '18146854624569957' }, from: { id: '17841400638703928', username: 'karensantosperfil' } } }] }] }
+    expect(isOwnComment(parseWebhookPayload(body)[0], conexao)).toBe(true)
   })
 })
