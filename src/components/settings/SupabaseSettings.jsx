@@ -534,9 +534,9 @@ alter table user_data disable row level security;`}</pre>
               </div>
             ))}
             {igConnection.expiresAt && (
-              <p className={`text-[11px] ${isExpiringSoon(igConnection) ? 'text-amber-600' : 'text-gray-400'}`}>
-                Token válido até {new Date(igConnection.expiresAt).toLocaleDateString('pt-BR')}
-                {isExpiringSoon(igConnection) && ' — expira em breve, reconecte para renovar.'}
+              <p className={`text-[11px] ${igConnection.expiresAt < Date.now() ? 'text-red-600' : isExpiringSoon(igConnection) ? 'text-amber-600' : 'text-gray-400'}`}>
+                {igConnection.expiresAt < Date.now() ? 'Token expirado em ' : 'Token válido até '}{new Date(igConnection.expiresAt).toLocaleDateString('pt-BR')}
+                {igConnection.expiresAt < Date.now() ? ' — as automações de DM não conseguem enviar. Reconecte o Instagram.' : isExpiringSoon(igConnection) && ' — expira em breve, reconecte para renovar.'}
               </p>
             )}
           </div>

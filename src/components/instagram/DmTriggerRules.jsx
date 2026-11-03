@@ -90,6 +90,7 @@ export default function DmTriggerRules() {
     if (responseType === 'message' && !form.response_text.trim()) { setFormError('Escreve a mensagem de resposta ou troca pra "Fluxo completo".'); return }
     if (responseType === 'flow' && !form.flow_id) { setFormError('Escolhe um fluxo ou troca pra "Mensagem simples".'); return }
     if (form.match_mode === 'any_comment_on_post' && !form.post_id.trim()) { setFormError('Esse modo precisa do ID do post.'); return }
+    if (form.match_mode === 'any_comment_on_post' && !/^\d+$/.test(form.post_id.trim())) { setFormError('O ID do post é só números (ex: 18146854624569957). Link e nome do post não funcionam. O ID aparece no campo media do payload de um comentário em ig_events.'); return }
     if ((form.match_mode === 'keyword_exact' || form.match_mode === 'keyword_partial') && !form.match_value.trim()) { setFormError('Escreve a palavra-chave.'); return }
 
     setFormError(null)
