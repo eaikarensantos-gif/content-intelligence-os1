@@ -21,7 +21,7 @@
 //     cadastrada também na config do webhook no painel da Meta.
 
 import { verifyWebhookSignature } from '../src/lib/dmSignature.js'
-import { parseWebhookPayload } from '../src/lib/dmWebhookEvents.js'
+import { parseWebhookPayload, isOwnComment } from '../src/lib/dmWebhookEvents.js'
 import { findMatchingRule } from '../src/lib/dmTriggerMatcher.js'
 import { getSupabaseServer, sendInstagramMessage, replyToComment, upsertContact, markInboundMessage, runFlowStep } from '../src/lib/dmServer.js'
 
@@ -129,6 +129,12 @@ export default async function handler(req, res) {
     }
 
     if (event.isEcho) {
+      await db.from('ig_events').update({ status: 'skipped', processed_at: new Date().toISOString() }).eq('id', inserted.id)
+      continue
+    }
+
+    // Resposta pública automática da própria conta: não pode disparar regra (evita laço).
+    if (isOwnComment(event, connection)) {
       await db.from('ig_events').update({ status: 'skipped', processed_at: new Date().toISOString() }).eq('id', inserted.id)
       continue
     }

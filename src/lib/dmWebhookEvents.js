@@ -25,6 +25,7 @@ export function parseWebhookPayload(body) {
         eventKey: `${entry.id}:${change.field}:${value.id || value.comment_id || `${entry.time}-${i++}`}`,
         time: entry.time,
         raw: change,
+        accountId: entry.id || null,
         commentId: value.id || value.comment_id || null,
         mediaId: value.media?.id || value.media_id || null,
         text: value.text || null,
@@ -39,6 +40,7 @@ export function parseWebhookPayload(body) {
         eventKey: `${entry.id}:msg:${msg.message?.mid || `${entry.id}-${msg.timestamp}-${i++}`}`,
         time: msg.timestamp,
         raw: msg,
+        accountId: entry.id || null,
         commentId: null,
         mediaId: null,
         text: msg.message?.text || null,
@@ -50,4 +52,18 @@ export function parseWebhookPayload(body) {
   }
 
   return events
+}
+
+/**
+ * Comentário feito pela própria conta conectada. As respostas públicas automáticas
+ * (comment_reply_text) voltam pelo webhook como comentários novos; sem este filtro
+ * elas casam a regra "qualquer comentário no post" de novo, e a automação responde
+ * a si mesma em laço.
+ */
+export function isOwnComment(event, connection) {
+  if (event.type !== 'comment') return false
+  const ids = [event.accountId, connection?.ig_user_id].filter(Boolean).map(String)
+  if (event.senderId && ids.includes(String(event.senderId))) return true
+  const usuario = (connection?.ig_username || '').toLowerCase()
+  return !!usuario && (event.fromUsername || '').toLowerCase() === usuario
 }
