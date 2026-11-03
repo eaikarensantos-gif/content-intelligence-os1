@@ -1,7 +1,8 @@
 // Run with Vite running. AI responses are mocked; geometry uses real browser fonts.
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] })
+import { executablePath } from './_browser.mjs'
+const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] })
 try {
  for (const width of [1280, 390]) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: true })

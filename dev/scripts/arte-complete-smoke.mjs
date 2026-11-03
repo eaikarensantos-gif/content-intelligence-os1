@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { unzipSync } from 'fflate'
 import { chromium } from 'playwright'
-const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox'] })
+import { executablePath } from './_browser.mjs'
+const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] })
 const rows = []
 try {
  for (const width of [1280, 390]) {

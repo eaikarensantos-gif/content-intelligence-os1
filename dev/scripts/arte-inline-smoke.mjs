@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
-const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox'] })
+import { executablePath } from './_browser.mjs'
+const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] })
 try {
  for (const width of [1280, 390]) {
   const context = await browser.newContext({ viewport: { width, height: 1000 }, hasTouch: true })

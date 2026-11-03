@@ -1,7 +1,8 @@
 // Run with Vite running: node dev/scripts/arte-line-breaks-smoke.mjs
 import { chromium } from 'playwright'
+import { executablePath } from './_browser.mjs'
 import assert from 'node:assert/strict'
-const browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']})
+const browser = await chromium.launch({executablePath,args:['--no-sandbox']})
 try {
 for (const width of [1440,1280,390]) {
  const context = await browser.newContext({viewport:{width,height:1000},hasTouch:width <= 1280,acceptDownloads:true})
