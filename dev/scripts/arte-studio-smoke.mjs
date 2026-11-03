@@ -1,8 +1,9 @@
 // Run with Vite running: node dev/scripts/arte-studio-smoke.mjs
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
+import { executablePath } from './_browser.mjs'
 
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox'] })
+const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] })
 const baseURL = process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'
 const errors = []
 

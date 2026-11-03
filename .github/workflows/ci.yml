@@ -27,3 +27,25 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # Testes de navegador do Studio de Arte e da tela de DM. Ficam num job à parte para não atrasar
+  # lint, testes unitários e build; cada script tem uma nova tentativa (ver dev/scripts/run-smoke.mjs).
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke tests
+        run: npm run smoke

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import useStore from '../../store/useStore'
 import { CORES, FONTES, plural } from './marca'
 
 export default function VisaoGeral({ projeto, renderizar, tamanho, onReordenar, onAbrir, onLote, onExportar, bloqueado }) {
@@ -7,7 +8,10 @@ export default function VisaoGeral({ projeto, renderizar, tamanho, onReordenar, 
   const [fonte, setFonte] = useState('')
   const [cor, setCor] = useState('')
   const [fundo, setFundo] = useState('')
-  const [assinatura, setAssinatura] = useState('')
+  // A assinatura padrão fica no perfil do criador (sincroniza com o banco), então vale em qualquer aparelho.
+  const assinaturaPadrao = useStore((s) => s.creatorProfile?.assinaturaArte) || ''
+  const setCreatorProfile = useStore((s) => s.setCreatorProfile)
+  const [assinatura, setAssinatura] = useState(assinaturaPadrao)
   const [usarAssinatura, setUsarAssinatura] = useState(false)
   const [numeracao, setNumeracao] = useState('')
   const indices = selecionados.filter(i => i < projeto.slides.length)
@@ -41,6 +45,10 @@ export default function VisaoGeral({ projeto, renderizar, tamanho, onReordenar, 
         </div>
         <label className="flex gap-2 items-center min-h-11 text-sm"><input type="checkbox" checked={usarAssinatura} onChange={e => setUsarAssinatura(e.target.checked)} />Aplicar assinatura</label>
         {usarAssinatura && <input className="border border-gray-200 rounded-lg px-3 py-2 min-h-11 w-full" aria-label="Assinatura" placeholder="@seuperfil (vazio remove)" maxLength={80} value={assinatura} onChange={e => setAssinatura(e.target.value)} />}
+        {usarAssinatura && assinatura.trim() !== assinaturaPadrao && (
+          <button type="button" className="min-h-11 px-2 text-sm text-orange-800 underline" onClick={() => setCreatorProfile({ assinaturaArte: assinatura.trim() })}>{assinatura.trim() ? 'Salvar como assinatura padrão' : 'Remover a assinatura padrão'}</button>
+        )}
+        {usarAssinatura && assinatura.trim() === assinaturaPadrao && !!assinaturaPadrao && <p className="text-xs text-gray-500">Esta é a sua assinatura padrão.</p>}
         <button className={botao} disabled={!indices.length || (!fonte && !cor && !fundo && !usarAssinatura && !numeracao)} onClick={() => onLote(indices, { ...(fonte ? { fonte } : {}), ...(cor ? { cor } : {}), ...(fundo ? { fundo } : {}), ...(usarAssinatura ? { assinatura } : {}), ...(numeracao ? { contador: numeracao === 'sim' } : {}) })}>Aplicar em {plural(indices.length, 'card', 'cards')}</button>
         <p className="text-xs text-gray-500">Preserva textos, fotos, posições e a cor de destaque dos *trechos*. O fundo não substitui fotos. Use Desfazer para reverter o conjunto de ajustes.</p>
       </fieldset>

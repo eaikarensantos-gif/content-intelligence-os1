@@ -2,9 +2,10 @@
 // Com o Vite rodando: node dev/scripts/dm-post-picker-smoke.mjs  (Supabase e /api/ai simulados)
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
+import { executablePath } from './_browser.mjs'
 
 const base = process.env.STUDIO_TEST_URL || 'http://127.0.0.1:5173'
-const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox'] })
+const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] })
 const POSTS = [
   { id: '18146854624569957', legenda: 'Carrossel: como montar um site', tipo: 'Carrossel', miniatura: null, link: 'https://www.instagram.com/p/DfR4sOClnaX/', data: '2026-11-03T12:00:00+0000' },
   { id: '18089755622309321', legenda: 'Dica rápida de organização', tipo: 'Reel', miniatura: null, link: null, data: '2026-10-30T12:00:00+0000' },

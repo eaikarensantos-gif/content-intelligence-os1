@@ -2,7 +2,8 @@
 // AI responses are mocked; no paid generation or publishing.
 import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] })
+import { executablePath } from './_browser.mjs'
+const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] })
 try {
  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true })
  await context.addInitScript(() => localStorage.setItem('cio-auth-session', JSON.stringify({ email: 'local@example.test', loginAt: Date.now(), isOwner: true })))

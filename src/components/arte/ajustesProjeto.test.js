@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { aplicarEmLote, encaixarBloco, reordenarProjeto, restaurarPosicoes } from './ajustesProjeto'
 import { agruparVersoes } from './projetosConta'
-import { contraste } from './exportacaoArte'
+import { contraste, mesmaArte } from './exportacaoArte'
 
 describe('acabamento e organização', () => {
   it('reordena mantendo o card ativo e o original intactos', () => {
@@ -56,5 +56,13 @@ describe('acabamento e organização', () => {
   it('calcula contraste de cores conhecidas', () => {
     expect(contraste([0, 0, 0], [255, 255, 255])).toBe(21)
     expect(contraste([255, 255, 255], [255, 255, 255])).toBe(1)
+  })
+  it('mesmaArte ignora o texto alternativo mas acusa qualquer outra mudança no card', () => {
+    const card = { template: 'corCheia', titulo: 'a', est: {} }
+    const base = { formato: 'feed', contador: false, slides: [card] }
+    expect(mesmaArte(base, { ...base, slides: [{ ...card, alt: 'descrição' }] })).toBe(true)
+    expect(mesmaArte(base, { ...base, slides: [{ ...card, titulo: 'b' }] })).toBe(false)
+    expect(mesmaArte(base, { ...base, slides: [card, card] })).toBe(false)
+    expect(mesmaArte(base, { ...base, contador: true })).toBe(false)
   })
 })

@@ -43,6 +43,14 @@ export function clearConnection() {
   localStorage.removeItem(LS_CONNECTION)
 }
 
+/** Token do navegador pronto para uso, ou o motivo de não estar. */
+export function tokenParaUso() {
+  const conexao = getConnection()
+  if (!conexao?.accessToken) return { erro: 'O Instagram não está conectado neste navegador. Conecte em Configurações.' }
+  if (conexao.expiresAt && conexao.expiresAt < Date.now()) return { erro: 'O token do Instagram expirou. Reconecte em Configurações.' }
+  return { token: conexao.accessToken }
+}
+
 export function isExpiringSoon(connection, days = 7) {
   if (!connection?.expiresAt) return false
   return connection.expiresAt - Date.now() < days * 24 * 60 * 60 * 1000
