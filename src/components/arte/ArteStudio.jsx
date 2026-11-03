@@ -1,17 +1,16 @@
-import { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import useHistorico from './useHistorico'
 import { avaliarLayouts } from './avaliarLayouts'
 import { CATALOGO_LAYOUTS, idLayout } from './layoutSuggestions'
 import SugestoesLayout from './SugestoesLayout'
-import { AlignCenter, AlignLeft, AlignRight, ChevronDown, Copy, Download, ImagePlus, Images, LayoutGrid, Loader2, Plus, RotateCcw, Undo2, Redo2, Scissors, Trash2 } from 'lucide-react'
-import { CORES, EMOJIS, EMOJI_NOMES, FONTES, FONTE_DETALHE, FORMATOS, emojiUrl, hex, normalizar } from './marca'
-import { TEMPLATES, Emojis } from './Templates'
+import { Download, LayoutGrid, Loader2, RotateCcw, Undo2, Redo2 } from 'lucide-react'
+import { FORMATOS, normalizar } from './marca'
+import { TEMPLATES } from './Templates'
 import { lerRascunho, salvarRascunho } from './armazem'
 import { prepararFoto, recortarPessoa } from './recorte'
 import { fixarTextos, montarProjeto, pedidoDeSlides, pedirArte, pegarEntrada } from './pedido'
 import { CARTAO, CARTOES, CATEGORIAS } from './cartoes/colecao'
-import { camposDaCamada, camposPrincipais, descreverCamada, ehCartao, formatoDe, fotosDe, normalizarCartao, novoCartao, textosDe, urlFoto } from './cartoes/render'
-import { CartaoCorpo } from './cartoes/Cartao'
+import { camposDaCamada, ehCartao, formatoDe, fotosDe, normalizarCartao, novoCartao, textosDe } from './cartoes/render'
 import Galeria from './Galeria'
 import Pedido from './Pedido.jsx'
 import Banco from './Banco.jsx'
@@ -21,167 +20,19 @@ import VisaoGeral from './VisaoGeral'
 import RevisaoFinal from './RevisaoFinal'
 import { revisarCards, gerarDownload, mesmaArte } from './exportacaoArte'
 import { aplicarEmLote, reordenarProjeto, encaixarBloco, restaurarPosicoes } from './ajustesProjeto'
+import { BASE_COM_FOTO, NOMES_BLOCO, PROJETO_INICIAL, aliviar, conteudoProprio, ehCamada, levarConteudo, novoSlide, padraoDe, tamanho, temAjustes } from './conteudoSlide'
+import { Canvas } from './CanvasArte'
+import PainelEmojis from './PainelEmojis'
+import { SeletorModelo, SeletorVisual } from './SeletoresModelo'
+import CampoTexto from './CampoTexto'
+import PainelFoto from './PainelFoto'
+import PainelCamada from './PainelCamada'
+import PainelBloco from './PainelBloco'
+import BarraCards from './BarraCards'
+import ElementosDaArte from './ElementosDaArte'
+import ModeloEImagens from './ModeloEImagens'
+import { Campo, Cores, Faixa } from './controles'
 import './marca.css'
-
-const novoSlide = (template = 'tarjas', herdado = {}) => normalizar(herdado, { ...TEMPLATES[template].padrao, template })
-const PROJETO_INICIAL = { formato: 'feed', contador: false, atual: 0, slides: [novoSlide()] }
-
-const NOMES_BLOCO = { titulo: 'Título', texto: 'Texto', detalhe: 'Detalhe manuscrito' }
-const LARGURA_PADRAO = { titulo: 920, texto: 880, detalhe: 460 }
-const ehCamada = (chave) => chave?.startsWith('camada:')
-
-// Modelos base que usam foto quando ela existe.
-const BASE_COM_FOTO = ['tarjas', 'atrasCabeca', 'cabecaCaixa', 'caixa', 'selecao']
-
-/** Tamanho da arte: os cards da coleção têm o tamanho do original; os modelos base seguem o formato do projeto. */
-const tamanho = (slide, formato) => (ehCartao(slide) ? { w: CARTAO[slide.cartao].w, h: CARTAO[slide.cartao].h } : FORMATOS[formato])
-const padraoDe = (s) => (ehCartao(s) ? novoCartao(s.cartao) : novoSlide(s.template))
-
-
-/**
- * Título, texto e foto que ela mesma colocou no slide (o exemplo do modelo não conta).
- * O slide guarda isso em s.conteudo, então o texto atravessa qualquer troca de modelo,
- * mesmo passando por um modelo que não tinha lugar para ele.
- */
-function conteudoProprio(s) {
-  const guardado = s.conteudo ?? {}
-  let atual
-  if (ehCartao(s)) {
-    const def = CARTAO[s.cartao]
-    const { titulo, texto } = camposPrincipais(def)
-    const proprio = (id) => (id && s.textos?.[id] != null && s.textos[id] !== def.campos.find((c) => c.id === id)?.padrao ? s.textos[id] : undefined)
-    atual = { titulo: proprio(titulo), texto: proprio(texto), foto: s.fotos?.[fotosDe(def)[0]] }
-  } else {
-    const p = TEMPLATES[s.template].padrao
-    atual = { titulo: s.titulo !== p.titulo ? s.titulo : undefined, texto: s.texto !== p.texto ? s.texto : undefined, foto: s.foto || undefined }
-  }
-  return { titulo: atual.titulo ?? guardado.titulo, texto: atual.texto ?? guardado.texto, foto: atual.foto ?? guardado.foto }
-}
-
-/** Passa para o slide novo o que ela já tinha escrito e a foto. */
-function levarConteudo(de, para) {
-  const conteudo = conteudoProprio(de)
-  const { titulo, texto, foto } = conteudo
-  if (ehCartao(para)) {
-    const def = CARTAO[para.cartao]
-    const campos = camposPrincipais(def)
-    const textos = { ...para.textos }
-    // *trecho* só faz sentido onde o campo do modelo usa essa marca.
-    const usaMarca = def.campos.find((c) => c.id === campos.titulo)?.padrao.includes('*')
-    if (titulo != null && campos.titulo) textos[campos.titulo] = usaMarca ? titulo : titulo.replace(/\*/g, '')
-    if (texto != null && campos.texto) textos[campos.texto] = texto
-    // Pedaços da frase de exemplo que ficariam colados na frase dela.
-    if (titulo != null && campos.titulo) for (const id of def.recebe?.[2] ?? []) textos[id] = ''
-    const slot = fotosDe(def)[0]
-    return { ...para, conteudo, textos, fotos: foto && slot ? { ...para.fotos, [slot]: foto } : para.fotos }
-  }
-  return normalizar({ conteudo, ...(titulo != null && { titulo }), ...(texto != null && { texto }), ...(foto && { foto, veu: 0.3 }) }, para)
-}
-
-// Foto em data URL vira um endereço curto (blob) nas miniaturas: 49 cópias da foto inteira pesariam no celular.
-const fotosLeves = new Map()
-const leve = (url) => {
-  if (typeof url !== 'string' || !url.startsWith('data:')) return url
-  if (!fotosLeves.has(url)) {
-    const [cab, dados] = url.split(',')
-    const bytes = Uint8Array.from(atob(dados), (c) => c.charCodeAt(0))
-    fotosLeves.set(url, URL.createObjectURL(new Blob([bytes], { type: cab.slice(5).split(';')[0] })))
-  }
-  return fotosLeves.get(url)
-}
-const aliviar = (s) => (ehCartao(s)
-  ? { ...s, fotos: Object.fromEntries(Object.entries(s.fotos ?? {}).map(([k, v]) => [k, leve(v)])) }
-  : { ...s, foto: leve(s.foto), recorte: leve(s.recorte) })
-
-/** Ajustes de posição, tamanho, fonte ou corte que se perdem na troca de modelo. */
-const temAjustes = (s) => (ehCartao(s) ? Object.keys(s.camadas ?? {}).length > 0 : Object.keys(s.est ?? {}).length > 0 || JSON.stringify(s.pos) !== JSON.stringify(TEMPLATES[s.template].padrao.pos))
-
-// Bloco fica fora do Canvas para manter a mesma identidade entre renders: recriado a cada
-// movimento, ele remontaria e perderia o arrasto no meio.
-const ArrastoCtx = createContext(null)
-
-function Bloco({ id, largura, children }) {
-  const { arte, alca, selecionado, interativo } = useContext(ArrastoCtx)
-  const p = arte.pos[id] ?? { x: 80, y: 200 }
-  const a = alca(id, p.x, p.y)
-  const w = arte.est?.[id]?.largura ?? largura
-  if (arte.est?.[id]?.oculto) return null
-  return (
-    <div data-elemento={id} {...(interativo ? a : {})} style={{ ...(interativo ? a.style : {}), position: 'absolute', left: p.x, top: p.y, width: w, outline: interativo && selecionado === id ? '4px dashed #F97316' : 'none', outlineOffset: 12 }}>
-      {children}
-    </div>
-  )
-}
-
-/** A arte em tamanho real; o pai reduz com scale para caber na tela. */
-function Canvas({ arte, formato, contador, escala = 1, onMover, onMoverCamada, onSelecionar, selecionado, nodeRef, interativo = true, grao = true }) {
-  const { w, h } = tamanho(arte, formato)
-  const cartao = ehCartao(arte)
-  const T = TEMPLATES[arte.template]
-  const arrasto = useRef(null)
-
-  const iniciar = (e, chave, x, y) => {
-    e.preventDefault()
-    e.stopPropagation()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    arrasto.current = { chave, x0: e.clientX, y0: e.clientY, x, y }
-    onSelecionar?.(chave)
-  }
-  const mover = (e) => {
-    const d = arrasto.current
-    if (!d) return
-    if (!d.movendo && Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 3) return
-    d.movendo = true
-    onMover(d.chave, Math.round(d.x + (e.clientX - d.x0) / escala), Math.round(d.y + (e.clientY - d.y0) / escala))
-  }
-  const soltar = () => { arrasto.current = null }
-  const alca = (chave, x, y) => ({ onPointerDown: (e) => iniciar(e, chave, x, y), onPointerMove: mover, onPointerUp: soltar, onPointerCancel: soltar, onLostPointerCapture: soltar, style: { cursor: 'move', touchAction: 'none' } })
-
-  return (
-    <div ref={nodeRef} tabIndex={interativo ? 0 : undefined} aria-label={interativo ? 'Área de edição da arte' : undefined} onPointerDownCapture={interativo ? (e) => e.currentTarget.focus({ preventScroll: true }) : undefined} data-canvas={interativo ? 'editor' : 'miniatura'} {...(interativo && arte.foto ? alca('foto', arte.fotoDX ?? 0, arte.fotoDY ?? 0) : { onPointerDown: () => interativo && onSelecionar?.(null) })} style={{ position: 'relative', width: w, height: h, overflow: 'hidden', background: cartao ? '#2B211B' : hex(arte.fundo), touchAction: interativo ? 'none' : undefined }}>
-      {cartao ? (
-        <CartaoCorpo arte={arte} interativo={interativo} selecionado={selecionado} onSelecionar={onSelecionar} onMoverCamada={onMoverCamada} escala={escala} grao={grao} />
-      ) : (
-        <ArrastoCtx.Provider value={{ arte, alca, selecionado, interativo }}>
-          <T.Corpo a={arte} Bloco={Bloco} />
-        </ArrastoCtx.Provider>
-      )}
-      <Emojis a={arte} />
-      {arte.assinatura && <div style={{ position: 'absolute', left: 64, bottom: 36, maxWidth: w - 128, padding: '8px 16px', fontFamily: 'Arial, sans-serif', fontSize: 28, lineHeight: 1.2, color: '#2B211B', background: '#F4EFE7', whiteSpace: 'pre-wrap' }}>{arte.assinatura}</div>}
-      {contador && (
-        <div style={{ position: 'absolute', right: 70, top: 56, fontFamily: FONTE_DETALHE, fontSize: 40, color: hex(['cafe', 'tinta', 'terracota'].includes(arte.fundo) ? 'creme' : 'cafe') }}>{contador}</div>
-      )}
-      {interativo && arte.emojis.map((e, i) => (
-        <div key={i} data-elemento={`emoji:${i}`} {...alca(`emoji:${i}`, e.x, e.y)} style={{ position: 'absolute', left: e.x, top: e.y, width: e.tam, height: e.tam, cursor: 'move', touchAction: 'none', outline: selecionado === `emoji:${i}` ? '4px dashed #F97316' : 'none' }} />
-      ))}
-    </div>
-  )
-}
-
-const Cores = ({ valor, onChange }) => (
-  <div className="flex flex-wrap gap-1.5">
-    {Object.entries(CORES).map(([k, c]) => (
-      <button key={k} type="button" title={c.nome} aria-label={c.nome} aria-pressed={valor === k} onClick={() => onChange(k)} className="w-11 h-11 flex items-center justify-center rounded-full">
-        <span className={`block w-7 h-7 rounded-full border ${valor === k ? 'ring-2 ring-offset-1 ring-orange-500' : 'border-gray-300'}`} style={{ background: c.hex }} />
-      </button>
-    ))}
-  </div>
-)
-
-const Campo = ({ rotulo, children }) => (
-  <label className="block">
-    <span className="block text-xs font-medium text-gray-500 mb-1">{rotulo}</span>
-    {children}
-  </label>
-)
-
-const Faixa = ({ rotulo, valor, min, max, passo = 1, onChange }) => (
-  <Campo rotulo={`${rotulo}: ${valor}`}>
-    <input type="range" min={min} max={max} step={passo} value={valor} onChange={(e) => onChange(Number(e.target.value))} className="w-full" />
-  </Campo>
-)
-
-
 
 export default function ArteStudio() {
   const { projeto, setProjeto, navegar, reset, desfazer, refazer, podeDesfazer, podeRefazer, iniciarGrupo, encerrarGrupo } = useHistorico(PROJETO_INICIAL)
@@ -600,18 +451,7 @@ export default function ArteStudio() {
 
   // Lista com todos os modelos: trocar aqui leva o título, o texto e a foto do slide para o modelo escolhido.
   const trocarPelaLista = (id) => (!cartao && id in TEMPLATES ? trocarTemplate(id) : aplicarModelo(id, 'atual'))
-  const seletorModelo = (
-    <select value={cartao ? `cartao:${arte.cartao}` : arte.template} onChange={(e) => trocarPelaLista(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" aria-label="Modelo">
-      {Object.entries(CATEGORIAS).map(([cat, nome]) => (
-        <optgroup key={cat} label={nome}>
-          {CARTOES.filter((k) => k.categoria === cat).map((k) => <option key={k.id} value={`cartao:${k.id}`}>{k.nome}</option>)}
-        </optgroup>
-      ))}
-      <optgroup label="Base do Studio">
-        {Object.entries(TEMPLATES).map(([k, t]) => <option key={k} value={k}>{t.nome}</option>)}
-      </optgroup>
-    </select>
-  )
+  const seletorModelo = <SeletorModelo arte={arte} cartao={cartao} trocarPelaLista={trocarPelaLista} />
 
   // Miniaturas de todos os modelos já com o título, o texto e a foto deste slide.
   const modeloAtual = cartao ? `cartao:${arte.cartao}` : arte.template
@@ -621,80 +461,15 @@ export default function ArteStudio() {
     .filter((it) => categoriaAtual === 'todas' || it.categoria === categoriaAtual)
     .map((it) => ({ it, slide: aliviar(levarConteudo(arteAdiada, it.id.startsWith('cartao:') ? novoCartao(it.id.slice(7)) : novoSlide(it.id))) })),
   [itensGaleria, categoriaAtual, arteAdiada])
-  const chipVisual = (ativo) => `shrink-0 px-2.5 py-1.5 rounded-full text-xs border ${ativo ? 'bg-orange-700 border-orange-700 text-white' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`
-  const seletorVisual = (
-    <div className="rounded-xl border border-gray-200 p-3 space-y-2" aria-label="Modelos com o seu texto">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold text-gray-900">Modelos com o seu texto</span>
-        <span className="text-xs text-gray-500">{previas.length} {previas.length === 1 ? 'modelo' : 'modelos'}</span>
-      </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        <button type="button" className={chipVisual(categoriaAtual === 'todas')} onClick={() => setCatVisual('todas')}>Todas</button>
-        {Object.entries({ ...CATEGORIAS, base: 'Base do Studio' }).map(([k, nome]) => (
-          <button key={k} type="button" className={chipVisual(categoriaAtual === k)} onClick={() => setCatVisual(k)}>{nome}</button>
-        ))}
-      </div>
-      <div className="grid gap-2 max-h-80 overflow-y-auto pr-1" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))' }}>
-        {previas.map(({ it, slide }) => {
-          const t = tamanho(slide, 'feed')
-          const k = 92 / t.w
-          return (
-            <button key={it.id} type="button" data-escolha={it.id} onClick={() => trocarPelaLista(it.id)} title={it.nome} className="text-left group" style={{ contentVisibility: 'auto', containIntrinsicSize: '92px 140px' }}>
-              <div className={`rounded-md overflow-hidden ring-1 ${it.id === modeloAtual ? 'ring-2 ring-orange-500' : 'ring-gray-200 group-hover:ring-orange-300'}`} style={{ width: 92, height: t.h * k }}>
-                <div style={{ transform: `scale(${k})`, transformOrigin: 'top left', pointerEvents: 'none' }}>
-                  <Canvas arte={slide} formato="feed" interativo={false} grao={false} />
-                </div>
-              </div>
-              <span className="block mt-1 text-[11px] leading-tight text-gray-700 line-clamp-2">{it.nome}</span>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
+  const seletorVisual = <SeletorVisual previas={previas} categoriaAtual={categoriaAtual} setCatVisual={setCatVisual} modeloAtual={modeloAtual} trocarPelaLista={trocarPelaLista} />
 
-  const painelEmojis = (
-    <Campo rotulo="Emojis (clique para adicionar e arraste na arte)">
-      <div className="flex flex-wrap gap-1 mb-2 max-h-28 overflow-y-auto">
-        {EMOJIS.map((cod) => (
-          <button key={cod} type="button" aria-label={`Adicionar emoji: ${EMOJI_NOMES[cod]}`} title={EMOJI_NOMES[cod]} onClick={() => mudar({ emojis: [...arte.emojis, { cod, x: w / 2 - 50, y: h / 2 - 50, tam: 100 }] })} className="w-11 h-11 rounded-md border border-gray-200 hover:bg-gray-50 p-1.5">
-            <img src={emojiUrl(cod)} alt="" className="w-full h-full" />
-          </button>
-        ))}
-      </div>
-      {arte.emojis.map((e, i) => (
-        <div key={i} className="flex items-center gap-2 mb-1">
-          <img src={emojiUrl(e.cod)} alt="" className="w-5 h-5" />
-          <input type="range" aria-label={`Tamanho do emoji ${i + 1}`} min={40} max={260} value={e.tam} onChange={(ev) => mudar({ emojis: arte.emojis.map((x, j) => (j === i ? { ...x, tam: Number(ev.target.value) } : x)) })} className="flex-1" />
-          <input type="range" min={-30} max={30} value={e.giro ?? 0} onChange={(ev) => mudar({ emojis: arte.emojis.map((x, j) => (j === i ? { ...x, giro: Number(ev.target.value) } : x)) })} className="w-20" title="Girar" aria-label={`Girar emoji ${i + 1}`} />
-          <button type="button" aria-label={`Apagar emoji ${i + 1}`} onClick={() => mudar({ emojis: arte.emojis.filter((_, j) => j !== i) })} className="flex items-center justify-center min-h-11 min-w-11 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button>
-        </div>
-      ))}
-    </Campo>
-  )
+  const painelEmojis = <PainelEmojis arte={arte} w={w} h={h} mudar={mudar} />
 
   const camposSelecionados = useMemo(() => cartao && camadaSel >= 0 ? camposDaCamada(def, arte, camadaSel) : [], [cartao, def, arte.textos, camadaSel]) // eslint-disable-line react-hooks/exhaustive-deps
   const idsSelecionados = new Set(camposSelecionados.map((c) => c.id))
-  const renderCampoTexto = (c, compacto = false) => {
-    const valor = textosDe(def, arte)[c.id] ?? ''
-    return (
-      <Campo key={c.id} rotulo={c.rotulo}>
-        <textarea rows={Math.min(4, Math.max(1, valor.split('\n').length + (valor.length > 60 ? 1 : 0)))} value={valor} onChange={(e) => mudarTexto(c.id, e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" data-campo={c.id} />
-        {c.ajuda && <span className="block text-xs text-gray-400 mt-0.5">{c.ajuda}</span>}
-        {def.camadasTexto?.[c.id] != null && (
-          <span className="block mt-2 space-y-1">
-            <span className="block text-xs text-gray-600">Sobreposição com a pessoa recortada</span>
-            <select aria-label={`${c.rotulo}: sobreposição`} value={arte.camadas?.[def.camadasTexto[c.id]]?.plano ?? ''} onChange={(e) => mudarCamada(def.camadasTexto[c.id], { plano: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm">
-              <option value="">Ordem do modelo</option>
-              <option value="atras">Atrás da pessoa</option>
-              <option value="frente">Na frente da pessoa</option>
-            </select>
-            {!compacto && <button type="button" onClick={() => setSelecionado(`camada:${def.camadasTexto[c.id]}`)} className="min-h-11 text-xs text-orange-700 underline">Selecionar este texto na arte</button>}
-          </span>
-        )}
-      </Campo>
-    )
-  }
+  const renderCampoTexto = (c, compacto = false) => (
+    <CampoTexto key={c.id} c={c} compacto={compacto} def={def} arte={arte} mudarTexto={mudarTexto} mudarCamada={mudarCamada} setSelecionado={setSelecionado} />
+  )
   const camposTextoCartao = cartao ? def.campos.map((c) => renderCampoTexto(c)) : null
 
   return (
@@ -745,27 +520,7 @@ export default function ArteStudio() {
         <span className="self-center">Baixar todos gera um ZIP com os cards em ordem.</span>
       </div>
       {/* Slides do carrossel */}
-      <div className="flex items-end gap-3 mb-5 overflow-x-auto pb-2">
-        {slides.map((s, i) => {
-          const t = tamanho(s, formato)
-          return (
-            <button key={i} type="button" onClick={() => irPara(i)} className={`shrink-0 rounded-lg overflow-hidden border-2 ${i === atual ? 'border-orange-500' : 'border-transparent hover:border-gray-300'}`} style={{ width: t.w * 0.08, height: t.h * 0.08 }}>
-              <div style={{ transform: 'scale(0.08)', transformOrigin: 'top left', pointerEvents: 'none' }}>
-                <Canvas arte={s} formato={formato} contador={contadorDe(i)} interativo={false} grao={false} />
-              </div>
-            </button>
-          )
-        })}
-        <div className="flex flex-col gap-1 min-w-[144px]">
-          <button type="button" onClick={adicionar} className="flex items-center gap-1 min-h-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-gray-50"><Plus size={13} />Novo card</button>
-          <button type="button" onClick={duplicar} className="flex items-center gap-1 min-h-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-gray-50"><Copy size={13} />Duplicar</button>
-          <div className="flex gap-1">
-            <button type="button" aria-label="Mover card para antes" onClick={() => mudarOrdem(-1)} className="flex-1 min-h-11 min-w-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-gray-50">←</button>
-            <button type="button" aria-label="Mover card para depois" onClick={() => mudarOrdem(1)} className="flex-1 min-h-11 min-w-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-gray-50">→</button>
-            <button type="button" aria-label="Apagar card atual" onClick={apagar} disabled={slides.length < 2} className="flex items-center justify-center min-h-11 min-w-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-red-50 disabled:opacity-40"><Trash2 size={13} /></button>
-          </div>
-        </div>
-      </div>
+      <BarraCards slides={slides} formato={formato} atual={atual} irPara={irPara} contadorDe={contadorDe} adicionar={adicionar} duplicar={duplicar} mudarOrdem={mudarOrdem} apagar={apagar} />
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="relative shrink-0 rounded-xl border border-gray-200" style={{ width: w * escala, height: h * escala }} onDoubleClick={editarNaArte} onKeyDown={e => {
@@ -790,127 +545,22 @@ export default function ArteStudio() {
         </div>
 
         <div className="flex-1 w-full min-w-0 lg:max-w-sm flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[85vh] lg:overflow-y-auto">
-          <details className="rounded-xl border border-gray-200 p-3" open>
-            <summary className="text-sm font-semibold cursor-pointer py-2.5">Modelo e imagens</summary>
-        {/* Todas as fontes de imagem ficam junto ao modelo. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setGaleria(true)} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800"><LayoutGrid size={15} />Modelos de arte ({itensGaleria.length})</button>
-          {!cartao && <label className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
-            <ImagePlus size={15} />{arte.foto ? 'Trocar foto' : 'Colocar foto'}
-            <input type="file" accept="image/*" onChange={escolherFoto(null)} className="hidden" />
-          </label>}
-          {!cartao && <button type="button" onClick={() => abrirBanco(null)} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><Images size={15} />Do meu banco</button>}
-          {!cartao && arte.foto && <button type="button" onClick={() => mudar({ foto: '', recorte: '' })} className="flex items-center gap-1 min-h-11 px-2 text-sm text-gray-500 hover:text-red-600"><Trash2 size={14} />Apagar foto</button>}
-        </div>
-              {fotosCartao.length > 0 && (
-                <Campo rotulo={fotosCartao.length > 1 ? `Fotos (${fotosCartao.length})` : 'Foto'}>
-                  <div className="space-y-2">
-                    {fotosCartao.map((slot, i) => (
-                      <div key={slot} className="flex items-center gap-2">
-                        <span className="w-10 h-12 rounded-md bg-cover bg-center border border-gray-200 shrink-0" style={{ backgroundImage: `url('${urlFoto(def, arte, slot)}')` }} />
-                        <span className="text-xs text-gray-500 w-12 shrink-0">Foto {i + 1}</span>
-                        <label className="flex items-center min-h-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer">Trocar<input type="file" accept="image/*" onChange={escolherFoto(slot)} className="hidden" /></label>
-                        <button type="button" onClick={() => abrirBanco(slot)} className="min-h-11 px-2 py-1 text-xs rounded-md border border-gray-200 hover:bg-gray-50">Do banco</button>
-                        {arte.fotos?.[slot] && <button type="button" onClick={() => fotoOriginal(slot)} className="min-h-11 px-1 text-xs text-gray-500 hover:underline">Foto original</button>}
-                      </div>
-                    ))}
-                  </div>
-                  {def.cabeca && <span className="block text-xs text-gray-400 mt-1">Ao trocar a foto, o Studio recorta a pessoa de novo para a palavra ficar atrás da cabeça.</span>}
-                </Campo>
-              )}
-          </details>
+          <ModeloEImagens arte={arte} def={def} cartao={cartao} fotosCartao={fotosCartao} itensGaleria={itensGaleria} setGaleria={setGaleria} escolherFoto={escolherFoto} abrirBanco={abrirBanco} mudar={mudar} fotoOriginal={fotoOriginal} />
           <details className="rounded-xl border border-gray-200 p-3">
             <summary className="text-sm cursor-pointer py-2.5">Restaurar diagramação</summary>
             <div className="mt-2">          <button type="button" onClick={() => { mudarSlide((s) => restaurarPosicoes(s, ehCartao(s) ? undefined : TEMPLATES[s.template].padrao.pos)); setSelecionado(null) }} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><RotateCcw size={15} />Posições padrão</button>
               <p className="text-xs text-gray-500 mt-1">Volta só a posição dos elementos. Fonte, cor, tamanho e elementos apagados ficam como estão.</p></div>
           </details>
           <SugestoesLayout arte={arte} resultado={sugestoes[atual]} analisando={analisandoLayout != null || !!ocupado} onAnalisar={sugerirLayouts} onAplicar={aplicarSugestao} renderizar={s => renderLayout(s)} tamanho={s => tamanho(s, formato)} />
-          {!cartao && <details className="rounded-xl border border-gray-200 p-3 space-y-2" aria-label="Elementos da arte">
-            <summary className="text-sm font-semibold cursor-pointer py-2.5">Elementos da arte · adicionar ou restaurar texto</summary>
-            {Object.entries(NOMES_BLOCO).map(([id, nome]) => (
-              <div key={id} className="flex items-center gap-2">
-                <button type="button" onClick={() => setSelecionado(id)} className={`flex-1 text-left text-sm rounded px-2 py-1 min-h-11 ${selecionado === id ? 'bg-orange-100 text-orange-800' : 'hover:bg-gray-50'}`}>{nome}{arte.est?.[id]?.oculto ? ' (apagado)' : !arte[id] ? ' (vazio)' : ''}</button>
-                {arte.est?.[id]?.oculto ? <button type="button" onClick={() => { mudarEst(id, { oculto: false }); setSelecionado(id) }} className="min-h-11 px-1 text-xs text-orange-700">Restaurar {nome.toLowerCase()}</button> : <button type="button" aria-label={`Apagar ${nome.toLowerCase()}`} onClick={() => apagarElemento(id)} className="flex items-center justify-center min-h-11 min-w-11 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button>}
-              </div>
-            ))}
-            {['tarjas', 'caixa', 'selecao'].includes(arte.template) && <div className="flex items-center justify-between text-sm px-2 py-1"><span>Enfeites do modelo</span><button type="button" onClick={() => mudar({ semEnfeites: !arte.semEnfeites })} className="min-h-11 px-1 text-xs text-orange-700">{arte.semEnfeites ? 'Restaurar enfeites' : 'Apagar enfeites'}</button></div>}
-            {arte.foto && <button type="button" onClick={() => setSelecionado('foto')} className={`block w-full text-left text-sm rounded px-2 py-1 min-h-11 ${selecionado === 'foto' ? 'bg-orange-100 text-orange-800' : 'hover:bg-gray-50'}`}>Foto · tamanho e corte</button>}
-            {arte.emojis.map((e, i) => <div key={i} className="flex items-center gap-2"><button type="button" onClick={() => setSelecionado(`emoji:${i}`)} className="flex flex-1 items-center gap-2 min-h-11 text-sm px-2 py-1"><img src={emojiUrl(e.cod)} alt="" className="w-5 h-5" />Emoji {i + 1}</button><button type="button" aria-label={`Apagar emoji ${i + 1}`} onClick={() => apagarElemento(`emoji:${i}`)} className="flex items-center justify-center min-h-11 min-w-11 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button></div>)}
-          </details>}
+          {!cartao && <ElementosDaArte arte={arte} selecionado={selecionado} setSelecionado={setSelecionado} mudar={mudar} mudarEst={mudarEst} apagarElemento={apagarElemento} />}
 
           {!cartao && arte.foto && (!selecionado || selecionado === 'foto') && (
-            <div className="order-first rounded-xl border border-gray-200 p-4 space-y-3" aria-label="Editar foto">
-              <h2 className="text-sm font-semibold">Foto · tamanho, posição e corte</h2>
-              <Faixa rotulo="Tamanho da foto (%)" valor={arte.fotoZoom} min={10} max={400} onChange={(fotoZoom) => mudar({ fotoZoom })} />
-              <div className="grid grid-cols-2 gap-3">
-                <Faixa rotulo="Mover para os lados (px)" valor={arte.fotoDX ?? 0} min={-w} max={w} passo={5} onChange={(fotoDX) => mudar({ fotoDX })} />
-                <Faixa rotulo="Mover para cima/baixo (px)" valor={arte.fotoDY ?? 0} min={-h} max={h} passo={5} onChange={(fotoDY) => mudar({ fotoDY })} />
-              </div>
-              <p className="text-xs text-gray-500">Corte as bordas sem perder a foto original.</p>
-              <div className="grid grid-cols-2 gap-3">
-                {[['topo', 'Cortar em cima (%)'], ['base', 'Cortar embaixo (%)'], ['esquerda', 'Cortar à esquerda (%)'], ['direita', 'Cortar à direita (%)']].map(([lado, nome]) => (
-                  <Faixa key={lado} rotulo={nome} valor={arte.fotoCorte?.[lado] ?? 0} min={0} max={49} onChange={(v) => mudar({ fotoCorte: { ...arte.fotoCorte, [lado]: v } })} />
-                ))}
-              </div>
-              <Faixa rotulo="Véu (%)" valor={Math.round(arte.veu * 100)} min={0} max={60} onChange={(v) => mudar({ veu: v / 100 })} />
-              {(arte.template === 'caixa' || arte.template === 'cabecaCaixa') && <Faixa rotulo="Onde a foto começa (px)" valor={arte.corte} min={0} max={h - 100} passo={10} onChange={(corte) => mudar({ corte })} />}
-              <div className="flex flex-wrap gap-x-3 text-xs">
-                <button type="button" onClick={() => mudar({ fotoX: 50, fotoY: 30, fotoZoom: 100, fotoDX: 0, fotoDY: 0, fotoCorte: {} })} className="min-h-11 text-orange-700">Restaurar enquadramento</button>
-                {TEMPLATES[arte.template].recorta && <button type="button" onClick={() => gerarRecorte(arte.foto)} disabled={!!ocupado} className="flex items-center gap-1 min-h-11 disabled:opacity-40"><Scissors size={14} />Recortar pessoa (remover fundo)</button>}
-                <button type="button" onClick={() => apagarElemento('foto')} className="min-h-11 text-red-600">Apagar foto</button>
-              </div>
-            </div>
+            <PainelFoto arte={arte} w={w} h={h} mudar={mudar} gerarRecorte={gerarRecorte} apagarElemento={apagarElemento} ocupado={ocupado} />
           )}
 
           {emojiSelecionado && <div className="rounded-xl border border-orange-200 p-4 space-y-3"><h2 className="text-sm font-semibold">Emoji selecionado</h2><Faixa rotulo="Tamanho do emoji" valor={emojiSelecionado.tam} min={20} max={400} onChange={(tam) => mudar({ emojis: arte.emojis.map((e, i) => i === Number(selecionado.slice(6)) ? { ...e, tam } : e) })} /><button type="button" onClick={() => apagarElemento(selecionado)} className="text-sm text-red-600">Apagar emoji</button><button type="button" onClick={() => setSelecionado(null)} className="ml-3 text-sm text-gray-500">Fechar</button></div>}
           {camadaSel >= 0 ? (
-            <div className="order-first rounded-xl border border-orange-200 bg-orange-50/40 p-4 space-y-3" data-testid="painel-camada">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-gray-900 truncate">{descreverCamada(elCamada)}</span>
-                <button type="button" onClick={() => setSelecionado(null)} className="text-xs text-gray-500 hover:underline shrink-0">Fechar</button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50"><Trash2 size={14} />Apagar da arte</button>
-                <span className="text-xs text-gray-500">Ou pressione Delete após selecionar na arte.</span>
-              </div>
-              {camposSelecionados.length > 0 && <details className="space-y-2" aria-label="Texto selecionado"><summary className="text-xs cursor-pointer py-2.5">Edição alternativa e sobreposição</summary>
-                {camposSelecionados.map((c) => renderCampoTexto(c, true))}
-              </details>}
-              <Faixa rotulo="Tamanho (%)" valor={Math.round((camada.escala ?? 1) * 100)} min={20} max={300} onChange={(v) => mudarCamada(camadaSel, { escala: v / 100 })} />
-              <Campo rotulo="Fonte">
-                <select value={camada.fonte ?? ''} onChange={(e) => mudarCamada(camadaSel, { fonte: e.target.value || undefined })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
-                  <option value="">A do modelo</option>
-                  {Object.entries(FONTES).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
-                </select>
-              </Campo>
-              <details key={`ajustes:${arte.cartao}:${camadaSel}`} className="border-t border-orange-100 pt-2">
-                <summary className="min-h-11 flex items-center justify-between text-sm text-gray-700 cursor-pointer">Mais ajustes · cor e corte<ChevronDown size={16} /></summary>
-                <div className="space-y-3 pt-2">
-              <Campo rotulo="Cor do texto">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Cores valor={camada.cor} onChange={(cor) => mudarCamada(camadaSel, { cor })} />
-                  {camada.cor && <button type="button" onClick={() => mudarCamada(camadaSel, { cor: undefined })} className="text-xs text-gray-500 hover:underline">A do modelo</button>}
-                </div>
-              </Campo>
-              <details className="rounded-lg border border-gray-200 px-3 py-2 bg-white">
-                <summary className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"><Scissors size={14} />Cortar</summary>
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  {[['cima', 'Em cima'], ['baixo', 'Embaixo'], ['esq', 'Esquerda'], ['dir', 'Direita']].map(([k, r]) => (
-                    <Faixa key={k} rotulo={r} valor={camada.corte?.[k] ?? 0} min={0} max={90} onChange={(v) => mudarCamada(camadaSel, { corte: { ...(camada.corte ?? {}), [k]: v } })} />
-                  ))}
-                </div>
-                <button type="button" onClick={() => mudarCamada(camadaSel, { corte: undefined })} className="mt-2 text-xs text-gray-500 hover:underline">Desfazer corte</button>
-              </details>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => mudarCamada(camadaSel, { dx: 0, dy: 0, escala: 1 })} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"><RotateCcw size={14} />Voltar ao lugar</button>
-              </div>
-                </div>
-              </details>
-              {def.campos.length > camposSelecionados.length && <details key={`${arte.cartao}:${camadaSel}`} className="border-t border-orange-100 pt-2">
-                <summary className="min-h-11 flex items-center justify-between text-sm text-orange-800 cursor-pointer">Outros textos do modelo ({def.campos.length - camposSelecionados.length})<ChevronDown size={16} /></summary>
-                <div className="space-y-3 mt-2">{def.campos.filter((c) => !idsSelecionados.has(c.id)).map((c) => renderCampoTexto(c, true))}</div>
-              </details>}
-            </div>
+            <PainelCamada arte={arte} def={def} elCamada={elCamada} camadaSel={camadaSel} camada={camada} camposSelecionados={camposSelecionados} idsSelecionados={idsSelecionados} selecionado={selecionado} setSelecionado={setSelecionado} apagarElemento={apagarElemento} mudarCamada={mudarCamada} renderCampoTexto={renderCampoTexto} />
           ) : cartao ? (
             <>
               <div className="rounded-xl border border-gray-200 p-3 flex items-center justify-between gap-3">
@@ -939,35 +589,7 @@ export default function ArteStudio() {
               {painelEmojis}
             </>
           ) : selecionado && NOMES_BLOCO[selecionado] ? (
-            <div className="order-first rounded-xl border border-orange-200 bg-orange-50/40 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-900">{NOMES_BLOCO[selecionado]}</span>
-                <button type="button" onClick={() => setSelecionado(null)} className="text-xs text-gray-500 hover:underline">Fechar</button>
-              </div>
-              <details><summary className="text-xs cursor-pointer py-2.5">Editar texto vazio ou oculto</summary><textarea rows={3} value={arte[selecionado]} onChange={(e) => mudar({ [selecionado]: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" /></details>
-                <Campo rotulo="Fonte">
-                  <select value={est.fonte ?? (selecionado === 'titulo' || (selecionado === 'texto' && arte.template === 'atrasCabeca') ? arte.fonteTitulo : selecionado === 'detalhe' ? 'kinder' : 'inter')} onChange={(e) => mudarEst(selecionado, { fonte: e.target.value })} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
-                    {Object.entries(FONTES).map(([k, f]) => <option key={k} value={k}>{f.nome}</option>)}
-                  </select>
-                </Campo>
-              {est.oculto ? <button type="button" onClick={() => mudarEst(selecionado, { oculto: false })} className="text-sm text-orange-700">Restaurar elemento</button> : <button type="button" onClick={() => apagarElemento(selecionado)} className="flex items-center gap-1 text-sm text-red-600"><Trash2 size={14} />Apagar elemento</button>}
-              <Faixa rotulo="Tamanho (px)" valor={est.tamanho ?? medirBloco(selecionado, 'tamanho', tamanhoPadrao[selecionado])} min={20} max={360} onChange={(tamanho) => mudarEst(selecionado, { tamanho })} />
-              <Faixa rotulo="Largura do bloco (px)" valor={est.largura ?? medirBloco(selecionado, 'largura', LARGURA_PADRAO[selecionado])} min={200} max={1040} passo={10} onChange={(largura) => mudarEst(selecionado, { largura })} />
-              <div className="flex gap-1">
-                {[['left', AlignLeft, 'Alinhar à esquerda'], ['center', AlignCenter, 'Centralizar'], ['right', AlignRight, 'Alinhar à direita']].map(([v, Icone, nome]) => (
-                  <button key={v} type="button" aria-label={nome} title={nome} aria-pressed={est.alinhar === v} onClick={() => mudarEst(selecionado, { alinhar: v })} className={`flex items-center justify-center min-h-11 min-w-11 rounded-lg border ${est.alinhar === v ? 'border-orange-500 bg-white' : 'border-gray-200'}`}><Icone size={15} /></button>
-                ))}
-              </div>
-              <Campo rotulo="Cor do texto">
-                <Cores valor={selecionado === 'titulo' ? arte.corTitulo : selecionado === 'texto' ? (arte.template === 'tarjas' ? est.cor ?? (arte.semEnfeites ? arte.corTexto : 'creme') : arte.corTexto) : est.cor ?? arte.corDestaque} onChange={(c) => selecionado === 'texto' ? mudarSlide(s => ({ ...s, corTexto: c, est: { ...s.est, texto: { ...s.est?.texto, cor: c } } })) : selecionado === 'titulo' ? mudar({ corTitulo: c }) : mudarEst('detalhe', { cor: c })} />
-              </Campo>
-              {arte.template === 'tarjas' && ['titulo', 'texto'].includes(selecionado) && <Campo rotulo={selecionado === 'titulo' ? 'Cor da tarja' : 'Cor do bloco'}>
-                <Cores valor={selecionado === 'titulo' ? arte.corTarja : est.fundo ?? arte.corDestaque} onChange={cor => {
-                  if (selecionado === 'titulo') mudar({ corTarja: cor, semEnfeites: false })
-                  else mudarSlide(s => ({ ...s, semEnfeites: false, est: { ...s.est, texto: { ...s.est?.texto, fundo: cor } } }))
-                }} />
-              </Campo>}
-            </div>
+            <PainelBloco arte={arte} selecionado={selecionado} est={est} setSelecionado={setSelecionado} mudar={mudar} mudarEst={mudarEst} mudarSlide={mudarSlide} apagarElemento={apagarElemento} medirBloco={medirBloco} tamanhoPadrao={tamanhoPadrao} />
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
