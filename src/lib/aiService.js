@@ -284,6 +284,17 @@ export async function instagramFetchPosts(accessToken, limit = 25) {
   return data
 }
 
+export async function instagramListMedia(accessToken, limit = 30) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-list-media', accessToken, limit }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data.posts ?? []
+}
+
 export async function instagramFetchComments(accessToken, mediaId) {
   const res = await fetch('/api/ai', {
     method: 'POST',

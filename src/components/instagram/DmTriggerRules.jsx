@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Zap, Plus, Save, Trash2, Loader2, AlertCircle, Check } from 'lucide-react'
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase'
+import PostPicker from './PostPicker'
 
 const EVENT_TYPE_LABEL = { comment: 'Comentário', message: 'Mensagem direta', story_reply: 'Resposta de story', mention: 'Menção' }
 const MATCH_MODE_LABEL = {
@@ -10,7 +11,7 @@ const MATCH_MODE_LABEL = {
   first_message: 'Primeira mensagem do contato',
 }
 const MATCH_MODE_HELP = {
-  any_comment_on_post: 'Precisa do ID do post/reel — pega esse ID nos detalhes do post (via api/contacts ou no painel do Instagram).',
+  any_comment_on_post: 'Precisa do ID do post/reel. Use "Escolher da lista de publicações" para preencher sozinho.',
   keyword_exact: 'O texto do comentário/mensagem precisa ser exatamente essa palavra/frase (sem diferenciar maiúsculas).',
   keyword_partial: 'Dispara se essa palavra aparecer em qualquer parte do texto.',
   first_message: 'Dispara só na primeira vez que esse contato manda mensagem — ignorado se ele já existe na base.',
@@ -90,7 +91,7 @@ export default function DmTriggerRules() {
     if (responseType === 'message' && !form.response_text.trim()) { setFormError('Escreve a mensagem de resposta ou troca pra "Fluxo completo".'); return }
     if (responseType === 'flow' && !form.flow_id) { setFormError('Escolhe um fluxo ou troca pra "Mensagem simples".'); return }
     if (form.match_mode === 'any_comment_on_post' && !form.post_id.trim()) { setFormError('Esse modo precisa do ID do post.'); return }
-    if (form.match_mode === 'any_comment_on_post' && !/^\d+$/.test(form.post_id.trim())) { setFormError('O ID do post é só números (ex: 18146854624569957). Link e nome do post não funcionam. O ID aparece no campo media do payload de um comentário em ig_events.'); return }
+    if (form.match_mode === 'any_comment_on_post' && !/^\d+$/.test(form.post_id.trim())) { setFormError('O ID do post é só números (ex: 18146854624569957). Link e nome do post não funcionam. Use "Escolher da lista de publicações".'); return }
     if ((form.match_mode === 'keyword_exact' || form.match_mode === 'keyword_partial') && !form.match_value.trim()) { setFormError('Escreve a palavra-chave.'); return }
 
     setFormError(null)
@@ -219,6 +220,7 @@ export default function DmTriggerRules() {
             <div>
               <label className="label">ID do post/reel</label>
               <input className="input" value={form.post_id} onChange={(e) => setField('post_id', e.target.value)} placeholder="Ex: 17895..." />
+              <PostPicker value={form.post_id.trim()} onSelect={(post) => setField('post_id', post.id)} />
             </div>
           )}
           {(form.match_mode === 'keyword_exact' || form.match_mode === 'keyword_partial') && (
