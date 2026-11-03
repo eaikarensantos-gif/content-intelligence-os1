@@ -520,7 +520,7 @@ export default function ArteStudio() {
       )}
 
       <VisaoGeral key={slides.length + ':' + (projeto.bibliotecaId || '')} projeto={projeto} bloqueado={!!ocupado} renderizar={(s, i) => renderProjeto(projeto, s, i)} tamanho={s => tamanho(s, formato)} onAbrir={i => { irPara(i); node.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} onReordenar={(de, para) => setProjeto(p => reordenarProjeto(p, de, para))} onLote={(indices, ajustes) => { setProjeto(p => aplicarEmLote(p, indices, ajustes)); setAviso('Ajustes aplicados. Revise o carrossel antes de exportar.'); }} onExportar={indices => revisarExportacao([...indices].sort((a, b) => a - b), 'zip')} />
-      <PacotePublicacao projeto={projeto} bloqueado={!!ocupado} onLegenda={(legenda) => mudarPacote({ legenda })} onGate={mudarGate} onAlt={mudarAlt} />
+      <PacotePublicacao projeto={projeto} bloqueado={!!ocupado} onLegenda={(legenda) => mudarPacote({ legenda })} onGate={mudarGate} onAlt={mudarAlt} onPublicacao={(publicacao) => mudarProjeto({ publicacao })} />
       <RevisaoFinal revisao={revisao} atual={projeto} bloqueado={!!ocupado} onAbrir={irPara} onCorrigir={corrigirRevisao} onRevisar={() => revisarExportacao(revisao.indices, revisao.formato, false)} onBaixar={() => baixarRevisao(revisao)} />
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label className="flex gap-2 items-center min-h-11"><input type="checkbox" checked={guiasAtivas} onChange={e => { setGuiasAtivas(e.target.checked); setGuias([]) }} />Guias e alinhamento automático</label>

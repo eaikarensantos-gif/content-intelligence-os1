@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { gerarLegenda, TIPOS_LEGENDA } from './legendaCarrossel'
+import ResultadoDoPost from './ResultadoDoPost'
 import { GATES, LIMITE_ALT, LIMITE_LEGENDA, colchetes, gatesConferidos, pacoteDe, sugerirAlt } from './pacotePublicacao'
 
 const campo = 'w-full border border-gray-200 rounded-lg px-2 py-2 text-sm'
 
 /** Legenda, texto alternativo de cada card e checklist dos gates: tudo o que sai junto com o carrossel. */
-export default function PacotePublicacao({ projeto, bloqueado, onLegenda, onGate, onAlt }) {
+export default function PacotePublicacao({ projeto, bloqueado, onLegenda, onGate, onAlt, onPublicacao }) {
   const [tipo, setTipo] = useState('geral')
   const [gerando, setGerando] = useState(false)
   const [erro, setErro] = useState('')
@@ -88,6 +89,8 @@ export default function PacotePublicacao({ projeto, bloqueado, onLegenda, onGate
             </label>
           ))}
         </section>
+
+        <ResultadoDoPost publicacao={projeto.publicacao} onPublicacao={onPublicacao} />
 
         <p className="text-xs text-gray-500">Baixar todos (ZIP) leva legenda.txt e alt-text.txt junto, quando estiverem preenchidos.</p>
       </div>

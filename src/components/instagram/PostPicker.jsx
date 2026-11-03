@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Images, Loader2, X } from 'lucide-react'
-import { getConnection } from '../../lib/instagramAuth'
+import { tokenParaUso } from '../../lib/instagramAuth'
 import { instagramListMedia } from '../../lib/aiService'
 import { legendaCurta } from '../../lib/igMedia'
 
 const formatarData = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : 'sem data')
 
 /** Lista as publicações do Instagram conectado e devolve a escolhida pelo ID, sem a pessoa precisar caçar o número. */
-export default function PostPicker({ value, onSelect }) {
+export default function PostPicker({ value, onSelect, descricao = 'As 30 publicações mais recentes. Clique na que vai disparar a regra.' }) {
   const [aberto, setAberto] = useState(false)
   const [carregando, setCarregando] = useState(false)
   const [posts, setPosts] = useState(null)
@@ -17,12 +17,11 @@ export default function PostPicker({ value, onSelect }) {
   const abrir = async () => {
     setAberto(true)
     setErro('')
-    const conexao = getConnection()
-    if (!conexao?.accessToken) { setErro('O Instagram não está conectado neste navegador. Conecte em Configurações para listar as publicações.'); return }
-    if (conexao.expiresAt && conexao.expiresAt < Date.now()) { setErro('O token do Instagram expirou. Reconecte em Configurações para listar as publicações.'); return }
+    const { token, erro: semToken } = tokenParaUso()
+    if (semToken) { setErro(semToken); return }
     setCarregando(true)
     try {
-      setPosts(await instagramListMedia(conexao.accessToken, 30))
+      setPosts(await instagramListMedia(token, 30))
     } catch (err) {
       setErro(err.message || 'Não foi possível listar as publicações.')
     } finally {
@@ -41,7 +40,7 @@ export default function PostPicker({ value, onSelect }) {
       {aberto && (
         <div className="mt-2 rounded-xl border border-gray-200 p-3 space-y-3" aria-label="Publicações do Instagram">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-gray-500">As 30 publicações mais recentes. Clique na que vai disparar a regra.</p>
+            <p className="text-xs text-gray-500">{descricao}</p>
             <button type="button" onClick={() => setAberto(false)} aria-label="Fechar a lista" className="flex items-center justify-center min-h-11 min-w-11 text-gray-500 hover:text-gray-900"><X size={16} /></button>
           </div>
 
