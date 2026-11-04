@@ -4,10 +4,11 @@ export const SOCIAL_LABELS = { reels: 'Reels', stories: 'Stories', linkedin: 'Li
 export const SOCIAL_STRUCTURES = {
   trabalho: {
     reels: {
-      demonstracao: structure('Demonstração', ['Resultado visível', 'Problema', 'Execução', 'Resultado observado', 'Limite e aplicação']),
-      diagnostico: structure('Diagnóstico', ['Sintoma', 'Mecanismo', 'Exemplo', 'Correção', 'Conclusão']),
-      caso: structure('Caso de decisão', ['Situação e restrições', 'Alternativas', 'Decisão', 'Consequência documentada', 'Aprendizado e limite'], true),
-      tese: structure('Tese argumentada', ['Posição', 'Fundamento', 'Exemplo ou evidência', 'Contraponto', 'Conclusão']),
+      conversa: structure('Conversa prática', ['Abertura', 'Contexto', 'Como começar', 'Como continuar', 'Fechamento e CTA']),
+      demonstracao: structure('Demonstração', ['Abertura', 'Problema e contexto', 'Execução', 'O que observar', 'Fechamento e CTA']),
+      diagnostico: structure('Diagnóstico', ['Abertura', 'Sintoma e contexto', 'Hipótese e exemplo', 'Como investigar ou corrigir', 'Fechamento e CTA']),
+      caso: structure('Caso de decisão', ['Abertura', 'Situação e alternativas', 'Decisão ou questão em aberto', 'Consequência documentada ou próximo passo', 'Fechamento e CTA'], true),
+      tese: structure('Tese argumentada', ['Abertura', 'Posição e contexto', 'Fundamento e exemplo', 'Contraponto e aplicação', 'Fechamento e CTA']),
     },
     stories: {
       bastidor: structure('Bastidor', ['Situação atual', 'Escolha', 'Detalhe da execução', 'Consequência']),
@@ -77,7 +78,7 @@ Não invente números, estudos, fontes, falas, clientes, depoimentos, resultados
 Use só os fatos fornecidos. Exemplos hipotéticos profissionais devem ser identificados como tal, nunca tratados como prova.
 Quando faltar um fato indispensável, marque [Detalhe real necessário] e descreva a lacuna em pendencias.
 Não apresente hipóteses editoriais como regras oficiais do algoritmo. Não prometa viralização.
-Conclusão deve responder à abertura; perguntas, hashtags e chamadas à ação são opcionais. Não exija comentários.
+Conclusão deve responder à abertura; perguntas e hashtags são opcionais. O CTA é obrigatório nos Reels do Studio de Criação e opcional nos demais formatos. Não exija comentários.
 Cada bloco acrescenta uma informação, ação, detalhe ou consequência. Não repita a mesma tese com palavras diferentes.`
 
 export function socialPersonaRules(persona) {
@@ -87,7 +88,7 @@ export function socialPersonaRules(persona) {
 }
 
 export function socialFormatRules(format) {
-  if (format === 'reels') return `REELS: planeje cenas filmáveis. A abertura combina imagem e fala. Separe fala, ação, texto na tela e mídia. Estime tempo incluindo pausas e demonstração, a cerca de 2,5 palavras faladas por segundo. Esse cálculo é estimativa, não uma medição real nem duração ideal universal. Não force cortes, música ou CTA.
+  if (format === 'reels') return `REELS: planeje cenas filmáveis. A abertura combina imagem e fala. Separe fala, ação, texto na tela e mídia. Estime tempo incluindo pausas e demonstração, a cerca de 2,5 palavras faladas por segundo. Esse cálculo é estimativa, não uma medição real nem duração ideal universal. Não force cortes ou música.
 FALA PARA GRAVAR: escreva primeiro uma conversa contínua em voz alta, depois distribua pelas cenas. Os nomes das funções organizam a produção; não são o vocabulário da fala. Cada cena continua o raciocínio anterior, sem reabrir o assunto nem recapitular o relato.
 Fale como quem explica uma situação a um par: palavras comuns, verbos concretos, referências claras e frases conectadas. Varie a extensão conforme o raciocínio, sem frases picotadas de coach ou alternância mecânica. Não simule espontaneidade enchendo de "né", "olha", "gente" ou "o ponto é". Não force gíria, pergunta retórica ou metáfora.
 Troque a voz de parecer ("o resultado relatado foi", "ausência de reconhecimento", "esse relato não demonstra a causa") por formulações faláveis que preservem a precisão: "Pelo que essa pessoa contou...", "ela esperava que o trabalho fosse reconhecido", "Só com isso, eu não sei por que a decisão foi essa". São exemplos de registro, não frases obrigatórias nem fatos para reutilizar.
@@ -98,6 +99,13 @@ REVISÃO ANTES DE ENTREGAR: leia somente as falas em sequência, ignorando cabe�
   if (format === 'stories') return 'STORIES: cada frame tem função, mídia, ação, fala e texto na tela distintos. Texto na tela curto e legível. Interação nativa é opcional, somente quando ajuda o objetivo; não existe obrigação de um sticker nem posição obrigatória. Descreva pergunta e opções quando usar enquete. Link apenas se houver destino fornecido, usando sticker de link. Nunca usar arraste para cima, inventar respostas ou resultados de enquete.'
   return `LINKEDIN: escolha post em texto ou roteiro de documento, nunca confunda com artigo. Abertura específica, desenvolvimento com exemplo/fundamento e conclusão. Pergunta e hashtags opcionais. Post em texto: orçamento editorial de ${LINKEDIN_EDITORIAL_LIMIT} caracteres incluindo CTA, sem alongar para atingir contagem de palavras. Documento: uma página por função, título, conteúdo e direção visual por página; a legenda complementa. Mantenha o modo pessoal quando selecionado.`
 }
+
+export const PROFESSIONAL_REEL_RULES = `REELS DO STUDIO DE CRIAÇÃO — ABERTURA E CTA OBRIGATÓRIOS:
+Cena 1: a fala apresenta uma situação reconhecível e deixa claro o assunto e o que a conversa vai ajudar a fazer. Pode começar com uma pergunta concreta que será respondida. Não comece no meio de um caso com "segundo o relato" sem situar quem está ouvindo. Evite curiosidade vazia, promessa de revelação e frases de impacto.
+Cenas intermediárias: desenvolva uma conversa com contexto, exemplo e aplicação. O material pode ter uma questão sem resposta; não invente execução, decisão ou resultado só para preencher a estrutura. Uma proposta deve soar como proposta, e uma pergunta continua pergunta.
+Última cena: feche o raciocínio e inclua na FALA um único CTA específico, com ação e utilidade ligadas ao vídeo. Por exemplo, salvar as perguntas para preparar uma conversa, testar o passo explicado ou enviar a alguém que esteja naquela situação. Escolha conforme o assunto; não copie sempre o mesmo CTA. Não termine só com ressalva, resumo ou "próximo marco". Não use "concorda?", "vamos juntos?", pedidos genéricos de engajamento ou oferta/link/material que não foi fornecido.
+O texto na tela da última cena acompanha essa ação. O CTA falado conta na duração total; mantenha o campo cta separado vazio para não duplicá-lo. O encerramento faz parte da conversa, sem mudar para voz de anúncio.
+Leia as falas em sequência: há um começo compreensível sem contexto anterior, desenvolvimento conectado e uma ação útil no final? Se faltar um deles, reescreva antes de entregar.`
 
 export function socialSchema(options) {
   const roles = getSocialStructure(options).roles
@@ -114,6 +122,7 @@ export function socialSchema(options) {
 export function buildSocialPrompt(options) {
   const selected = getSocialStructure(options)
   return `${SOCIAL_RULES}\n${socialPersonaRules(options.persona)}\n${socialFormatRules(options.format)}
+${options.format === 'reels' && options.persona === 'trabalho' ? PROFESSIONAL_REEL_RULES : ''}
 FORMATO: ${SOCIAL_LABELS[options.format]}
 ESTRUTURA: ${selected.label}
 OBJETIVO: ${options.goal}
@@ -153,6 +162,10 @@ export function validateSocialResult(result, options) {
     }
   })
   if (options.format === 'reels' && result.blocos.reduce((sum, b) => sum + b.segundos, 0) > options.duration) fail('As cenas ultrapassam a duração escolhida.')
+  if (options.format === 'reels' && options.persona === 'trabalho') {
+    if (!nonempty(result.blocos[0].fala) || !nonempty(result.blocos.at(-1).fala)) fail('A abertura e o fechamento com CTA precisam estar na fala.')
+    if (result.cta.trim()) fail('Inclua o CTA na fala da última cena, sem duplicar no campo separado.')
+  }
   if (options.format === 'linkedin' && options.presentation === 'texto' && socialPublishText(result, options).length > LINKEDIN_EDITORIAL_LIMIT) fail('O post ultrapassa o limite editorial de 2.800 caracteres.')
 }
 
@@ -162,7 +175,7 @@ export function socialTextPaths(result, options) {
     for (const key of ['titulo', 'texto', 'fala', 'texto_tela', 'interacao']) {
       if (nonempty(b[key])) paths.push({ path: ['blocos', i, key], short: key !== 'texto' && !(options?.format === 'reels' && key === 'fala'), isClosing: key !== 'interacao' && i === result.blocos.length - 1, label: `Bloco ${i + 1} · ${key}`,
         ...(options?.format === 'reels' && ['fala', 'texto_tela'].includes(key) ? { rewriteContext: key === 'fala'
-          ? 'Esta é uma fala de Reels, não um título. Preserve a oralidade, a continuidade do raciocínio, a atribuição e as incertezas. Use palavras comuns e frases conectadas. Corrija só o padrão sinalizado, sem transformar a fala em relatório, slogan ou frases picotadas. Perguntas concretas propostas para uma conversa devem manter seu sentido interrogativo; nunca vire uma pergunta em fato ocorrido.'
+          ? 'Esta é uma fala de Reels, não um título. Preserve a abertura que situa o assunto e o CTA concreto quando presentes; não substitua a ação sugerida por um resumo. Preserve a oralidade, a continuidade do raciocínio, a atribuição e as incertezas. Use palavras comuns e frases conectadas. Corrija só o padrão sinalizado, sem transformar a fala em relatório, slogan ou frases picotadas. Perguntas concretas propostas para uma conversa devem manter seu sentido interrogativo; nunca vire uma pergunta em fato ocorrido.'
           : 'Este é texto na tela de um Reels. Preserve o sentido, a atribuição e as incertezas. Perguntas concretas devem continuar perguntas; nunca invente respostas, decisões ou ações realizadas. A instrução de declaração direta só se aplica a frases declarativas, não a perguntas concretas.' } : {}),
       })
     }

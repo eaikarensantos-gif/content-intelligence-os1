@@ -16,6 +16,23 @@ function resultFor(options) {
 const cases = Object.entries(SOCIAL_STRUCTURES).flatMap(([persona, formats]) => Object.entries(formats).flatMap(([format, structures]) => Object.keys(structures).map(structure => ({ persona, format, structure }))))
 
 describe('native social contracts in both Studios', () => {
+  it('defaults professional Reels to a conversation with a spoken opening and CTA, keeping the CTA in the script once', () => {
+    const options = defaultSocialOptions('reels')
+    expect(options.structure).toBe('conversa')
+    const result = resultFor(options)
+    result.blocos[0].fala = 'Como retomar uma conversa sobre reconhecimento quando ela ficou sem resposta?'
+    result.blocos.at(-1).fala = 'Salve essas perguntas para preparar sua próxima conversa.'
+    expect(() => validateSocialResult(result, options)).not.toThrow()
+    expect(formatSocialScript(result, options).match(/Salve essas perguntas/g)).toHaveLength(1)
+    result.blocos.at(-1).fala = ''
+    expect(() => validateSocialResult(result, options)).toThrow('abertura e o fechamento')
+    result.blocos.at(-1).fala = 'Salve essas perguntas para preparar sua próxima conversa.'
+    result.cta = result.blocos.at(-1).fala
+    expect(() => validateSocialResult(result, options)).toThrow('sem duplicar')
+    result.cta = ''; result.blocos[0].fala = ''
+    expect(() => validateSocialResult(result, options)).toThrow('abertura e o fechamento')
+    expect(defaultSocialOptions('reels', 'pessoal').structure).toBe('cotidiano')
+  })
   it.each(cases)('$persona / $format / $structure keeps an executable contract and a distinct narrative', ({ persona, format, structure }) => {
     const options = { ...defaultSocialOptions(format, persona), structure, topic: 'Minha escolha', material: 'Fatos fornecidos pela autora.' }
     expect(() => validateSocialBrief(options)).not.toThrow()
