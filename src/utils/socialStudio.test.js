@@ -121,4 +121,18 @@ describe('native social contracts in both Studios', () => {
     expect(fields).toContain('fala'); expect(fields).toContain('texto_tela'); expect(fields).toContain('interacao')
     expect(fields).not.toContain('segundos'); expect(fields).not.toContain('funcao')
   })
+  it('routes Reel speech as connected prose and protects concrete questions during correction', () => {
+    const options = defaultSocialOptions('reels')
+    const result = resultFor(options)
+    result.blocos[2].fala = 'Eu começaria perguntando: quem decide e quais critérios entram nessa decisão?'
+    result.blocos[2].texto_tela = 'Quem decide? Quais critérios?'
+    const paths = socialTextPaths(result, options)
+    const speech = paths.find(p => p.path[1] === 2 && p.path[2] === 'fala')
+    expect(speech.short).toBe(false)
+    expect(speech.isClosing).toBe(false)
+    expect(speech.rewriteContext).toContain('nunca vire uma pergunta em fato ocorrido')
+    expect(paths.find(p => p.path[1] === 2 && p.path[2] === 'texto_tela').rewriteContext).toContain('nunca invente respostas')
+    expect(socialTextPaths(result, { format: 'stories' }).every(p => !p.rewriteContext)).toBe(true)
+    expect(formatSocialScript(result, options, false)).toContain('Fala: Eu começaria perguntando: quem decide')
+  })
 })

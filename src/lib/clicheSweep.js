@@ -300,7 +300,7 @@ export function countBlocks(findings) {
 // bloqueou, em vez de só sinalizar.
 
 /** Reescreve um texto corrido (content, caption, legenda) sem os padrões apontados. */
-export async function rewriteWithoutCliches(apiKey, text, hits) {
+export async function rewriteWithoutCliches(apiKey, text, hits, rewriteContext = '') {
   const list = hits.map(h => `- ${h.label}: "${h.match}"`).join('\n')
   const res = await fetch('/api/ai?action=openai', {
     method: 'POST',
@@ -310,7 +310,7 @@ export async function rewriteWithoutCliches(apiKey, text, hits) {
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
       max_tokens: 4000,
-      system: withManualOperacional(ANTI_AI_FILTER),
+      system: withManualOperacional(ANTI_AI_FILTER) + (rewriteContext ? `\nCONTEXTO ESPECÍFICO DESTA REESCRITA (preserve o sentido ao aplicar o filtro):\n${rewriteContext}` : ''),
       messages: [{
         role: 'user',
         content: `O texto abaixo saiu com padrões proibidos pelo filtro de autenticidade. Reescreva SOMENTE os trechos apontados, em declaração direta (sujeito + verbo + complemento, sem negação prévia, sem contraste corretivo, sem pergunta retórica no fechamento — fechamento é conclusão prática, dado ou observação seca). Mantenha todo o resto idêntico: estrutura, quebras de linha, indicações. Retorne APENAS o texto completo corrigido, sem comentários.\n\nPADRÕES ENCONTRADOS:\n${list}\n\nTEXTO:\n${text}`,
@@ -327,7 +327,7 @@ export async function rewriteWithoutCliches(apiKey, text, hits) {
    filtro. */
 export async function rewriteShortLines(apiKey, entries) {
   const list = entries.map((e, i) =>
-    `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}`
+    `${i + 1}. "${e.text}"\n   padrões: ${e.blocks.map(h => `${h.label} → "${h.match}"`).join('; ')}${e.rewriteContext ? `\n   Regra específica desta linha: ${e.rewriteContext}` : ''}`
   ).join('\n')
 
   const res = await fetch('/api/ai?action=openai', {
@@ -374,7 +374,7 @@ export async function sweepAndFixPaths(apiKey, obj, entriesFn, bannedWords = [])
     const shortOnes = findings.filter((f) => f.short)
 
     for (const f of longOnes) {
-      const rewritten = await rewriteWithoutCliches(apiKey, f.text, f.blocks)
+      const rewritten = await rewriteWithoutCliches(apiKey, f.text, f.blocks, f.rewriteContext)
       if (rewritten && rewritten !== f.text) { setByPath(obj, f.path, rewritten); fixed += f.blocks.length }
     }
 

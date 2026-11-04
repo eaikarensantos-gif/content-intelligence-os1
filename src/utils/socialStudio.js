@@ -87,7 +87,14 @@ export function socialPersonaRules(persona) {
 }
 
 export function socialFormatRules(format) {
-  if (format === 'reels') return 'REELS: planeje cenas filmáveis. A abertura combina imagem e fala. Separe fala, ação, texto na tela e mídia. Estime tempo incluindo pausas e demonstração, a cerca de 2,5 palavras faladas por segundo. Esse cálculo é estimativa, não uma medição real nem duração ideal universal. Não force cortes, música ou CTA.'
+  if (format === 'reels') return `REELS: planeje cenas filmáveis. A abertura combina imagem e fala. Separe fala, ação, texto na tela e mídia. Estime tempo incluindo pausas e demonstração, a cerca de 2,5 palavras faladas por segundo. Esse cálculo é estimativa, não uma medição real nem duração ideal universal. Não force cortes, música ou CTA.
+FALA PARA GRAVAR: escreva primeiro uma conversa contínua em voz alta, depois distribua pelas cenas. Os nomes das funções organizam a produção; não são o vocabulário da fala. Cada cena continua o raciocínio anterior, sem reabrir o assunto nem recapitular o relato.
+Fale como quem explica uma situação a um par: palavras comuns, verbos concretos, referências claras e frases conectadas. Varie a extensão conforme o raciocínio, sem frases picotadas de coach ou alternância mecânica. Não simule espontaneidade enchendo de "né", "olha", "gente" ou "o ponto é". Não force gíria, pergunta retórica ou metáfora.
+Troque a voz de parecer ("o resultado relatado foi", "ausência de reconhecimento", "esse relato não demonstra a causa") por formulações faláveis que preservem a precisão: "Pelo que essa pessoa contou...", "ela esperava que o trabalho fosse reconhecido", "Só com isso, eu não sei por que a decisão foi essa". São exemplos de registro, não frases obrigatórias nem fatos para reutilizar.
+Primeira pessoa pode apresentar uma leitura ou uma proposta ("eu começaria perguntando..."); nunca invente que Karen viveu, recebeu ou acompanhou o caso. Preserve atribuição e incertezas que mudam o sentido. Coloque detalhes a conferir em pendencias, sem transformar a conclusão numa lista de ressalvas técnicas. Não esconda uma lacuna necessária para sustentar a afirmação.
+TEXTO NA TELA: curto, complementar e coerente com a fala. Uma pergunta sobre quem decide continua uma pergunta; não vire afirmação de que a equipe decidiu ou alguém aprovou. Não acrescente fatos, decisões ou responsáveis que não constam do material.
+TEMPO: distribua segundos conforme a quantidade de fala e a ação, sem preencher todas as cenas com o mesmo tempo por imitação do JSON. Reduza palavras quando a fala não couber; não acelere artificialmente.
+REVISÃO ANTES DE ENTREGAR: leia somente as falas em sequência, ignorando cabeçalhos. Devem soar como uma conversa completa que Karen conseguiria gravar, sem tom de relatório, aula ou post pronto. Confira também fala versus texto na tela.`
   if (format === 'stories') return 'STORIES: cada frame tem função, mídia, ação, fala e texto na tela distintos. Texto na tela curto e legível. Interação nativa é opcional, somente quando ajuda o objetivo; não existe obrigação de um sticker nem posição obrigatória. Descreva pergunta e opções quando usar enquete. Link apenas se houver destino fornecido, usando sticker de link. Nunca usar arraste para cima, inventar respostas ou resultados de enquete.'
   return `LINKEDIN: escolha post em texto ou roteiro de documento, nunca confunda com artigo. Abertura específica, desenvolvimento com exemplo/fundamento e conclusão. Pergunta e hashtags opcionais. Post em texto: orçamento editorial de ${LINKEDIN_EDITORIAL_LIMIT} caracteres incluindo CTA, sem alongar para atingir contagem de palavras. Documento: uma página por função, título, conteúdo e direção visual por página; a legenda complementa. Mantenha o modo pessoal quando selecionado.`
 }
@@ -149,11 +156,15 @@ export function validateSocialResult(result, options) {
   if (options.format === 'linkedin' && options.presentation === 'texto' && socialPublishText(result, options).length > LINKEDIN_EDITORIAL_LIMIT) fail('O post ultrapassa o limite editorial de 2.800 caracteres.')
 }
 
-export function socialTextPaths(result) {
+export function socialTextPaths(result, options) {
   const paths = [{ path: ['titulo'], short: true, isClosing: false, label: 'Título' }]
   result.blocos.forEach((b, i) => {
     for (const key of ['titulo', 'texto', 'fala', 'texto_tela', 'interacao']) {
-      if (nonempty(b[key])) paths.push({ path: ['blocos', i, key], short: key !== 'texto', isClosing: key !== 'interacao' && i === result.blocos.length - 1, label: `Bloco ${i + 1} · ${key}` })
+      if (nonempty(b[key])) paths.push({ path: ['blocos', i, key], short: key !== 'texto' && !(options?.format === 'reels' && key === 'fala'), isClosing: key !== 'interacao' && i === result.blocos.length - 1, label: `Bloco ${i + 1} · ${key}`,
+        ...(options?.format === 'reels' && ['fala', 'texto_tela'].includes(key) ? { rewriteContext: key === 'fala'
+          ? 'Esta é uma fala de Reels, não um título. Preserve a oralidade, a continuidade do raciocínio, a atribuição e as incertezas. Use palavras comuns e frases conectadas. Corrija só o padrão sinalizado, sem transformar a fala em relatório, slogan ou frases picotadas. Perguntas concretas propostas para uma conversa devem manter seu sentido interrogativo; nunca vire uma pergunta em fato ocorrido.'
+          : 'Este é texto na tela de um Reels. Preserve o sentido, a atribuição e as incertezas. Perguntas concretas devem continuar perguntas; nunca invente respostas, decisões ou ações realizadas. A instrução de declaração direta só se aplica a frases declarativas, não a perguntas concretas.' } : {}),
+      })
     }
   })
   for (const key of ['legenda', 'cta']) if (nonempty(result[key])) paths.push({ path: [key], short: false, isClosing: false, label: key })
