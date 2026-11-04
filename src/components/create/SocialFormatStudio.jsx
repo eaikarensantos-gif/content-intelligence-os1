@@ -10,7 +10,7 @@ import { buildVoiceContext } from '../../utils/voiceContext'
 import {
   SOCIAL_LABELS, SOCIAL_STRUCTURES, SOCIAL_GOALS, SOCIAL_TONES, SOCIAL_PRODUCTION, SOCIAL_DURATIONS,
   defaultSocialOptions, getSocialStructure, validateSocialBrief, buildSocialPrompt, validateSocialResult,
-  socialTextPaths, reviewSocialResult, formatSocialScript, socialIdea, socialPublishText, PROFESSIONAL_REEL_RULES,
+  socialTextPaths, reviewSocialResult, formatSocialScript, socialIdea, socialPublishText, PROFESSIONAL_REEL_RULES, formatSocialDuration, socialGenerationTokenLimit,
 } from '../../utils/socialStudio'
 
 export function SocialFormatOutput({ result, options }) {
@@ -18,7 +18,7 @@ export function SocialFormatOutput({ result, options }) {
     <div className="space-y-3" data-testid={`social-output-${options.format}`}>
       <h3 className="font-semibold text-gray-900">{result.titulo}</h3>
       {options.format === 'reels' && <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 space-y-2"><h4 className="font-semibold text-sm">Fala completa</h4><p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{reelSpeechText(result)}</p></div>}
-      {options.format === 'reels' && <p className="text-xs text-gray-500">Duração estimada: {result.blocos.reduce((n, b) => n + b.segundos, 0)}s. Confira lendo em voz alta e incluindo as pausas.</p>}
+      {options.format === 'reels' && <p className="text-xs text-gray-500">Duração estimada: {formatSocialDuration(result.blocos.reduce((n, b) => n + b.segundos, 0))}. Confira lendo em voz alta e incluindo as pausas.</p>}
       {result.blocos.map(b => (
         <div key={b.numero} className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
           <p className="text-xs font-semibold text-violet-700">{options.format === 'reels' ? 'Cena' : options.format === 'stories' ? 'Frame' : options.presentation === 'documento' ? 'Página' : 'Bloco'} {b.numero} · {b.funcao}{b.segundos ? ` · ${b.segundos}s estimados` : ''}</p>
@@ -77,7 +77,7 @@ export default function SocialFormatStudio({ format, persona, topic, onTopicChan
       const request = async (prompt) => {
         const response = await fetch('/api/ai?action=openai', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key },
-          body: JSON.stringify({ model: 'gpt-5.6-terra', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 6500,
+          body: JSON.stringify({ model: 'gpt-5.6-terra', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: socialGenerationTokenLimit(snapshot),
             system,
             messages: [{ role: 'user', content: prompt }],
           }),
@@ -156,7 +156,7 @@ export default function SocialFormatStudio({ format, persona, topic, onTopicChan
             <select aria-label="Apresentação" className="input mt-1 w-full" value={draft.presentation} onChange={e => set('presentation', e.target.value)}><option value="texto">Post em texto</option><option value="documento">Roteiro de documento</option></select>
           </label>}
           {format === 'reels' && <label className="text-xs text-gray-600">Duração alvo
-            <select aria-label="Duração alvo" className="input mt-1 w-full" value={draft.duration} onChange={e => set('duration', Number(e.target.value))}>{SOCIAL_DURATIONS.map(value => <option key={value} value={value}>{value} segundos</option>)}</select>
+            <select aria-label="Duração alvo" className="input mt-1 w-full" value={draft.duration} onChange={e => set('duration', Number(e.target.value))}>{SOCIAL_DURATIONS.map(value => <option key={value} value={value}>{formatSocialDuration(value)}</option>)}</select>
           </label>}
         </div>
         <p className="text-xs text-gray-500">{selected.roles.join(' → ')}</p>
