@@ -338,11 +338,21 @@ export default function ArteStudio() {
     if (!entrada) return
     setOcupado(`Montando o carrossel que veio do ${entrada.origem}…`)
     setAviso('')
-    pedirArte(pedidoDeSlides(entrada.slides))
+    // O que estava no editor vira rascunho antes de o conteúdo novo ocupar o lugar. A entrada já foi consumida,
+    // então, se não der para guardar, o conteúdo novo entra do mesmo jeito e o anterior fica em "Voltar para a arte anterior".
+    let guardado = null
+    let falhouAoGuardar = false
+    guardarTrabalhoAtual()
+      .then(nome => { guardado = nome }, () => { falhouAoGuardar = true })
+      .then(() => pedirArte(pedidoDeSlides(entrada.slides)))
       .then(resposta => fixarTextos(resposta, entrada.slides), () => ({
         slides: entrada.slides.map(s => ({ template: 'corCheia', titulo: s.titulo, texto: s.texto })),
       }))
       .then(resposta => aplicarPedido(resposta))
+      .then(() => {
+        if (guardado) setNota(`O que estava no editor foi guardado como rascunho "${guardado}" em Artes salvas.`)
+        else if (falhouAoGuardar) setAviso('Não consegui guardar o que estava no editor como rascunho. Para recuperar, use "Voltar para a arte anterior" em Criar com IA.')
+      })
       .catch(err => setAviso(err?.message || 'Não foi possível diagramar os cards. Sua arte anterior foi mantida.'))
       .finally(() => setOcupado(''))
   }, [carregado]) // eslint-disable-line react-hooks/exhaustive-deps
