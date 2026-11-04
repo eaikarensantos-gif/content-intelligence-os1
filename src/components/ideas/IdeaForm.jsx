@@ -754,6 +754,12 @@ Responda EXCLUSIVAMENTE com JSON válido:
             )}
           </div>
 
+          {form.arte_id && (
+            <a href={`/arte?rascunho=${encodeURIComponent(form.arte_id)}`} className="inline-flex items-center min-h-11 text-sm text-orange-800 underline">
+              Abrir no Studio de Arte
+            </a>
+          )}
+
           {/* Descrição */}
           <div>
             <div className="flex items-center justify-between mb-1">

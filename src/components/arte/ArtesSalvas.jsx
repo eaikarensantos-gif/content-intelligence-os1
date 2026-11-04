@@ -4,7 +4,7 @@ import { plural } from './marca'
 import ResultadosPorModelo from './ResultadosPorModelo'
 import { arteSemConteudo, ehRascunho, nomeAutomatico } from './rascunhos'
 
-export default function ArtesSalvas({ projeto, bloqueado, guardados, onAbrir, onLimpar, onVincular }) {
+export default function ArtesSalvas({ projeto, bloqueado, guardados, onAbrir, onLimpar, onVincular, onSalvo }) {
   const [painel, setPainel] = useState('')
   const [nome, setNome] = useState('')
   const [artes, setArtes] = useState([])
@@ -18,6 +18,7 @@ export default function ArtesSalvas({ projeto, bloqueado, guardados, onAbrir, on
     const resultado = await salvarVersao(nomeFinal, { ...projeto, nomeArte: nomeFinal, rascunho })
     onVincular(resultado.versao.projetoId, nomeFinal, projeto, rascunho)
     guardados.current = projeto.slides
+    onSalvo?.(resultado.versao.projetoId, nomeFinal, projeto, rascunho)
     return resultado
   }
   const guardarRascunho = async () => {

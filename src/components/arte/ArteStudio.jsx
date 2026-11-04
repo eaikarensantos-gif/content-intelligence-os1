@@ -18,8 +18,9 @@ import ArtesSalvas from './ArtesSalvas'
 import EdicaoNaArte from './EdicaoNaArte'
 import VisaoGeral from './VisaoGeral'
 import PacotePublicacao from './PacotePublicacao'
-import { salvarVersao } from './projetosConta'
-import { arteSemConteudo, nomeAutomatico } from './rascunhos'
+import useStore from '../../store/useStore'
+import { carregarBiblioteca, salvarVersao } from './projetosConta'
+import { arteSemConteudo, nomeAutomatico, roteiroDosCards } from './rascunhos'
 import { arquivosDoPacote, pacoteDe } from './pacotePublicacao'
 import RevisaoFinal from './RevisaoFinal'
 import { revisarCards, gerarDownload, mesmaArte } from './exportacaoArte'
@@ -335,7 +336,7 @@ export default function ArteStudio() {
   useEffect(() => {
     if (!carregado) return
     const entrada = pegarEntrada()
-    if (!entrada) return
+    if (!entrada) { abrirRascunhoDaUrl(); return }
     setOcupado(`Montando o carrossel que veio do ${entrada.origem}…`)
     setAviso('')
     // O que estava no editor vira rascunho antes de o conteúdo novo ocupar o lugar. A entrada já foi consumida,
@@ -455,6 +456,37 @@ export default function ArteStudio() {
     guardados.current = atual.slides
     return nome
   }
+  // Rascunho e arte pronta ganham um card no Hub de Ideias (coluna Rascunhos), com link de volta para cá.
+  // O Studio é a fonte do roteiro e da legenda; o que a pessoa escreveu à mão no Hub só é trocado quando o campo veio daqui.
+  const sincronizarHub = (projetoId, nome, p, rascunho) => {
+    const { ideas, addIdea, updateIdea } = useStore.getState()
+    const legenda = pacoteDe(p).legenda
+    const roteiro = roteiroDosCards(p)
+    const existente = ideas.find((i) => i.arte_id === projetoId)
+    if (!existente) {
+      if (rascunho) addIdea({ title: nome, script: roteiro, caption: legenda, status: 'draft', format: 'carrossel', platforms: ['instagram'], priority: 'medium', tags: ['studio-de-arte'], arte_id: projetoId })
+      return
+    }
+    const roteiroDoStudio = !existente.script || /^Card 1\n/.test(existente.script)
+    updateIdea(existente.id, {
+      title: nome,
+      ...(roteiroDoStudio ? { script: roteiro } : {}),
+      ...(legenda.trim() ? { caption: legenda } : {}),
+      ...(['draft', 'ready', 'idea'].includes(existente.status) ? { status: rascunho ? 'draft' : 'ready' } : {}),
+    })
+  }
+  // Link do card do Hub: /arte?rascunho=<id da arte>.
+  const abrirRascunhoDaUrl = async () => {
+    const id = new URLSearchParams(window.location.search).get('rascunho')
+    if (!id) return
+    window.history.replaceState(null, '', window.location.pathname)
+    try {
+      const { artes } = await carregarBiblioteca()
+      const arte = artes.find((a) => a.projetoId === id)
+      if (!arte) { setAviso('Não achei esse rascunho neste navegador. Ele foi salvo em outro aparelho, ou o banco não está conectado aqui.'); return }
+      await abrirProjeto({ ...structuredClone(arte.projeto), bibliotecaId: arte.projetoId, nomeArte: arte.nome })
+    } catch { setAviso('Não consegui abrir o rascunho.') }
+  }
   const abrirProjeto = async (p) => {
     encerrarGrupo('texto'); encerrarGrupo('pointer')
     let guardado = null
@@ -519,7 +551,7 @@ export default function ArteStudio() {
       onFocusCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) iniciarGrupo('texto') }}
       onBlurCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) encerrarGrupo('texto') }}
     >
-      <ArtesSalvas guardados={guardados} onVincular={(id, nome, origem, rascunho) => navegar(p => mesmaArte(p, origem) ? { ...p, bibliotecaId: id, nomeArte: nome, rascunho } : p)} projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={abrirProjeto} onLimpar={() => {
+      <ArtesSalvas guardados={guardados} onSalvo={sincronizarHub} onVincular={(id, nome, origem, rascunho) => navegar(p => mesmaArte(p, origem) ? { ...p, bibliotecaId: id, nomeArte: nome, rascunho } : p)} projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={abrirProjeto} onLimpar={() => {
         encerrarGrupo('texto'); encerrarGrupo('pointer')
         setProjeto({ ...PROJETO_INICIAL, slides: [novoSlide('corCheia', { titulo: '', texto: '', detalhe: '', foto: '', recorte: '', emojis: [] })] })
         setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
