@@ -84,7 +84,7 @@ export default function SocialFormatStudio({ format, persona, topic, onTopicChan
       const result = extractJsonObject(envelope.content?.find(b => b.type === 'text')?.text || '')
       validateSocialResult(result, snapshot)
       let sweep
-      try { sweep = await sweepAndFixPaths(key, result, socialTextPaths, bannedWords) } catch { /* Preserve output and expose incomplete review below. */ }
+      try { sweep = await sweepAndFixPaths(key, result, value => socialTextPaths(value, snapshot), bannedWords) } catch { /* Preserve output and expose incomplete review below. */ }
       validateSocialResult(result, snapshot)
       result.revisao = reviewSocialResult(result, snapshot)
       if (!sweep) result.revisao.push('A revisão de linguagem não foi concluída. Confira o texto antes de publicar.')
