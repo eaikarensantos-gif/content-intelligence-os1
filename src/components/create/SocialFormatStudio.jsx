@@ -9,7 +9,7 @@ import { buildVoiceContext } from '../../utils/voiceContext'
 import {
   SOCIAL_LABELS, SOCIAL_STRUCTURES, SOCIAL_GOALS, SOCIAL_TONES, SOCIAL_PRODUCTION, SOCIAL_DURATIONS,
   defaultSocialOptions, getSocialStructure, validateSocialBrief, buildSocialPrompt, validateSocialResult,
-  socialTextPaths, reviewSocialResult, formatSocialScript, socialIdea, socialPublishText,
+  socialTextPaths, reviewSocialResult, formatSocialScript, socialIdea, socialPublishText, PROFESSIONAL_REEL_RULES,
 } from '../../utils/socialStudio'
 
 export function SocialFormatOutput({ result, options }) {
@@ -71,7 +71,7 @@ export default function SocialFormatStudio({ format, persona, topic, onTopicChan
       const response = await fetch('/api/ai?action=openai', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key },
         body: JSON.stringify({ model: 'gpt-5.6-terra', thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, max_tokens: 6500,
-          system: withManualOperacional(withAntiAIFilter(`Escreva em português brasileiro. Responda somente JSON válido.\n${voice}\n${context}`)),
+          system: withManualOperacional(withAntiAIFilter(`Escreva em português brasileiro. Responda somente JSON válido.\n${voice}\n${context}`)) + (snapshot.format === 'reels' && snapshot.persona === 'trabalho' ? `\n${PROFESSIONAL_REEL_RULES}` : ''),
           messages: [{ role: 'user', content: buildSocialPrompt(snapshot) }],
         }),
       })
