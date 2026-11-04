@@ -18,6 +18,8 @@ import ArtesSalvas from './ArtesSalvas'
 import EdicaoNaArte from './EdicaoNaArte'
 import VisaoGeral from './VisaoGeral'
 import PacotePublicacao from './PacotePublicacao'
+import { salvarVersao } from './projetosConta'
+import { arteSemConteudo, nomeAutomatico } from './rascunhos'
 import { arquivosDoPacote, pacoteDe } from './pacotePublicacao'
 import RevisaoFinal from './RevisaoFinal'
 import { revisarCards, gerarDownload, mesmaArte } from './exportacaoArte'
@@ -56,6 +58,9 @@ export default function ArteStudio() {
   projetoAtual.current = projeto
   const [sugestoes, setSugestoes] = useState({})
   const [analisandoLayout, setAnalisandoLayout] = useState(null)
+  const [nota, setNota] = useState('')
+  // Cards do último salvamento ou da última arte aberta: enquanto forem os mesmos, não há nada a perder.
+  const guardados = useRef(null)
   const [larguraJanela, setLarguraJanela] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1280))
   useEffect(() => {
     const atualizar = () => setLarguraJanela(window.innerWidth)
@@ -431,6 +436,26 @@ export default function ArteStudio() {
     } catch { setAviso('Não foi possível sugerir ajustes. O card foi mantido.') }
     finally { setOcupado('') }
   }
+  // O que ainda não foi guardado vira rascunho antes de outra arte ocupar o editor. Devolve o nome, ou null se não havia o que guardar.
+  const guardarTrabalhoAtual = async () => {
+    const atual = projetoAtual.current
+    if (arteSemConteudo(atual) || guardados.current === atual.slides) return null
+    const nome = atual.nomeArte || nomeAutomatico(atual)
+    await salvarVersao(nome, { ...atual, nomeArte: nome, rascunho: true })
+    guardados.current = atual.slides
+    return nome
+  }
+  const abrirProjeto = async (p) => {
+    encerrarGrupo('texto'); encerrarGrupo('pointer')
+    let guardado = null
+    try { guardado = await guardarTrabalhoAtual() } catch {
+      setAviso('Não consegui guardar o que está no editor, então não abri a outra arte. Salve o rascunho e tente de novo.')
+      return
+    }
+    guardados.current = p.slides
+    setProjeto(p); setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
+    setNota(guardado ? `O que estava no editor foi guardado como rascunho "${guardado}" em Artes salvas.` : '')
+  }
   const exportarAtual = () => revisarExportacao([atual], 'png')
   const exportarTodos = () => revisarExportacao(slides.map((_, i) => i), 'zip')
   const exportarPdf = () => revisarExportacao(slides.map((_, i) => i), 'pdf')
@@ -484,10 +509,7 @@ export default function ArteStudio() {
       onFocusCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) iniciarGrupo('texto') }}
       onBlurCapture={(e) => { if (e.target.matches('textarea, input[type="text"]')) encerrarGrupo('texto') }}
     >
-      <ArtesSalvas onVincular={(id, nome, origem) => navegar(p => mesmaArte(p, origem) ? { ...p, bibliotecaId: id, nomeArte: nome } : p)} projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={p => {
-        encerrarGrupo('texto'); encerrarGrupo('pointer')
-        setProjeto(p); setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
-      }} onLimpar={() => {
+      <ArtesSalvas guardados={guardados} onVincular={(id, nome, origem, rascunho) => navegar(p => mesmaArte(p, origem) ? { ...p, bibliotecaId: id, nomeArte: nome, rascunho } : p)} projeto={projeto} bloqueado={!carregado || !!ocupado} onAbrir={abrirProjeto} onLimpar={() => {
         encerrarGrupo('texto'); encerrarGrupo('pointer')
         setProjeto({ ...PROJETO_INICIAL, slides: [novoSlide('corCheia', { titulo: '', texto: '', detalhe: '', foto: '', recorte: '', emojis: [] })] })
         setSelecionado(null); setAnterior(null); setSugestoes({}); setAviso('')
@@ -513,6 +535,7 @@ export default function ArteStudio() {
       {bancoAberto && <Banco onFechar={() => setBancoAberto(false)} onEscolher={(origem) => { setBancoAberto(false); usarFoto(origem) }} />}
       {galeria && <Galeria itens={itensGaleria} categorias={{ ...CATEGORIAS, base: 'Base do Studio' }} renderMini={renderMini} onFechar={() => setGaleria(false)} onAplicar={aplicarModelo} />}
 
+      {nota && <p role="status" className="mb-4 text-sm text-gray-700">{nota} <button type="button" onClick={() => setNota('')} className="min-h-11 px-2 underline text-orange-800">Entendi</button></p>}
       {(ocupado || aviso) && (
         <div className={`mb-4 flex items-center gap-2 text-sm ${aviso ? 'text-red-600' : 'text-gray-600'}`}>
           {ocupado && <Loader2 size={15} className="animate-spin" />}{ocupado || aviso}
