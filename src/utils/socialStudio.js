@@ -55,7 +55,7 @@ export const LINKEDIN_EDITORIAL_LIMIT = 2800
 
 export function defaultSocialOptions(format, persona = 'trabalho') {
   if (!SOCIAL_LABELS[format] || !SOCIAL_STRUCTURES[persona]) throw new Error('Formato ou Studio inválido.')
-  return { format, persona, structure: Object.keys(SOCIAL_STRUCTURES[persona][format])[0], goal: SOCIAL_GOALS[persona][format][0], tone: SOCIAL_TONES[persona][0], production: SOCIAL_PRODUCTION[0], duration: 45, presentation: 'texto', topic: '', audience: '', material: '' }
+  return { format, persona, structure: Object.keys(SOCIAL_STRUCTURES[persona][format])[0], goal: SOCIAL_GOALS[persona][format][0], tone: SOCIAL_TONES[persona][0], production: SOCIAL_PRODUCTION[0], duration: format === 'reels' && persona === 'trabalho' ? 60 : 45, presentation: 'texto', topic: '', audience: '', material: '' }
 }
 
 export function getSocialStructure(options) {
