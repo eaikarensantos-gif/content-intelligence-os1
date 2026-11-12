@@ -43,3 +43,27 @@ Com Vite em execução: `node dev/scripts/arte-complete-smoke.mjs` valida versõ
 com Supabase simulado, abertura em segundo navegador, falha de rede com cópia
 local, ajustes/desfazer, alinhamento, revisão e conteúdo/dimensões dos PNGs no ZIP
 em 1280px e 390px. Esse teste não escreve no banco de produção.
+
+## Grade do Instagram
+
+Painel "Grade do Instagram" no Studio de Arte (`src/components/arte/grade/`). Simula o perfil com os
+posts novos no topo (card 1 da arte em edição e artes salvas) e o feed atual embaixo.
+Nada é publicado nem alterado no Instagram.
+
+- Feed atual: `instagram-list-media` (30 posts). A cor de cada miniatura é lida num canvas; se a CDN não
+  liberar CORS, a imagem vem pela ação `instagram-image` de `api/ai.js`, que só aceita https em
+  `cdninstagram.com` e `fbcdn.net`, sem redirecionamento, até 3 MB.
+- Posts novos: o card 1 é renderizado e lido do mesmo jeito. A fila (artes salvas, ordem e fixados) fica
+  no IndexedDB, chave `grade:v1`. Story não entra, porque não aparece na grade.
+- Nota de harmonia (`harmonia.js`): olha só os 12 primeiros posts. Pesa cor forte encostada em cor forte,
+  excesso de cor forte, três escuros em sequência e cor forte sem repetição. É régua editorial, não prevê
+  alcance. Os limiares (`cor.js`, `harmonia.js`) foram calibrados na paleta da marca, não em dados de desempenho.
+- Sugestões (`analiseGrade.js`): ordem dos novos, até 3 fixados, troca de fundo dos novos (só modelos com
+  texto direto sobre o fundo e sem foto) e uma ordem ideal que existe só na simulação. Só aparece sugestão
+  que sobe a nota em pelo menos 3 pontos.
+- Limites: o Instagram mostra por data, então reordenar o que já foi publicado só é possível com fixados
+  (até 3) ou repostando. A API não informa quais posts já estão fixados. A proporção 3:4 do perfil é uma
+  suposição configurável no seletor da tela.
+
+Verificação: `npm test -- src/components/arte/grade src/lib/igMedia.test.js` e, com Vite em execução,
+`node dev/scripts/arte-grade-smoke.mjs`.

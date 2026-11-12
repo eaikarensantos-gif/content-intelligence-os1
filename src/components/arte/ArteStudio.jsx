@@ -20,6 +20,7 @@ import VisaoGeral from './VisaoGeral'
 import PacotePublicacao from './PacotePublicacao.jsx'
 import { arquivosDoPacote, pacoteDe } from './pacotePublicacao'
 import RevisaoFinal from './RevisaoFinal'
+import GradeInstagram from './grade/GradeInstagram'
 import { revisarCards, gerarDownload, mesmaArte } from './exportacaoArte'
 import { aplicarEmLote, reordenarProjeto, encaixarBloco, restaurarPosicoes } from './ajustesProjeto'
 import { BASE_COM_FOTO, NOMES_BLOCO, PROJETO_INICIAL, aliviar, conteudoProprio, ehCamada, levarConteudo, novoSlide, padraoDe, tamanho, temAjustes } from './conteudoSlide'
@@ -521,6 +522,7 @@ export default function ArteStudio() {
 
       <VisaoGeral key={slides.length + ':' + (projeto.bibliotecaId || '')} projeto={projeto} bloqueado={!!ocupado} renderizar={(s, i) => renderProjeto(projeto, s, i)} tamanho={s => tamanho(s, formato)} onAbrir={i => { irPara(i); node.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} onReordenar={(de, para) => setProjeto(p => reordenarProjeto(p, de, para))} onLote={(indices, ajustes) => { setProjeto(p => aplicarEmLote(p, indices, ajustes)); setAviso('Ajustes aplicados. Revise o carrossel antes de exportar.'); }} onExportar={indices => revisarExportacao([...indices].sort((a, b) => a - b), 'zip')} />
       <PacotePublicacao projeto={projeto} bloqueado={!!ocupado} onLegenda={(legenda) => mudarPacote({ legenda })} onGate={mudarGate} onAlt={mudarAlt} onPublicacao={(publicacao) => mudarProjeto({ publicacao })} />
+      <GradeInstagram projeto={projeto} bloqueado={!!ocupado} onAplicarCapa={(capa) => setProjeto(p => ({ ...p, slides: p.slides.map((s, i) => (i === 0 ? capa : s)) }))} />
       <RevisaoFinal revisao={revisao} atual={projeto} bloqueado={!!ocupado} onAbrir={irPara} onCorrigir={corrigirRevisao} onRevisar={() => revisarExportacao(revisao.indices, revisao.formato, false)} onBaixar={() => baixarRevisao(revisao)} />
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label className="flex gap-2 items-center min-h-11"><input type="checkbox" checked={guiasAtivas} onChange={e => { setGuiasAtivas(e.target.checked); setGuias([]) }} />Guias e alinhamento automático</label>

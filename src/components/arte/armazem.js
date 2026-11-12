@@ -65,3 +65,34 @@ export async function listarArtes() {
     })
   } finally { db.close() }
 }
+
+// Fila de posts novos e fixados da grade do Instagram. Chave própria: listarArtes só lê as que começam com "arte:".
+export async function lerGrade() {
+  let db
+  try {
+    db = await abrir()
+    return await new Promise((ok) => {
+      const req = db.transaction(LOJA).objectStore(LOJA).get('grade:v1')
+      req.onsuccess = () => ok(req.result ?? null)
+      req.onerror = () => ok(null)
+    })
+  } catch {
+    return null
+  } finally { db?.close() }
+}
+
+export async function salvarGrade(estado) {
+  let db
+  try {
+    db = await abrir()
+    await new Promise((ok, erro) => {
+      const tx = db.transaction(LOJA, 'readwrite')
+      tx.objectStore(LOJA).put(estado, 'grade:v1')
+      tx.oncomplete = ok
+      tx.onerror = () => erro(tx.error)
+      tx.onabort = () => erro(tx.error)
+    })
+  } catch {
+    /* sem IndexedDB: a grade vale só nesta sessão */
+  } finally { db?.close() }
+}

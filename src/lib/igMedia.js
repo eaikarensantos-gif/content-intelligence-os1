@@ -22,3 +22,15 @@ export function legendaCurta(texto = '', max = 70) {
   const limpo = texto.replace(/\s+/g, ' ').trim()
   return limpo.length > max ? `${limpo.slice(0, max - 1).trimEnd()}…` : limpo
 }
+
+// O servidor só baixa imagem de CDN do Instagram/Facebook, para a rota de leitura de cor não virar um proxy aberto.
+const HOSTS_CDN = [/(^|\.)cdninstagram\.com$/, /(^|\.)fbcdn\.net$/]
+
+export function urlDeImagemInstagram(url) {
+  try {
+    const u = new URL(url)
+    return u.protocol === 'https:' && !u.username && !u.password && HOSTS_CDN.some((re) => re.test(u.hostname))
+  } catch {
+    return false
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { legendaCurta, mapearPublicacoes } from './igMedia'
+import { legendaCurta, mapearPublicacoes, urlDeImagemInstagram } from './igMedia'
 
 describe('mapearPublicacoes', () => {
   it('traduz tipo e escolhe a miniatura certa', () => {
@@ -30,5 +30,27 @@ describe('legendaCurta', () => {
     expect(legendaCurta('linha 1\n\nlinha   2')).toBe('linha 1 linha 2')
     expect(legendaCurta('a'.repeat(100), 10)).toBe(`${'a'.repeat(9)}…`)
     expect(legendaCurta()).toBe('')
+  })
+})
+
+describe('urlDeImagemInstagram', () => {
+  it('aceita CDN do Instagram e do Facebook em https', () => {
+    expect(urlDeImagemInstagram('https://scontent-gru2-1.cdninstagram.com/v/t51/abc.jpg?x=1')).toBe(true)
+    expect(urlDeImagemInstagram('https://scontent.xx.fbcdn.net/v/abc.jpg')).toBe(true)
+  })
+
+  it('recusa outros hosts, http, usuário na URL e lixo', () => {
+    for (const url of [
+      'http://scontent.cdninstagram.com/a.jpg',
+      'https://example.com/a.jpg',
+      'https://cdninstagram.com.evil.test/a.jpg',
+      'https://evilcdninstagram.com/a.jpg',
+      'https://user:pass@scontent.cdninstagram.com/a.jpg',
+      'https://127.0.0.1/a.jpg',
+      'file:///etc/passwd',
+      'não é url',
+      '',
+      undefined,
+    ]) expect(urlDeImagemInstagram(url), String(url)).toBe(false)
   })
 })
