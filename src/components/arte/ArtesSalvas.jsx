@@ -51,14 +51,17 @@ export default function ArtesSalvas({ projeto, bloqueado, onAbrir, onLimpar, onV
     {painel && <div className="mt-3 border-t pt-3">
       <div className="flex justify-between items-center mb-2">
         <strong className="text-sm">{painel === 'salvar' ? 'Salvar uma versão editável' : painel === 'resultados' ? 'Resultados por modelo' : 'Artes salvas'}</strong>
-        <button className={botao} disabled={gravando} onClick={() => setPainel('')}>{painel === 'salvar' ? 'Cancelar' : painel === 'resultados' ? 'Fechar' : 'Fechar biblioteca'}</button>
+        <div className="flex flex-wrap gap-2">
+          {painel === 'biblioteca' && <button className={botao} disabled={disabled} onClick={() => { setNome(projeto.nomeArte || ''); setMensagem(''); setPainel('salvar') }}>Salvar a arte atual</button>}
+          <button className={botao} disabled={gravando} onClick={() => setPainel('')}>{painel === 'salvar' ? 'Cancelar' : painel === 'resultados' ? 'Fechar' : 'Fechar biblioteca'}</button>
+        </div>
       </div>
       {painel !== 'resultados' && <p className="text-xs text-gray-500 mb-3">Cada salvamento cria uma versão. As versões confirmadas no banco podem ser abertas em outros dispositivos conectados à mesma conta e banco.</p>}
       {painel === 'salvar' ? <form className="flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); if (nome.trim()) salvar() }}>
         <input aria-label="Nome da arte" placeholder="Nome da arte ou carrossel" maxLength={120} value={nome} onChange={e => setNome(e.target.value)} className="min-w-0 flex-1 border rounded-lg px-3 py-2" disabled={gravando} />
         <button className={botao} disabled={disabled || !nome.trim()}>{gravando ? 'Salvando…' : projeto.bibliotecaId ? 'Salvar nova versão' : 'Salvar versão'}</button>
       </form> : painel === 'resultados' ? <ResultadosPorModelo /> : <div className="max-h-72 overflow-y-auto space-y-2">
-        {!artes.length && <p className="text-sm">Nenhuma arte salva ainda.</p>}
+        {!artes.length && <p className="text-sm">Nenhuma arte salva ainda. Use "Salvar a arte atual" acima para guardar a que está no editor.</p>}
         {artes.map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 p-3">
           <div className="min-w-0"><p className="text-sm font-medium break-words">{a.nome}</p><p className="text-xs text-gray-500">{plural(a.projeto.slides.length, 'card', 'cards')} · {plural(a.versoes.length, 'versão', 'versões')} · {a.nuvem ? 'No banco' : 'Neste dispositivo'} · {new Date(a.salvoEm).toLocaleString('pt-BR')}</p></div>
           <button className={botao} disabled={disabled} onClick={() => { const aberto = { ...structuredClone(a.projeto), bibliotecaId: a.projetoId || undefined, nomeArte: a.nome }; guardados.current = aberto.slides; onAbrir(aberto); setPainel(''); setMensagem('Cópia aberta para editar. A versão salva foi preservada.') }}>Abrir</button>

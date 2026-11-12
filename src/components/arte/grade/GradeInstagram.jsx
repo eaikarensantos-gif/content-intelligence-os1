@@ -40,6 +40,7 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
   const [destacados, setDestacados] = useState([])
   const [analisando, setAnalisando] = useState(false)
   const [ideal, setIdeal] = useState(false)
+  const [mostrarLeitura, setMostrarLeitura] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [biblioteca, setBiblioteca] = useState(null)
   const leiturasRef = useRef({})
@@ -128,7 +129,8 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
   const nomes = Object.fromEntries(grade.map((t) => [t.id, t.nome]))
   const pendentes = novos.filter((n) => { const l = leituras[n.id]; return !l || l.capa !== n.capa || l.formato !== n.formato || l.contador !== n.contador }).length
     + feed.posts.filter((p) => p.props === undefined).length
-  const nota = avaliarGrade(grade).nota
+  const { nota, corte } = avaliarGrade(grade)
+  const leituraDoTile = (t) => (t.energia == null ? { texto: 'sem leitura', forte: false } : { texto: `${t.energia >= corte ? 'forte' : t.energia >= 0.35 ? 'médio' : 'calmo'} ${Math.round(t.energia * 100)}`, forte: t.energia >= corte })
 
   // ---------- análise do Content: recalculada quando a grade muda, só com tudo lido ----------
   const assinatura = [guardado.fixados.join(), ...grade.map((t) => `${t.id}:${t.energia == null ? '-' : Math.round(t.energia * 100)}:${Math.round((t.luz ?? 0) * 100)}:${t.tom == null ? '-' : Math.round(t.tom)}`)].join('|')
@@ -211,6 +213,8 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
             ? <label className="flex items-center gap-2 min-h-11 text-sm"><input type="checkbox" checked={guardado.incluirEditor} onChange={(e) => mudar((g) => ({ ...g, incluirEditor: e.target.checked }))} />Incluir o card 1 da arte em edição na grade</label>
             : <p className="text-xs text-gray-500">O card 1 do editor é um Story, que não aparece na grade do perfil.</p>}
 
+          {tilesVisiveis.length > 0 && <label className="flex items-center gap-2 min-h-11 text-sm"><input type="checkbox" checked={mostrarLeitura} onChange={(e) => setMostrarLeitura(e.target.checked)} />Mostrar o que o Content leu em cada imagem (barulho de 0 a 100)</label>}
+
           {feed.estado === 'carregando' && <p role="status" className="flex items-center gap-2 text-sm text-gray-600"><Loader2 size={15} className="animate-spin" />Buscando as últimas publicações…</p>}
           {feed.estado === 'erro' && <p role="alert" className="text-sm text-red-700">{feed.erro} {/Configurações/.test(feed.erro) && <Link to="/settings" className="underline">Abrir Configurações</Link>}</p>}
           {feed.estado === 'ok' && !feed.posts.length && <p className="text-sm text-gray-600">Nenhuma publicação encontrada nessa conta.</p>}
@@ -235,7 +239,7 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
           <div className="flex flex-col lg:flex-row gap-6 items-start">
             <div className="w-full max-w-sm shrink-0 space-y-2">
               {tilesVisiveis.length
-                ? <GradeVisual tiles={tilesVisiveis} proporcao={proporcao} selecionado={selecionado} destacados={ideal ? [] : destacados} onSelecionar={setSelecionado} />
+                ? <GradeVisual tiles={tilesVisiveis} proporcao={proporcao} selecionado={selecionado} destacados={ideal ? [] : destacados} leitura={mostrarLeitura && nota != null ? leituraDoTile : null} onSelecionar={setSelecionado} />
                 : <p className="text-sm text-gray-600">A grade está vazia. Carregue o feed atual ou adicione uma arte.</p>}
               {tilesVisiveis.length > JANELA && <p className="text-xs text-gray-500">Os {JANELA} primeiros posts (4 linhas) entram na nota. O resto aparece mais claro.</p>}
               {idealAtivo && <p role="status" className="text-xs text-orange-800">Mostrando a ordem ideal, só simulação. Os botões de mover e fixar voltam quando você voltar para a grade real.</p>}

@@ -6,8 +6,9 @@ const PROPORCOES = { '3/4': '3 / 4', '4/5': '4 / 5' }
 /**
  * A grade do perfil: 3 colunas, do post mais recente para o mais antigo.
  * Cada tile é { id, origem: 'novo' | 'publicado', nome, img, fixado }.
+ * leitura(tile) => { texto, forte } liga o selo com o que o Content leu em cada imagem.
  */
-export default function GradeVisual({ tiles, proporcao, selecionado, destacados = [], onSelecionar }) {
+export default function GradeVisual({ tiles, proporcao, selecionado, destacados = [], leitura = null, onSelecionar }) {
   return (
     <ol className="grid grid-cols-3 gap-0.5 bg-white" aria-label="Grade do perfil no Instagram">
       {tiles.map((t, i) => {
@@ -29,6 +30,7 @@ export default function GradeVisual({ tiles, proporcao, selecionado, destacados 
                 ? <img src={t.img} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                 : <span className="absolute inset-0 flex items-center justify-center p-1 text-[11px] text-gray-500">{novo ? 'Gerando a prévia…' : 'Sem imagem'}</span>}
               {novo && <span className="absolute left-1 top-1 rounded bg-orange-700 px-1.5 py-0.5 text-[10px] font-medium text-white">Novo</span>}
+              {leitura && <span data-leitura={leitura(t).forte ? 'forte' : 'normal'} className={`absolute left-1 bottom-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${leitura(t).forte ? 'bg-red-700 text-white' : 'bg-white/90 text-gray-800'}`}>{leitura(t).texto}</span>}
               {t.fixado && <span className="absolute right-1 top-1 rounded bg-white/90 p-1 text-gray-800"><Pin size={12} aria-hidden="true" /></span>}
             </button>
           </li>

@@ -31,7 +31,8 @@ jobs:
   # Testes de navegador do Studio de Arte e da tela de DM. Ficam num job à parte para não atrasar
   # lint, testes unitários e build; cada script tem uma nova tentativa (ver dev/scripts/run-smoke.mjs).
   smoke:
-    runs-on: ubuntu-latest
+    # Fixado: o ubuntu-latest passou para 26.04, que o Playwright 1.59 ainda não suporta (falha em "Install Chromium").
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
