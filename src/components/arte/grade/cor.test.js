@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CORES } from '../marca'
-import { LIMIAR_BARULHO, analisarPixels, contrasteHex, familiaDeTom, hexParaRgb, projetarFundo, propsDeHex } from './cor'
+import { LIMIAR_BARULHO, LIMIAR_PLANO, analisarPixels, contrasteHex, familiaDeTom, hexParaRgb, projetarFundo, propsDeHex } from './cor'
 
 const chapado = (hex, n = 64) => {
   const [r, g, b] = hexParaRgb(hex)
@@ -47,6 +47,28 @@ describe('analisarPixels', () => {
   it('mede a luz', () => {
     expect(analisarPixels(chapado('#F4EFE7')).luz).toBeGreaterThan(0.85)
     expect(analisarPixels(chapado('#2B211B')).luz).toBeLessThan(0.2)
+  })
+})
+
+describe('tipo de imagem', () => {
+  const ruido = (n = 1200) => {
+    // sequência fixa: o teste não pode depender de Math.random
+    let x = 12345
+    const prox = () => { x = (x * 1103515245 + 12345) & 0x7fffffff; return (x >> 16) % 256 }
+    return new Uint8ClampedArray(Array.from({ length: n }, () => [prox(), prox(), prox(), 255]).flat())
+  }
+
+  it('fundo chapado com texto é arte; cores espalhadas são foto', () => {
+    const arte = analisarPixels(misto('#E9C46A', '#2B211B', 12))
+    expect(arte.plano).toBeGreaterThanOrEqual(LIMIAR_PLANO)
+    expect(arte.tipo).toBe('arte')
+    const foto = analisarPixels(ruido())
+    expect(foto.plano).toBeLessThan(LIMIAR_PLANO)
+    expect(foto.tipo).toBe('foto')
+  })
+
+  it('cor chapada é plano 1', () => {
+    expect(analisarPixels(chapado('#A64B2A')).plano).toBe(1)
   })
 })
 

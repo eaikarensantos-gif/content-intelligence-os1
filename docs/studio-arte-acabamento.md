@@ -55,11 +55,14 @@ Nada é publicado nem alterado no Instagram.
   `cdninstagram.com` e `fbcdn.net`, sem redirecionamento, até 3 MB.
 - Posts novos: o card 1 é renderizado e lido do mesmo jeito. A fila (artes salvas, ordem e fixados) fica
   no IndexedDB, chave `grade:v1`. Story não entra, porque não aparece na grade.
-- Nota de harmonia (`harmonia.js`): olha só os 12 primeiros posts. "Cor forte" é relativo ao feed: o terço
-  mais forte, com piso 0,35 e teto 0,6 de barulho (foto com texto raramente passa de 0,6). O modo "Mostrar o que
-  o Content leu" exibe o barulho lido em cada imagem. Pesa cor forte encostada em cor forte,
-  excesso de cor forte, três escuros em sequência e cor forte sem repetição. É régua editorial, não prevê
-  alcance. Os limiares (`cor.js`, `harmonia.js`) foram calibrados na paleta da marca, não em dados de desempenho.
+- Nota de harmonia (`harmonia.js`): olha só os 12 primeiros posts. Cada imagem vira barulho (0 a 100: cor viva
+  mais contraste interno), luz, matiz dominante e tipo (foto, ou arte/print quando uma cor chapada ocupa 30% ou mais).
+  "Cor forte" é relativa ao feed: o terço mais forte, com piso 0,25 e teto 0,6. Pesa: cor forte encostada em cor
+  forte, excesso de cor forte, luz sem alternância (três escuros ou três claros em sequência, dois escuros ou dois
+  claros encostados), cor forte sem repetição, vizinhos de matizes a 90 graus ou mais e três fotos (ou três artes)
+  em sequência. Sequências longas na mesma coluna viram uma mensagem só. O modo "Mostrar o que o Content leu"
+  exibe barulho e tipo em cada tile. É régua editorial, não prevê alcance, e os limiares foram calibrados em
+  feeds simulados, não em dados de desempenho.
 - Sugestões (`analiseGrade.js`): ordem dos novos, até 3 fixados, troca de fundo dos novos (só modelos com
   texto direto sobre o fundo e sem foto) e uma ordem ideal que existe só na simulação. Só aparece sugestão
   que sobe a nota em pelo menos 3 pontos.
