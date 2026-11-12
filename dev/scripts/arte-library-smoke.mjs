@@ -36,6 +36,11 @@ try {
     await page.reload()
     await projects.getByRole('button', { name: 'Artes salvas', exact: true }).click()
     await projects.getByText('Meu carrossel favorito', { exact: true }).waitFor()
+    // A biblioteca também oferece salvar, sem precisar voltar à barra do topo.
+    await projects.getByRole('button', { name: 'Salvar a arte atual' }).click()
+    await projects.getByLabel('Nome da arte').waitFor()
+    await projects.getByRole('button', { name: 'Cancelar' }).click()
+    await projects.getByRole('button', { name: 'Artes salvas', exact: true }).click()
     await projects.getByRole('button', { name: 'Abrir', exact: true }).click()
     assert.equal(await canvas.innerText(), original)
     await page.getByRole('button', { name: 'Baixar todos (2)', exact: true }).waitFor()
