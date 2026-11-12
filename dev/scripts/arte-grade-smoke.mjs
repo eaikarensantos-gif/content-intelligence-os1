@@ -105,7 +105,9 @@ try {
   // A leitura de cada imagem pode ser conferida na própria grade
   await painel.getByLabel(/Mostrar o que o Content leu/).check()
   assert.ok(await painel.locator('[data-leitura="forte"]').count() >= 2, 'os posts mostarda e terracota aparecem como fortes')
-  assert.ok(await painel.locator('[data-leitura="normal"]').count() >= 5, 'os posts creme aparecem como calmos')
+  assert.ok(await painel.locator('[data-leitura="normal"]').count() >= 5, 'os posts creme aparecem com barulho baixo')
+  assert.match(await painel.locator('[data-leitura]').first().innerText(), /(baixo|médio|forte) \d+ · (foto|arte)/, 'o selo mostra barulho e tipo')
+  await painel.getByLabel('Como ler os selos').waitFor()
   await painel.getByLabel(/Mostrar o que o Content leu/).uncheck()
 
   // 3. Troca de fundo sugerida para o post novo, aplicada ao card 1 do editor
@@ -114,7 +116,7 @@ try {
   assert.match(await sugestao.innerText(), /trocar o fundo de Mostarda para/)
   await sugestao.getByRole('button', { name: 'Aplicar no card 1' }).click()
   await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-canvas="editor"]')).backgroundColor !== 'rgb(233, 196, 106)')
-  await page.waitForFunction(() => Number(document.querySelector('[data-nota]')?.getAttribute('data-nota')) >= 99, null, { timeout: 30000 })
+  await page.waitForFunction((anterior) => Number(document.querySelector('[data-nota]')?.getAttribute('data-nota')) > anterior, antes, { timeout: 30000 })
   const depois = await nota(page)
   assert.ok(depois > antes, `nota depois (${depois}) maior que antes (${antes})`)
   // Desfazer do editor volta o fundo

@@ -1,6 +1,7 @@
 import { CORES } from '../marca'
 
 const botao = 'min-h-11 px-3 py-2 text-sm rounded-lg border border-orange-300 text-orange-800 hover:bg-orange-50 disabled:opacity-40'
+const MOSTRAR = 6 // pontos de maior peso à vista; o resto fica recolhido
 const nomeDaCor = (id) => CORES[id]?.nome ?? id
 
 /** O que o Content sugere para a grade. Cada bloco vale sozinho: a análise é refeita sobre a grade a cada mudança. */
@@ -10,6 +11,12 @@ export default function SugestoesGrade({ analise, pendentes, nomes, idealAtivo, 
   if (analise.semDados) return <p role="status" className="text-sm text-gray-600">Não consegui ler a cor de imagens suficientes para avaliar. Carregue o feed atual ou adicione posts novos.</p>
 
   const { atual, ordem, fixar, fundos, ideal } = analise
+  const ordenados = [...atual.problemas].sort((a, b) => b.pontos - a.pontos)
+  const item = (p, i) => (
+    <li key={i}>
+      <button type="button" className="min-h-11 text-left text-sm text-gray-800 underline decoration-dotted" onMouseEnter={() => onDestacar(p.indices)} onMouseLeave={() => onDestacar([])} onFocus={() => onDestacar(p.indices)} onBlur={() => onDestacar([])} onClick={() => onDestacar(p.indices)}>{p.texto}</button>
+    </li>
+  )
   const lista = (ids) => ids.map((id) => nomes[id] ?? id).join(', ')
 
   return (
@@ -21,18 +28,20 @@ export default function SugestoesGrade({ analise, pendentes, nomes, idealAtivo, 
 
       {atual.problemas.length > 0
         ? (
-          <ul className="space-y-1" aria-label="O que pesa na nota">
-            {atual.problemas.map((p, i) => (
-              <li key={i}>
-                <button type="button" className="min-h-11 text-left text-sm text-gray-800 underline decoration-dotted" onMouseEnter={() => onDestacar(p.indices)} onMouseLeave={() => onDestacar([])} onFocus={() => onDestacar(p.indices)} onBlur={() => onDestacar([])} onClick={() => onDestacar(p.indices)}>{p.texto}</button>
-              </li>
-            ))}
-          </ul>
+          <div aria-label="O que pesa na nota" className="space-y-1">
+            <ul className="space-y-1">{ordenados.slice(0, MOSTRAR).map(item)}</ul>
+            {ordenados.length > MOSTRAR && (
+              <details>
+                <summary className="min-h-11 py-2.5 text-sm cursor-pointer text-gray-700">Mais {ordenados.length - MOSTRAR} pontos de menor peso</summary>
+                <ul className="space-y-1">{ordenados.slice(MOSTRAR).map((p, i) => item(p, i + MOSTRAR))}</ul>
+              </details>
+            )}
+          </div>
         )
         : (
           <div className="text-sm text-gray-700">
             <p>Nenhum ponto de atenção nos 12 primeiros posts.</p>
-            <p className="text-xs text-gray-500">Contei {atual.fortes} {atual.fortes === 1 ? 'post' : 'posts'} de cor forte (a partir de {Math.round(atual.corte * 100)} de barulho, que é o terço mais forte deste feed) e nenhum encosta em outro. Marque "Mostrar o que o Content leu" para conferir a leitura de cada imagem.</p>
+            <p className="text-xs text-gray-500">Contei {atual.fortes} {atual.fortes === 1 ? 'post' : 'posts'} de cor forte (a partir de {Math.round(atual.corte * 100)} de barulho, o terço mais forte deste feed) e nenhum encosta em outro. Marque "Mostrar o que o Content leu" para conferir a leitura de cada imagem.</p>
           </div>
         )}
 

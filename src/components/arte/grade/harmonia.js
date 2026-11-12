@@ -3,25 +3,28 @@
 // A nota é editorial, não previsão de desempenho. Ela olha só o que dá para conferir na imagem:
 //   1. dois posts de cor forte encostados (ao lado ou um em cima do outro);
 //   2. mais da metade da janela em cor forte;
-//   3. três posts escuros em sequência;
-//   4. uma cor forte que não se repete em nenhum outro post forte (fica "solta").
-// Cada tile é { id, energia, luz, tom, neutro }; energia null significa "cor não lida" e não pesa na nota.
+//   3. luz sem alternância: três posts escuros ou três claros em sequência, e dois escuros ou dois claros encostados;
+//   4. uma cor forte que não se repete em nenhum outro post forte (fica "solta");
+//   5. vizinhos de cores que brigam (matizes a 90 graus ou mais um do outro; neutros combinam com tudo);
+//   6. três posts do mesmo tipo em sequência (foto ou arte/print).
+// Cada tile é { id, energia, luz, tom, neutro, tipo }; energia null significa "cor não lida" e não pesa na nota.
 import { LIMIAR_BARULHO, familiaDeTom } from './cor'
 
 export const COLUNAS = 3
 export const JANELA = 12 // 4 linhas: o que aparece quando alguém abre o perfil
 const ESCURO = 0.3
+const CLARO = 0.72
 const COR_FORTE = 0.45
 
 const linhaDe = (i) => Math.floor(i / COLUNAS)
 const colunaDe = (i) => i % COLUNAS
 const peso = (i) => Math.max(0.5, 1 - linhaDe(i) * 0.1) // as primeiras linhas valem mais
 const lido = (t) => t && t.energia != null
-const PISO_FORTE = 0.35 // abaixo disso nada conta como forte, mesmo sendo o mais forte do feed
+export const PISO_FORTE = 0.25 // abaixo disso nada conta como forte, mesmo sendo o mais forte do feed
 
 /**
  * A partir de que barulho um post conta como "cor forte" nesta janela. Relativo ao próprio feed:
- * o terço mais forte, com piso de 0,35 (feed todo calmo não é acusado) e teto de 0,6 (cor chapada forte sempre conta).
+ * o terço mais forte, com piso de 0,25 (feed todo calmo não é acusado) e teto de 0,6 (cor chapada forte sempre conta).
  * Fotos com texto raramente passam de 0,6 e continuam podendo brigar entre si.
  */
 export function corteDeBarulho(tiles) {
@@ -33,7 +36,9 @@ export function corteDeBarulho(tiles) {
 }
 
 const celula = (i) => `linha ${linhaDe(i) + 1}, coluna ${colunaDe(i) + 1}`
-const PONTOS = { vizinho: 12, demais: 10, escuros: 6, solta: 5 }
+const PONTOS = { vizinho: 12, demais: 10, escuros: 6, solta: 5, luzPar: 2.5, cores: 4, tipo: 3 }
+const classeDeLuz = (t) => (!lido(t) ? null : t.luz < ESCURO ? 'escuro' : t.luz > CLARO ? 'claro' : 'medio')
+const distanciaDeFamilia = (a, b) => { const d = Math.abs(a - b); return Math.min(d, 8 - d) }
 
 function textoDoPar(i, j) {
   if (linhaDe(i) === linhaDe(j)) return `Dois posts de cor forte lado a lado (linha ${linhaDe(i) + 1}, colunas ${colunaDe(i) + 1} e ${colunaDe(j) + 1}).`
@@ -80,12 +85,54 @@ export function avaliarGrade(tiles, { janela = JANELA } = {}) {
     pen += PONTOS.demais
     problemas.push({ tipo: 'barulho-demais', indices: fortes, pontos: PONTOS.demais, texto: `Mais da metade dos ${t.length} primeiros posts é de cor forte. Intercalar com posts calmos dá descanso entre eles.` })
   }
+  const eixoDe = (indices) => (linhaDe(indices[0]) === linhaDe(indices.at(-1)) ? `linha ${linhaDe(indices[0]) + 1}` : `coluna ${colunaDe(indices[0]) + 1}`)
+  const NUMEROS = { 3: 'Três', 4: 'Quatro', 5: 'Cinco', 6: 'Seis' }
+  // Trincas que se sobrepõem na mesma coluna viram uma sequência só ("Quatro fotos em sequência"); a penalidade soma por trinca.
+  const abertas = new Map()
+  const sequencia = (chave, tipo, tripla, pontos, descrever) => {
+    const emColuna = tripla[1] - tripla[0] === COLUNAS
+    const anterior = emColuna ? abertas.get(`${chave}:${tripla[0] - COLUNAS}`) : null
+    if (anterior) {
+      anterior.indices.push(tripla[2])
+      anterior.pontos += pontos
+      anterior.texto = descrever(anterior.indices)
+      abertas.set(`${chave}:${tripla[0]}`, anterior)
+      return
+    }
+    const p = { tipo, indices: [...tripla], pontos, texto: descrever(tripla) }
+    problemas.push(p)
+    if (emColuna) abertas.set(`${chave}:${tripla[0]}`, p)
+  }
+  const quantos = (indices) => NUMEROS[indices.length] ?? String(indices.length)
   for (const tripla of triplas(t.length)) {
-    if (tripla.every((i) => lido(t[i]) && t[i].luz < ESCURO)) {
+    const classes = tripla.map((i) => classeDeLuz(t[i]))
+    if (classes[0] && classes[0] !== 'medio' && classes.every((c) => c === classes[0])) {
       const pontos = PONTOS.escuros * peso(tripla[0])
       pen += pontos
-      const eixo = linhaDe(tripla[0]) === linhaDe(tripla[2]) ? `linha ${linhaDe(tripla[0]) + 1}` : `coluna ${colunaDe(tripla[0]) + 1}`
-      problemas.push({ tipo: 'escuros-seguidos', indices: tripla, pontos, texto: `Três posts escuros em sequência (${eixo}).` })
+      const nome = classes[0] === 'escuro' ? 'escuros' : 'claros'
+      sequencia(`luz-${nome}`, `${nome}-seguidos`, tripla, pontos, (idx) => `${quantos(idx)} posts ${nome} em sequência (${eixoDe(idx)}).`)
+    }
+    const tipos = tripla.map((i) => t[i]?.tipo)
+    if (tipos[0] && tipos.every((x) => x === tipos[0])) {
+      const pontos = PONTOS.tipo * peso(tripla[0])
+      pen += pontos
+      sequencia(`tipo-${tipos[0]}`, 'tipo-seguido', tripla, pontos, (idx) => `${quantos(idx)} ${tipos[0] === 'foto' ? 'fotos' : 'artes ou prints'} em sequência (${eixoDe(idx)}).`)
+    }
+  }
+  for (const [i, j] of vizinhos(t.length)) {
+    const [a, b] = [classeDeLuz(t[i]), classeDeLuz(t[j])]
+    if (a && a !== 'medio' && a === b) {
+      const pontos = PONTOS.luzPar * peso(i)
+      pen += pontos
+      const lado = linhaDe(i) === linhaDe(j) ? `linha ${linhaDe(i) + 1}, colunas ${colunaDe(i) + 1} e ${colunaDe(j) + 1}` : `coluna ${colunaDe(i) + 1}, linhas ${linhaDe(i) + 1} e ${linhaDe(j) + 1}`
+      problemas.push({ tipo: 'luz-igual', indices: [i, j], pontos, texto: `Dois posts ${a === 'escuro' ? 'escuros' : 'claros'} encostados (${lado}). Alternar claro e escuro separa melhor.` })
+    }
+    if (lido(t[i]) && lido(t[j]) && !t[i].neutro && !t[j].neutro && t[i].tom != null && t[j].tom != null
+      && distanciaDeFamilia(familiaDeTom(t[i].tom), familiaDeTom(t[j].tom)) >= 2) {
+      const pontos = PONTOS.cores * peso(i)
+      pen += pontos
+      const lado = linhaDe(i) === linhaDe(j) ? `linha ${linhaDe(i) + 1}, colunas ${colunaDe(i) + 1} e ${colunaDe(j) + 1}` : `coluna ${colunaDe(i) + 1}, linhas ${linhaDe(i) + 1} e ${linhaDe(j) + 1}`
+      problemas.push({ tipo: 'cores-brigam', indices: [i, j], pontos, texto: `Cores que brigam entre vizinhos (${lado}).` })
     }
   }
   const coloridos = t.map((x, i) => (lido(x) && !x.neutro && x.energia >= COR_FORTE ? i : -1)).filter((i) => i >= 0)

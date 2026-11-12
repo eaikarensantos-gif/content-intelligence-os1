@@ -3,7 +3,7 @@ import { CORES } from '../marca'
 import { avaliarGrade, corteDeBarulho, COLUNAS, JANELA, melhorOrdemNovos, melhoresFixados, montarGrade, ordemIdeal } from './harmonia'
 import { podeTrocarFundo, sugerirFundo, variantePorFundo } from './ajusteDeCor'
 
-const calmo = (id, extra = {}) => ({ id, energia: 0.15, luz: 0.9, tom: null, neutro: true, ...extra })
+const calmo = (id, extra = {}) => ({ id, energia: 0.15, luz: 0.5, tom: null, neutro: true, ...extra })
 const forte = (id, extra = {}) => ({ id, energia: 0.8, luz: 0.6, tom: 40, neutro: false, ...extra })
 const escuro = (id) => ({ id, energia: 0.25, luz: 0.15, tom: null, neutro: true })
 const ids = (tiles) => tiles.map((t) => t.id)
@@ -86,7 +86,7 @@ describe('corte de barulho relativo ao feed', () => {
   })
 
   it('feed calmo fica abaixo do piso: ninguém conta como forte', () => {
-    const r = avaliarGrade(feed([0.3, 0.1, 0.2, 0.25, 0.05, 0.3, 0.15, 0.2, 0.1, 0.3, 0.25, 0.2]))
+    const r = avaliarGrade(feed([0.2, 0.1, 0.15, 0.2, 0.05, 0.22, 0.12, 0.18, 0.1, 0.2, 0.24, 0.15]))
     expect(r.fortes).toBe(0)
     expect(r.nota).toBe(100)
   })
@@ -94,6 +94,64 @@ describe('corte de barulho relativo ao feed', () => {
   it('o corte nunca passa de 0,6 e devolve null sem leitura', () => {
     expect(corteDeBarulho(feed(Array(12).fill(0.9)))).toBe(0.6)
     expect(avaliarGrade([{ id: 'x', energia: null }]).corte).toBeNull()
+  })
+})
+
+describe('luz, cor e tipo de imagem', () => {
+  const t = (id, extra = {}) => ({ id, energia: 0.15, luz: 0.5, tom: null, neutro: true, tipo: undefined, ...extra })
+  const claro = (id, extra = {}) => t(id, { luz: 0.9, ...extra })
+  const escuro = (id, extra = {}) => t(id, { luz: 0.15, ...extra })
+  const textos = (r) => r.problemas.map((p) => p.texto)
+
+  it('três claros em sequência e dois claros encostados', () => {
+    const r = avaliarGrade([claro('a'), claro('b'), claro('c'), t('d'), t('e'), t('f')])
+    expect(textos(r)).toContain('Três posts claros em sequência (linha 1).')
+    expect(textos(r).some((x) => x.startsWith('Dois posts claros encostados (linha 1, colunas 1 e 2)'))).toBe(true)
+  })
+
+  it('claro e escuro alternados em xadrez não pesam', () => {
+    const xadrez = Array.from({ length: 12 }, (_, i) => ((((i % 3) + Math.floor(i / 3)) % 2) ? claro(`c${i}`) : escuro(`e${i}`)))
+    const r = avaliarGrade(xadrez)
+    expect(r.problemas.filter((p) => ['luz-igual', 'claros-seguidos', 'escuros-seguidos'].includes(p.tipo))).toEqual([])
+    expect(r.nota).toBe(100)
+  })
+
+  it('posts de luz média não contam como sequência', () => {
+    expect(avaliarGrade(Array.from({ length: 9 }, (_, i) => t(`m${i}`))).nota).toBe(100)
+  })
+
+  it('vizinhos de matizes opostos brigam; neutro e matiz próximo não', () => {
+    const laranja = (id) => t(id, { energia: 0.3, tom: 30, neutro: false })
+    const azul = (id) => t(id, { energia: 0.3, tom: 215, neutro: false })
+    const brigam = avaliarGrade([laranja('a'), azul('b'), t('c'), t('d'), t('e'), t('f')])
+    expect(textos(brigam)).toContain('Cores que brigam entre vizinhos (linha 1, colunas 1 e 2).')
+    expect(textos(avaliarGrade([laranja('a'), t('n'), azul('b'), t('d'), t('e'), t('f')])).filter((x) => x.startsWith('Cores que brigam'))).toEqual([])
+    expect(avaliarGrade([laranja('a'), laranja('b'), t('c'), t('d'), t('e'), t('f')]).problemas.some((p) => p.tipo === 'cores-brigam')).toBe(false)
+  })
+
+  it('três fotos ou três artes em sequência; alternar resolve', () => {
+    const foto = (id) => t(id, { tipo: 'foto' })
+    const arte = (id) => t(id, { tipo: 'arte' })
+    const r = avaliarGrade([foto('a'), foto('b'), foto('c'), arte('d'), arte('e'), arte('f')])
+    expect(textos(r)).toContain('Três fotos em sequência (linha 1).')
+    expect(textos(r)).toContain('Três artes ou prints em sequência (linha 2).')
+    const alternado = avaliarGrade([foto('a'), arte('b'), foto('c'), arte('d'), foto('e'), arte('f')])
+    expect(alternado.problemas.some((p) => p.tipo === 'tipo-seguido')).toBe(false)
+  })
+
+  it('sequência que passa de três vira uma mensagem só, com a penalidade somada', () => {
+    const foto = (id) => t(id, { tipo: 'foto' })
+    const arte = (id) => t(id, { tipo: 'arte' })
+    // coluna 1 toda de fotos (4 linhas); o resto alterna para não criar outras sequências
+    const g = [foto('a'), arte('b'), foto('c'), foto('d'), foto('e'), arte('f'), foto('g'), arte('h'), foto('i'), foto('j'), arte('k'), foto('l')]
+    const seq = avaliarGrade(g).problemas.filter((p) => p.tipo === 'tipo-seguido' && p.texto.includes('coluna 1'))
+    expect(seq).toHaveLength(1)
+    expect(seq[0].texto).toBe('Quatro fotos em sequência (coluna 1).')
+    expect(seq[0].indices).toEqual([0, 3, 6, 9])
+  })
+
+  it('tile sem tipo não entra na regra de tipo', () => {
+    expect(avaliarGrade(Array.from({ length: 6 }, (_, i) => t(`x${i}`))).problemas).toEqual([])
   })
 })
 

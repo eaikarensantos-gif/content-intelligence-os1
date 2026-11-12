@@ -2,6 +2,8 @@
 // Funções puras: recebem pixels RGBA (o que o canvas devolve) e não tocam em DOM nem em rede.
 
 export const LIMIAR_BARULHO = 0.6
+// Parte da imagem na cor mais comum a partir da qual ela conta como arte/print (áreas chapadas), e não como foto.
+export const LIMIAR_PLANO = 0.3
 
 const limitar = (v, min = 0, max = 1) => Math.min(max, Math.max(min, v))
 
@@ -38,13 +40,15 @@ export const barulhoDe = (cromaMedio, desvioLuz) => limitar(1.6 * cromaMedio + 0
 const BINS = 12 // famílias de matiz de 30 graus
 
 /**
- * Lê uma amostra RGBA e devolve { hex, energia, luz, tom, neutro }.
+ * Lê uma amostra RGBA e devolve { hex, energia, luz, tom, neutro, plano, tipo }.
+ * tipo é 'arte' quando uma cor ocupa boa parte da imagem (fundo chapado, print) e 'foto' quando as cores se espalham.
  * tom é o matiz dominante em graus; neutro vale true quando quase não há cor (creme, cinza, preto).
  * Devolve null se a amostra não tiver pixel opaco.
  */
 export function analisarPixels(rgba) {
   let n = 0, r = 0, g = 0, b = 0, croma = 0, luz = 0, luz2 = 0
   const pesos = new Array(BINS).fill(0)
+  const baldes = new Map()
   let colorido = 0
   for (let i = 0; i + 3 < rgba.length; i += 4) {
     if (rgba[i + 3] < 128) continue
@@ -53,6 +57,8 @@ export function analisarPixels(rgba) {
     const m = matizEcroma(pr, pg, pb)
     const l = luzDe(pr, pg, pb)
     croma += m.croma; luz += l; luz2 += l * l
+    const balde = ((pr >> 4) << 8) | ((pg >> 4) << 4) | (pb >> 4)
+    baldes.set(balde, (baldes.get(balde) ?? 0) + 1)
     if (m.croma >= 0.12) { pesos[Math.floor(m.matiz / (360 / BINS)) % BINS] += m.croma; colorido++ }
   }
   if (!n) return null
@@ -61,12 +67,15 @@ export function analisarPixels(rgba) {
   const dominante = pesos.indexOf(Math.max(...pesos))
   const neutro = colorido / n < 0.12
   const h2 = (v) => Math.round(v / n).toString(16).padStart(2, '0')
+  const plano = Math.max(...baldes.values()) / n
   return {
     hex: `#${h2(r)}${h2(g)}${h2(b)}`.toUpperCase(),
     energia: barulhoDe(croma / n, desvio),
     luz: luzMedia,
     tom: neutro ? null : dominante * (360 / BINS) + 360 / BINS / 2,
     neutro,
+    plano,
+    tipo: plano >= LIMIAR_PLANO ? 'arte' : 'foto',
   }
 }
 

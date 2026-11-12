@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { analisarGrade } from './analiseGrade'
 
-const calmo = (id) => ({ id, energia: 0.15, luz: 0.9, tom: null, neutro: true })
+const calmo = (id) => ({ id, energia: 0.15, luz: 0.5, tom: null, neutro: true })
 const forte = (id) => ({ id, energia: 0.8, luz: 0.6, tom: 40, neutro: false })
 const capa = (extra = {}) => ({ template: 'corCheia', fundo: 'mostarda', corTitulo: 'tinta', corTexto: 'tinta', corDestaque: 'terracota', foto: '', recorte: '', ...extra })
 const existentes = Array.from({ length: 12 }, (_, i) => (i % 4 === 0 ? forte(`e${i}`) : calmo(`e${i}`)))

@@ -11,7 +11,7 @@ import { miniaturaDoCard } from '../exportacaoArte'
 import { CARTAO } from '../cartoes/colecao'
 import { ehCartao, formatoDe } from '../cartoes/render'
 import { analisarGrade } from './analiseGrade'
-import { JANELA, avaliarGrade, montarGrade } from './harmonia'
+import { JANELA, PISO_FORTE, avaliarGrade, montarGrade } from './harmonia'
 import { lerCorDeDataUrl, lerCorDeUrl } from './leitura'
 import GradeVisual from './GradeVisual'
 import SugestoesGrade from './SugestoesGrade'
@@ -130,7 +130,7 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
   const pendentes = novos.filter((n) => { const l = leituras[n.id]; return !l || l.capa !== n.capa || l.formato !== n.formato || l.contador !== n.contador }).length
     + feed.posts.filter((p) => p.props === undefined).length
   const { nota, corte } = avaliarGrade(grade)
-  const leituraDoTile = (t) => (t.energia == null ? { texto: 'sem leitura', forte: false } : { texto: `${t.energia >= corte ? 'forte' : t.energia >= 0.35 ? 'médio' : 'calmo'} ${Math.round(t.energia * 100)}`, forte: t.energia >= corte })
+  const leituraDoTile = (t) => (t.energia == null ? { texto: 'sem leitura', forte: false } : { texto: `${t.energia >= corte ? 'forte' : t.energia >= PISO_FORTE ? 'médio' : 'baixo'} ${Math.round(t.energia * 100)}${t.tipo ? ` · ${t.tipo}` : ''}`, forte: t.energia >= corte })
 
   // ---------- análise do Content: recalculada quando a grade muda, só com tudo lido ----------
   const assinatura = [guardado.fixados.join(), ...grade.map((t) => `${t.id}:${t.energia == null ? '-' : Math.round(t.energia * 100)}:${Math.round((t.luz ?? 0) * 100)}:${t.tom == null ? '-' : Math.round(t.tom)}`)].join('|')
@@ -213,7 +213,8 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
             ? <label className="flex items-center gap-2 min-h-11 text-sm"><input type="checkbox" checked={guardado.incluirEditor} onChange={(e) => mudar((g) => ({ ...g, incluirEditor: e.target.checked }))} />Incluir o card 1 da arte em edição na grade</label>
             : <p className="text-xs text-gray-500">O card 1 do editor é um Story, que não aparece na grade do perfil.</p>}
 
-          {tilesVisiveis.length > 0 && <label className="flex items-center gap-2 min-h-11 text-sm"><input type="checkbox" checked={mostrarLeitura} onChange={(e) => setMostrarLeitura(e.target.checked)} />Mostrar o que o Content leu em cada imagem (barulho de 0 a 100)</label>}
+          {tilesVisiveis.length > 0 && <label className="flex items-center gap-2 min-h-11 text-sm"><input type="checkbox" checked={mostrarLeitura} onChange={(e) => setMostrarLeitura(e.target.checked)} />Mostrar o que o Content leu em cada imagem</label>}
+          {mostrarLeitura && nota != null && <p className="text-xs text-gray-500" aria-label="Como ler os selos">Barulho de 0 a 100: quanto a imagem grita em cor viva e contraste dentro dela. Baixo é até {Math.round(PISO_FORTE * 100)}, médio vai até {Math.round(corte * 100)} e forte é daí para cima (o corte é o terço mais forte do seu feed). "Baixo" não quer dizer imagem simples, e sim pouca cor viva. O tipo é foto quando as cores se espalham e arte quando há áreas chapadas, como cards e prints.</p>}
 
           {feed.estado === 'carregando' && <p role="status" className="flex items-center gap-2 text-sm text-gray-600"><Loader2 size={15} className="animate-spin" />Buscando as últimas publicações…</p>}
           {feed.estado === 'erro' && <p role="alert" className="text-sm text-red-700">{feed.erro} {/Configurações/.test(feed.erro) && <Link to="/settings" className="underline">Abrir Configurações</Link>}</p>}
