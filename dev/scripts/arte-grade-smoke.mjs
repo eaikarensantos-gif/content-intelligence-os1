@@ -102,6 +102,12 @@ try {
   assert.match(problemas, /lado a lado \(linha 1, colunas 1 e 2\)/)
   assert.match(problemas, /um em cima do outro \(coluna 1, linhas 1 e 2\)/)
 
+  // A leitura de cada imagem pode ser conferida na própria grade
+  await painel.getByLabel(/Mostrar o que o Content leu/).check()
+  assert.ok(await painel.locator('[data-leitura="forte"]').count() >= 2, 'os posts mostarda e terracota aparecem como fortes')
+  assert.ok(await painel.locator('[data-leitura="normal"]').count() >= 5, 'os posts creme aparecem como calmos')
+  await painel.getByLabel(/Mostrar o que o Content leu/).uncheck()
+
   // 3. Troca de fundo sugerida para o post novo, aplicada ao card 1 do editor
   const sugestao = painel.getByLabel(/^Fundo de Arte em edição/)
   await sugestao.waitFor()

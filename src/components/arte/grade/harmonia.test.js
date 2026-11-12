@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CORES } from '../marca'
-import { avaliarGrade, COLUNAS, JANELA, melhorOrdemNovos, melhoresFixados, montarGrade, ordemIdeal } from './harmonia'
+import { avaliarGrade, corteDeBarulho, COLUNAS, JANELA, melhorOrdemNovos, melhoresFixados, montarGrade, ordemIdeal } from './harmonia'
 import { podeTrocarFundo, sugerirFundo, variantePorFundo } from './ajusteDeCor'
 
 const calmo = (id, extra = {}) => ({ id, energia: 0.15, luz: 0.9, tom: null, neutro: true, ...extra })
@@ -66,6 +66,34 @@ describe('avaliarGrade', () => {
   it('só olha a janela', () => {
     const tiles = [...Array.from({ length: JANELA }, (_, i) => calmo(`c${i}`)), forte('a'), forte('b')]
     expect(avaliarGrade(tiles).nota).toBe(100)
+  })
+})
+
+describe('corte de barulho relativo ao feed', () => {
+  const foto = (energia, i) => ({ id: `f${i}`, energia, luz: 0.5, tom: 30, neutro: false })
+  const feed = (energias) => energias.map(foto)
+
+  it('feed de fotos com texto: os mais fortes encostados são apontados mesmo abaixo de 0,6', () => {
+    const r = avaliarGrade(feed([0.52, 0.5, 0.33, 0.31, 0.45, 0.36, 0.48, 0.3, 0.41, 0.34, 0.54, 0.37]))
+    expect(r.corte).toBeLessThan(0.6)
+    expect(r.nota).toBeLessThan(100)
+    expect(r.problemas.some((p) => p.tipo === 'barulho-vizinho' && p.indices.join() === '0,1')).toBe(true)
+  })
+
+  it('feed uniforme não é acusado', () => {
+    expect(avaliarGrade(feed(Array(12).fill(0.5))).nota).toBe(100)
+    expect(avaliarGrade(feed([0.48, 0.5, 0.52, 0.49, 0.5, 0.51, 0.5, 0.47, 0.5, 0.5, 0.52, 0.49])).nota).toBe(100)
+  })
+
+  it('feed calmo fica abaixo do piso: ninguém conta como forte', () => {
+    const r = avaliarGrade(feed([0.3, 0.1, 0.2, 0.25, 0.05, 0.3, 0.15, 0.2, 0.1, 0.3, 0.25, 0.2]))
+    expect(r.fortes).toBe(0)
+    expect(r.nota).toBe(100)
+  })
+
+  it('o corte nunca passa de 0,6 e devolve null sem leitura', () => {
+    expect(corteDeBarulho(feed(Array(12).fill(0.9)))).toBe(0.6)
+    expect(avaliarGrade([{ id: 'x', energia: null }]).corte).toBeNull()
   })
 })
 

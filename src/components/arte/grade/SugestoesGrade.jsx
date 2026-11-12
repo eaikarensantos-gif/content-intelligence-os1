@@ -29,7 +29,12 @@ export default function SugestoesGrade({ analise, pendentes, nomes, idealAtivo, 
             ))}
           </ul>
         )
-        : <p className="text-sm text-gray-700">Nenhum ponto de atenção nos 12 primeiros posts.</p>}
+        : (
+          <div className="text-sm text-gray-700">
+            <p>Nenhum ponto de atenção nos 12 primeiros posts.</p>
+            <p className="text-xs text-gray-500">Contei {atual.fortes} {atual.fortes === 1 ? 'post' : 'posts'} de cor forte (a partir de {Math.round(atual.corte * 100)} de barulho, que é o terço mais forte deste feed) e nenhum encosta em outro. Marque "Mostrar o que o Content leu" para conferir a leitura de cada imagem.</p>
+          </div>
+        )}
 
       {(ordem || fixar || fundos.length > 0) && <h3 className="text-sm font-medium">O que dá para fazer de verdade</h3>}
 

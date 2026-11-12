@@ -17,7 +17,20 @@ const linhaDe = (i) => Math.floor(i / COLUNAS)
 const colunaDe = (i) => i % COLUNAS
 const peso = (i) => Math.max(0.5, 1 - linhaDe(i) * 0.1) // as primeiras linhas valem mais
 const lido = (t) => t && t.energia != null
-const barulhento = (t) => lido(t) && t.energia >= LIMIAR_BARULHO
+const PISO_FORTE = 0.35 // abaixo disso nada conta como forte, mesmo sendo o mais forte do feed
+
+/**
+ * A partir de que barulho um post conta como "cor forte" nesta janela. Relativo ao próprio feed:
+ * o terço mais forte, com piso de 0,35 (feed todo calmo não é acusado) e teto de 0,6 (cor chapada forte sempre conta).
+ * Fotos com texto raramente passam de 0,6 e continuam podendo brigar entre si.
+ */
+export function corteDeBarulho(tiles) {
+  const energias = tiles.filter(lido).map((t) => t.energia).sort((a, b) => a - b)
+  if (!energias.length) return LIMIAR_BARULHO
+  const alvo = energias[Math.floor(0.65 * (energias.length - 1))]
+  // Folga de 0,15 acima do mais calmo: feed uniforme (tudo do mesmo barulho) é harmônico, não vira "todos fortes".
+  return Math.min(LIMIAR_BARULHO, Math.max(PISO_FORTE, alvo, energias[0] + 0.15))
+}
 
 const celula = (i) => `linha ${linhaDe(i) + 1}, coluna ${colunaDe(i) + 1}`
 const PONTOS = { vizinho: 12, demais: 10, escuros: 6, solta: 5 }
@@ -46,11 +59,13 @@ function triplas(n) {
 /** Pior caso de uma janela de n tiles, só para a nota ficar entre 0 e 100 qualquer que seja o tamanho. */
 const piorCaso = (n) => vizinhos(n).reduce((s, [i]) => s + PONTOS.vizinho * peso(i), 0) + PONTOS.demais
 
-/** { nota, bruta, problemas }. nota é inteira de 0 a 100 (ou null com menos de 2 tiles lidos); bruta é a mesma sem arredondar. */
+/** { nota, bruta, corte, fortes, problemas }. nota é inteira de 0 a 100 (ou null com menos de 2 tiles lidos); bruta é a mesma sem arredondar. */
 export function avaliarGrade(tiles, { janela = JANELA } = {}) {
   const t = tiles.slice(0, janela)
   const lidos = t.filter(lido)
-  if (lidos.length < 2) return { nota: null, bruta: null, problemas: [] }
+  if (lidos.length < 2) return { nota: null, bruta: null, corte: null, fortes: 0, problemas: [] }
+  const corte = corteDeBarulho(t)
+  const barulhento = (x) => lido(x) && x.energia >= corte
   const problemas = []
   let pen = 0
   for (const [i, j] of vizinhos(t.length)) {
@@ -88,7 +103,7 @@ export function avaliarGrade(tiles, { janela = JANELA } = {}) {
     }
   }
   const bruta = Math.max(0, Math.min(100, 100 * (1 - pen / piorCaso(t.length))))
-  return { nota: Math.round(bruta), bruta, problemas }
+  return { nota: Math.round(bruta), bruta, corte, fortes: fortes.length, problemas }
 }
 
 /** Fixados primeiro (o Instagram deixa até 3), depois os novos, depois o que já está publicado, do mais recente ao mais antigo. */

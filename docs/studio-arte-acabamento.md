@@ -55,7 +55,9 @@ Nada é publicado nem alterado no Instagram.
   `cdninstagram.com` e `fbcdn.net`, sem redirecionamento, até 3 MB.
 - Posts novos: o card 1 é renderizado e lido do mesmo jeito. A fila (artes salvas, ordem e fixados) fica
   no IndexedDB, chave `grade:v1`. Story não entra, porque não aparece na grade.
-- Nota de harmonia (`harmonia.js`): olha só os 12 primeiros posts. Pesa cor forte encostada em cor forte,
+- Nota de harmonia (`harmonia.js`): olha só os 12 primeiros posts. "Cor forte" é relativo ao feed: o terço
+  mais forte, com piso 0,35 e teto 0,6 de barulho (foto com texto raramente passa de 0,6). O modo "Mostrar o que
+  o Content leu" exibe o barulho lido em cada imagem. Pesa cor forte encostada em cor forte,
   excesso de cor forte, três escuros em sequência e cor forte sem repetição. É régua editorial, não prevê
   alcance. Os limiares (`cor.js`, `harmonia.js`) foram calibrados na paleta da marca, não em dados de desempenho.
 - Sugestões (`analiseGrade.js`): ordem dos novos, até 3 fixados, troca de fundo dos novos (só modelos com
