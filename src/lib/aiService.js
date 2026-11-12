@@ -295,6 +295,18 @@ export async function instagramListMedia(accessToken, limit = 30) {
   return data.posts ?? []
 }
 
+/** Miniatura de um post como data URL, para o navegador poder medir a cor (a CDN do Instagram nem sempre libera). */
+export async function instagramImagemComoDataUrl(accessToken, url) {
+  const res = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'instagram-image', accessToken, url }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || data.error) throw new Error(data.error || `Erro ${res.status}`)
+  return data.dataUrl
+}
+
 export async function instagramFetchComments(accessToken, mediaId) {
   const res = await fetch('/api/ai', {
     method: 'POST',

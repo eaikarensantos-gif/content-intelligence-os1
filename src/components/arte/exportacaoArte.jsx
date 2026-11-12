@@ -70,6 +70,10 @@ async function comCanvas(slide, indice, renderizar, acao) {
   } finally { root.unmount(); host.remove() }
 }
 
+/** PNG reduzido de um card (a miniatura da grade do Instagram), com as fontes já carregadas. */
+export const miniaturaDoCard = (slide, indice, renderizar, pixelRatio = 0.4) =>
+  comCanvas(slide, indice, renderizar, canvas => toPng(canvas, { width: canvas.offsetWidth, height: canvas.offsetHeight, pixelRatio, cacheBust: true }))
+
 export async function revisarCards(projeto, indices, renderizar) {
   const resultado = []
   for (const i of indices) resultado.push({ indice: i, problemas: await comCanvas(projeto.slides[i], i, renderizar, conferirAcabamento) })

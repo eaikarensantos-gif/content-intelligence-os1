@@ -10,7 +10,7 @@
 //   (default)          → AI chat completion
 
 import { ANTI_AI_FILTER } from '../src/lib/antiAIFilter.js'
-import { mapearPublicacoes } from '../src/lib/igMedia.js'
+import { mapearPublicacoes, urlDeImagemInstagram } from '../src/lib/igMedia.js'
 import { apagarDoCofre, completarComCofre, listarCofre, salvarNoCofre } from '../src/lib/cofreServidor.js'
 
 const PROVIDER_URLS = {
@@ -515,6 +515,20 @@ async function instagramListMedia(accessToken, limit) {
     throw new Error(mediaData.error?.message || 'Falha ao buscar publicações do Instagram.')
   }
   return { posts: mapearPublicacoes(mediaData.data) }
+}
+
+// Baixa a miniatura de um post e devolve como data URL. O navegador só lê os pixels de uma imagem
+// (para medir a cor na grade) se ela vier da mesma origem; por isso a imagem passa por aqui.
+// Só CDN do Instagram/Facebook, sem seguir redirecionamento, no máximo 3 MB e só imagem.
+async function instagramImagem(url) {
+  if (!urlDeImagemInstagram(url)) throw new Error('Endereço de imagem não permitido.')
+  const res = await fetch(url, { redirect: 'error' })
+  if (!res.ok) throw new Error(`Não foi possível baixar a imagem (${res.status}).`)
+  const tipo = (res.headers.get('content-type') || '').split(';')[0].trim()
+  if (!/^image\/(jpeg|png|webp)$/.test(tipo)) throw new Error('O endereço não devolveu uma imagem.')
+  const bytes = Buffer.from(await res.arrayBuffer())
+  if (bytes.length > 3 * 1024 * 1024) throw new Error('Imagem grande demais para ler a cor.')
+  return { dataUrl: `data:${tipo};base64,${bytes.toString('base64')}` }
 }
 
 // ─── Instagram — posts com thumbnail, tempo assistido e comentários ──────────
@@ -1421,6 +1435,13 @@ export default async function handler(req, res) {
       const { accessToken, limit } = req.body
       if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
       return res.status(200).json(await instagramListMedia(accessToken, limit))
+    }
+
+    if (action === 'instagram-image') {
+      const { accessToken, url } = req.body
+      if (!accessToken?.trim()) return res.status(400).json({ error: 'Token do Instagram ausente. Reconecte em Configurações.' })
+      try { return res.status(200).json(await instagramImagem(url)) }
+      catch (err) { return res.status(400).json({ error: err.message }) }
     }
 
     if (action === 'instagram-fetch-comments') {
