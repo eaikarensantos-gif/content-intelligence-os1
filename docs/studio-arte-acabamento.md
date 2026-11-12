@@ -66,6 +66,11 @@ Nada é publicado nem alterado no Instagram.
 - Sugestões (`analiseGrade.js`): ordem dos novos, até 3 fixados, troca de fundo dos novos (só modelos com
   texto direto sobre o fundo e sem foto) e uma ordem ideal que existe só na simulação. Só aparece sugestão
   que sobe a nota em pelo menos 3 pontos.
+- Sugerir outro: ao selecionar um post, o botão "Sugerir outro" mostra (1) para post novo, até 5 versões da capa
+  (os 3 melhores fundos e os layouts aprovados por `avaliarLayouts`), cada uma renderizada, lida e ranqueada pela
+  nota da grade inteira (`variantesDaCapa.js`); e (2) para qualquer post, quais outros posts ficariam melhor
+  naquela posição (`sugerirTrocas`). Troca entre dois posts novos reordena a fila; com post publicado no meio é só
+  simulação, desfeita por "Voltar à grade real". Usar uma versão aplica no card 1 do editor, com Desfazer.
 - Limites: o Instagram mostra por data, então reordenar o que já foi publicado só é possível com fixados
   (até 3) ou repostando. A API não informa quais posts já estão fixados. A proporção 3:4 do perfil é uma
   suposição configurável no seletor da tela.

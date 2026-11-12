@@ -123,6 +123,28 @@ try {
   await page.getByRole('button', { name: 'Desfazer' }).first().click()
   await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-canvas="editor"]')).backgroundColor === 'rgb(233, 196, 106)')
 
+  // 3b. Sugerir outro: versões da arte nova (fundo e layout) e outro post para a posição
+  await painel.locator('[data-tile="editor"]').click()
+  await painel.getByRole('button', { name: 'Sugerir outro' }).click()
+  const versao = painel.locator('[data-versao^="Fundo"]').first()
+  await versao.waitFor({ timeout: 90000 })
+  assert.match(await versao.innerText(), /Nota \d+ para \d+/)
+  await versao.getByRole('button', { name: 'Usar esta versão' }).click()
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-canvas="editor"]')).backgroundColor !== 'rgb(233, 196, 106)')
+  await page.getByRole('button', { name: 'Desfazer' }).first().click()
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-canvas="editor"]')).backgroundColor === 'rgb(233, 196, 106)')
+  // post já publicado: a troca só existe na simulação
+  await painel.locator('[data-tile="p0"]').click()
+  await painel.getByRole('button', { name: 'Sugerir outro' }).click()
+  const troca = painel.locator('[data-troca]').first()
+  await troca.waitFor({ timeout: 60000 })
+  assert.match(await troca.innerText(), /Só simulação/)
+  await troca.getByRole('button', { name: 'Simular troca' }).click()
+  await painel.getByText(/Mostrando a troca de/).waitFor()
+  await painel.getByRole('button', { name: 'Voltar à grade real' }).click()
+  await painel.getByText(/Mostrando a troca de/).waitFor({ state: 'detached' })
+  assert.equal(await painel.locator('[data-tile]').first().getAttribute('data-tile'), 'editor', 'a grade real voltou')
+
   // 4. Fixar um post publicado: vai para o topo, e o quarto fixado é recusado
   await painel.locator('[data-tile="p5"]').click()
   await painel.getByRole('button', { name: 'Fixar no topo' }).click()

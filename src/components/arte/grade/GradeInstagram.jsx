@@ -10,7 +10,9 @@ import { Canvas } from '../CanvasArte'
 import { miniaturaDoCard } from '../exportacaoArte'
 import { CARTAO } from '../cartoes/colecao'
 import { ehCartao, formatoDe } from '../cartoes/render'
-import { analisarGrade } from './analiseGrade'
+import { analisarGrade, criarNotaCom, sugerirTrocas } from './analiseGrade'
+import { gerarVariantes } from './variantesDaCapa'
+import SugerirOutro from './SugerirOutro'
 import { JANELA, PISO_FORTE, avaliarGrade, montarGrade } from './harmonia'
 import { lerCorDeDataUrl, lerCorDeUrl } from './leitura'
 import GradeVisual from './GradeVisual'
@@ -39,12 +41,15 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
   const [selecionado, setSelecionado] = useState(null)
   const [destacados, setDestacados] = useState([])
   const [analisando, setAnalisando] = useState(false)
-  const [ideal, setIdeal] = useState(false)
+  // simulacao: { tipo: 'ideal' | 'troca', ids, rotulo } mostra outra ordem na grade sem mexer na fila
+  const [simulacao, setSimulacao] = useState(null)
+  const [sugestao, setSugestao] = useState(null)
   const [mostrarLeitura, setMostrarLeitura] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [biblioteca, setBiblioteca] = useState(null)
   const leiturasRef = useRef({})
   const geracao = useRef(0)
+  const sugestaoRef = useRef(0)
   useEffect(() => () => { geracao.current = -1 }, [])
 
   // ---------- posts novos: a arte em edição + as artes salvas que entraram na fila ----------
@@ -141,7 +146,10 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
     [analisando, pendentes, assinatura, capas],
   )
   /* eslint-enable react-hooks/exhaustive-deps */
-  const exibida = ideal && analise?.ideal ? analise.ideal.ids.map((id) => grade.find((t) => t.id === id)).filter(Boolean) : grade
+  // Uma simulação ou sugestão vale para a grade em que foi pedida; se a grade mudar, ela sai.
+  useEffect(() => { setSimulacao(null); setSugestao(null) }, [assinatura])
+  useEffect(() => { setSugestao(null) }, [selecionado])
+  const exibida = simulacao ? simulacao.ids.map((id) => grade.find((t) => t.id === id)).filter(Boolean) : grade
   const tilesVisiveis = exibida.map((t) => ({ ...t, fixado: guardado.fixados.includes(t.id) }))
 
   // ---------- ações ----------
@@ -168,9 +176,10 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
   const aplicarFundo = (id, slide) => {
     if (id === 'editor') {
       onAplicarCapa(slide)
-      setMensagem('Fundo aplicado ao card 1 do editor. Desfazer volta.')
+      setMensagem('Versão aplicada ao card 1 do editor. Desfazer volta.')
     } else mudar((g) => ({ ...g, itens: g.itens.map((i) => (i.id === id ? { ...i, capa: slide } : i)) }))
-    setIdeal(false)
+    setSimulacao(null)
+    setSugestao(null)
   }
   const abrirBiblioteca = async () => {
     setMensagem('')
@@ -188,7 +197,46 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
 
   const escolhido = tilesVisiveis.find((t) => t.id === selecionado)
   const iEscolhido = idsNovos.indexOf(selecionado)
-  const idealAtivo = ideal && !!analise?.ideal
+  const idealAtivo = simulacao?.tipo === 'ideal'
+  const imagens = Object.fromEntries(grade.map((t) => [t.id, t.img]))
+
+  // ---------- "Sugerir outro": versões da arte (post novo) e outros posts para aquela posição ----------
+  const sugerirOutro = async () => {
+    if (!escolhido || pendentes > 0) return
+    const id = escolhido.id
+    const minha = ++sugestaoRef.current
+    const novo = escolhido.origem === 'novo'
+    const trocas = sugerirTrocas(grade, grade.findIndex((t) => t.id === id))
+    setSugestao({ id, assinatura, novo, estado: novo ? 'carregando' : 'pronto', progresso: '', variantes: [], trocas })
+    if (!novo) return
+    const item = novos.find((n) => n.id === id)
+    const tile = tilesNovos.find((t) => t.id === id)
+    const atualizar = (campos) => setSugestao((s) => (s && s.id === id && sugestaoRef.current === minha ? { ...s, ...campos } : s))
+    try {
+      const variantes = await gerarVariantes({
+        item, tile,
+        notaCom: criarNotaCom({ fixados: tilesFixados, novos: tilesNovos, existentes: tilesExistentes }),
+        renderizar: (s) => <Canvas arte={s} formato={item.formato} contador={item.contador} interativo={false} />,
+        progresso: (progresso) => atualizar({ progresso }),
+      })
+      atualizar({ estado: 'pronto', variantes })
+    } catch {
+      atualizar({ estado: 'pronto', variantes: [] })
+    }
+  }
+  const trocarPosicao = (t) => {
+    const ids = grade.map((x) => x.id)
+    ;[ids[t.indiceDe], ids[t.indice]] = [ids[t.indice], ids[t.indiceDe]]
+    if (t.real) {
+      const ordem = [...idsNovos]
+      const a = ordem.indexOf(grade[t.indiceDe].id), b = ordem.indexOf(t.id)
+      ;[ordem[a], ordem[b]] = [ordem[b], ordem[a]]
+      mudar((g) => ({ ...g, ordem }))
+      setSugestao(null)
+    } else {
+      setSimulacao({ tipo: 'troca', ids, rotulo: `a troca de "${nomes[grade[t.indiceDe].id]}" com "${nomes[t.id]}"` })
+    }
+  }
 
   return (
     <details className="mb-4 border border-gray-200 rounded-xl p-3" aria-label="Grade do Instagram" onToggle={(e) => setAberto(e.currentTarget.open)}>
@@ -240,14 +288,20 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
           <div className="flex flex-col lg:flex-row gap-6 items-start">
             <div className="w-full max-w-sm shrink-0 space-y-2">
               {tilesVisiveis.length
-                ? <GradeVisual tiles={tilesVisiveis} proporcao={proporcao} selecionado={selecionado} destacados={ideal ? [] : destacados} leitura={mostrarLeitura && nota != null ? leituraDoTile : null} onSelecionar={setSelecionado} />
+                ? <GradeVisual tiles={tilesVisiveis} proporcao={proporcao} selecionado={selecionado} destacados={simulacao ? [] : destacados} leitura={mostrarLeitura && nota != null ? leituraDoTile : null} onSelecionar={setSelecionado} />
                 : <p className="text-sm text-gray-600">A grade está vazia. Carregue o feed atual ou adicione uma arte.</p>}
               {tilesVisiveis.length > JANELA && <p className="text-xs text-gray-500">Os {JANELA} primeiros posts (4 linhas) entram na nota. O resto aparece mais claro.</p>}
-              {idealAtivo && <p role="status" className="text-xs text-orange-800">Mostrando a ordem ideal, só simulação. Os botões de mover e fixar voltam quando você voltar para a grade real.</p>}
+              {simulacao && (
+                <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-orange-800">
+                  <span>Mostrando {simulacao.rotulo}, só simulação. Mover e fixar voltam na grade real.</span>
+                  <button type="button" className={botao} onClick={() => setSimulacao(null)}>Voltar à grade real</button>
+                </div>
+              )}
 
-              {escolhido && !idealAtivo && (
+              {escolhido && !simulacao && (
                 <div className="rounded-lg border border-orange-200 p-2 space-y-2" aria-label="Post selecionado">
                   <p className="text-sm break-words">{escolhido.nome}</p>
+                  <button type="button" className="min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-40" disabled={pendentes > 0 || sugestao?.estado === 'carregando'} onClick={sugerirOutro}>Sugerir outro</button>
                   {escolhido.origem === 'novo'
                     ? (
                       <div className="flex flex-wrap gap-2">
@@ -262,6 +316,7 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
                         {feed.posts.find((p) => p.id === escolhido.id)?.link && <a className="text-sm text-orange-800 underline" href={feed.posts.find((p) => p.id === escolhido.id).link} target="_blank" rel="noreferrer">Abrir no Instagram</a>}
                       </div>
                     )}
+                  {sugestao && sugestao.id === escolhido.id && sugestao.assinatura === assinatura && nota != null && <SugerirOutro sugestao={sugestao} nomes={nomes} imagens={imagens} nota={nota} bloqueado={bloqueado} onUsarVersao={(v) => aplicarFundo(escolhido.id, v.slide)} onTrocar={trocarPosicao} />}
                   {escolhido.origem !== 'novo' && <p className="text-xs text-gray-500">Fixar só simula aqui. Se você já fixou posts no Instagram, fixe os mesmos para a grade bater com o perfil.</p>}
                 </div>
               )}
@@ -276,11 +331,11 @@ export default function GradeInstagram({ projeto, bloqueado, onAplicarCapa }) {
 
             <div className="flex-1 w-full min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-3">
-                <button type="button" className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-40" disabled={!tilesVisiveis.length} onClick={() => { setAnalisando(true); setIdeal(false) }}>Content: sugerir ajustes na grade</button>
+                <button type="button" className="flex items-center gap-1.5 min-h-11 px-3 py-2 text-sm rounded-lg bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-40" disabled={!tilesVisiveis.length} onClick={() => { setAnalisando(true); setSimulacao(null) }}>Content: sugerir ajustes na grade</button>
                 {nota != null && <span className="text-sm text-gray-700">Nota agora: <strong>{nota}</strong> de 100</span>}
               </div>
               {!analisando && <p className="text-xs text-gray-500">O Content mede a cor e a luz de cada post, procura vizinhos que brigam entre si e sugere ordem, posts para fixar e troca de fundo nos posts novos.</p>}
-              {analisando && <SugestoesGrade analise={analise} pendentes={pendentes} nomes={nomes} idealAtivo={idealAtivo} bloqueado={bloqueado} onDestacar={setDestacados} onOrdem={(ids) => { mudar((g) => ({ ...g, ordem: ids })); setIdeal(false) }} onFixar={(ids) => { mudar((g) => ({ ...g, fixados: ids })); setIdeal(false) }} onFundo={aplicarFundo} onIdeal={() => setIdeal((v) => !v)} />}
+              {analisando && <SugestoesGrade analise={analise} pendentes={pendentes} nomes={nomes} idealAtivo={idealAtivo} bloqueado={bloqueado} onDestacar={setDestacados} onOrdem={(ids) => { mudar((g) => ({ ...g, ordem: ids })); setSimulacao(null) }} onFixar={(ids) => { mudar((g) => ({ ...g, fixados: ids })); setSimulacao(null) }} onFundo={aplicarFundo} onIdeal={() => setSimulacao((v) => (v?.tipo === 'ideal' ? null : analise?.ideal ? { tipo: 'ideal', ids: analise.ideal.ids, rotulo: 'a ordem ideal' } : v))} />}
             </div>
           </div>
         </div>
